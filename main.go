@@ -1,11 +1,11 @@
 package main
 
 import (
-	"go-QRL/p2p"
 	"fmt"
 	"bufio"
 	"os"
 	"strings"
+	"github.com/cyyber/go-QRL/p2p"
 )
 
 var (
