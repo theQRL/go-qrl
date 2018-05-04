@@ -4,7 +4,7 @@ import (
 	"net"
 	"sync"
 	"errors"
-	"fmt"
+	"github.com/cyyber/go-QRL/log"
 )
 
 type Server struct {
@@ -14,9 +14,10 @@ type Server struct {
 	running		bool
 	exit 		chan struct{}
 	loopWG 		sync.WaitGroup
+	log			log.Logger
 }
 
-func (srv *Server) Start() (err error) {
+func (srv *Server) Start(log log.Logger) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
@@ -25,7 +26,7 @@ func (srv *Server) Start() (err error) {
 
 	srv.exit = make(chan struct{})
 	srv.running = true
-
+	srv.log = log
 	if err := srv.startListening(); err != nil {
 		return err
 	}
@@ -39,7 +40,7 @@ func (srv *Server) listenLoop(listener net.Listener) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Read ERROR")
+			srv.log.Error("Read ERROR", "Reason", err)
 			return
 		}
 		conn.Write([] byte("Hello"))

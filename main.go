@@ -1,20 +1,21 @@
 package main
 
 import (
-	"fmt"
 	"bufio"
 	"os"
 	"strings"
 	"github.com/cyyber/go-QRL/p2p"
+	"github.com/cyyber/go-QRL/log"
 )
 
 var (
 	server *p2p.Server
 	input = bufio.NewReader(os.Stdin)
+	logger = log.New()
 )
 
 func startServer() error {
-	err := server.Start()
+	err := server.Start(logger)
 	if err != nil {
 		return err
 	}
@@ -28,7 +29,7 @@ func initialize() {
 func run() {
 	err := startServer()
 	if err != nil {
-		fmt.Println(err)
+		logger.Error("error while starting server", err)
 		return
 	}
 	defer server.Stop()
@@ -40,10 +41,9 @@ func sendLoop() {
 	for {
 		txt, err := input.ReadString('\n')
 		if err != nil {
-			fmt.Print("input error: ", err)
+			logger.Error("input error: %s", err)
 		}
 		txt = strings.TrimRight(txt, "\n\r")
-		fmt.Println(txt)
 		if txt == "quit" {
 			return
 		}
@@ -51,7 +51,8 @@ func sendLoop() {
 }
 
 func main() {
+	logger.Info("Starting")
 	initialize()
 	run()
-	fmt.Println("qutting..............")
+	logger.Info("quitting..............")
 }
