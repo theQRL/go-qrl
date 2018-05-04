@@ -29,7 +29,6 @@ type RecordKeyNames struct {
 	Lvl  string
 }
 
-
 type Logger interface {
 	Trace(msg string, ctx ...interface{})
 	Debug(msg string, ctx ...interface{})
@@ -92,12 +91,12 @@ func NewContext(prefix []interface{}, suffix []interface{}) []interface{} {
 func New() Logger {
 	handler := os.Stdout
 	logger := &logger{
-		trace: log.New(handler, "TRACE ", log.Ldate|log.Ltime|log.Lshortfile),
-		debug: log.New(handler, "DEBUG ", log.Ldate|log.Ltime|log.Lshortfile),
-		info: log.New(handler, "INFO ", log.Ldate|log.Ltime|log.Lshortfile),
-		warn: log.New(handler, "WARN ", log.Ldate|log.Ltime|log.Lshortfile),
-		error: log.New(handler, "ERROR ", log.Ldate|log.Ltime|log.Lshortfile),
-		crit: log.New(handler, "CRIT ", log.Ldate|log.Ltime|log.Lshortfile),
+		trace: log.New(handler, "TRACE ", log.Ldate|log.Ltime),
+		debug: log.New(handler, "DEBUG ", log.Ldate|log.Ltime),
+		info: log.New(handler, "INFO ", log.Ldate|log.Ltime),
+		warn: log.New(handler, "WARN ", log.Ldate|log.Ltime),
+		error: log.New(handler, "ERROR ", log.Ldate|log.Ltime),
+		crit: log.New(handler, "CRIT ", log.Ldate|log.Ltime),
 	}
 	return logger
 }
@@ -178,7 +177,6 @@ func escapeString(s string) string {
 	stringBufPool.Put(e)
 	return ret
 }
-
 
 func formatLogfmtValue(value interface{}) string {
 	if value == nil {
