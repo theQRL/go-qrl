@@ -5,16 +5,31 @@ import (
 	"sync"
 	"errors"
 	"github.com/cyyber/go-QRL/log"
+	"fmt"
 )
+
+type conn struct {
+	fd		net.Conn
+	inbound	bool
+}
 
 type Server struct {
 	listener	net.Listener
 	lock		sync.Mutex
 
 	running		bool
-	exit 		chan struct{}
 	loopWG 		sync.WaitGroup
 	log			log.Logger
+
+	exit          chan struct{}
+	addpeer       chan *conn
+	delpeer       chan peerDrop
+}
+
+type peerDrop struct {
+	*Peer
+	err       error
+	requested bool // true if signaled by the peer
 }
 
 func (srv *Server) Start(log log.Logger) (err error) {
@@ -30,7 +45,7 @@ func (srv *Server) Start(log log.Logger) (err error) {
 		return err
 	}
 	srv.running = true
-	// go srv.run()
+	go srv.run()
 	return nil
 }
 
@@ -38,14 +53,12 @@ func (srv *Server) listenLoop(listener net.Listener) {
 	srv.loopWG.Add(1)
 	defer srv.loopWG.Done()
 	for {
-		conn, err := listener.Accept()
+		c, err := listener.Accept()
 		if err != nil {
 			srv.log.Error("Read ERROR", "Reason", err)
 			return
 		}
-		conn.Write([] byte("Hello"))
-		conn.Close()
-		// Create New Peer here
+		srv.addpeer <- &conn{c, true}
 	}
 }
 
@@ -73,20 +86,38 @@ func (srv *Server) startListening() error {
 	return nil
 }
 
-//TODO: To be used later
-//func (srv *Server) run() {
-//	srv.loopWG.Add(1)
-//	defer srv.loopWG.Done()
-//
-//running:
-//	for {
-//		select {
-//		case <-srv.exit:
-//			fmt.Print("Quitting...........")
-//			break running
-//		// Add peer
-//		// Remove peer
-//
-//		}
-//	}
-//}
+func (srv *Server) run() {
+	var (
+		inboundCount = 0
+	)
+
+	srv.loopWG.Add(1)
+	defer srv.loopWG.Done()
+
+running:
+	for {
+		select {
+		case <-srv.exit:
+			fmt.Print("Quitting...........")
+			break running
+		case c := <- srv.addpeer:
+			p := newPeer(&c.fd, c.inbound, &srv.log)
+			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
+			go srv.runPeer(p)
+			if p.inbound {
+				inboundCount++
+			}
+		case pd := <-srv.delpeer:
+			pd.log.Debug("Removing Peer", "err", pd.err)
+			if pd.inbound {
+				inboundCount--
+			}
+		}
+	}
+}
+
+func (srv *Server) runPeer(p *Peer) {
+	remoteRequested, err := p.run()
+
+	srv.delpeer <- peerDrop{p, err, remoteRequested}
+}

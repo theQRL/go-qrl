@@ -1,13 +1,11 @@
 package p2p
 
 import (
-	"io"
+	"github.com/cyyber/go-QRL/generated"
 	"time"
 )
 
 type Msg struct {
-	Code       uint64
-	Size       uint32 // size of the payload
-	Payload    io.Reader
-	ReceivedAt time.Time
+	msg			generated.LegacyMessage
+	ReceivedAt	time.Time
 }
