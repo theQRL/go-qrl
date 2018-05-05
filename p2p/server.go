@@ -25,12 +25,12 @@ func (srv *Server) Start(log log.Logger) (err error) {
 	}
 
 	srv.exit = make(chan struct{})
-	srv.running = true
 	srv.log = log
 	if err := srv.startListening(); err != nil {
 		return err
 	}
-
+	srv.running = true
+	// go srv.run()
 	return nil
 }
 
