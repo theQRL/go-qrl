@@ -1,0 +1,107 @@
+// Distributed under the MIT software license, see the accompanying
+// file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+
+syntax = "proto3";
+
+package qrl;
+
+import "qrl.proto";
+
+// Adding old code to refactor while keeping things working
+message LegacyMessage {
+    enum FuncName {
+        VE = 0;             // Version
+        PL = 1;             // Peers List
+        PONG = 2;           // Pong TODO: Obsolete
+
+        MR = 3;             // Message received
+        SFM = 4;            // Send Full Message
+        BK = 5;             // Block
+        FB = 6;             // Fetch request for block
+        PB = 7;             // Push Block
+        BH = 8;             // Block Height
+
+        TX = 9;            // Transfer Transaction
+        LT = 10;            // Lattice Transaction
+        EPH = 11;           // Ephemeral
+        MT = 12;            // Message Transaction
+        TK = 13;            // Token Transaction
+        TT = 14;            // Transfer Token Transaction
+        SL = 15;            // Slave Transaction
+        SYNC = 16;          // Add into synced list, if the node replies
+        CHAINSTATE = 17;    // Chain State
+        HEADERHASHES = 18;  //
+        P2P_ACK = 19;       // P2P Acknowledgement
+    }
+
+    FuncName func_name = 1;
+
+    oneof data {
+        NoData noData = 2;
+        VEData veData = 3;
+        PLData plData = 4;
+        PONGData pongData = 5;
+        MRData mrData = 6;
+        Block block = 7;
+        FBData fbData = 8;
+        PBData pbData = 9;
+        BlockHeightData bhData = 10;
+        Transaction txData = 11;
+        Transaction mtData = 12;
+        Transaction tkData = 13;
+        Transaction ttData = 14;
+        Transaction ltData = 15;
+        Transaction slData = 16;
+        EncryptedEphemeralMessage ephData = 17;
+        SYNCData syncData = 18;
+        NodeChainState chainStateData = 19;
+        NodeHeaderHash nodeHeaderHash = 20;
+        P2PAcknowledgement p2pAckData = 21;
+    }
+}
+
+message NoData { }
+
+message VEData
+{
+    string version = 1;
+    bytes genesis_prev_hash = 2;
+    uint64 rate_limit = 3;
+}
+
+message PLData
+{
+    repeated string peer_ips = 1;
+    uint32 public_port = 2;
+}
+
+message PONGData
+{
+}
+
+message MRData {
+    bytes hash = 1;                                     // FIXME: rename this to block_headerhash
+    LegacyMessage.FuncName type = 2;                    // FIXME: type/string what is this
+    bytes stake_selector = 3;
+    uint64 block_number = 4;
+    bytes prev_headerhash = 5;
+    bytes reveal_hash = 6;
+}
+
+message BKData {
+    MRData mrData = 1;
+    Block block = 2;
+}
+
+message FBData {
+    uint64 index = 1;
+}
+
+message PBData {
+    Block block = 1;
+}
+
+message SYNCData
+{
+    string state = 1;
+}

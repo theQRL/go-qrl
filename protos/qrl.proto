@@ -1,0 +1,596 @@
+// Distributed under the MIT software license, see the accompanying
+// file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+
+syntax = "proto3";
+
+package qrl;
+
+////////////////////////////
+////////////////////////////
+////////////////////////////
+//////     API       ///////
+////////////////////////////
+////////////////////////////
+////////////////////////////
+
+// This service describes the Public API used by clients (wallet/cli/etc)
+service PublicAPI
+{
+    rpc GetNodeState (GetNodeStateReq) returns (GetNodeStateResp);
+    rpc GetKnownPeers (GetKnownPeersReq) returns (GetKnownPeersResp);
+
+    rpc GetPeersStat (GetPeersStatReq) returns (GetPeersStatResp);
+
+    rpc GetStats (GetStatsReq) returns (GetStatsResp);
+    rpc GetAddressState (GetAddressStateReq) returns (GetAddressStateResp);
+    rpc GetObject(GetObjectReq) returns (GetObjectResp);
+
+    rpc GetLatestData(GetLatestDataReq) returns (GetLatestDataResp);
+
+    rpc TransferCoins (TransferCoinsReq) returns (TransferCoinsResp);
+    rpc PushTransaction (PushTransactionReq) returns (PushTransactionResp);
+
+    rpc GetMessageTxn (MessageTxnReq) returns (TransferCoinsResp);
+
+    rpc GetTokenTxn (TokenTxnReq) returns (TransferCoinsResp);
+
+    rpc GetTransferTokenTxn (TransferTokenTxnReq) returns (TransferCoinsResp);
+
+    rpc GetSlaveTxn (SlaveTxnReq) returns (TransferCoinsResp);
+
+    rpc GetLatticePublicKeyTxn (LatticePublicKeyTxnReq) returns (TransferCoinsResp);
+
+    rpc GetAddressFromPK (GetAddressFromPKReq) returns (GetAddressFromPKResp);
+
+    // ------- Ephemeral API -------
+    rpc PushEphemeralMessage (PushEphemeralMessageReq) returns (PushTransactionResp);
+    rpc CollectEphemeralMessage (CollectEphemeralMessageReq) returns (CollectEphemeralMessageResp);
+    // ------------------------------
+}
+
+// This is a place holder for testing/instrumentation APIs
+service AdminAPI
+{
+}
+
+////////////////////////////
+////////////////////////////
+////////////////////////////
+//    Request/Response    //
+////////////////////////////
+////////////////////////////
+////////////////////////////
+
+/**
+ * Empty message definition
+*/
+message Empty       { }
+
+/**
+ * Represents a query to get node state
+*/
+message GetNodeStateReq { }
+
+/**
+ * Represents the reply message to node state query
+*/
+message GetNodeStateResp {
+    NodeInfo info = 1;
+}
+
+/**
+ * Represents a query to get known peers
+*/
+message GetKnownPeersReq { }
+
+/**
+ * Represents the reply message to known peers query
+*/
+message GetKnownPeersResp {
+    NodeInfo node_info = 1;             // NodeInfo object containing node state information
+    repeated Peer known_peers = 2;      // List of Peer objects containing peer nodes detailed information
+}
+
+/**
+ * Represents a query to get connected peers stat
+*/
+message GetPeersStatReq { }
+
+/**
+ * Represents the reply message to peers stat query
+*/
+message GetPeersStatResp {
+    repeated PeerStat peers_stat = 1;    // PeerState object contains peer_ip, port and peer state information
+}
+
+/**
+ * NOT USED -> RM?
+*/
+message GetBlockReq {
+    oneof query {
+        uint64 index = 1;               // Indicates the index number in mainchain
+        bytes after_hash = 2;           // request the node that comes after hash
+    }
+}
+/**
+ * NOT USED -> RM?
+*/
+message GetBlockResp {
+    NodeInfo node_info = 1;
+    Block block = 2;
+}
+
+/**
+ * Represents a query to get statistics about node
+*/
+message GetStatsReq {
+    bool include_timeseries = 1;            // Boolean to define if block timeseries should be included in reply or not
+}
+
+/**
+ * Represents the reply message to get statistics about node
+*/
+message GetStatsResp {
+    NodeInfo node_info = 1;                 // NodeInfo object containing node state information
+    uint64 epoch = 2;                       // Current epoch
+    uint64 uptime_network = 3;              // Indicates uptime in seconds
+
+    uint64 block_last_reward = 4;           // Block reward
+    uint64 block_time_mean = 5;             // Blocktime average
+    uint64 block_time_sd = 6;               // Blocktime standrad deviation
+
+    uint64 coins_total_supply = 7;          // Total coins supply
+    uint64 coins_emitted = 8;               // Total coins emitted
+
+    repeated BlockDataPoint block_timeseries = 9;
+}
+
+message GetAddressFromPKReq {
+    bytes pk = 1;
+}
+
+message GetAddressFromPKResp {
+    bytes address = 1;
+}
+
+/**
+ * BlockDataPoint message definition
+*/
+message BlockDataPoint
+{
+    uint64 number = 1;                      // Block number
+    string difficulty = 2;                  // Block difficulty
+    uint64 timestamp = 3;                   // Block timestamp
+    uint64 time_last = 4;
+    uint64 time_movavg = 5;
+    float hash_power = 6;                   // Hash power
+
+    bytes header_hash = 7;                  // Block header hash
+    bytes header_hash_prev = 8;             // Previous block's header hash
+}
+
+message GetAddressStateReq {   bytes address = 1; }
+message GetAddressStateResp {
+    AddressState state = 1;
+}
+
+message GetObjectReq {  bytes query = 1;    }
+message GetObjectResp {
+    bool found = 1;
+    oneof result {
+        AddressState address_state = 2;
+        TransactionExtended transaction = 3;
+        BlockExtended block_extended = 4;
+    }
+}
+
+message GetLatestDataReq {
+    enum Filter {
+        ALL = 0;
+        BLOCKHEADERS = 1;
+        TRANSACTIONS = 2;
+        TRANSACTIONS_UNCONFIRMED = 3;
+    }
+    Filter filter = 1;
+    uint32 offset = 2;                      // Offset in the result list (works backwards in this case)
+    uint32 quantity = 3;                    // Number of items to retrive. Capped at 100
+}
+
+message GetLatestDataResp {
+    repeated BlockHeaderExtended blockheaders = 1;
+    repeated TransactionExtended transactions = 2;
+    repeated TransactionExtended transactions_unconfirmed = 3;
+}
+
+message TransferCoinsReq {
+    bytes master_addr = 1;                 // Transaction source address
+    repeated bytes addresses_to = 2;                   // Transaction destination address
+    repeated uint64 amounts = 3;                      // Amount. It should be expressed in Shor
+    uint64 fee = 4;                         // Fee. It should be expressed in Shor
+    bytes xmss_pk = 5;                      // XMSS Public key
+}
+
+message TransferCoinsResp {
+    TransactionExtended extended_transaction_unsigned = 1;
+}
+
+message PushTransactionReq {    Transaction transaction_signed = 1;     }
+message PushTransactionResp {
+    enum ResponseCode {
+        UNKNOWN = 0;
+        ERROR = 1;
+        VALIDATION_FAILED = 2;
+        SUBMITTED = 3;
+    }
+
+    ResponseCode error_code = 1;
+    string error_description = 2;
+    bytes tx_hash = 3;
+}
+
+message MessageTxnReq {
+    bytes master_addr = 1;
+    bytes message = 2;
+    uint64 fee = 3;
+    bytes xmss_pk = 4;
+}
+
+message TokenTxnReq {
+    bytes master_addr = 1;
+    bytes symbol = 2;
+    bytes name = 3;
+    bytes owner = 4;
+    uint64 decimals = 5;
+    repeated AddressAmount initial_balances = 6;
+    uint64 fee = 7;
+    bytes xmss_pk = 8;
+}
+
+message TransferTokenTxnReq {
+    bytes master_addr = 1;
+    repeated bytes addresses_to = 2;
+    bytes token_txhash = 3;
+    repeated uint64 amounts = 4;
+    uint64 fee = 5;
+    bytes xmss_pk = 6;
+}
+
+message SlaveTxnReq {
+    bytes master_addr = 1;
+    repeated bytes slave_pks = 2;
+    repeated uint32 access_types = 3;
+    uint64 fee = 4;
+    bytes xmss_pk = 5;
+}
+
+message LatticePublicKeyTxnReq {
+    bytes master_addr = 1;
+    bytes kyber_pk = 2;
+    bytes dilithium_pk = 3;
+    uint64 fee = 4;
+    bytes xmss_pk = 5;
+}
+
+////////////////////////////
+////////////////////////////
+////////////////////////////
+////////////////////////////
+////////////////////////////
+////////////////////////////
+////////////////////////////
+
+message GetLocalAddressesReq { }
+message GetLocalAddressesResp
+{
+    repeated bytes addresses = 1;
+}
+
+////////////////////////////
+////////////////////////////
+////////////////////////////
+//         Content        //
+////////////////////////////
+////////////////////////////
+////////////////////////////
+
+message NodeInfo
+{
+    enum State {
+        UNKNOWN = 0;
+        UNSYNCED = 1;
+        SYNCING = 2;
+        SYNCED = 3;
+        FORKED = 4;
+    }
+
+    string version = 1;
+    State  state = 2;
+    uint32 num_connections = 3;
+    uint32 num_known_peers = 4;
+    uint64 uptime = 5;               // Uptime in seconds
+    uint64 block_height = 6;
+    bytes  block_last_hash = 7;
+    string network_id = 8;
+}
+
+message StoredPeers {
+    repeated Peer peers = 1;
+}
+
+message Peer {
+    string ip = 1;
+}
+
+message AddressState {
+    bytes address = 1;
+    uint64 balance = 2;
+    uint64 nonce = 3;                           // FIXME: Discuss. 32 or 64 bits?
+    repeated bytes ots_bitfield = 4;
+    repeated bytes transaction_hashes = 5;
+    map<string, uint64> tokens = 6;
+    repeated LatticePK latticePK_list = 7;
+    map<string, uint32> slave_pks_access_type = 8;
+    uint64 ots_counter = 9;
+}
+
+message LatticePK {
+    bytes txhash = 1;
+    bytes dilithium_pk = 2;
+    bytes kyber_pk = 3;
+}
+
+message AddressAmount {
+    bytes address = 1;
+    uint64 amount = 2;
+}
+
+message BlockHeader {
+    // Header
+    bytes hash_header = 1;
+
+    uint64 block_number = 2;
+    uint64 timestamp_seconds = 3;
+    bytes hash_header_prev = 4;
+    uint64 reward_block = 5;
+    uint64 reward_fee = 6;
+    bytes merkle_root = 7;
+
+    uint32 mining_nonce = 8;
+    uint64 extra_nonce = 9;
+}
+
+message BlockHeaderExtended {
+    BlockHeader header = 1;
+    TransactionCount transaction_count = 2;
+}
+
+message TransactionCount {
+    map<uint32, uint32> count = 1;
+}
+
+message TransactionExtended {
+    BlockHeader header = 1;
+    Transaction tx = 2;
+    bytes addr_from = 3;
+    uint64 size = 4;
+}
+
+message BlockExtended {
+    BlockHeader header = 1;
+    repeated TransactionExtended extended_transactions = 2;
+
+    // This is only applicable to genesis blocks
+    repeated GenesisBalance genesis_balance = 3;
+    uint64 size = 4;
+}
+
+message Block {
+    BlockHeader header = 1;
+    repeated Transaction transactions = 2;
+
+    // This is only applicable to genesis blocks
+    repeated GenesisBalance genesis_balance = 3;
+}
+
+message GenesisBalance
+{
+    bytes address = 1;                     // Address is string only here to increase visibility
+    uint64 balance = 2;
+}
+
+message BlockMetaDataList {
+    repeated BlockMetaData block_number_hashes = 1;
+}
+
+message Transaction {
+    bytes master_addr = 1;
+    uint64 fee = 2;
+    bytes public_key = 3;
+    bytes signature = 4;
+    uint64 nonce = 5;
+    bytes transaction_hash = 6;
+
+    oneof transactionType {
+        Transfer transfer = 7;
+        CoinBase coinbase = 8;
+        LatticePublicKey latticePK = 9;
+        Message message = 10;
+        Token token = 11;
+        TransferToken transfer_token = 12;
+        Slave slave = 13;
+    }
+
+    //////////
+    message Transfer {
+        repeated bytes addrs_to = 1;
+        repeated uint64 amounts = 2;
+    }
+
+    message CoinBase {
+        bytes addr_to = 1;
+        uint64 amount = 2;
+    }
+
+    message LatticePublicKey {
+        bytes kyber_pk = 1;
+        bytes dilithium_pk = 2;
+    }
+
+    message Message {
+        bytes message_hash = 1;
+    }
+
+    message Token {
+        bytes symbol = 1;
+        bytes name = 2;
+        bytes owner = 3;
+        uint64 decimals = 4;
+        repeated AddressAmount initial_balances = 5;
+    }
+
+    message TransferToken {
+        bytes token_txhash = 1;
+        repeated bytes addrs_to = 2;
+        repeated uint64 amounts = 3;
+    }
+
+    message Slave {
+        repeated bytes slave_pks = 1;
+        repeated uint32 access_types = 2;
+    }
+}
+
+message TokenList {
+    repeated bytes token_txhash = 1;
+}
+
+message TokenMetadata {
+    bytes token_txhash = 1;
+    repeated bytes transfer_token_tx_hashes = 2;
+}
+
+////////////////////////////
+////////////////////////////
+////////////////////////////
+//       Ephemeral        //
+////////////////////////////
+////////////////////////////
+////////////////////////////
+
+message CollectEphemeralMessageReq {
+    bytes msg_id = 1;
+}
+
+message CollectEphemeralMessageResp {
+    EphemeralMetadata ephemeral_metadata = 1;
+}
+
+message PushEphemeralMessageReq {
+    EncryptedEphemeralMessage ephemeral_message = 1;
+}
+
+message EncryptedEphemeralMessage {
+    bytes msg_id = 1;                       // b'NEW' or PRF
+    uint64 ttl = 2;                         // Expiry Timestamp in seconds
+    uint64 ttr = 3;                         // Time to relay
+    message Channel {
+        bytes enc_aes256_symkey = 4;        // aes256_symkey encrypted by kyber
+    }
+    Channel channel = 5;
+    uint64 nonce = 6;                       // nonce
+    bytes payload = 7;                      // JSON content, encrypted by aes256_symkey
+}
+
+message EphemeralChannelPayload {
+    bytes prf512_seed = 1;                  // PRF512 seed used for further communication after channel established
+    bytes dilithium_signature = 2;          // Sign hash of (msg_id, ttl, enc_aes256_symkey, prf512_seed, addr_from,
+                                            // data)
+    bytes addr_from = 3;                    // Sender address
+    bytes data = 4;                         // Could be anything, plain-text, binary, JSON etc.
+}
+
+message EphemeralMessagePayload {
+    bytes addr_from = 1;                    // Sender address
+    bytes data = 2;                         // Could be anything, plain-text, binary, JSON etc.
+}
+
+message LatticePublicKeys {
+    repeated Transaction lattice_keys = 1;
+}
+
+message EphemeralMetadata {
+    repeated EncryptedEphemeralMessage encrypted_ephemeral_message_list = 2;
+}
+////////////////////////////
+
+message AddressList {
+    repeated bytes addresses = 1;
+}
+
+message BlockHeightData {
+    uint64 block_number = 1;
+    bytes block_headerhash = 2;
+    bytes cumulative_difficulty = 3;
+}
+
+message BlockMetaData {
+    bool is_orphan = 1;
+    bytes block_difficulty = 2;
+    bytes cumulative_difficulty = 3;
+    repeated bytes child_headerhashes = 4;
+    repeated bytes last_N_headerhashes = 5;     // Keeps last N headerhashes, for measurement of timestamp difference
+}
+
+message BlockNumberMapping {
+    bytes headerhash = 1;
+    bytes prev_headerhash = 2;
+}
+
+message StateLoader {
+    repeated bytes addresses = 1;
+    repeated bytes token_txhash = 2;
+    repeated bytes txhash = 3;
+    uint64 total_coin_supply = 4;
+}
+
+message StateObjects {
+    repeated bytes state_loaders = 1;
+}
+
+message LRUStateCache {
+
+}
+
+message PeerStat {
+    bytes peer_ip = 1;
+    uint32 port = 2;
+    NodeChainState node_chain_state = 3;
+}
+
+message NodeChainState {
+    uint64 block_number = 1;
+    bytes header_hash = 2;
+    bytes cumulative_difficulty = 3;
+    uint64 timestamp = 4;
+}
+
+message NodeHeaderHash {
+    uint64 block_number = 1;
+    repeated bytes headerhashes = 2;
+}
+
+message P2PAcknowledgement {
+    uint32 bytes_processed = 1;
+}
+
+message PeerInfo {
+    bytes peer_ip = 1;
+    uint32 port = 2;
+    uint32 banned_timestamp = 3;
+    uint32 credibility = 4;
+    repeated uint32 last_connections_timestamp = 5;
+}
+
+message Peers {
+    repeated PeerInfo peer_info_list = 1;
+}
