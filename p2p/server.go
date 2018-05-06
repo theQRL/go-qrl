@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/cyyber/go-QRL/log"
 	"fmt"
+	"github.com/ethereum/go-ethereum/p2p/discover"
 )
 
 type conn struct {
@@ -88,6 +89,7 @@ func (srv *Server) startListening() error {
 
 func (srv *Server) run() {
 	var (
+		peers        = make(map[discover.NodeID]*Peer)
 		inboundCount = 0
 	)
 
@@ -113,6 +115,14 @@ running:
 				inboundCount--
 			}
 		}
+	}
+	for _, p := range peers {
+		p.Disconnect(DiscQuitting)
+	}
+
+	for len(peers) > 0 {
+		p := <-srv.delpeer
+		p.log.Trace("")
 	}
 }
 

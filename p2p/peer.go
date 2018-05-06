@@ -21,9 +21,9 @@ type Peer struct {
 
 func newPeer(conn *net.Conn, inbound bool, log *log.Logger) *Peer {
 	p := &Peer {
-		conn: conn,
+		conn: *conn,
 		inbound: inbound,
-		log: log,
+		log: *log,
 	}
 	return p
 }
@@ -70,17 +70,58 @@ func (p *Peer) pingLoop() {
 }
 
 func (p* Peer) handle(msg Msg) error {
-	switch {
-
+	switch msg.msg.FuncName {
+	case generated.LegacyMessage_VE:
+		p.log.Debug("Received VE MSG")
+	case generated.LegacyMessage_PL:
+		p.log.Debug("Received PL MSG")
+	case generated.LegacyMessage_PONG:
+		p.log.Debug("Received PONG MSG")
+	case generated.LegacyMessage_MR:
+	case generated.LegacyMessage_SFM:
+	case generated.LegacyMessage_BK:
+	case generated.LegacyMessage_FB:
+	case generated.LegacyMessage_PB:
+	case generated.LegacyMessage_BH:
+	case generated.LegacyMessage_TX:
+	case generated.LegacyMessage_LT:
+	case generated.LegacyMessage_EPH:
+	case generated.LegacyMessage_MT:
+	case generated.LegacyMessage_TK:
+	case generated.LegacyMessage_TT:
+	case generated.LegacyMessage_SL:
+	case generated.LegacyMessage_SYNC:
+	case generated.LegacyMessage_CHAINSTATE:
+	case generated.LegacyMessage_HEADERHASHES:
+	case generated.LegacyMessage_P2P_ACK:
 	}
 	return nil
 }
 
 func (p *Peer) run() (remoteRequested bool, err error) {
+	var (
+		writeStart = make(chan struct{}, 1)
+		writeErr = make(chan error, 1)
+		readErr	 = make(chan error, 1)
+	)
 	p.wg.Add(2)
-	readErr := make(chan error, 1)
 	go p.readLoop(readErr)
 	go p.pingLoop()
+
+loop:
+	for {
+		select {
+		case err = <-writeErr:
+			if err != nil {
+				break loop
+			}
+			writeStart <- struct{}{}
+		case err = <-readErr:
+			if err != nil {
+				break loop
+			}
+		}
+	}
 }
 
 func convertBytesToLong(b []byte) uint32 {
