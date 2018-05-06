@@ -16,6 +16,7 @@ type Peer struct {
 
 	wg			sync.WaitGroup
 	closed		chan struct{}
+	disc     	chan DiscReason
 	log			log.Logger
 }
 
@@ -50,6 +51,7 @@ func (p *Peer) ReadMsg() (msg Msg, err error){
 
 func (p *Peer) readLoop(errc chan<- error) {
 	defer p.wg.Done()
+	p.log.Debug("initiating readloop")
 	for {
 		msg, err := p.ReadMsg()
 		if err != nil {
@@ -57,6 +59,7 @@ func (p *Peer) readLoop(errc chan<- error) {
 			return
 		}
 		msg.ReceivedAt = time.Now()
+		p.log.Debug("Received msg")
 		if err = p.handle(msg); err != nil {
 			errc <- err
 			return
@@ -103,6 +106,7 @@ func (p *Peer) run() (remoteRequested bool, err error) {
 		writeStart = make(chan struct{}, 1)
 		writeErr = make(chan error, 1)
 		readErr	 = make(chan error, 1)
+		reason 	 DiscReason
 	)
 	p.wg.Add(2)
 	go p.readLoop(readErr)
@@ -117,10 +121,28 @@ loop:
 			}
 			writeStart <- struct{}{}
 		case err = <-readErr:
-			if err != nil {
+			if r, ok := err.(DiscReason); ok {
 				break loop
+				reason = r
+			} else {
+				reason = DiscNetworkError
 			}
 		}
+	}
+	close(p.closed)
+	p.close(reason)
+	p.wg.Wait()
+	return remoteRequested, err
+}
+
+func (p *Peer) close(err error) {
+	p.conn.Close()
+}
+
+func (p *Peer) Disconnect(reason DiscReason) {
+	select {
+	case p.disc <- reason:
+	case <-p.closed:
 	}
 }
 

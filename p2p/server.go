@@ -5,8 +5,6 @@ import (
 	"sync"
 	"errors"
 	"github.com/cyyber/go-QRL/log"
-	"fmt"
-	"github.com/ethereum/go-ethereum/p2p/discover"
 )
 
 type conn struct {
@@ -41,6 +39,8 @@ func (srv *Server) Start(log log.Logger) (err error) {
 	}
 
 	srv.exit = make(chan struct{})
+	srv.addpeer = make(chan *conn)
+	srv.delpeer = make(chan peerDrop)
 	srv.log = log
 	if err := srv.startListening(); err != nil {
 		return err
@@ -55,10 +55,12 @@ func (srv *Server) listenLoop(listener net.Listener) {
 	defer srv.loopWG.Done()
 	for {
 		c, err := listener.Accept()
+		srv.log.Debug("New Peer joined")
 		if err != nil {
 			srv.log.Error("Read ERROR", "Reason", err)
 			return
 		}
+		srv.log.Debug("called addpeer")
 		srv.addpeer <- &conn{c, true}
 	}
 }
@@ -89,7 +91,7 @@ func (srv *Server) startListening() error {
 
 func (srv *Server) run() {
 	var (
-		peers        = make(map[discover.NodeID]*Peer)
+		peers        = make(map[string]*Peer)
 		inboundCount = 0
 	)
 
@@ -100,17 +102,19 @@ running:
 	for {
 		select {
 		case <-srv.exit:
-			fmt.Print("Quitting...........")
+			srv.log.Debug("Quitting!!!")
 			break running
-		case c := <- srv.addpeer:
-			p := newPeer(&c.fd, c.inbound, &srv.log)
+		case c := <-srv.addpeer:
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
+			p := newPeer(&c.fd, c.inbound, &srv.log)
 			go srv.runPeer(p)
+			peers[c.fd.RemoteAddr().String()] = p
 			if p.inbound {
 				inboundCount++
 			}
 		case pd := <-srv.delpeer:
 			pd.log.Debug("Removing Peer", "err", pd.err)
+			delete(peers, pd.conn.RemoteAddr().String())
 			if pd.inbound {
 				inboundCount--
 			}
