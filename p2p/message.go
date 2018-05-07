@@ -6,6 +6,6 @@ import (
 )
 
 type Msg struct {
-	msg			generated.LegacyMessage
+	msg			*generated.LegacyMessage
 	ReceivedAt	time.Time
 }
