@@ -91,6 +91,26 @@ func (p* Peer) handle(msg Msg) error {
 	switch msg.msg.FuncName {
 	case generated.LegacyMessage_VE:
 		p.log.Debug("Received VE MSG")
+		if msg.msg.GetVeData() == nil {
+			out := Msg{}
+			veData := generated.VEData{
+				Version: "",
+				GenesisPrevHash: []byte("0"),
+				RateLimit: 100,
+			}
+			out.msg = &generated.LegacyMessage {
+				FuncName: generated.LegacyMessage_VE,
+				Data: &generated.LegacyMessage_VeData{
+					VeData: &veData,
+				},
+			}
+			err := p.WriteMsg(out)
+			return err
+		}
+		veData := msg.msg.GetVeData()
+		p.log.Info("", "version:", veData.Version,
+			"GenesisPrevHash:", veData.GenesisPrevHash, "RateLimit:", veData.RateLimit)
+
 	case generated.LegacyMessage_PL:
 		p.log.Debug("Received PL MSG")
 	case generated.LegacyMessage_PONG:
