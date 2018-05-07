@@ -42,36 +42,29 @@ type APIConfig struct {
 }
 
 type DevConfig struct {
-	version              string
-	genesisPrevHeadehash []byte
-
+	genesis              *GenesisConfig
 	blockLeadTimestamp   uint32
 	blockMaxDrift        uint16
 	maxFutureBlockLength uint16
 	maxMarginBlocKNumber uint16
 	minMarginBlockNumber uint16
+	genesisTimestamp     uint32
 
 	reorgLimit uint64
 
 	messageReceiptTimeout uint32
 	messageBufferSize     uint32
 
-	maxCoinSupply uint64
-	suppliedCoins uint64
-
-	maxOTSTracking uint16
+	maxOTSTracking  uint16
+	otsBitFieldSize uint16
 
 	miningNonceOffset uint16
 	extraNonceOffset  uint16
 	miningBlobSize    uint16
 
-	otsBitFieldSize uint16
-
 	defaultNonce            uint8
 	defaultAccountBalance   uint64
 	miningSetpointBlocktime uint32
-	genesisDifficulty       uint64
-	coinbaseAddress         []byte
 
 	dbName              string
 	peersFilename       string
@@ -79,12 +72,9 @@ type DevConfig struct {
 	walletDatFilename   string
 	bannedPeersFilename string
 
-	genesisTimestamp uint32
+	transaction *TransactionConfig
 
-	transactionMultiOutputLimit uint8
-
-	maxTokenSymbolLength uint8
-	maxTokenNameLength   uint8
+	token *TokenConfig
 
 	nMeasurement uint8
 	kp           uint8
@@ -99,4 +89,22 @@ type DevConfig struct {
 	syncDelayMining    uint8
 
 	blockTimeSeriesSize uint32
+}
+
+type TransactionConfig struct {
+	multiOutputLimit uint8
+}
+
+type TokenConfig struct {
+	maxSymbolLength uint8
+	maxNameLength   uint8
+}
+
+type GenesisConfig struct {
+	version              string
+	genesisPrevHeadehash []byte
+	maxCoinSupply        uint64
+	suppliedCoins        uint64
+	genesisDifficulty    uint64
+	coinbaseAddress      []byte
 }
