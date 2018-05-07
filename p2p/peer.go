@@ -8,6 +8,7 @@ import (
 	"github.com/cyyber/go-QRL/generated"
 	"github.com/golang/protobuf/proto"
 	"time"
+	"encoding/binary"
 )
 
 type Peer struct {
@@ -30,6 +31,20 @@ func newPeer(conn *net.Conn, inbound bool, log *log.Logger) *Peer {
 }
 
 func (p *Peer) WriteMsg(msg Msg) error {
+	data, err := proto.Marshal(msg.msg)
+	if err != nil {
+		p.log.Error("Error Parsing Data")
+		return err
+	}
+
+	bs := make([]byte, 4)
+	binary.BigEndian.PutUint32(bs, uint32(len(data)))
+	out := append(bs, data...)
+
+	_, err = p.conn.Write(out)
+	if err != nil {
+		p.log.Error("Error while writing message on socket", "error", err)
+	}
 	return nil
 }
 
@@ -45,7 +60,7 @@ func (p *Peer) ReadMsg() (msg Msg, err error){
 	}
 	message := &generated.LegacyMessage{}
 	err = proto.Unmarshal(buf, message)
-
+	msg.msg = message
 	return msg, err
 }
 
