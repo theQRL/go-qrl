@@ -5,6 +5,8 @@ import (
 	"sync"
 	"errors"
 	"github.com/cyyber/go-QRL/log"
+	"github.com/cyyber/go-QRL/core"
+	"fmt"
 )
 
 type conn struct {
@@ -13,16 +15,18 @@ type conn struct {
 }
 
 type Server struct {
-	listener	net.Listener
-	lock		sync.Mutex
+	config *core.Config
 
-	running		bool
-	loopWG 		sync.WaitGroup
-	log			log.Logger
+	listener net.Listener
+	lock     sync.Mutex
 
-	exit          chan struct{}
-	addpeer       chan *conn
-	delpeer       chan peerDrop
+	running bool
+	loopWG  sync.WaitGroup
+	log     log.Logger
+
+	exit    chan struct{}
+	addpeer chan *conn
+	delpeer chan peerDrop
 }
 
 type peerDrop struct {
@@ -31,13 +35,14 @@ type peerDrop struct {
 	requested bool // true if signaled by the peer
 }
 
-func (srv *Server) Start(log log.Logger) (err error) {
+func (srv *Server) Start(log log.Logger, config *core.Config) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
 		return errors.New("server is already running")
 	}
 
+	srv.config = config
 	srv.exit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan peerDrop)
@@ -80,7 +85,8 @@ func (srv *Server) Stop() {
 }
 
 func (srv *Server) startListening() error {
-	listener, err := net.Listen("tcp", ":9000")  // Move to config
+	bindingAddress := fmt.Sprintf("%s:%d", srv.config.User.Node.BindingIP, srv.config.User.Node.LocalPort)
+	listener, err := net.Listen("tcp", bindingAddress)
 	if err != nil {
 		return err
 	}
