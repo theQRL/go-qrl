@@ -2,30 +2,36 @@ package p2p
 
 import (
 	"net"
-	"github.com/cyyber/go-QRL/log"
+	"github.com/cyyber/go-qrl/log"
 	"sync"
 	"io"
-	"github.com/cyyber/go-QRL/generated"
+	"github.com/cyyber/go-qrl/generated"
 	"github.com/golang/protobuf/proto"
 	"time"
 	"encoding/binary"
+	"github.com/willf/bloom"
+	"github.com/cyyber/go-qrl/core"
 )
 
 type Peer struct {
-	conn		net.Conn
-	inbound		bool
+	conn    net.Conn
+	inbound bool
 
-	wg			sync.WaitGroup
-	closed		chan struct{}
-	disc     	chan DiscReason
-	log			log.Logger
+	wg     sync.WaitGroup
+	closed chan struct{}
+	disc   chan DiscReason
+	log    log.Logger
+	filter *bloom.BloomFilter
+	config *core.Config
 }
 
-func newPeer(conn *net.Conn, inbound bool, log *log.Logger) *Peer {
+func newPeer(conn *net.Conn, inbound bool, log *log.Logger, filter *bloom.BloomFilter, config *core.Config) *Peer {
 	p := &Peer {
 		conn: *conn,
 		inbound: inbound,
 		log: *log,
+		filter: filter,
+		config: config,
 	}
 	return p
 }
@@ -116,6 +122,34 @@ func (p* Peer) handle(msg Msg) error {
 	case generated.LegacyMessage_PONG:
 		p.log.Debug("Received PONG MSG")
 	case generated.LegacyMessage_MR:
+		mrData := msg.msg.GetMrData()
+		if p.filter.Test(mrData.Hash) {
+			return nil
+		}
+
+		switch mrData.Type {
+		case generated.LegacyMessage_BK:
+			if mrData.BlockNumber > chainHeight + p.config.Dev.MaxMarginBlocKNumber {
+				p.log.Debug("Skipping block #%s as beyond lead limit", "Block #", mrData.BlockNumber)
+				return nil
+			}
+			if mrData.BlockNumber < chainHeight - p.config.Dev.MinMarginBlockNumber {
+				p.log.Debug("'Skipping block #%s as beyond the limit", "Block #", mrData.BlockNumber)
+				return nil
+			}
+			if !IsBlockExist(mrData.PrevHeaderhash) {
+				p.log.Debug("Missing Parent Block", "Block:", mrData.Hash,
+					"Parent Block ", mrData.PrevHeaderhash)
+				return nil
+			}
+			// Request for full message
+			// Check if its already being feeded by any other peer
+		case generated.LegacyMessage_TX:
+			// Check Transaction pool Size,
+			// if full then ignore
+		default:
+			//connection lost
+		}
 	case generated.LegacyMessage_SFM:
 	case generated.LegacyMessage_BK:
 	case generated.LegacyMessage_FB:

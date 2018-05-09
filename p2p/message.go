@@ -1,7 +1,7 @@
 package p2p
 
 import (
-	"github.com/cyyber/go-QRL/generated"
+	"github.com/cyyber/go-qrl/generated"
 	"time"
 )
 

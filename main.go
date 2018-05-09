@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"os"
 	"strings"
-	"github.com/cyyber/go-QRL/p2p"
-	"github.com/cyyber/go-QRL/log"
-	"github.com/cyyber/go-QRL/core"
+	"github.com/cyyber/go-qrl/p2p"
+	"github.com/cyyber/go-qrl/log"
+	"github.com/cyyber/go-qrl/core"
 )
 
 var (

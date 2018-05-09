@@ -4,9 +4,10 @@ import (
 	"net"
 	"sync"
 	"errors"
-	"github.com/cyyber/go-QRL/log"
-	"github.com/cyyber/go-QRL/core"
+	"github.com/cyyber/go-qrl/log"
+	"github.com/cyyber/go-qrl/core"
 	"fmt"
+	"github.com/willf/bloom"
 )
 
 type conn struct {
@@ -27,6 +28,8 @@ type Server struct {
 	exit    chan struct{}
 	addpeer chan *conn
 	delpeer chan peerDrop
+
+	filter *bloom.BloomFilter
 }
 
 type peerDrop struct {
@@ -47,6 +50,8 @@ func (srv *Server) Start(log log.Logger, config *core.Config) (err error) {
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan peerDrop)
 	srv.log = log
+
+	srv.filter = bloom.New(200000, 5)
 	if err := srv.startListening(); err != nil {
 		return err
 	}
@@ -112,7 +117,7 @@ running:
 			break running
 		case c := <-srv.addpeer:
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
-			p := newPeer(&c.fd, c.inbound, &srv.log)
+			p := newPeer(&c.fd, c.inbound, &srv.log, srv.filter, srv.config)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
 			if p.inbound {

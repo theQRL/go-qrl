@@ -4,7 +4,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/filter"
-	"github.com/cyyber/go-QRL/log"
+	"github.com/cyyber/go-qrl/log"
 	"sync"
 )
 
