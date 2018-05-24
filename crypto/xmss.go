@@ -53,7 +53,7 @@ type XMSSInterface interface {
 
 	Seed() string
 
-	Sign([] byte) []byte
+	Sign(message goqrllib.UcharVector) []byte
 }
 
 type XMSS struct {
@@ -166,6 +166,8 @@ func (x *XMSS) Seed() goqrllib.UcharVector {
 	return x.xmss.GetSeed()
 }
 
-func (x *XMSS) Sign(message goqrllib.UcharVector) goqrllib.UcharVector {
-	return x.xmss.Sign(message)
+func (x *XMSS) Sign(message goqrllib.UcharVector) []byte {
+	msg := misc.UcharVector{}
+	msg.New(x.xmss.Sign(message))
+	return msg.GetBytes()
 }
