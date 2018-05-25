@@ -15,7 +15,7 @@ import (
 
 type TransactionInterface interface {
 
-	Size() uint64
+	Size() int
 
 	PBData() *generated.Transaction
 
@@ -29,11 +29,9 @@ type TransactionInterface interface {
 
 	AddrFrom() []byte
 
-	OtsKey() uint64
+	OtsKey() uint16
 
 	GetOtsFromSignature(signature []byte) uint64
-
-	CalcAllowedDecimals(value uint64) uint64
 
 	PK() []byte
 
@@ -45,9 +43,9 @@ type TransactionInterface interface {
 
 	Txhash() []byte
 
-	UpdateTxhash()
+	UpdateTxhash(hashableBytes goqrllib.UcharVector)
 
-	GetHashableBytes() []byte
+	GetHashableBytes() goqrllib.UcharVector
 
 	Sign(xmss crypto.XMSS, message goqrllib.UcharVector)
 
@@ -55,9 +53,7 @@ type TransactionInterface interface {
 
 	applyStateChangesForPK(addressesState map[string]core.AddressState)
 
-	//revertStateChanges(addressesState map[string]core.AddressState, state)
-	//
-	//revertStateChangesForPK(addressesState map[string]core.AddressState, state)
+	revertStateChangesForPK(addressesState map[string]core.AddressState, state *core.State)
 
 	SetAffectedAddress(addressesState map[string]core.AddressState)
 
@@ -65,9 +61,9 @@ type TransactionInterface interface {
 
 	ValidateXMSS(hashableBytes goqrllib.UcharVector) bool
 
-	ValidateSlave() bool
+	ValidateSlave(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool
 
-	FromJSON(jsonData string) *generated.Transaction
+	FromJSON(jsonData string) *Transaction
 
 	JSON() (string, error)
 
@@ -163,6 +159,10 @@ func (tx *Transaction) UpdateTxhash(hashableBytes goqrllib.UcharVector) {
 	tx.data.TransactionHash = tmp.GetBytes()
 }
 
+func (tx *Transaction) GetHashableBytes() goqrllib.UcharVector {
+	//TODO When State is ready
+}
+
 func (tx *Transaction) Sign(xmss crypto.XMSS, message goqrllib.UcharVector) {
 	tx.data.Signature = xmss.Sign(message)
 }
@@ -182,11 +182,7 @@ func (tx *Transaction) applyStateChangesForPK(addressesState map[string]core.Add
 	}
 }
 
-//func (tx *Transaction) revertStateChanges(addressesState map[string]core.AddressState, state) {
-//
-//}
-//
-func (tx *Transaction) revertStateChangesForPK(addressesState map[string]core.AddressState, state) {
+func (tx *Transaction) revertStateChangesForPK(addressesState map[string]core.AddressState, state *core.State) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	if _, ok := addressesState[addrFromPK]; ok {
 		if string(tx.AddrFrom()) != addrFromPK {
@@ -202,9 +198,9 @@ func (tx *Transaction) SetAffectedAddress(addressesState map[string]core.Address
 	addressesState[string(tx.PK())] = core.AddressState{}
 }
 
-func (tx *Transaction) ValidateTransactionPool(transactionPool) {
-	//TODO When State is ready
-}
+//func (tx *Transaction) ValidateTransactionPool(transactionPool) {
+//	//TODO When Transaction Pool is ready
+//}
 
 func (tx *Transaction) ValidateXMSS(hashableBytes goqrllib.UcharVector) bool {
 	if !goqrllib.XmssFastVerify(hashableBytes,
@@ -249,4 +245,26 @@ func (tx *Transaction) FromJSON(jsonData string) *Transaction {
 func (tx *Transaction) JSON() (string, error) {
 	ma := jsonpb.Marshaler{}
 	return ma.MarshalToString(tx.data)
+}
+
+func ProtoToTransaction(protoTX *generated.Transaction) interface{} {
+	var tx TransactionInterface{}
+	switch _ := protoTX.TransactionType.(type) {
+	case *generated.Transaction_Transfer_:
+		tx = &TransferTransaction{}
+	case *generated.Transaction_Coinbase:
+		tx = &CoinBase{}
+	case *generated.Transaction_Token_:
+		tx = &TokenTransaction{}
+	case *generated.Transaction_TransferToken_:
+		tx = &TransferTokenTransaction{}
+	case *generated.Transaction_Message_:
+		tx = &MessageTransaction{}
+	}
+
+	if tx != nil {
+		tx.data = protoTX
+	}
+
+	return &TokenTransaction{}
 }
