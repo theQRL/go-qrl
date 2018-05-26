@@ -228,10 +228,6 @@ func IsValidAddress(address []byte) bool {
 	return false
 }
 
-func (a *AddressState) Serialize() string {
-	return proto.CompactTextString(a.data)
-}
-
 func Create(address []byte, nonce uint64, balance uint64) *AddressState {
 	a := &AddressState{}
 	a.data.Address = address
@@ -244,4 +240,18 @@ func Create(address []byte, nonce uint64, balance uint64) *AddressState {
 func GetDefault(address []byte) *AddressState {
 	c := Config{}
 	return Create(address, uint64(c.Dev.DefaultNonce), c.Dev.DefaultAccountBalance)
+}
+
+func (a *AddressState) Serialize() ([]byte, error) {
+	return proto.Marshal(a.data)
+}
+
+func DeSerializeAddressState(data []byte) (*AddressState, error) {
+	a := &AddressState{}
+
+	if err := proto.Unmarshal(data, a.data); err != nil {
+		return a, err
+	}
+
+	return a, nil
 }
