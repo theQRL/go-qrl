@@ -74,7 +74,7 @@ func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]core.A
 	tx.applyStateChangesForPK(addressesState)
 }
 
-func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state) {
+func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
 		addrState.RemoveTransactionHash(tx.Txhash())

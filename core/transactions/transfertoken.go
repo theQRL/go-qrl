@@ -145,7 +145,7 @@ func (tx *TransferTokenTransaction) ApplyStateChanges(addressesState map[string]
 	}
 }
 
-func (tx *TransferTokenTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state) {
+func (tx *TransferTokenTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
 	tx.revertStateChangesForPK(addressesState, state)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {

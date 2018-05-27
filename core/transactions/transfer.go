@@ -137,7 +137,7 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]core.
 	}
 }
 
-func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state) {
+func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
 	tx.revertStateChangesForPK(addressesState, state)
 
 	//TODO: Fix when State is ready

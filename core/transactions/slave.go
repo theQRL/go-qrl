@@ -100,7 +100,7 @@ func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]core.Add
 	}
 }
 
-func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state) {
+func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
 	tx.revertStateChangesForPK(addressesState, state)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
