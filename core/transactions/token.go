@@ -8,6 +8,8 @@ import (
 	"github.com/theQRL/qrllib/goqrllib"
 	"github.com/cyyber/go-qrl/core"
 	"reflect"
+	"errors"
+	"math"
 )
 
 type TokenTransaction struct {
@@ -95,7 +97,11 @@ func (tx *TokenTransaction) validateCustom() bool {
 		}
 	}
 
-	allowedDecimals := CalcAllowedDecimals(sumOfInitialBalances)
+	allowedDecimals, err := CalcAllowedDecimals(sumOfInitialBalances)
+
+	if err != nil {
+		return false
+	}
 
 	if tx.Decimals() > allowedDecimals {
 		tx.log.Warn("Decimal is greater than maximum allowed decimal")
@@ -197,7 +203,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]core.Add
 	}
 }
 
-func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]core.AddressState) {
+func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
@@ -239,7 +245,7 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]core.Ad
 			}
 		}
 		addrState.IncreaseNonce()
-		addrState.UnsetOTSKey(uint64(tx.OtsKey()))
+		addrState.UnsetOTSKey(uint64(tx.OtsKey()), state)
 	}
 }
 
@@ -275,4 +281,12 @@ func CreateToken(
 	tokenTx.InitialBalances = initialBalance
 
 	return tx
+}
+
+func CalcAllowedDecimals(value uint64) (uint64, error) {
+	if value == 0 {
+		return 0, errors.New("value cannot be 0")
+	}
+
+	return uint64(math.Max(math.Floor(19 - math.Log10(float64(value))), 0)), nil
 }
