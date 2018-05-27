@@ -26,6 +26,12 @@ type EphemeralConfig struct {
 	AcceptEphemeral bool
 }
 
+type NTPConfig struct {
+	Retries int
+	Servers []string
+	Refresh uint64
+}
+
 type TransactionPoolConfig struct {
 	TransactionPoolSize          uint64
 	PendingTransactionPoolSize   uint64
@@ -44,7 +50,7 @@ type UserConfig struct {
 	Miner *MinerConfig
 	Ephemeral *EphemeralConfig
 
-	NtpServers    []string
+	NTP *NTPConfig
 
 	ChainStateTimeout         uint16
 	ChainStateBroadcastPeriod uint16
@@ -172,6 +178,12 @@ func GetUserConfig() (user *UserConfig) {
 		AcceptEphemeral: false,
 	}
 
+	ntp := &NTPConfig {
+		Retries: 6,
+		Servers: []string{"pool.ntp.org", "ntp.ubuntu.com"},
+		Refresh: 12 * 60 * 60,
+	}
+
 	transactionPool := &TransactionPoolConfig {
 		TransactionPoolSize: 25000,
 		PendingTransactionPoolSize: 75000,
@@ -214,7 +226,7 @@ func GetUserConfig() (user *UserConfig) {
 		Miner: miner,
 		Ephemeral: ephemeral,
 
-		NtpServers: []string{"pool.ntp.org", "ntp.ubuntu.com"},
+		NTP: ntp,
 
 		ChainStateTimeout: 180,
 		ChainStateBroadcastPeriod: 30,
