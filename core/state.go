@@ -7,7 +7,6 @@ import (
 	"github.com/cyyber/go-qrl/generated"
 	"github.com/golang/protobuf/proto"
 	"encoding/binary"
-	"math/big"
 	"reflect"
 	"github.com/cyyber/go-qrl/core/transactions"
 	"github.com/cyyber/go-qrl/core/metadata"
@@ -327,7 +326,7 @@ func (s *State) RemoveLastTransactions(block *Block) error {
 	return nil
 }
 
-func (s *State) CreateTokenMetadata(token *transactions.TokenTransaction) error {
+func (s *State) AddTokenMetadata(token *transactions.TokenTransaction) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -521,9 +520,11 @@ func (s *State) UpdateTxMetadata(block *Block) error {
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
-			err = s.CreateTokenMetadata(tx)
+			t := tx.(*transactions.TokenTransaction)
+			err = s.AddTokenMetadata(t)
 		case *generated.Transaction_TransferToken_:
-			err = s.UpdateTokenMetadata(tx)
+			t := tx.(*transactions.TransferTokenTransaction)
+			err = s.UpdateTokenMetadata(t)
 		}
 
 		if err != nil {
@@ -560,9 +561,11 @@ func (s *State) RollbackTxMetadata(block *Block) error {
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
-			err = s.RemoveTokenMetadata(tx)
+			t := tx.(*transactions.TokenTransaction)
+			err = s.RemoveTokenMetadata(t)
 		case *generated.Transaction_TransferToken_:
-			err = s.RemoveTransferTokenMetadata(tx)
+			t := tx.(*transactions.TransferTokenTransaction)
+			err = s.RemoveTransferTokenMetadata(t)
 		}
 
 		if err != nil {
