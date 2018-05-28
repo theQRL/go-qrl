@@ -6,13 +6,13 @@ import (
 )
 
 type TransactionInfo struct {
-	tx *transactions.TransactionInterface
+	tx transactions.TransactionInterface
 	blockNumber uint64
 	timestamp uint64
 	config *core.Config
 }
 
-func (t *TransactionInfo) Transaction() *transactions.TransactionInterface {
+func (t *TransactionInfo) Transaction() transactions.TransactionInterface {
 	return t.tx
 }
 
@@ -38,7 +38,7 @@ func (t *TransactionInfo) IsStale(currentBlockHeight uint64) bool {
 	return false
 }
 
-func CreateTransactionInfo(tx *transactions.TransactionInterface, blockNumber uint64, timestamp uint64) *TransactionInfo {
+func CreateTransactionInfo(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64) *TransactionInfo {
 	t := &TransactionInfo{}
 	t.tx = tx
 	t.blockNumber = blockNumber
