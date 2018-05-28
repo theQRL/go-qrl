@@ -28,6 +28,18 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 		return errors.New("transaction pool is full")
 	}
 
+	for e := t.txPool.Front(); e != nil; e = e.Next() {
+		ti := e.Value.(TransactionInfo)
+		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
+			return errors.New("transaction already exists in pool")
+		}
+		if reflect.DeepEqual(ti.tx.PK(), tx.PK()) {
+			if ti.tx.OtsKey() == tx.OtsKey() {
+				return errors.New("a transaction already exists signed with same ots key")
+			}
+		}
+	}
+
 	if timestamp == 0 {
 		ts, err := t.ntp.Time()
 		if err != nil {
@@ -45,8 +57,8 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 
 func (t *TransactionPool) Remove(tx transactions.TransactionInterface) {
 	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		tx2 := e.Value.(TransactionInfo)
-		if reflect.DeepEqual(tx2.tx.Txhash(), tx.Txhash()) {
+		ti := e.Value.(TransactionInfo)
+		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
 			t.txPool.Remove(e)
 			break
 		}
@@ -63,9 +75,9 @@ func (t *TransactionPool) RemoveTxInBlock(block core.Block) {
 				tmp := e
 				e := e.Next()
 
-				tx2 := e.Value.(TransactionInfo)
-				if reflect.DeepEqual(tx.PK(), tx2.tx.PK()) {
-					if tx2.tx.OtsKey() <= tx.OtsKey() {
+				ti := e.Value.(TransactionInfo)
+				if reflect.DeepEqual(tx.PK(), ti.tx.PK()) {
+					if ti.tx.OtsKey() <= tx.OtsKey() {
 						t.txPool.Remove(tmp)
 					}
 				}
@@ -90,9 +102,9 @@ func (t *TransactionPool) AddTxFromBlock(block core.Block, currentBlockHeight ui
 
 func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
 	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		tx := e.Value.(TransactionInfo)
-		if tx.IsStale(currentBlockHeight) {
-			tx.blockNumber = currentBlockHeight
+		ti := e.Value.(TransactionInfo)
+		if ti.IsStale(currentBlockHeight) {
+			ti.blockNumber = currentBlockHeight
 			// TODO: Broadcast txn to other peers
 		}
 	}
