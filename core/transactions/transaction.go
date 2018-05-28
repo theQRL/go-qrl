@@ -11,6 +11,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/cyyber/go-qrl/log"
 	"github.com/cyyber/go-qrl/core"
+	"github.com/cyyber/go-qrl/core/pool"
 )
 
 type TransactionInterface interface {
@@ -58,8 +59,6 @@ type TransactionInterface interface {
 	revertStateChangesForPK(addressesState map[string]core.AddressState, state *core.State)
 
 	SetAffectedAddress(addressesState map[string]core.AddressState)
-
-	//ValidateTransactionPool(transactionPool)
 
 	validateCustom() bool
 
@@ -205,10 +204,6 @@ func (tx *Transaction) SetAffectedAddress(addressesState map[string]core.Address
 	addressesState[string(tx.AddrFrom())] = core.AddressState{}
 	addressesState[string(tx.PK())] = core.AddressState{}
 }
-
-//func (tx *Transaction) ValidateTransactionPool(transactionPool) {
-//	//TODO When Transaction Pool is ready
-//}
 
 func (tx *Transaction) validateCustom() bool {
 	panic("Not Implemented")
