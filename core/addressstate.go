@@ -7,6 +7,7 @@ import (
 	"github.com/cyyber/go-qrl/misc"
 	"github.com/golang/protobuf/proto"
 	"reflect"
+	"errors"
 )
 
 type AddressStateInterface interface {
@@ -57,7 +58,7 @@ type AddressStateInterface interface {
 
 	SetOTSKey(otsKeyIndex uint16)
 
-	// UnsetOTSKey(otsKeyIndex uint16, state) State Object
+	UnsetOTSKey(otsKeyIndex uint16, state *State)
 
 	IsValidAddress(address []byte) bool
 
@@ -217,9 +218,30 @@ func (a *AddressState) SetOTSKey(otsKeyIndex uint64) {
 	}
 }
 
-//func (a *AddressState) UnsetOTSKey(otsKeyIndex uint64, state) {
-//    // TODO when state is ready
-//}
+func (a *AddressState) UnsetOTSKey(otsKeyIndex uint64, state *State) error {
+	if otsKeyIndex < uint64(a.config.Dev.MaxOTSTracking) {
+		offset := otsKeyIndex >> 3
+		relative := otsKeyIndex % 8
+		bitfield := a.data.OtsBitfield[offset]
+		a.data.OtsBitfield[offset][0] = bitfield[0] & ^(1 << relative)
+		return nil
+	} else {
+		a.data.OtsCounter = 0
+		hashes := a.TransactionHashes()
+		for i := len(hashes); i >= 0 ; i-- {
+			tm, err := state.GetTxMetadata(hashes[i])
+			if err != nil {
+				return err
+			}
+			tx := transactions.ProtoToTransaction(tm.Transaction)
+			if tx.OtsKey() >= a.config.Dev.MaxOTSTracking {
+				a.data.OtsCounter = uint64(tx.OtsKey())
+				return nil
+			}
+		}
+	}
+	return errors.New("OTS key didn't change")
+}
 
 func IsValidAddress(address []byte) bool {
 	if !goqrllib.QRLHelperAddressIsValid(misc.BytesToUCharVector(address)) {
