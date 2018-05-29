@@ -7,6 +7,7 @@ import (
 	"github.com/theQRL/qrllib/goqrllib"
 	"github.com/cyyber/go-qrl/misc"
 	"github.com/cyyber/go-qrl/generated"
+	"github.com/cyyber/go-qrl/log"
 )
 
 type BlockHeaderInterface interface {
@@ -58,6 +59,7 @@ type BlockHeader struct {
 	blockHeader *generated.BlockHeader
 
 	config *Config
+	log    *log.Logger
 }
 
 func (bh *BlockHeader) BlockNumber() uint64 {
@@ -186,4 +188,34 @@ func (bh *BlockHeader) FromJSON(jsonData string) *BlockHeader {
 func (bh *BlockHeader) JSON() (string, error)  {
 	ma := jsonpb.Marshaler{}
 	return ma.MarshalToString(bh.blockHeader)
+}
+
+func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64) *BlockHeader {
+	bh := &BlockHeader{}
+	bh.blockHeader.BlockNumber = blockNumber
+
+	if bh.blockHeader.BlockNumber != 0 {
+		bh.blockHeader.TimestampSeconds = timestamp
+		// If current block timestamp is less than or equals to the previous block timestamp
+		// then set current block timestamp 1 sec higher than prev_block_timestamp
+		if bh.blockHeader.TimestampSeconds <= prevBlockTimestamp {
+			bh.blockHeader.TimestampSeconds = prevBlockTimestamp + 1
+		}
+	}
+
+	bh.blockHeader.HashHeaderPrev = prevBlockHeaderHash
+	bh.blockHeader.MerkleRoot = merkleRoot
+	bh.blockHeader.RewardFee = feeReward
+
+	bh.blockHeader.RewardBlock = BlockRewardCalc(bh.BlockNumber(), bh.config)
+
+	bh.SetNonces(0, 0)
+	return bh
+}
+
+func BlockRewardCalc(blockNumber uint64, config *Config) uint64 {
+	if blockNumber == 0 {
+		return config.Dev.Genesis.SuppliedCoins
+	}
+	return BlockReward(config.Dev.Genesis.MaxCoinSupply - config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
 }
