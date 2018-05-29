@@ -245,7 +245,7 @@ func GetDevConfig() (dev *DevConfig) {
 	genesis := &GenesisConfig{
 		Version: "v0.63",
 		GenesisPrevHeadehash: []byte("Outside Context Problem"),
-		MaxCoinSupply: 105000000,
+		MaxCoinSupply: 105000000 * (10 ^ 9),
 		SuppliedCoins: 65000000 * (10 ^ 9),
 		GenesisDifficulty: 5000,
 		CoinbaseAddress: []byte("010300082382a52f8ba9c2d33ad807c2cdd5bd086c2c2fe63c6ea13b630d1280894c3a39e1c380"),
