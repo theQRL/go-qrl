@@ -3,6 +3,8 @@ package misc
 import (
 	"github.com/theQRL/qrllib/goqrllib"
 	"bytes"
+	"container/list"
+	"math"
 )
 
 type UcharVector struct {
@@ -52,10 +54,54 @@ func (v *UcharVector) New(data goqrllib.UcharVector) {
 
 func BytesToUCharVector(data []byte) goqrllib.UcharVector {
 	vector := goqrllib.NewUcharVector__SWIG_0()
-
+	//z := *(*[]byte)(unsafe.Pointer(vector.Swigcptr()))
+	//var sl = struct {
+	//	addr uintptr
+	//	len  int
+	//	cap  int
+	//}{ptr, length, length}
 	for _, element := range data {
 		vector.Add(element)
 	}
 
 	return vector
+}
+
+func UCharVectorToBytes(data goqrllib.UcharVector) []byte  {
+	vector := UcharVector{}
+	vector.New(data)
+
+	return vector.GetBytes()
+}
+
+func UCharVectorToString(data goqrllib.UcharVector) string  {
+	return string(UCharVectorToBytes(data))
+}
+
+func MerkleTXHash(hashes list.List) []byte {
+	j := int(math.Ceil(math.Log2(float64(hashes.Len()))))
+	var lArray list.List
+	lArray.PushBack(hashes)
+	for x := 0; x < j; x++ {
+		var nextLayer list.List
+		h := lArray.Back().Value.(list.List)
+		i := h.Len() % 2 + h.Len() / 2
+		e := h.Front()
+		z := 0
+		for k := 0; k < i; k++ {
+			if h.Len() == z + 1 {
+				nextLayer.PushBack(e.Value.([]byte))
+			} else {
+				tmp := UcharVector{}
+				tmp.AddBytes(e.Value.([]byte))
+				e := e.Next()
+				tmp.AddBytes(e.Value.([]byte))
+				nextLayer.PushBack(UCharVectorToBytes(goqrllib.Sha2_256(tmp.GetData())))
+				e = e.Next()
+			}
+			z += 2
+		}
+		lArray.PushBack(nextLayer)
+	}
+	return lArray.Back().Value.(list.List).Back().Value.([]byte)
 }
