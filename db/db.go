@@ -45,11 +45,15 @@ func NewDB(file string, cache int, handles int, log *log.Logger) (*LDB, error) {
 	return &LDB{
 		filename: file,
 		db:       db,
-		log:      log,
+		log:      *log,
 	}, nil
 }
 
-func (db *LDB) Put(key []byte, value[] byte) error {
+func (db *LDB) Put(key []byte, value[] byte, batch *leveldb.Batch) error {
+	if batch != nil {
+		batch.Put(key, value)
+		return nil
+	}
 	return db.db.Put(key, value, nil)
 }
 
@@ -80,6 +84,18 @@ func (db *LDB) Close() {
 
 func (db *LDB) LDB() *leveldb.DB {
 	return db.db
+}
+
+func (db *LDB) GetBatch() *leveldb.Batch {
+	return &leveldb.Batch{}
+}
+
+func (db *LDB) WriteBatch(batch *leveldb.Batch, sync bool) {
+	var wo *opt.WriteOptions
+	if sync {
+		wo = &opt.WriteOptions{Sync: sync}
+	}
+	db.db.Write(batch, wo)
 }
 
 func (db *LDB) NewBatch() *ldbBatch {

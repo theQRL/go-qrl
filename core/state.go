@@ -10,6 +10,8 @@ import (
 	"reflect"
 	"github.com/cyyber/go-qrl/core/transactions"
 	"github.com/cyyber/go-qrl/core/metadata"
+	"math"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type State struct {
@@ -21,7 +23,7 @@ type State struct {
 }
 
 type RollbackStateInfo struct {
-	addressesState     map[string]AddressState
+	addressesState     map[string]*AddressState
 	rollbackHeaderHash []byte
 	hashPath           [][]byte
 }
@@ -41,7 +43,31 @@ func CreateState(log *log.Logger) (*State, error) {
 	return &state, err
 }
 
-func (s *State) PutBlock(b *Block) error {
+func (s *State) GetBatch() *leveldb.Batch {
+	return s.db.GetBatch()
+}
+
+func (s *State) WriteBatch(batch *leveldb.Batch) {
+	s.db.WriteBatch(batch, true)
+}
+
+func (s *State) GetBlockSizeLimit(b *Block) (int, error) {
+	blockSizeList := make([]int, 10)
+	for i := 0; i < 10; i++ {
+		block, err := s.GetBlock(b.HeaderHash())
+		if err != nil {
+			return 0, err
+		}
+		blockSizeList[i] = block.Size()
+		if block.BlockNumber() == 0 {
+			break
+		}
+	}
+
+	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier * float64(Median(blockSizeList))))), nil
+}
+
+func (s *State) PutBlock(b *Block, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -50,7 +76,7 @@ func (s *State) PutBlock(b *Block) error {
 		return err
 	}
 
-	if err := s.db.Put(b.HeaderHash(), value); err != nil {
+	if err := s.db.Put(b.HeaderHash(), value, batch); err != nil {
 		return err
 	}
 	return nil
@@ -76,7 +102,7 @@ func (s *State) RemoveBlock(headerHash []byte) error {
 	return s.db.Delete(headerHash)
 }
 
-func (s *State) PutBlockMetaData(headerHash []byte, b *metadata.BlockMetaData) error {
+func (s *State) PutBlockMetaData(headerHash []byte, b *metadata.BlockMetaData, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -85,7 +111,7 @@ func (s *State) PutBlockMetaData(headerHash []byte, b *metadata.BlockMetaData) e
 		return err
 	}
 
-	if err := s.db.Put(append([]byte("metadata_"), headerHash...), value); err != nil {
+	if err := s.db.Put(append([]byte("metadata_"), headerHash...), value, batch); err != nil {
 		return err
 	}
 
@@ -112,7 +138,7 @@ func (s *State) RemoveBlockMetaData(headerHash []byte) error {
 	return s.db.Delete(append([]byte("metadata_"), headerHash...))
 }
 
-func (s *State) PutBlockNumberMapping(blockNumber uint64, blockNumberMapping *generated.BlockNumberMapping) error {
+func (s *State) PutBlockNumberMapping(blockNumber uint64, blockNumberMapping *generated.BlockNumberMapping, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -123,7 +149,7 @@ func (s *State) PutBlockNumberMapping(blockNumber uint64, blockNumberMapping *ge
 
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key[0:], blockNumber)
-	if err := s.db.Put(key, value); err != nil {
+	if err := s.db.Put(key, value, batch); err != nil {
 		return err
 	}
 
@@ -207,14 +233,14 @@ func (s *State) GetLastBlock() (*Block, error) {
 	return block, err
 }
 
-func (s *State) PutChainHeight(height uint64) error {
+func (s *State) PutChainHeight(height uint64, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key[0:], height)
 
-	s.db.Put([]byte("blockheight"), key)
+	s.db.Put([]byte("blockheight"), key, batch)
 
 	return nil
 }
@@ -233,7 +259,7 @@ func (s *State) GetChainHeight() (uint64, error) {
 }
 
 
-func (s *State) UpdateLastTransactions(block *Block) error {
+func (s *State) UpdateLastTransactions(block *Block, batch *leveldb.Batch) error {
 	// Skip if only coinbase transaction
 	if len(block.Transactions()) == 1 {
 		return nil
@@ -266,7 +292,7 @@ func (s *State) UpdateLastTransactions(block *Block) error {
 		return err
 	}
 
-	if err := s.db.Put([]byte("LastTransactions"), value); err != nil {
+	if err := s.db.Put([]byte("LastTransactions"), value, batch); err != nil {
 		return err
 	}
 
@@ -289,7 +315,7 @@ func (s *State) GetLastTransactions() (*generated.LastTransactions, error) {
 	return lastTransactions, err
 }
 
-func (s *State) RemoveLastTransactions(block *Block) error {
+func (s *State) RemoveLastTransactions(block *Block, batch *leveldb.Batch) error {
 	// Skip if only coinbase transaction
 	if len(block.Transactions()) == 1 {
 		return nil
@@ -319,14 +345,14 @@ func (s *State) RemoveLastTransactions(block *Block) error {
 		return err
 	}
 
-	if err := s.db.Put([]byte("LastTransactions"), value); err != nil {
+	if err := s.db.Put([]byte("LastTransactions"), value, batch); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *State) AddTokenMetadata(token *transactions.TokenTransaction) error {
+func (s *State) AddTokenMetadata(token *transactions.TokenTransaction, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -341,7 +367,7 @@ func (s *State) AddTokenMetadata(token *transactions.TokenTransaction) error {
 	key := []byte("token_")
 	key = append(key[:], token.Txhash()[:]...)
 
-	err = s.db.Put(key, value)
+	err = s.db.Put(key, value, batch)
 
 	if err != nil {
 		return err
@@ -371,7 +397,7 @@ func (s *State) GetTokenMetadata(tokenTxHash []byte) (*metadata.TokenMetadata, e
 	return m, nil
 }
 
-func (s *State) UpdateTokenMetadata(transferToken *transactions.TransferTokenTransaction) error {
+func (s *State) UpdateTokenMetadata(transferToken *transactions.TransferTokenTransaction, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -392,7 +418,7 @@ func (s *State) UpdateTokenMetadata(transferToken *transactions.TransferTokenTra
 	key := []byte("token_")
 	key = append(key[:], transferToken.Txhash()[:]...)
 
-	err = s.db.Put(key, value)
+	err = s.db.Put(key, value, batch)
 
 	if err != nil {
 		return err
@@ -401,7 +427,7 @@ func (s *State) UpdateTokenMetadata(transferToken *transactions.TransferTokenTra
 	return nil
 }
 
-func (s *State) RemoveTransferTokenMetadata(transferToken *transactions.TransferTokenTransaction) error {
+func (s *State) RemoveTransferTokenMetadata(transferToken *transactions.TransferTokenTransaction, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -422,7 +448,7 @@ func (s *State) RemoveTransferTokenMetadata(transferToken *transactions.Transfer
 	key := []byte("token_")
 	key = append(key[:], transferToken.Txhash()[:]...)
 
-	err = s.db.Put(key, value)
+	err = s.db.Put(key, value, batch)
 
 	if err != nil {
 		return err
@@ -447,7 +473,7 @@ func (s *State) RemoveTokenMetadata(token *transactions.TokenTransaction) error 
 	return nil
 }
 
-func (s *State) PutTxMetadata(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64) error {
+func (s *State) PutTxMetadata(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -462,7 +488,7 @@ func (s *State) PutTxMetadata(tx transactions.TransactionInterface, blockNumber 
 		return err
 	}
 
-	err = s.db.Put(tx.Txhash(), value)
+	err = s.db.Put(tx.Txhash(), value, batch)
 
 	if err != nil {
 		return err
@@ -505,7 +531,7 @@ func (s *State) RemoveTxMetadata(tx *transactions.Transaction) error {
 	return nil
 }
 
-func (s *State) UpdateTxMetadata(block *Block) error {
+func (s *State) UpdateTxMetadata(block *Block, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -516,15 +542,15 @@ func (s *State) UpdateTxMetadata(block *Block) error {
 		tx := transactions.ProtoToTransaction(protoTX)
 		feeReward += tx.Fee()
 
-		s.PutTxMetadata(tx, block.BlockNumber(), block.Timestamp())
+		s.PutTxMetadata(tx, block.BlockNumber(), block.Timestamp(), batch)
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
 			t := tx.(*transactions.TokenTransaction)
-			err = s.AddTokenMetadata(t)
+			err = s.AddTokenMetadata(t, batch)
 		case *generated.Transaction_TransferToken_:
 			t := tx.(*transactions.TransferTokenTransaction)
-			err = s.UpdateTokenMetadata(t)
+			err = s.UpdateTokenMetadata(t, batch)
 		}
 
 		if err != nil {
@@ -533,12 +559,12 @@ func (s *State) UpdateTxMetadata(block *Block) error {
 	}
 
 	tx := block.Transactions()[0]
-	err = s.AddTotalCoinSupply(tx.GetCoinbase().Amount - feeReward)
+	err = s.AddTotalCoinSupply(tx.GetCoinbase().Amount - feeReward, batch)
 	if err != nil {
 		return err
 	}
 
-	err = s.UpdateLastTransactions(block)
+	err = s.UpdateLastTransactions(block, batch)
 	if err != nil {
 		return err
 	}
@@ -546,7 +572,7 @@ func (s *State) UpdateTxMetadata(block *Block) error {
 	return nil
 }
 
-func (s *State) RollbackTxMetadata(block *Block) error {
+func (s *State) RollbackTxMetadata(block *Block, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -557,7 +583,7 @@ func (s *State) RollbackTxMetadata(block *Block) error {
 		tx := transactions.ProtoToTransaction(protoTX)
 		feeReward += tx.Fee()
 
-		s.PutTxMetadata(tx, block.BlockNumber(), block.Timestamp())
+		s.PutTxMetadata(tx, block.BlockNumber(), block.Timestamp(), batch)
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
@@ -565,7 +591,7 @@ func (s *State) RollbackTxMetadata(block *Block) error {
 			err = s.RemoveTokenMetadata(t)
 		case *generated.Transaction_TransferToken_:
 			t := tx.(*transactions.TransferTokenTransaction)
-			err = s.RemoveTransferTokenMetadata(t)
+			err = s.RemoveTransferTokenMetadata(t, batch)
 		}
 
 		if err != nil {
@@ -574,12 +600,12 @@ func (s *State) RollbackTxMetadata(block *Block) error {
 	}
 
 	tx := block.Transactions()[0]
-	err = s.ReduceTotalCoinSupply(tx.GetCoinbase().Amount - feeReward)
+	err = s.ReduceTotalCoinSupply(tx.GetCoinbase().Amount - feeReward, batch)
 	if err != nil {
 		return err
 	}
 
-	err = s.RemoveLastTransactions(block)
+	err = s.RemoveLastTransactions(block, batch)
 	if err != nil {
 		return err
 	}
@@ -587,7 +613,61 @@ func (s *State) RollbackTxMetadata(block *Block) error {
 	return nil
 }
 
-func (s *State) PutAddressesState(addressesState map[string]AddressState) error {
+func (s *State) PutForkState(forkState *generated.ForkState, batch *leveldb.Batch) error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	value, err := proto.Marshal(forkState)
+
+	if err != nil {
+		return err
+	}
+
+	key := []byte("fork_state")
+	err = s.db.Put(key, value, batch)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *State) GetForkState() (*generated.ForkState, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	value, err := s.db.Get([]byte("fork_state"))
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := &generated.ForkState{}
+	err = proto.Unmarshal(value, m)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return m, nil
+
+}
+
+func (s *State) RemoveForkState() error {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	err := s.db.Delete([]byte("fork_state"))
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *State) PutAddressesState(addressesState map[string]*AddressState, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -596,7 +676,7 @@ func (s *State) PutAddressesState(addressesState map[string]AddressState) error 
 		if err != nil {
 			return err
 		}
-		s.db.Put(addrState.Address(), value)
+		s.db.Put(addrState.Address(), value, batch)
 	}
 
 	return nil
@@ -615,7 +695,7 @@ func (s *State) GetAddressState(address []byte) (*AddressState, error) {
 	return DeSerializeAddressState(value)
 }
 
-func (s *State) GetAddressesState(addressesState map[string]AddressState) error {
+func (s *State) GetAddressesState(addressesState map[string]*AddressState) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -626,13 +706,13 @@ func (s *State) GetAddressesState(addressesState map[string]AddressState) error 
 			return err
 		}
 
-		addressesState[address] = *addrState
+		addressesState[address] = addrState
 	}
 
 	return nil
 }
 
-func (s *State) GetState(headerHash []byte, addressesState map[string]AddressState) (*RollbackStateInfo, error) {
+func (s *State) GetState(headerHash []byte, addressesState map[string]*AddressState) (*RollbackStateInfo, error) {
 	tmpHeaderHash := headerHash
 
 	var hashPath [][]byte
@@ -664,7 +744,7 @@ func (s *State) GetState(headerHash []byte, addressesState map[string]AddressSta
 		if err != nil {
 			return nil, err
 		}
-		addressesState[address] = *addrState
+		addressesState[address] = addrState
 	}
 	block, err := s.GetLastBlock()
 
@@ -721,7 +801,7 @@ func (s *State) GetTotalCoinSupply() (uint64, error) {
 	return binary.BigEndian.Uint64(value), nil
 }
 
-func (s *State) AddTotalCoinSupply(value uint64) error {
+func (s *State) AddTotalCoinSupply(value uint64, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -734,12 +814,12 @@ func (s *State) AddTotalCoinSupply(value uint64) error {
 
 	byteValue := make([]byte, 8)
 	binary.BigEndian.PutUint64(byteValue, newValue)
-	err = s.db.Put([]byte("TotalCoinSupply"), byteValue)
+	err = s.db.Put([]byte("TotalCoinSupply"), byteValue, batch)
 
 	return err
 }
 
-func (s *State) ReduceTotalCoinSupply(value uint64) error {
+func (s *State) ReduceTotalCoinSupply(value uint64, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -752,7 +832,7 @@ func (s *State) ReduceTotalCoinSupply(value uint64) error {
 
 	byteValue := make([]byte, 8)
 	binary.BigEndian.PutUint64(byteValue, newValue)
-	err = s.db.Put([]byte("TotalCoinSupply"), byteValue)
+	err = s.db.Put([]byte("TotalCoinSupply"), byteValue, batch)
 
 	return err
 }
