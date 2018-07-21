@@ -4,7 +4,6 @@ import (
 	"github.com/cyyber/go-qrl/core/pool"
 	"github.com/cyyber/go-qrl/generated"
 	"github.com/theQRL/qryptonight/goqryptonight"
-	"github.com/cyyber/go-qrl/pow"
 	"github.com/cyyber/go-qrl/core/metadata"
 	"github.com/cyyber/go-qrl/misc"
 	"github.com/cyyber/go-qrl/genesis"
@@ -14,9 +13,13 @@ import (
 	"reflect"
 	"math/big"
 	"github.com/syndtr/goleveldb/leveldb"
+	"sync"
+	"github.com/cyyber/go-qrl/pow"
 )
 
 type Chain struct {
+	lock sync.Mutex
+
 	log log.Logger
 	config *Config
 
@@ -57,9 +60,11 @@ func (c *Chain) Load(genesisBlock *Block) error {
 		c.state.PutBlockNumberMapping(genesisBlock.BlockNumber(), blockNumberMapping, nil)
 		parentDifficulty := goqryptonight.StringToUInt256(string(c.config.Dev.Genesis.GenesisDifficulty))
 
-		currentDifficulty, _ := pow.GetCurrentDifficultyTarget(c.config.Dev.MiningSetpointBlocktime, parentDifficulty, int64(c.config.Dev.KP), c.config.Dev.MiningSetpointBlocktime)
+		dt := pow.DifficultyTracker{}
+		currentDifficulty, _ := dt.Get(uint64(c.config.Dev.MiningSetpointBlocktime),
+			misc.UCharVectorToBytes(parentDifficulty))
 
-		blockMetaData := metadata.CreateBlockMetadata(misc.UCharVectorToBytes(currentDifficulty), misc.UCharVectorToBytes(currentDifficulty), nil)
+		blockMetaData := metadata.CreateBlockMetadata(currentDifficulty, currentDifficulty, nil)
 
 		c.state.PutBlockMetaData(genesisBlock.HeaderHash(), blockMetaData, nil)
 
@@ -82,7 +87,7 @@ func (c *Chain) Load(genesisBlock *Block) error {
 		coinBase.SetPBData(txs[0])
 		addressesState[string(coinBase.AddrTo())] = GetDefaultAddressState(coinBase.AddrTo())
 
-		if !coinBase.ValidateExtended() {
+		if !coinBase.ValidateExtended(gen.BlockNumber()) {
 			return errors.New("coinbase validation failed")
 		}
 
@@ -166,6 +171,9 @@ func (c *Chain) addBlock(block *Block, batch *leveldb.Batch) (bool, bool) {
 }
 
 func (c *Chain) AddBlock(block *Block) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
 	if block.BlockNumber() < c.Height() - c.config.Dev.ReorgLimit {
 		c.log.Debug("Skipping block #%s as beyond re-org limit", block.BlockNumber())
 		return false
@@ -185,9 +193,10 @@ func (c *Chain) AddBlock(block *Block) bool {
 			c.state.WriteBatch(batch)
 		}
 		c.log.Info("Added Block #%s %s", block.BlockNumber(), string(block.HeaderHash()))
+		return true
 	}
 
-	return c.branchAddBlock(block)
+	return false
 
 }
 
@@ -223,7 +232,7 @@ func (c *Chain) updateBlockNumberMapping(block *Block, batch *leveldb.Batch) {
 func (c *Chain) RemoveBlockFromMainchain(block *Block, blockNumber uint64, batch *leveldb.Batch) {
 	addressesState := block.PrepareAddressesList()
 	c.state.GetAddressesState(addressesState)
-	for i := 1; i <= len(block.Transactions()); i++ {
+	for i := len(block.Transactions()) - 1; i <= 0; i-- {
 		tx := transactions.ProtoToTransaction(block.Transactions()[i])
 		tx.RevertStateChanges(addressesState, c.state)
 	}
@@ -386,4 +395,51 @@ func (c *Chain) forkRecovery(block *Block, forkState *generated.ForkState) bool 
 
 	c.triggerMiner = true
 	return true
+}
+
+func (c *Chain) ValidateMiningNonce(bh *BlockHeader, enableLogging bool) bool {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	parentMetadata, err := c.state.GetBlockMetadata(bh.HeaderHash())
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	measurement, err := c.state.GetMeasurement(bh.Timestamp(), bh.PrevHeaderHash(), parentMetadata)
+	dt := pow.DifficultyTracker{}
+	diff, target := dt.Get(measurement, parentMetadata.BlockDifficulty())
+
+	if enableLogging {
+		parentBlock, err := c.state.GetBlock(bh.PrevHeaderHash())
+		if err != nil {
+
+		}
+		c.log.Debug("-----------------START--------------------")
+		c.log.Debug("Validate                #%s", bh.BlockNumber())
+		c.log.Debug("block.timestamp         %s", bh.Timestamp())
+		c.log.Debug("parent_block.timestamp  %s", parentBlock.Timestamp())
+		c.log.Debug("parent_block.difficulty %s", string(parentMetadata.BlockDifficulty()))
+		c.log.Debug("diff                    %s", string(diff))
+		c.log.Debug("target                  %s", string(target))
+		c.log.Debug("-------------------END--------------------")
+	}
+
+	if !pow.GetPowValidator().VerifyInput(bh.MiningBlob(), target) {
+		if enableLogging {
+			c.log.Warn("PoW verification failed")
+		}
+		return false
+	}
+
+	return true
+
+}
+
+func (c *Chain) GetBlock(headerhash []byte) (*Block, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.state.GetBlock(headerhash)
 }
