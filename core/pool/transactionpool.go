@@ -41,11 +41,7 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 	}
 
 	if timestamp == 0 {
-		ts, err := t.ntp.Time()
-		if err != nil {
-			return err
-		}
-		timestamp = ts
+		timestamp = t.ntp.Time()
 	}
 
 	ti := CreateTransactionInfo(tx, blockNumber, timestamp)
@@ -65,7 +61,7 @@ func (t *TransactionPool) Remove(tx transactions.TransactionInterface) {
 	}
 }
 
-func (t *TransactionPool) RemoveTxInBlock(block core.Block) {
+func (t *TransactionPool) RemoveTxInBlock(block *core.Block) {
 	for _, protoTX := range block.Transactions() {
 		tx := transactions.ProtoToTransaction(protoTX)
 		if tx.OtsKey() < t.config.Dev.MaxOTSTracking {
@@ -86,14 +82,9 @@ func (t *TransactionPool) RemoveTxInBlock(block core.Block) {
 	}
 }
 
-func (t *TransactionPool) AddTxFromBlock(block core.Block, currentBlockHeight uint64) error {
+func (t *TransactionPool) AddTxFromBlock(block *core.Block, currentBlockHeight uint64) error {
 	for _, protoTX := range block.Transactions() {
-		time, err := t.ntp.Time()
-		if err != nil {
-			return err
-		}
-
-		err = t.Add(transactions.ProtoToTransaction(protoTX), currentBlockHeight, time)
+		err := t.Add(transactions.ProtoToTransaction(protoTX), currentBlockHeight, t.ntp.Time())
 		if err != nil {
 			return err
 		}
