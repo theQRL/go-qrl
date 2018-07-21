@@ -8,6 +8,8 @@ import (
 	"github.com/cyyber/go-qrl/misc"
 	"github.com/cyyber/go-qrl/generated"
 	"github.com/cyyber/go-qrl/log"
+	"reflect"
+	"github.com/cyyber/go-qrl/pow"
 )
 
 type BlockHeaderInterface interface {
@@ -38,6 +40,8 @@ type BlockHeaderInterface interface {
 
 	MiningBlob() []byte
 
+	GenerateHeaderHash() []byte
+
 	UpdateMerkleRoot([]byte)
 
 	SetNonces(uint32, uint64)
@@ -50,6 +54,8 @@ type BlockHeaderInterface interface {
 
 	VerifyBlob([]byte) bool
 
+	SetPBData(*generated.BlockHeader)
+
 	FromJSON(string) BlockHeader
 
 	JSON() string
@@ -59,7 +65,7 @@ type BlockHeader struct {
 	blockHeader *generated.BlockHeader
 
 	config *Config
-	log    *log.Logger
+	log    log.Logger
 }
 
 func (bh *BlockHeader) BlockNumber() uint64 {
@@ -70,8 +76,8 @@ func (bh *BlockHeader) Epoch() uint64 {
 	return bh.blockHeader.BlockNumber / bh.config.Dev.BlocksPerEpoch
 }
 
-func (bh *BlockHeader) Timestamp() uint64 {
-	return bh.blockHeader.TimestampSeconds
+func (bh *BlockHeader) Timestamp() uint32 {
+	return uint32(bh.blockHeader.TimestampSeconds)
 }
 
 func (bh *BlockHeader) HeaderHash() []byte {
@@ -123,10 +129,10 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	blob.AddByte(0)
 	blob.AddBytes(tmp.Bytes())
 
-	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize - 13), blob.GetData()))
+	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize - 18), blob.GetData()))
 
 	if blob.GetData().Size() < int64(bh.config.Dev.MiningNonceOffset) {
-		//
+		panic("Mining blob size below 56 bytes")
 	}
 
 	miningNonce := make([]byte, 12)
@@ -139,6 +145,12 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	finalBlob.AddBytes(blob.GetBytes()[bh.NonceOffset():])
 
 	return finalBlob.GetBytes()
+}
+
+func (bh *BlockHeader) GenerateHeaderHash() []byte {
+	qn := pow.GetQryptonight()
+	miningBlob := bh.MiningBlob()
+	return qn.Hash(miningBlob)
 }
 
 func (bh *BlockHeader) UpdateMerkleRoot(hashedtransactions []byte) {
@@ -160,23 +172,94 @@ func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
 	bh.SetNonces(miningNonce, extraNonce)
 }
 
-func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64) bool {
+func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkleRoot []byte) bool {
+	ntp := misc.GetNTP()
+	currentTime := uint32(ntp.Time())
+	allowedTimestamp := currentTime + bh.config.Dev.BlockLeadTimestamp
+	if bh.Timestamp() > allowedTimestamp {
+		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")
+		bh.log.Warn("Block timestamp %s", bh.Timestamp())
+		bh.log.Warn("threshold timestamp %s", allowedTimestamp)
+		return false
+	}
+
+	if bh.Timestamp() < bh.config.Dev.Genesis.GenesisTimestamp {
+		bh.log.Warn("Timestamp lower than genesis timestamp")
+		bh.log.Warn("Genesis Timestamp %s", bh.config.Dev.Genesis.GenesisTimestamp)
+		bh.log.Warn("Block Timestamp %s", bh.Timestamp())
+		return false
+	}
+
+	if !reflect.DeepEqual(bh.GenerateHeaderHash(), bh.HeaderHash()) {
+		bh.log.Warn("Headerhash false for block: failed validation")
+		return false
+	}
+
+	if bh.BlockReward() != BlockRewardCalc(bh.BlockNumber(), bh.config) {
+		bh.log.Warn("Block reward incorrect for block: failed validation")
+		return false
+	}
+
+	if bh.FeeReward() != feeReward {
+		bh.log.Warn("Block Fee reward incorrect for block: failed validation")
+		return false
+	}
+
+	if bh.BlockReward() + bh.FeeReward() != coinbaseAmount {
+		bh.log.Warn("Block_reward + fee_reward doesnt sums up to coinbase_amount")
+		return false
+	}
+
+	if !reflect.DeepEqual(bh.TxMerkleRoot(), txMerkleRoot) {
+		bh.log.Warn("Invalid TX Merkle Root")
+		return false
+	}
 
 	return true
 }
 
-func (bh *BlockHeader) ValidateParentChildRelation(block Block) bool {
+func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
+	if parentBlock == nil {
+		bh.log.Warn("Parent Block not found")
+		return false
+	}
+
+	if parentBlock.BlockNumber() != bh.BlockNumber() - 1 {
+		bh.log.Warn("Block numbers out of sequence: failed validation")
+		return false
+	}
+
+	if !reflect.DeepEqual(parentBlock.HeaderHash(), bh.PrevHeaderHash()) {
+		bh.log.Warn("Headerhash not in sequence: failed validation")
+		return false
+	}
+
+	if bh.Timestamp() <= parentBlock.Timestamp() {
+		bh.log.Warn("BLOCK timestamp must be greater than parent block timestamp")
+		bh.log.Warn("block timestamp %s", bh.Timestamp())
+		bh.log.Warn("must be greater than %s", parentBlock.Timestamp())
+		return false
+	}
 
 	return true
 }
 
-func (bh *BlockHeader) VerifyBlob([]byte) bool {
+func (bh *BlockHeader) VerifyBlob(blob []byte) bool {
+	miningNonceOffset := bh.config.Dev.MiningNonceOffset
+	blob = append(blob[:miningNonceOffset], blob[miningNonceOffset + 17:]...)
+
+	actualBlob := bh.MiningBlob()
+	actualBlob = append(actualBlob[:miningNonceOffset], actualBlob[miningNonceOffset + 17:]...)
+
+	if reflect.DeepEqual(blob, actualBlob) {
+		return false
+	}
 
 	return true
 }
 
-func (bh *BlockHeader) SetPBData(blockHeader *generated.BlockHeader) *BlockHeader {
-	return nil
+func (bh *BlockHeader) SetPBData(blockHeader *generated.BlockHeader) {
+	bh.blockHeader = blockHeader
 }
 
 func (bh *BlockHeader) FromJSON(jsonData string) *BlockHeader {
@@ -201,6 +284,12 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 		if bh.blockHeader.TimestampSeconds <= prevBlockTimestamp {
 			bh.blockHeader.TimestampSeconds = prevBlockTimestamp + 1
 		}
+		if bh.blockHeader.TimestampSeconds == 0 {
+			bh.log.Warn("Failed to get NTP timestamp")
+			return nil
+		}
+	} else {
+		bh.blockHeader.TimestampSeconds = prevBlockTimestamp  // Set timestamp for genesis block
 	}
 
 	bh.blockHeader.HashHeaderPrev = prevBlockHeaderHash
