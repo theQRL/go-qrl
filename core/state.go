@@ -278,7 +278,7 @@ func (s *State) UpdateLastTransactions(block *Block, batch *leveldb.Batch) error
 		txMetadata := &generated.TransactionMetadata{}
 		txMetadata.BlockNumber = block.BlockNumber()
 		txMetadata.Transaction = protoTX
-		txMetadata.Timestamp = block.Timestamp()
+		txMetadata.Timestamp = uint64(block.Timestamp())
 		start := 1
 		if len(lastTransactions.TxMetadata) < 20 {
 			start = 0
@@ -542,7 +542,7 @@ func (s *State) UpdateTxMetadata(block *Block, batch *leveldb.Batch) error {
 		tx := transactions.ProtoToTransaction(protoTX)
 		feeReward += tx.Fee()
 
-		s.PutTxMetadata(tx, block.BlockNumber(), block.Timestamp(), batch)
+		s.PutTxMetadata(tx, block.BlockNumber(), uint64(block.Timestamp()), batch)
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
@@ -583,7 +583,7 @@ func (s *State) RollbackTxMetadata(block *Block, batch *leveldb.Batch) error {
 		tx := transactions.ProtoToTransaction(protoTX)
 		feeReward += tx.Fee()
 
-		s.PutTxMetadata(tx, block.BlockNumber(), block.Timestamp(), batch)
+		s.PutTxMetadata(tx, block.BlockNumber(), uint64(block.Timestamp()), batch)
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
@@ -654,7 +654,7 @@ func (s *State) GetForkState() (*generated.ForkState, error) {
 
 }
 
-func (s *State) RemoveForkState() error {
+func (s *State) DeleteForkState() error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -837,7 +837,7 @@ func (s *State) ReduceTotalCoinSupply(value uint64, batch *leveldb.Batch) error 
 	return err
 }
 
-func (s *State) GetMeasurement(blockTimestamp uint64, parentHeaderHash []byte, parentMetaData *metadata.BlockMetaData) (uint64, error) {
+func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, parentMetaData *metadata.BlockMetaData) (uint64, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -865,10 +865,10 @@ func (s *State) GetMeasurement(blockTimestamp uint64, parentHeaderHash []byte, p
 
 	nthBlockTimestamp := nthBlock.Timestamp()
 	if countHeaderHashes < uint64(s.config.Dev.NMeasurement) {
-		nthBlockTimestamp -= uint64(s.config.Dev.MiningSetpointBlocktime)
+		nthBlockTimestamp -= s.config.Dev.MiningSetpointBlocktime
 	}
 
-	return (blockTimestamp - nthBlockTimestamp) / countHeaderHashes, nil
+	return uint64(blockTimestamp - nthBlockTimestamp) / countHeaderHashes, nil
 }
 
 // TODO: Needed for API
