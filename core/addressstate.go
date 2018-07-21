@@ -94,11 +94,11 @@ func (a *AddressState) AddBalance(balance uint64) {
 	a.data.Balance += balance
 }
 
-func (a *AddressState) OTSBitfield() [][]byte {
+func (a *AddressState) OtsBitfield() [][]byte {
 	return a.data.OtsBitfield
 }
 
-func (a *AddressState) OTSCounter() uint64 {
+func (a *AddressState) OtsCounter() uint64 {
 	return a.data.OtsCounter
 }
 
@@ -113,7 +113,7 @@ func (a *AddressState) AppendTransactionHash(hash []byte) {
 func (a *AddressState) RemoveTransactionHash(hash []byte) {
 	for index, hash1 := range a.data.TransactionHashes {
 		if reflect.DeepEqual(index, hash1) {
-			a.data.TransactionHashes = append(a.data.TransactionHashes[:index], a.data.TransactionHashes[index+1:])
+			a.data.TransactionHashes = append(a.data.TransactionHashes[:index], a.data.TransactionHashes[index+1:]...)
 			//TODO: Fix remove code
 			return
 		}
@@ -160,17 +160,19 @@ func (a *AddressState) RemoveSlavePKSAccessType(slavePK []byte) {
 
 func (a *AddressState) AddLatticePK(latticeTx *transactions.LatticePublicKey) {
 	latticePK := &generated.LatticePK{
-		Txhash: latticeTx.txhash,
-		DilithiumPk: latticeTx.dilithiumPK,
-		KyberPk: latticeTx.kyberPK,
+		Txhash: latticeTx.Txhash(),
+		DilithiumPk: latticeTx.DilithiumPk(),
+		KyberPk: latticeTx.KyberPk(),
 	}
 
 	a.data.LatticePKList = append(a.data.LatticePKList, latticePK)
 }
 
 func (a *AddressState) RemoveLatticePK(latticeTx *transactions.LatticePublicKey) {
-	for _, index := range a.data.LatticePKList {
-		// TODO check if deletion possible while iterating
+	for i, latticePK := range a.data.LatticePKList {
+		if reflect.DeepEqual(latticePK.Txhash, latticeTx.Txhash()) {
+			a.data.LatticePKList = append(a.data.LatticePKList[0:i], a.data.LatticePKList[i+1:]...)
+		}
 	}
 }
 
@@ -244,24 +246,44 @@ func (a *AddressState) UnsetOTSKey(otsKeyIndex uint64, state *State) error {
 }
 
 func IsValidAddress(address []byte) bool {
+	// Warning: Never pass this validation True for Coinbase Address
 	if !goqrllib.QRLHelperAddressIsValid(misc.BytesToUCharVector(address)) {
 		return true
 	}
 	return false
 }
 
-func Create(address []byte, nonce uint64, balance uint64) *AddressState {
+func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfield [Config{}.Dev.OtsBitFieldSize][8]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *AddressState {
 	a := &AddressState{}
 	a.data.Address = address
 	a.data.Nonce = nonce
 	a.data.Balance = balance
-	//make([512][]byte, a.data.OtsBitfield)
+	a.data.OtsBitfield = make([][]byte, Config{}.Dev.OtsBitFieldSize)
+	for i := 0; i < int(Config{}.Dev.OtsBitFieldSize); i++ {
+		a.data.OtsBitfield[i] = make([]byte, 8)
+		for j := 0; j < 8; j++ {
+			a.data.OtsBitfield[i][j] = otsBitfield[i][j]
+		}
+	}
+	a.data.OtsCounter = otsCounter
+
+	for tokenTxhash, token := range tokens {
+		a.UpdateTokenBalance([]byte(tokenTxhash), token)
+	}
+
+	for slavePK, accessType := range slavePksAccessType {
+		a.AddSlavePKSAccessType([]byte(slavePK), accessType)
+	}
+
 	return a
 }
 
-func GetDefault(address []byte) *AddressState {
+func GetDefaultAddressState(address []byte) *AddressState {
 	c := Config{}
-	return Create(address, uint64(c.Dev.DefaultNonce), c.Dev.DefaultAccountBalance)
+	var otsBitfield [c.Dev.OtsBitFieldSize][8]byte
+	var tokens map[string]uint64
+	var slavePksAccessType map[string]uint32
+	return CreateAddressState(address, uint64(c.Dev.DefaultNonce), c.Dev.DefaultAccountBalance, otsBitfield, tokens, slavePksAccessType, 0)
 }
 
 func (a *AddressState) Serialize() ([]byte, error) {
