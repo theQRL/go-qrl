@@ -1,5 +1,7 @@
 package core
 
+import "sync"
+
 type Config struct {
 	Dev  *DevConfig
 	User *UserConfig
@@ -12,14 +14,15 @@ type MinerConfig struct {
 }
 
 type NodeConfig struct {
-	EnablePeerDiscovery bool
-	PeerList            []string
-	BindingIP			string
-	LocalPort           uint16
-	PublicPort          uint16
-	PeerRateLimit       uint16
-	BanMinutes          uint8
-	MaxPeersLimit       uint16
+	EnablePeerDiscovery     bool
+	PeerList                []string
+	BindingIP               string
+	LocalPort               uint16
+	PublicPort              uint16
+	PeerRateLimit           uint16
+	BanMinutes              uint8
+	MaxPeersLimit           uint16
+	MaxRedundantConnections int
 }
 
 type EphemeralConfig struct {
@@ -111,7 +114,7 @@ type DevConfig struct {
 
 	NumberOfBlockAnalyze uint8
 	SizeMultiplier       float64
-	BlockMinSizeLimit    uint64
+	BlockMinSizeLimit    int
 
 	ShorPerQuanta uint64
 
@@ -140,14 +143,20 @@ type GenesisConfig struct {
 	GenesisTimestamp     uint32
 }
 
-func GetConfig() (config *Config) {
-	userConfig := GetUserConfig()
-	devConfig := GetDevConfig()
+var once sync.Once
+var config *Config
 
-	return &Config{
-		User: userConfig,
-		Dev: devConfig,
-	}
+func GetConfig() (*Config) {
+	once.Do(func() {
+		userConfig := GetUserConfig()
+		devConfig := GetDevConfig()
+		config = &Config{
+			User: userConfig,
+			Dev: devConfig,
+		}
+	})
+
+	return config
 }
 
 func GetUserConfig() (user *UserConfig) {
@@ -166,6 +175,7 @@ func GetUserConfig() (user *UserConfig) {
 		PeerRateLimit: 500,
 		BanMinutes: 20,
 		MaxPeersLimit: 100,
+		MaxRedundantConnections: 5,
 	}
 
 	miner := &MinerConfig {
@@ -248,7 +258,7 @@ func GetDevConfig() (dev *DevConfig) {
 		MaxCoinSupply: 105000000 * (10 ^ 9),
 		SuppliedCoins: 65000000 * (10 ^ 9),
 		GenesisDifficulty: 5000,
-		CoinbaseAddress: []byte("010300082382a52f8ba9c2d33ad807c2cdd5bd086c2c2fe63c6ea13b630d1280894c3a39e1c380"),
+		CoinbaseAddress: []byte("000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		GenesisTimestamp: 1524928900,
 	}
 	transaction := &TransactionConfig{
@@ -270,13 +280,13 @@ func GetDevConfig() (dev *DevConfig) {
 		MaxMarginBlocKNumber: 32,
 		MinMarginBlockNumber: 7,
 
-		ReorgLimit: 7 * 24 * 60,
+		ReorgLimit: 22000,
 
 		MessageReceiptTimeout: 10,
-		MessageBufferSize:     3 * 1024 * 1024,
+		MessageBufferSize:     64 * 1024 * 1024,
 
-		MaxOTSTracking:  4096,
-		OtsBitFieldSize: 4096 / 8,
+		MaxOTSTracking:  8192,
+		OtsBitFieldSize: 8192 / 8,
 
 		MiningNonceOffset: 39,
 		ExtraNonceOffset:  43,
@@ -296,7 +306,7 @@ func GetDevConfig() (dev *DevConfig) {
 
 		Token: token,
 
-		NMeasurement: 250,
+		NMeasurement: 30,
 		KP:           5,
 
 		NumberOfBlockAnalyze: 10,
