@@ -3,6 +3,7 @@ package core
 import (
 	"time"
 	"math"
+	"sort"
 )
 
 func CalcCoeff(coinRemainingAtGenesis uint64) float64 {
@@ -34,4 +35,9 @@ func RemainingEmission(coinRemainingAtGenesis uint64, shorPerQuanta uint64, bloc
 
 func BlockReward(coinRemaininAtGenesis uint64, shorPerQuanta uint64, blockNumber uint64) uint64 {
 	return uint64(RemainingEmission(coinRemaininAtGenesis, shorPerQuanta, blockNumber - 1) - RemainingEmission(coinRemaininAtGenesis, shorPerQuanta, blockNumber))
+}
+
+func Median(data []int) int {
+	sort.SliceStable(data, func(i, j int) bool { return i < j })
+	return data[int(math.Floor(float64(len(data)/2)))]
 }
