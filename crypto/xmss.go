@@ -1,7 +1,7 @@
 package crypto
 
 import (
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"github.com/cyyber/go-qrl/misc"
 )
 

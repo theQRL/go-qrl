@@ -10,7 +10,7 @@ import (
 	"time"
 	"encoding/binary"
 	"github.com/willf/bloom"
-	"github.com/cyyber/go-qrl/core"
+	"github.com/cyyber/go-qrl/config"
 )
 
 type Peer struct {
@@ -22,10 +22,10 @@ type Peer struct {
 	disc   chan DiscReason
 	log    log.Logger
 	filter *bloom.BloomFilter
-	config *core.Config
+	config *config.Config
 }
 
-func newPeer(conn *net.Conn, inbound bool, log *log.Logger, filter *bloom.BloomFilter, config *core.Config) *Peer {
+func newPeer(conn *net.Conn, inbound bool, log *log.Logger, filter *bloom.BloomFilter, config *config.Config) *Peer {
 	p := &Peer {
 		conn: *conn,
 		inbound: inbound,
@@ -145,7 +145,7 @@ func (p* Peer) handle(msg Msg) error {
 			// Request for full message
 			// Check if its already being feeded by any other peer
 		case generated.LegacyMessage_TX:
-			// Check Transaction pool Size,
+			// Check transactions pool Size,
 			// if full then ignore
 		default:
 			//connection lost

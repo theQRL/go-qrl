@@ -15,13 +15,14 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"sync"
 	"github.com/cyyber/go-qrl/pow"
+	c "github.com/cyyber/go-qrl/config"
 )
 
 type Chain struct {
 	lock sync.Mutex
 
 	log log.Logger
-	config *Config
+	config *c.Config
 
 	triggerMiner bool
 
@@ -55,7 +56,7 @@ func (c *Chain) Load(genesisBlock *Block) error {
 	if err != nil {
 		c.state.PutBlock(genesisBlock, nil)
 		blockNumberMapping := &generated.BlockNumberMapping{Headerhash:genesisBlock.HeaderHash(),
-		PrevHeaderhash:genesisBlock.PrevHeaderHash()}
+			PrevHeaderhash:genesisBlock.PrevHeaderHash()}
 
 		c.state.PutBlockNumberMapping(genesisBlock.BlockNumber(), blockNumberMapping, nil)
 		parentDifficulty := goqryptonight.StringToUInt256(string(c.config.Dev.Genesis.GenesisDifficulty))

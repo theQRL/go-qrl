@@ -6,12 +6,12 @@ import (
 	"strings"
 	"github.com/cyyber/go-qrl/p2p"
 	"github.com/cyyber/go-qrl/log"
-	"github.com/cyyber/go-qrl/core"
+	c "github.com/cyyber/go-qrl/config"
 )
 
 var (
 	server *p2p.Server
-	config *core.Config
+	config *c.Config
 	input = bufio.NewReader(os.Stdin)
 	logger = log.New()
 )
@@ -25,7 +25,7 @@ func startServer() error {
 }
 
 func initialize() {
-	config = core.GetConfig()
+	config = c.GetConfig()
 	server = &p2p.Server{}
 }
 

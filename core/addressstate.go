@@ -3,7 +3,8 @@ package core
 import (
 	"github.com/cyyber/go-qrl/generated"
 	"github.com/cyyber/go-qrl/core/transactions"
-	"github.com/theQRL/qrllib/goqrllib"
+	c "github.com/cyyber/go-qrl/config"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"github.com/cyyber/go-qrl/misc"
 	"github.com/golang/protobuf/proto"
 	"reflect"
@@ -67,7 +68,7 @@ type AddressStateInterface interface {
 
 type AddressState struct {
 	data *generated.AddressState
-	config *Config
+	config *c.Config
 }
 
 func (a *AddressState) PBData() *generated.AddressState {
@@ -253,13 +254,13 @@ func IsValidAddress(address []byte) bool {
 	return false
 }
 
-func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfield [Config{}.Dev.OtsBitFieldSize][8]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *AddressState {
+func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfield [c.Config{}.Dev.OtsBitFieldSize][8]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *AddressState {
 	a := &AddressState{}
 	a.data.Address = address
 	a.data.Nonce = nonce
 	a.data.Balance = balance
-	a.data.OtsBitfield = make([][]byte, Config{}.Dev.OtsBitFieldSize)
-	for i := 0; i < int(Config{}.Dev.OtsBitFieldSize); i++ {
+	a.data.OtsBitfield = make([][]byte, c.Config{}.Dev.OtsBitFieldSize)
+	for i := 0; i < int(c.Config{}.Dev.OtsBitFieldSize); i++ {
 		a.data.OtsBitfield[i] = make([]byte, 8)
 		for j := 0; j < 8; j++ {
 			a.data.OtsBitfield[i][j] = otsBitfield[i][j]
@@ -279,11 +280,11 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 }
 
 func GetDefaultAddressState(address []byte) *AddressState {
-	c := Config{}
-	var otsBitfield [c.Dev.OtsBitFieldSize][8]byte
+	config := c.Config{}
+	var otsBitfield [config.Dev.OtsBitFieldSize][8]byte
 	var tokens map[string]uint64
 	var slavePksAccessType map[string]uint32
-	return CreateAddressState(address, uint64(c.Dev.DefaultNonce), c.Dev.DefaultAccountBalance, otsBitfield, tokens, slavePksAccessType, 0)
+	return CreateAddressState(address, uint64(config.Dev.DefaultNonce), config.Dev.DefaultAccountBalance, otsBitfield, tokens, slavePksAccessType, 0)
 }
 
 func (a *AddressState) Serialize() ([]byte, error) {

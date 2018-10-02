@@ -5,13 +5,13 @@ import (
 	"github.com/cyyber/go-qrl/log"
 	"reflect"
 	"github.com/golang/protobuf/proto"
-	"github.com/cyyber/go-qrl/core"
+	"github.com/cyyber/go-qrl/config"
 )
 
 type BlockMetaData struct {
 	data *generated.BlockMetaData
 	log log.Logger
-	config *core.Config
+	config *config.Config
 }
 
 func (b *BlockMetaData) PBData() *generated.BlockMetaData {

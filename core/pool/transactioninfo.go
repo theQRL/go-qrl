@@ -2,14 +2,14 @@ package pool
 
 import (
 	"github.com/cyyber/go-qrl/core/transactions"
-	"github.com/cyyber/go-qrl/core"
+	c "github.com/cyyber/go-qrl/config"
 )
 
 type TransactionInfo struct {
 	tx transactions.TransactionInterface
 	blockNumber uint64
 	timestamp uint64
-	config *core.Config
+	config *c.Config
 }
 
 func (t *TransactionInfo) Transaction() transactions.TransactionInterface {
