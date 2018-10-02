@@ -1,9 +1,10 @@
 package pow
 
 import (
-	"github.com/theQRL/qryptonight/goqryptonight"
-	"github.com/cyyber/go-qrl/misc"
 	"sync"
+
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qryptonight/goqryptonight"
 )
 
 type QryptonightInterface interface {

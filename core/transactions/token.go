@@ -1,14 +1,15 @@
 package transactions
 
 import (
-	"github.com/cyyber/go-qrl/generated"
 	"bytes"
 	"encoding/binary"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
-	"github.com/cyyber/go-qrl/core"
-	"reflect"
 	"math"
+	"reflect"
+
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type TokenTransaction struct {

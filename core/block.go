@@ -1,13 +1,15 @@
 package core
 
 import (
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/cyyber/go-qrl/core/transactions"
 	"container/list"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/cyyber/go-qrl/log"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+
+	"github.com/theQRL/go-qrl/core/transactions"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/misc"
 )
 
 type BlockInterface interface {

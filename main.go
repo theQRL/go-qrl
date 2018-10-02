@@ -4,9 +4,10 @@ import (
 	"bufio"
 	"os"
 	"strings"
-	"github.com/cyyber/go-qrl/p2p"
-	"github.com/cyyber/go-qrl/log"
-	c "github.com/cyyber/go-qrl/config"
+
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p"
 )
 
 var (

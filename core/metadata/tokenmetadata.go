@@ -1,9 +1,11 @@
 package metadata
 
 import (
-	"github.com/cyyber/go-qrl/generated"
 	"reflect"
+
 	"github.com/golang/protobuf/proto"
+
+	"github.com/theQRL/go-qrl/generated"
 )
 
 type TokenMetadata struct {

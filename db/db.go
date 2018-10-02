@@ -1,11 +1,13 @@
 package db
 
 import (
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/opt"
-	"github.com/syndtr/goleveldb/leveldb/filter"
-	"github.com/cyyber/go-qrl/log"
 	"sync"
+
+	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/syndtr/goleveldb/leveldb/filter"
+	"github.com/syndtr/goleveldb/leveldb/opt"
+
+	"github.com/theQRL/go-qrl/log"
 )
 
 type LDB struct {

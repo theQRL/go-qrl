@@ -1,10 +1,12 @@
 package misc
 
 import (
-	"github.com/beevik/ntp"
-	"time"
 	"sync"
-	"github.com/cyyber/go-qrl/config"
+	"time"
+
+	"github.com/beevik/ntp"
+
+	"github.com/theQRL/go-qrl/config"
 )
 
 type NTP struct {

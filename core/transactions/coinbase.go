@@ -1,13 +1,14 @@
 package transactions
 
 import (
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
 	"encoding/binary"
-	"github.com/cyyber/go-qrl/misc"
 	"reflect"
-	"github.com/cyyber/go-qrl/core"
-	"github.com/cyyber/go-qrl/generated"
+
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type CoinBase struct {

@@ -1,16 +1,18 @@
 package p2p
 
 import (
-	"net"
-	"github.com/cyyber/go-qrl/log"
-	"sync"
-	"io"
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/golang/protobuf/proto"
-	"time"
 	"encoding/binary"
+	"io"
+	"net"
+	"sync"
+	"time"
+
+	"github.com/golang/protobuf/proto"
 	"github.com/willf/bloom"
-	"github.com/cyyber/go-qrl/config"
+
+	"github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type Peer struct {

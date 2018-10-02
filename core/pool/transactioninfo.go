@@ -1,8 +1,8 @@
 package pool
 
 import (
-	"github.com/cyyber/go-qrl/core/transactions"
-	c "github.com/cyyber/go-qrl/config"
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/transactions"
 )
 
 type TransactionInfo struct {

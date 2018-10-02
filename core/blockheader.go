@@ -1,16 +1,18 @@
 package core
 
 import (
-	"encoding/binary"
 	"bytes"
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/cyyber/go-qrl/log"
+	"encoding/binary"
 	"reflect"
-	"github.com/cyyber/go-qrl/pow"
-	c "github.com/cyyber/go-qrl/config"
+
+	"github.com/golang/protobuf/jsonpb"
+
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/go-qrl/pow"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type BlockHeaderInterface interface {

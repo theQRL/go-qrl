@@ -3,15 +3,17 @@ package transactions
 import (
 	"encoding/binary"
 	"reflect"
-	"github.com/golang/protobuf/proto"
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/cyyber/go-qrl/crypto"
+
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/cyyber/go-qrl/log"
-	"github.com/cyyber/go-qrl/core"
-	c "github.com/cyyber/go-qrl/config"
+	"github.com/golang/protobuf/proto"
+
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type TransactionInterface interface {

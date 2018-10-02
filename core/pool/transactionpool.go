@@ -2,12 +2,13 @@ package pool
 
 import (
 	"container/list"
-	"github.com/cyyber/go-qrl/core"
-	c "github.com/cyyber/go-qrl/config"
-	"github.com/cyyber/go-qrl/core/transactions"
-	"github.com/cyyber/go-qrl/misc"
 	"errors"
 	"reflect"
+
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/transactions"
+	"github.com/theQRL/go-qrl/misc"
 )
 
 type TransactionPool struct {

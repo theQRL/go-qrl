@@ -1,8 +1,8 @@
 package crypto
 
 import (
+	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
-	"github.com/cyyber/go-qrl/misc"
 )
 
 var hashFunctions = map[string] goqrllib.EHashFunction {

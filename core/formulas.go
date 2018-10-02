@@ -1,9 +1,9 @@
 package core
 
 import (
-	"time"
 	"math"
 	"sort"
+	"time"
 )
 
 func CalcCoeff(coinRemainingAtGenesis uint64) float64 {

@@ -1,11 +1,12 @@
 package transactions
 
 import (
-	"encoding/binary"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
-	"github.com/cyyber/go-qrl/core"
+	"encoding/binary"
+
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type SlaveTransaction struct {
