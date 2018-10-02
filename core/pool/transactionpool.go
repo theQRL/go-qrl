@@ -3,6 +3,7 @@ package pool
 import (
 	"container/list"
 	"github.com/cyyber/go-qrl/core"
+	c "github.com/cyyber/go-qrl/config"
 	"github.com/cyyber/go-qrl/core/transactions"
 	"github.com/cyyber/go-qrl/misc"
 	"errors"
@@ -11,7 +12,7 @@ import (
 
 type TransactionPool struct {
 	txPool list.List
-	config *core.Config
+	config c.Config
 	ntp *misc.NTP
 }
 
@@ -89,6 +90,7 @@ func (t *TransactionPool) AddTxFromBlock(block *core.Block, currentBlockHeight u
 			return err
 		}
 	}
+	return nil
 }
 
 func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
@@ -99,4 +101,5 @@ func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
 			// TODO: Broadcast txn to other peers
 		}
 	}
+	return nil
 }

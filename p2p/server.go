@@ -5,9 +5,9 @@ import (
 	"sync"
 	"errors"
 	"github.com/cyyber/go-qrl/log"
-	"github.com/cyyber/go-qrl/core"
 	"fmt"
 	"github.com/willf/bloom"
+	"github.com/cyyber/go-qrl/config"
 )
 
 type conn struct {
@@ -16,7 +16,7 @@ type conn struct {
 }
 
 type Server struct {
-	config *core.Config
+	config *config.Config
 
 	listener net.Listener
 	lock     sync.Mutex
@@ -38,7 +38,7 @@ type peerDrop struct {
 	requested bool // true if signaled by the peer
 }
 
-func (srv *Server) Start(log log.Logger, config *core.Config) (err error) {
+func (srv *Server) Start(log log.Logger, config *config.Config) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {

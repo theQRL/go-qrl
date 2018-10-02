@@ -8,19 +8,25 @@ import (
 	"github.com/cyyber/go-qrl/core"
 )
 
-type MessageTransaction struct {
+type LatticePublicKey struct {
 	Transaction
 }
 
-func (tx *MessageTransaction) MessageHash() []byte {
-	return tx.data.GetMessage().MessageHash
+
+func (tx *LatticePublicKey) KyberPk() []byte {
+	return tx.data.GetLatticePK().KyberPk
 }
 
-func (tx *MessageTransaction) GetHashableBytes() []byte {
+func (tx *LatticePublicKey) DilithiumPk() []byte {
+	return tx.data.GetLatticePK().DilithiumPk
+}
+
+func (tx *LatticePublicKey) GetHashableBytes() []byte {
 	tmp := new(bytes.Buffer)
 	tmp.Write(tx.MasterAddr())
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
-	tmp.Write(tx.MessageHash())
+	tmp.Write(tx.KyberPk())
+	tmp.Write(tx.DilithiumPk())
 
 	tmptxhash := misc.UcharVector{}
 	tmptxhash.AddBytes(tmp.Bytes())
@@ -29,18 +35,12 @@ func (tx *MessageTransaction) GetHashableBytes() []byte {
 	return tmptxhash.GetBytes()
 }
 
-func (tx *MessageTransaction) validateCustom() bool {
-	lenMessageHash := len(tx.MessageHash())
-	if  lenMessageHash > 80 || lenMessageHash == 0 {
-		tx.log.Warn("Message length must be greater than 0 and less than 81")
-		tx.log.Warn("Found message length %s", len(tx.MessageHash()))
-		return false
-	}
-
+func (tx *LatticePublicKey) validateCustom() bool {
+	// FIXME: This is missing
 	return true
 }
 
-func (tx *MessageTransaction) ValidateExtended(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool {
+func (tx *LatticePublicKey) ValidateExtended(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPKState) {
 		return false
 	}
@@ -48,7 +48,8 @@ func (tx *MessageTransaction) ValidateExtended(addrFromState *core.AddressState,
 	balance := addrFromState.Balance()
 
 	if tx.Fee() < 0 {
-		tx.log.Warn("State validation failed for %s because: Negative txn fee", string(tx.Txhash()))
+		tx.log.Warn("Lattice Txn: State validation failed %s : Negative fee %s", string(tx.Txhash()), tx.Fee())
+		return false
 	}
 
 	if balance < tx.Fee() {
@@ -65,7 +66,7 @@ func (tx *MessageTransaction) ValidateExtended(addrFromState *core.AddressState,
 	return true
 }
 
-func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *LatticePublicKey) ApplyStateChanges(addressesState map[string]*core.AddressState) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee() * -1)
 		addrState.AppendTransactionHash(tx.Txhash())
@@ -74,7 +75,7 @@ func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*core.
 	tx.applyStateChangesForPK(addressesState)
 }
 
-func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
+func (tx *LatticePublicKey) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
 		addrState.RemoveTransactionHash(tx.Txhash())
@@ -83,13 +84,13 @@ func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*core
 	tx.revertStateChangesForPK(addressesState, state)
 }
 
-func (tx *MessageTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
+func (tx *LatticePublicKey) SetAffectedAddress(addressesState map[string]*core.AddressState) {
 	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
 	addressesState[string(tx.PK())] = &core.AddressState{}
 }
 
-func CreateMessageTransaction(messageHash []byte, fee uint64, xmssPK []byte, masterAddr []byte) *MessageTransaction {
-	tx := &MessageTransaction{}
+func CreateLatticeTransaction(messageHash []byte, fee uint64, xmssPK []byte, masterAddr []byte) *LatticePublicKey {
+	tx := &LatticePublicKey{}
 
 	if masterAddr != nil {
 		tx.data.MasterAddr = masterAddr

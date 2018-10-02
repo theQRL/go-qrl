@@ -5,10 +5,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/cyyber/go-qrl/misc"
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"github.com/cyyber/go-qrl/core"
 	"reflect"
-	"errors"
 	"math"
 )
 
@@ -82,7 +81,7 @@ func (tx *TokenTransaction) validateCustom() bool {
 		return false
 	}
 
-	if len(tx.InitialBalances()) == 0 {
+	if len(tx.InitialBalances()) <= 0 {
 		tx.log.Warn("Invalid Token Transaction, without any initial balance")
 		return false
 	}
@@ -97,7 +96,7 @@ func (tx *TokenTransaction) validateCustom() bool {
 		}
 	}
 
-	allowedDecimals, err := CalcAllowedDecimals(sumOfInitialBalances)
+	allowedDecimals, err := CalcAllowedDecimals(uint64(sumOfInitialBalances / 10 ^ tx.Decimals()))
 
 	if err != nil {
 		return false
@@ -118,7 +117,7 @@ func (tx *TokenTransaction) validateCustom() bool {
 	return true
 }
 
-func (tx *TokenTransaction) validateExtended(addrFromState *core.AddressState, addrFromPkState *core.AddressState) bool {
+func (tx *TokenTransaction) ValidateExtended(addrFromState *core.AddressState, addrFromPkState *core.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPkState) {
 		return false
 	}
@@ -157,7 +156,7 @@ func (tx *TokenTransaction) validateExtended(addrFromState *core.AddressState, a
 	return true
 }
 
-func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]core.AddressState) {
+func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
@@ -187,13 +186,15 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]core.Add
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee() * -1)
-		if !addrFromProcessed {
-			addrState.AppendTransactionHash(tx.Txhash())
+		if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+			if !addrFromProcessed {
+				addrState.AppendTransactionHash(tx.Txhash())
+			}
 		}
 	}
 
 	if addrState, ok := addressesState[string(addrFromPK)]; ok {
-		if reflect.DeepEqual(tx.AddrFrom(), addrFromPK) {
+		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()){
 			if !addrFromPKProcessed {
 				addrState.AppendTransactionHash(tx.Txhash())
 			}
@@ -203,7 +204,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]core.Add
 	}
 }
 
-func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
+func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
@@ -233,28 +234,30 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]core.Ad
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
-		if !addrFromProcessed {
-			addrState.RemoveTransactionHash(tx.Txhash())
+		if  !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+			if !addrFromProcessed {
+				addrState.RemoveTransactionHash(tx.Txhash())
+			}
 		}
 	}
 
 	if addrState, ok := addressesState[string(addrFromPK)]; ok {
-		if reflect.DeepEqual(tx.AddrFrom(), addrFromPK) {
+		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromPKProcessed {
 				addrState.RemoveTransactionHash(tx.Txhash())
 			}
 		}
-		addrState.IncreaseNonce()
+		addrState.DecreaseNonce()
 		addrState.UnsetOTSKey(uint64(tx.OtsKey()), state)
 	}
 }
 
-func (tx *TokenTransaction) SetAffectedAddress(addressesState map[string]core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = core.AddressState{}
-	addressesState[string(tx.PK())] = core.AddressState{}
+func (tx *TokenTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
+	addressesState[string(tx.PK())] = &core.AddressState{}
 
 	for _, addrAmount := range tx.InitialBalances() {
-		addressesState[string(addrAmount.Address)] = core.AddressState{}
+		addressesState[string(addrAmount.Address)] = &core.AddressState{}
 	}
 }
 
@@ -280,12 +283,16 @@ func CreateToken(
 	tokenTx.Decimals = decimals
 	tokenTx.InitialBalances = initialBalance
 
+	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+		return nil
+	}
+
 	return tx
 }
 
 func CalcAllowedDecimals(value uint64) (uint64, error) {
 	if value == 0 {
-		return 0, errors.New("value cannot be 0")
+		return 19, nil
 	}
 
 	return uint64(math.Max(math.Floor(19 - math.Log10(float64(value))), 0)), nil

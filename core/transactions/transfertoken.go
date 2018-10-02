@@ -1,7 +1,7 @@
 package transactions
 
 import (
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
 	"encoding/binary"
 	"github.com/cyyber/go-qrl/misc"
@@ -35,7 +35,7 @@ func (tx *TransferTokenTransaction) TotalAmount() uint64 {
 	return totalAmount
 }
 
-func (tx *TransferTokenTransaction) GetHashableBytes() goqrllib.UcharVector {
+func (tx *TransferTokenTransaction) GetHashableBytes() []byte {
 	tmp := new(bytes.Buffer)
 	tmp.Write(tx.MasterAddr())
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
@@ -50,7 +50,7 @@ func (tx *TransferTokenTransaction) GetHashableBytes() goqrllib.UcharVector {
 	tmptxhash.AddBytes(tmp.Bytes())
 	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
 
-	return tmptxhash.GetData()
+	return tmptxhash.GetBytes()
 }
 
 func (tx *TransferTokenTransaction) validateCustom() bool {
@@ -122,7 +122,7 @@ func (tx *TransferTokenTransaction) ValidateExtended(addrFromState *core.Address
 	return true
 }
 
-func (tx *TransferTokenTransaction) ApplyStateChanges(addressesState map[string]core.AddressState) {
+func (tx *TransferTokenTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
 	tx.applyStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -145,7 +145,7 @@ func (tx *TransferTokenTransaction) ApplyStateChanges(addressesState map[string]
 	}
 }
 
-func (tx *TransferTokenTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
+func (tx *TransferTokenTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
 	tx.revertStateChangesForPK(addressesState, state)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -168,12 +168,12 @@ func (tx *TransferTokenTransaction) RevertStateChanges(addressesState map[string
 	}
 }
 
-func (tx *TransferTokenTransaction) SetAffectedAddress(addressesState map[string]core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = core.AddressState{}
-	addressesState[string(tx.PK())] = core.AddressState{}
+func (tx *TransferTokenTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
+	addressesState[string(tx.PK())] = &core.AddressState{}
 
 	for _, element := range tx.AddrsTo() {
-		addressesState[string(element)] = core.AddressState{}
+		addressesState[string(element)] = &core.AddressState{}
 	}
 }
 
@@ -188,6 +188,10 @@ func CreateTransferToken(tokenTxhash []byte, addrsTo [][]byte, amounts []uint64,
 	transferTx.TokenTxhash = tokenTxhash
 	transferTx.AddrsTo = addrsTo
 	transferTx.Amounts = amounts
+
+	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+		return nil
+	}
 
 	return tx
 }

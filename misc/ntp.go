@@ -4,7 +4,7 @@ import (
 	"github.com/beevik/ntp"
 	"time"
 	"sync"
-	"github.com/cyyber/go-qrl/core"
+	"github.com/cyyber/go-qrl/config"
 )
 
 type NTP struct {
@@ -12,7 +12,7 @@ type NTP struct {
 
 	drift uint64
 	lastUpdate uint64
-	config *core.Config
+	config *config.Config
 }
 
 func (n *NTP) UpdateTime() error {

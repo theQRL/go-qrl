@@ -3,7 +3,7 @@ package transactions
 import (
 	"encoding/binary"
 	"github.com/cyyber/go-qrl/misc"
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
 	"github.com/cyyber/go-qrl/core"
 )
@@ -88,7 +88,7 @@ func (tx *SlaveTransaction) ValidateExtended(addrFromState *core.AddressState, a
 	return true
 }
 
-func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]core.AddressState) {
+func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
 	tx.applyStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -100,7 +100,7 @@ func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]core.Add
 	}
 }
 
-func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
+func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
 	tx.revertStateChangesForPK(addressesState, state)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -112,7 +112,7 @@ func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]core.Ad
 	}
 }
 
-func (tx *SlaveTransaction) SetAffectedAddress(addressesState map[string]core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = core.AddressState{}
-	addressesState[string(tx.PK())] = core.AddressState{}
+func (tx *SlaveTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
+	addressesState[string(tx.PK())] = &core.AddressState{}
 }

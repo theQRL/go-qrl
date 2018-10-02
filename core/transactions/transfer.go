@@ -1,7 +1,7 @@
 package transactions
 
 import (
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"github.com/cyyber/go-qrl/misc"
 	"encoding/binary"
 	"bytes"
@@ -29,7 +29,7 @@ func (tx *TransferTransaction) TotalAmounts() uint64 {
 	return totalAmount
 }
 
-func (tx *TransferTransaction) GetHashableBytes() goqrllib.UcharVector {
+func (tx *TransferTransaction) GetHashableBytes() []byte {
 	tmp := new(bytes.Buffer)
 	tmp.Write(tx.MasterAddr())
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
@@ -42,7 +42,7 @@ func (tx *TransferTransaction) GetHashableBytes() goqrllib.UcharVector {
 	tmptxhash.AddBytes(tmp.Bytes())
 	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
 
-	return tmptxhash.GetData()
+	return tmptxhash.GetBytes()
 }
 
 func (tx *TransferTransaction) validateCustom() bool {
@@ -88,7 +88,7 @@ func (tx *TransferTransaction) validateCustom() bool {
 	return true
 }
 
-func (tx *TransferTransaction) validateExtended(
+func (tx *TransferTransaction) ValidateExtended(
 	addrFromState *core.AddressState,
 	addrFromPkState *core.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPkState) {
@@ -113,7 +113,7 @@ func (tx *TransferTransaction) validateExtended(
 	return true
 }
 
-func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]core.AddressState) {
+func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
 	tx.applyStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -137,7 +137,7 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]core.
 	}
 }
 
-func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]core.AddressState, state *core.State) {
+func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
 	tx.revertStateChangesForPK(addressesState, state)
 
 	//TODO: Fix when State is ready
@@ -162,16 +162,16 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]core
 	}
 }
 
-func (tx *TransferTransaction) SetAffectedAddress(addressesState map[string]core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = core.AddressState{}
-	addressesState[string(tx.PK())] = core.AddressState{}
+func (tx *TransferTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
+	addressesState[string(tx.PK())] = &core.AddressState{}
 
 	for _, element := range tx.AddrsTo() {
-		addressesState[string(element)] = core.AddressState{}
+		addressesState[string(element)] = &core.AddressState{}
 	}
 }
 
-func Create(addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TransferTransaction {
+func CreateTransfer(addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TransferTransaction {
 	tx := &TransferTransaction{}
 
 	if masterAddr != nil {
@@ -185,6 +185,10 @@ func Create(addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, maste
 	tx.data.GetTransfer().AddrsTo = addrsTo
 
 	tx.data.GetTransfer().Amounts = amounts
+
+	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+		return nil
+	}
 
 	return tx
 }

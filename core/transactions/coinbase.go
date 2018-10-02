@@ -1,12 +1,13 @@
 package transactions
 
 import (
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
 	"encoding/binary"
 	"github.com/cyyber/go-qrl/misc"
 	"reflect"
 	"github.com/cyyber/go-qrl/core"
+	"github.com/cyyber/go-qrl/generated"
 )
 
 type CoinBase struct {
@@ -49,7 +50,7 @@ func (tx *CoinBase) validateCustom() bool {
 	return true
 }
 
-func (tx *CoinBase) ValidateExtended() bool {
+func (tx *CoinBase) ValidateExtended(blockNumber uint64) bool {
 	if reflect.DeepEqual(tx.MasterAddr(), tx.config.Dev.Genesis.CoinbaseAddress) {
 		tx.log.Warn("Master address doesnt match with coinbase_address")
 		tx.log.Warn(string(tx.MasterAddr()), tx.config.Dev.Genesis.CoinbaseAddress)
@@ -64,7 +65,7 @@ func (tx *CoinBase) ValidateExtended() bool {
 	return tx.validateCustom()
 }
 
-func (tx *CoinBase) ApplyStateChanges(addressesState map[string]core.AddressState) {
+func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*core.AddressState) {
 	strAddrTo := string(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
 		addrState.AddBalance(tx.Amount())
@@ -80,7 +81,7 @@ func (tx *CoinBase) ApplyStateChanges(addressesState map[string]core.AddressStat
 	}
 }
 
-func (tx *CoinBase) RevertStateChanges(addressesState map[string]core.AddressState) {
+func (tx *CoinBase) RevertStateChanges(addressesState map[string]*core.AddressState) {
 	strAddrTo := string(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
 		addrState.AddBalance(tx.Amount() * -1)
@@ -96,12 +97,17 @@ func (tx *CoinBase) RevertStateChanges(addressesState map[string]core.AddressSta
 	}
 }
 
-func (tx *CoinBase) SetAffectedAddress(addressesState map[string]core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = core.AddressState{}
-	addressesState[string(tx.PK())] = core.AddressState{}
+func (tx *CoinBase) SetAffectedAddress(addressesState map[string]*core.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
+	addressesState[string(tx.PK())] = &core.AddressState{}
 
-	addressesState[string(tx.MasterAddr())] = core.AddressState{}
-	addressesState[string(tx.AddrTo())] = core.AddressState{}
+	addressesState[string(tx.MasterAddr())] = &core.AddressState{}
+	addressesState[string(tx.AddrTo())] = &core.AddressState{}
+}
+
+func (tx *CoinBase) FromPBData(transaction *generated.Transaction) *CoinBase {
+	tx.data = transaction
+	return tx
 }
 
 func CreateCoinBase(minerAddress []byte, blockNumber uint64, amount uint64) *CoinBase {
@@ -112,6 +118,9 @@ func CreateCoinBase(minerAddress []byte, blockNumber uint64, amount uint64) *Coi
 	tx.data.Nonce = blockNumber + 1
 	tx.data.TransactionHash = tx.GetHashableBytes()
 
+	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+		return nil
+	}
+
 	return tx
 }
-

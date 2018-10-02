@@ -4,12 +4,13 @@ import (
 	"encoding/binary"
 	"bytes"
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"github.com/cyyber/go-qrl/misc"
 	"github.com/cyyber/go-qrl/generated"
 	"github.com/cyyber/go-qrl/log"
 	"reflect"
 	"github.com/cyyber/go-qrl/pow"
+	c "github.com/cyyber/go-qrl/config"
 )
 
 type BlockHeaderInterface interface {
@@ -64,7 +65,7 @@ type BlockHeaderInterface interface {
 type BlockHeader struct {
 	blockHeader *generated.BlockHeader
 
-	config *Config
+	config *c.Config
 	log    log.Logger
 }
 
@@ -302,7 +303,7 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 	return bh
 }
 
-func BlockRewardCalc(blockNumber uint64, config *Config) uint64 {
+func BlockRewardCalc(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}

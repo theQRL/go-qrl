@@ -1,7 +1,7 @@
 package misc
 
 import (
-	"github.com/theQRL/qrllib/goqrllib"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
 	"container/list"
 	"math"
@@ -54,17 +54,15 @@ func (v *UcharVector) New(data goqrllib.UcharVector) {
 
 func BytesToUCharVector(data []byte) goqrllib.UcharVector {
 	vector := goqrllib.NewUcharVector__SWIG_0()
-	//z := *(*[]byte)(unsafe.Pointer(vector.Swigcptr()))
-	//var sl = struct {
-	//	addr uintptr
-	//	len  int
-	//	cap  int
-	//}{ptr, length, length}
 	for _, element := range data {
 		vector.Add(element)
 	}
 
 	return vector
+}
+
+func Int64ToUCharVector(data int64) goqrllib.UcharVector {
+	return goqrllib.NewUcharVector__SWIG_1(data)
 }
 
 func UCharVectorToBytes(data goqrllib.UcharVector) []byte  {
@@ -103,7 +101,8 @@ func MerkleTXHash(hashes list.List) []byte {
 		}
 		lArray.PushBack(nextLayer)
 	}
-	return lArray.Back().Value.(list.List).Back().Value.([]byte)
+	//return lArray.Back().Value.(list.List).Back().Value.([]byte)
+	return nil
 }
 
 func Reverse(s [][]byte) [][]byte {

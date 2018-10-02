@@ -12,6 +12,7 @@ import (
 	"github.com/cyyber/go-qrl/core/metadata"
 	"math"
 	"github.com/syndtr/goleveldb/leveldb"
+	c "github.com/cyyber/go-qrl/config"
 )
 
 type State struct {
@@ -19,7 +20,7 @@ type State struct {
 
 	lock sync.Mutex
 	log log.Logger
-	config *Config
+	config *c.Config
 }
 
 type RollbackStateInfo struct {
