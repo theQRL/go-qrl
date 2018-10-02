@@ -1,14 +1,17 @@
 package core
 
 import (
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/cyyber/go-qrl/core/transactions"
-	c "github.com/cyyber/go-qrl/config"
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/golang/protobuf/proto"
-	"reflect"
 	"errors"
+	"reflect"
+
+	"github.com/golang/protobuf/proto"
+
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/transactions"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/misc"
+
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type AddressStateInterface interface {

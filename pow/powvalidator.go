@@ -2,8 +2,9 @@ package pow
 
 import (
 	"sync"
+
+	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qryptonight/goqryptonight"
-	"github.com/cyyber/go-qrl/misc"
 )
 
 type PoWValidatorInterface interface {

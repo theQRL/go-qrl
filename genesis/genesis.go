@@ -1,11 +1,13 @@
 package genesis
 
 import (
-	"github.com/cyyber/go-qrl/core"
-	"github.com/cyyber/go-qrl/generated"
-	"io/ioutil"
-	"gopkg.in/yaml.v2"
 	"encoding/json"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
+
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/generated"
 )
 
 type Genesis struct {

@@ -1,12 +1,13 @@
 package transactions
 
 import (
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
-	"github.com/cyyber/go-qrl/misc"
-	"encoding/binary"
 	"bytes"
-	"github.com/cyyber/go-qrl/core"
+	"encoding/binary"
 	"reflect"
+
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type TransferTransaction struct {

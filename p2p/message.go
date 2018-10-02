@@ -1,8 +1,9 @@
 package p2p
 
 import (
-	"github.com/cyyber/go-qrl/generated"
 	"time"
+
+	"github.com/theQRL/go-qrl/generated"
 )
 
 type Msg struct {

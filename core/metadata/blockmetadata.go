@@ -1,11 +1,13 @@
 package metadata
 
 import (
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/cyyber/go-qrl/log"
 	"reflect"
+
 	"github.com/golang/protobuf/proto"
-	"github.com/cyyber/go-qrl/config"
+
+	"github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type BlockMetaData struct {

@@ -1,11 +1,11 @@
 package log
 
 import (
+	"bytes"
+	"fmt"
 	"log"
 	"os"
-	"bytes"
 	"strconv"
-	"fmt"
 	"sync"
 	"time"
 )

@@ -1,13 +1,15 @@
 package p2p
 
 import (
+	"errors"
+	"fmt"
 	"net"
 	"sync"
-	"errors"
-	"github.com/cyyber/go-qrl/log"
-	"fmt"
+
 	"github.com/willf/bloom"
-	"github.com/cyyber/go-qrl/config"
+
+	"github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type conn struct {

@@ -1,8 +1,8 @@
 package p2p
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 )
 
 const (

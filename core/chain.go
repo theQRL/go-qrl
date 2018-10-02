@@ -1,21 +1,24 @@
 package core
 
 import (
-	"github.com/cyyber/go-qrl/core/pool"
-	"github.com/cyyber/go-qrl/generated"
-	"github.com/theQRL/qryptonight/goqryptonight"
-	"github.com/cyyber/go-qrl/core/metadata"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/cyyber/go-qrl/genesis"
-	"github.com/cyyber/go-qrl/core/transactions"
 	"errors"
-	"github.com/cyyber/go-qrl/log"
-	"reflect"
 	"math/big"
-	"github.com/syndtr/goleveldb/leveldb"
+	"reflect"
 	"sync"
-	"github.com/cyyber/go-qrl/pow"
-	c "github.com/cyyber/go-qrl/config"
+
+	"github.com/syndtr/goleveldb/leveldb"
+
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/metadata"
+	"github.com/theQRL/go-qrl/core/pool"
+	"github.com/theQRL/go-qrl/core/transactions"
+	"github.com/theQRL/go-qrl/generated"
+	"github.com/theQRL/go-qrl/genesis"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/qryptonight/goqryptonight"
+
+	"github.com/theQRL/go-qrl/pow"
 )
 
 type Chain struct {

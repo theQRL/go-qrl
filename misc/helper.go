@@ -1,10 +1,11 @@
 package misc
 
 import (
-	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"bytes"
 	"container/list"
 	"math"
+
+	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type UcharVector struct {

@@ -1,9 +1,9 @@
 package pow
 
 import (
+	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qryptonight/goqryptonight"
-	"github.com/cyyber/go-qrl/misc"
-	"github.com/cyyber/go-qrl/core"
 )
 
 type DifficultyTrackerInterface interface {
@@ -18,15 +18,15 @@ type DifficultyTracker struct {
 }
 
 func (d *DifficultyTracker) GetTarget(currentDifficulty goqryptonight.UcharVector) []byte {
-	c := core.GetConfig()
-	ph := goqryptonight.NewPoWHelper(c.Dev.KP, c.Dev.MiningSetpointBlocktime)
+	config := c.GetConfig()
+	ph := goqryptonight.NewPoWHelper(config.Dev.KP, config.Dev.MiningSetpointBlocktime)
 
 	return misc.UCharVectorToBytes(ph.GetTarget(currentDifficulty))
 }
 
 func (d *DifficultyTracker) Get(measurement uint64, parentDifficulty []byte) ([]byte, []byte) {
-	c := core.GetConfig()
-	ph := goqryptonight.NewPoWHelper(c.Dev.KP, c.Dev.MiningSetpointBlocktime)
+	config := c.GetConfig()
+	ph := goqryptonight.NewPoWHelper(config.Dev.KP, config.Dev.MiningSetpointBlocktime)
 
 	currentDifficulty := ph.GetDifficulty(measurement, misc.BytesToUCharVector(parentDifficulty))
 
