@@ -373,6 +373,7 @@ message TransactionExtended {
     Transaction tx = 2;
     bytes addr_from = 3;
     uint64 size = 4;
+    uint64 timestamp_seconds = 5;
 }
 
 message BlockExtended {
@@ -534,11 +535,10 @@ message BlockHeightData {
 }
 
 message BlockMetaData {
-    bool is_orphan = 1;
-    bytes block_difficulty = 2;
-    bytes cumulative_difficulty = 3;
-    repeated bytes child_headerhashes = 4;
-    repeated bytes last_N_headerhashes = 5;     // Keeps last N headerhashes, for measurement of timestamp difference
+    bytes block_difficulty = 1;
+    bytes cumulative_difficulty = 2;
+    repeated bytes child_headerhashes = 3;
+    repeated bytes last_N_headerhashes = 4;     // Keeps last N headerhashes, for measurement of timestamp difference
 }
 
 message BlockNumberMapping {
@@ -571,7 +571,8 @@ message NodeChainState {
     uint64 block_number = 1;
     bytes header_hash = 2;
     bytes cumulative_difficulty = 3;
-    uint64 timestamp = 4;
+    string version = 4;
+    uint64 timestamp = 5;
 }
 
 message NodeHeaderHash {

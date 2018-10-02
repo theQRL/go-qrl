@@ -21,7 +21,7 @@ type TransactionMetadata struct {
 func (m *TransactionMetadata) Reset()                    { *m = TransactionMetadata{} }
 func (m *TransactionMetadata) String() string            { return proto.CompactTextString(m) }
 func (*TransactionMetadata) ProtoMessage()               {}
-func (*TransactionMetadata) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{0} }
+func (*TransactionMetadata) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
 
 func (m *TransactionMetadata) GetTransaction() *Transaction {
 	if m != nil {
@@ -51,7 +51,7 @@ type LastTransactions struct {
 func (m *LastTransactions) Reset()                    { *m = LastTransactions{} }
 func (m *LastTransactions) String() string            { return proto.CompactTextString(m) }
 func (*LastTransactions) ProtoMessage()               {}
-func (*LastTransactions) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{1} }
+func (*LastTransactions) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
 
 func (m *LastTransactions) GetTxMetadata() []*TransactionMetadata {
 	if m != nil {
@@ -71,7 +71,7 @@ type ForkState struct {
 func (m *ForkState) Reset()                    { *m = ForkState{} }
 func (m *ForkState) String() string            { return proto.CompactTextString(m) }
 func (*ForkState) ProtoMessage()               {}
-func (*ForkState) Descriptor() ([]byte, []int) { return fileDescriptor1, []int{2} }
+func (*ForkState) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{2} }
 
 func (m *ForkState) GetInitiatorHeaderhash() []byte {
 	if m != nil {
@@ -107,9 +107,9 @@ func init() {
 	proto.RegisterType((*ForkState)(nil), "qrl.ForkState")
 }
 
-func init() { proto.RegisterFile("stateinfo.proto", fileDescriptor1) }
+func init() { proto.RegisterFile("stateinfo.proto", fileDescriptor4) }
 
-var fileDescriptor1 = []byte{
+var fileDescriptor4 = []byte{
 	// 303 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x91, 0xd1, 0x4a, 0xc3, 0x30,
 	0x14, 0x86, 0xe9, 0x3a, 0x84, 0x9d, 0x0e, 0x1c, 0xd9, 0xc4, 0x22, 0x5e, 0xd4, 0x5d, 0xf5, 0x6a,
