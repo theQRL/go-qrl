@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	c "github.com/theQRL/go-qrl/config"
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/chain"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/p2p"
 )
@@ -19,7 +19,7 @@ var (
 )
 
 func startServer() error {
-	chain, err := core.CreateChain(&logger, config)
+	chain, err := chain.CreateChain(&logger, config)
 	if err != nil {
 		return err
 	}

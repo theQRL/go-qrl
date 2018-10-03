@@ -6,7 +6,7 @@ import (
 	"reflect"
 
 	c "github.com/theQRL/go-qrl/config"
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/block"
 	"github.com/theQRL/go-qrl/core/transactions"
 	"github.com/theQRL/go-qrl/misc"
 )
@@ -63,7 +63,7 @@ func (t *TransactionPool) Remove(tx transactions.TransactionInterface) {
 	}
 }
 
-func (t *TransactionPool) RemoveTxInBlock(block *core.Block) {
+func (t *TransactionPool) RemoveTxInBlock(block *block.Block) {
 	for _, protoTX := range block.Transactions() {
 		tx := transactions.ProtoToTransaction(protoTX)
 		if tx.OtsKey() < t.config.Dev.MaxOTSTracking {
@@ -84,7 +84,7 @@ func (t *TransactionPool) RemoveTxInBlock(block *core.Block) {
 	}
 }
 
-func (t *TransactionPool) AddTxFromBlock(block *core.Block, currentBlockHeight uint64) error {
+func (t *TransactionPool) AddTxFromBlock(block *block.Block, currentBlockHeight uint64) error {
 	for _, protoTX := range block.Transactions() {
 		err := t.Add(transactions.ProtoToTransaction(protoTX), currentBlockHeight, t.ntp.Time())
 		if err != nil {

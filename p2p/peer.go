@@ -11,7 +11,7 @@ import (
 	"github.com/willf/bloom"
 
 	"github.com/theQRL/go-qrl/config"
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/chain"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/log"
 )
@@ -20,7 +20,7 @@ type Peer struct {
 	conn    net.Conn
 	inbound bool
 
-	chain *core.Chain
+	chain *chain.Chain
 
 	wg     sync.WaitGroup
 	closed chan struct{}
@@ -30,7 +30,7 @@ type Peer struct {
 	config *config.Config
 }
 
-func newPeer(conn *net.Conn, inbound bool, chain *core.Chain, log *log.Logger, filter *bloom.BloomFilter, config *config.Config) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, log *log.Logger, filter *bloom.BloomFilter, config *config.Config) *Peer {
 	p := &Peer {
 		conn: *conn,
 		inbound: inbound,

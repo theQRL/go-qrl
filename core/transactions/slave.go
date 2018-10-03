@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/addressstate"
 	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -63,7 +63,7 @@ func (tx *SlaveTransaction) validateCustom() bool {
 	return true
 }
 
-func (tx *SlaveTransaction) ValidateExtended(addrFromState *core.AddressState, addrFromPkState *core.AddressState) bool {
+func (tx *SlaveTransaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPkState) {
 		return false
 	}
@@ -89,7 +89,7 @@ func (tx *SlaveTransaction) ValidateExtended(addrFromState *core.AddressState, a
 	return true
 }
 
-func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	tx.applyStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -101,8 +101,8 @@ func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*core.Ad
 	}
 }
 
-func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
-	tx.revertStateChangesForPK(addressesState, state)
+func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
+	tx.revertStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.Balance() += tx.Fee()
@@ -113,7 +113,7 @@ func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*core.A
 	}
 }
 
-func (tx *SlaveTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
-	addressesState[string(tx.PK())] = &core.AddressState{}
+func (tx *SlaveTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[string(tx.PK())] = &addressstate.AddressState{}
 }

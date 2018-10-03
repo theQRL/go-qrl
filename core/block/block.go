@@ -1,4 +1,4 @@
-package core
+package block
 
 import (
 	"container/list"
@@ -6,10 +6,14 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
+	"github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/addressstate"
+	"github.com/theQRL/go-qrl/core/metadata"
 	"github.com/theQRL/go-qrl/core/transactions"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/misc"
+	"github.com/theQRL/go-qrl/pow"
 )
 
 type BlockInterface interface {
@@ -60,20 +64,20 @@ type BlockInterface interface {
 
 	Validate(futureBlocks map[string]*generated.Block)
 
-	IsDuplicate() bool
+	ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentMetadata metadata.BlockMetaData, measurement uint64, enableLogging bool) bool
 
 	IsFutureBlock() bool
 
 	ValidateParentChildRelation(block generated.Block) bool
 
-	ApplyStateChanges(addressesState map[string]*AddressState)
+	ApplyStateChanges(addressesState map[string]*addressstate.AddressState)
 }
 
 type Block struct {
 	block *generated.Block
 	blockheader *BlockHeader
 
-	config *Config
+	config *config.Config
 	log log.Logger
 }
 
@@ -177,8 +181,8 @@ func DeSerializeBlock(data []byte) (*Block, error) {
 	return b, nil
 }
 
-func (b *Block) PrepareAddressesList() map[string]*AddressState {
-	var addressesState map[string]*AddressState
+func (b *Block) PrepareAddressesList() map[string]*addressstate.AddressState {
+	var addressesState map[string]*addressstate.AddressState
 	for _, protoTX := range b.Transactions() {
 		tx := transactions.ProtoToTransaction(protoTX)
 		tx.SetAffectedAddress(addressesState)
@@ -186,7 +190,7 @@ func (b *Block) PrepareAddressesList() map[string]*AddressState {
 	return addressesState
 }
 
-func (b *Block) ApplyStateChanges(addressesState map[string]*AddressState) bool {
+func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) bool {
 	coinbase := transactions.CoinBase{}
 	coinbase.SetPBData(b.block.Transactions[0])
 
@@ -237,24 +241,44 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*AddressState) bool 
 	return true
 }
 
-func (b *Block) IsDuplicate(s *Chain) bool {
-	_, err := s.GetBlock(b.HeaderHash())
-	if err == nil {
-		return true
+func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentMetadata metadata.BlockMetaData, measurement uint64, enableLogging bool) bool {
+	// parentMetadata, err := c.state.GetBlockMetadata(bh.HeaderHash())
+
+	// measurement, err := c.state.GetMeasurement(bh.Timestamp(), bh.PrevHeaderHash(), parentMetadata)
+	dt := pow.DifficultyTracker{}
+	diff, target := dt.Get(measurement, parentMetadata.BlockDifficulty())
+
+	if enableLogging {
+		// parentBlock, err := c.state.GetBlock(bh.PrevHeaderHash())
+
+		b.log.Debug("-----------------START--------------------")
+		b.log.Debug("Validate                #%s", bh.BlockNumber())
+		b.log.Debug("block.timestamp         %s", bh.Timestamp())
+		b.log.Debug("parent_block.timestamp  %s", parentBlock.Timestamp())
+		b.log.Debug("parent_block.difficulty %s", string(parentMetadata.BlockDifficulty()))
+		b.log.Debug("diff                    %s", string(diff))
+		b.log.Debug("target                  %s", string(target))
+		b.log.Debug("-------------------END--------------------")
 	}
-	return false
-}
 
-func (b *Block) Validate(c *Chain, futureBlocks map[string]*Block) bool {
-	var parentBlock *Block
-	var ok bool
-
-	if b.IsDuplicate(c) {
-		b.log.Warn("Duplicate Block #%s %s", b.BlockNumber(), string(b.HeaderHash()))
+	if !pow.GetPowValidator().VerifyInput(bh.MiningBlob(), target) {
+		if enableLogging {
+			b.log.Warn("PoW verification failed")
+		}
 		return false
 	}
 
-	parentBlock, _ = c.GetBlock(b.PrevHeaderHash())
+	return true
+
+}
+
+func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetadata metadata.BlockMetaData, measurement uint64, futureBlocks map[string]*Block) bool {
+	var ok bool
+
+	if blockFromState != nil {
+		b.log.Warn("Duplicate Block #%s %s", b.BlockNumber(), string(b.HeaderHash()))
+		return false
+	}
 
 	if parentBlock == nil {
 		parentBlock, ok = futureBlocks[string(b.PrevHeaderHash())]
@@ -270,7 +294,7 @@ func (b *Block) Validate(c *Chain, futureBlocks map[string]*Block) bool {
 		return false
 	}
 
-	if !c.ValidateMiningNonce(b.blockheader, false) {
+	if !b.ValidateMiningNonce(b.blockheader, parentBlock, parentMetadata, measurement,false) {
 		b.log.Warn("Failed PoW Validation")
 		return false
 	}

@@ -9,7 +9,7 @@ import (
 	"github.com/willf/bloom"
 
 	"github.com/theQRL/go-qrl/config"
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/chain"
 	"github.com/theQRL/go-qrl/log"
 )
 
@@ -21,7 +21,7 @@ type conn struct {
 type Server struct {
 	config *config.Config
 
-	chain *core.Chain
+	chain *chain.Chain
 
 	listener net.Listener
 	lock     sync.Mutex
@@ -43,7 +43,7 @@ type peerDrop struct {
 	requested bool // true if signaled by the peer
 }
 
-func (srv *Server) Start(log log.Logger, config *config.Config, chain *core.Chain) (err error) {
+func (srv *Server) Start(log log.Logger, config *config.Config, chain *chain.Chain) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
