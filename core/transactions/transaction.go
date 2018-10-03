@@ -1,6 +1,7 @@
 package transactions
 
 import (
+	"bytes"
 	"encoding/binary"
 	"reflect"
 
@@ -179,7 +180,21 @@ func (tx *Transaction) UpdateTxhash(hashableBytes goqrllib.UcharVector) {
 }
 
 func (tx *Transaction) GetHashableBytes() []byte {
-	//TODO When State is ready
+	panic("Not Implemented")
+	return nil
+}
+
+func (tx *Transaction) GenerateTxHash() []byte {
+	tmp := new(bytes.Buffer)
+	tmp.Write(tx.GetHashableBytes())
+	tmp.Write(tx.Signature())
+	tmp.Write(tx.PK())
+
+	tmptxhash := misc.UcharVector{}
+	tmptxhash.AddBytes(tmp.Bytes())
+	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
+
+	return tmptxhash.GetBytes()
 }
 
 func (tx *Transaction) Sign(xmss crypto.XMSS, message goqrllib.UcharVector) {

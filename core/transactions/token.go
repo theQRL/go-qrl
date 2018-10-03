@@ -36,7 +36,7 @@ func (tx *TokenTransaction) InitialBalances() []*generated.AddressAmount {
 	return tx.data.GetToken().InitialBalances
 }
 
-func (tx *TokenTransaction) GetHashable() goqrllib.UcharVector {
+func (tx *TokenTransaction) GetHashableBytes() []byte {
 	tmp := new(bytes.Buffer)
 	tmp.Write(tx.MasterAddr())
 	binary.Write(tmp, binary.BigEndian, tx.Fee())
@@ -54,7 +54,7 @@ func (tx *TokenTransaction) GetHashable() goqrllib.UcharVector {
 	tmptxhash.AddBytes(tmp.Bytes())
 	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
 
-	return tmptxhash.GetData()
+	return tmptxhash.GetBytes()
 }
 
 func (tx *TokenTransaction) validateCustom() bool {
@@ -174,7 +174,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 			addrFromPKProcessed = true
 		}
 		if addrState, ok := addressesState[string(addrAmount.Address)]; ok {
-			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount)
+			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount, false)
 			addrState.AppendTransactionHash(tx.Txhash())
 		}
 	}
