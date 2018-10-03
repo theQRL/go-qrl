@@ -75,6 +75,8 @@ type TransactionInterface interface {
 
 	ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool
 
+	ValidateExtendedCoinbase(blockNumber uint64) bool
+
 	FromJSON(jsonData string) *Transaction
 
 	JSON() (string, error)
@@ -304,6 +306,11 @@ func (tx *Transaction) ValidateExtended(addrFromState *addressstate.AddressState
 	return false
 }
 
+func (tx *Transaction) ValidateExtendedCoinbase(blockNumber uint64) bool {
+	panic("Not Implemented")
+	return false
+}
+
 func (tx *Transaction) FromJSON(jsonData string) *Transaction {
 	tx.data = &generated.Transaction{}
 	jsonpb.UnmarshalString(jsonData, tx.data)
@@ -317,7 +324,7 @@ func (tx *Transaction) JSON() (string, error) {
 
 func ProtoToTransaction(protoTX *generated.Transaction) TransactionInterface {
 	var tx TransactionInterface
-	switch _ := protoTX.TransactionType.(type) {
+	switch protoTX.TransactionType.(type) {
 	case *generated.Transaction_Transfer_:
 		tx = &TransferTransaction{}
 	case *generated.Transaction_Coinbase:
@@ -331,7 +338,7 @@ func ProtoToTransaction(protoTX *generated.Transaction) TransactionInterface {
 	}
 
 	if tx != nil {
-		tx.data = protoTX
+		tx.SetPBData(protoTX)
 	}
 
 	return tx
