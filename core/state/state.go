@@ -764,7 +764,8 @@ func (s *State) GetState(headerHash []byte, addressesState map[string]*addressst
 		txs := b.Transactions()
 		for i := len(txs); i >= 0; i-- {
 			tx := transactions.ProtoToTransaction(txs[i])
-			tx.RevertStateChanges(addressesState, s)
+			tx.RevertStateChanges(addressesState)
+			s.UnsetOTSKey(*addressesState[tx.AddrFromPK()], uint64(tx.OtsKey()))
 		}
 
 		newBlock, err := s.GetBlock(b.PrevHeaderHash())
