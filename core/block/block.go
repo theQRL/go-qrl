@@ -194,7 +194,7 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 	coinbase := transactions.CoinBase{}
 	coinbase.SetPBData(b.block.Transactions[0])
 
-	if !coinbase.ValidateExtended(b.BlockNumber()) {
+	if !coinbase.ValidateExtendedCoinbase(b.BlockNumber()) {
 		b.log.Warn("coinbase transaction failed")
 		return false
 	}
@@ -308,10 +308,11 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 		return false
 	}
 
-	coinbaseTX := transactions.CoinBase{}.FromPBData(b.Transactions()[0])
+	coinbaseTX := transactions.CoinBase{}
+	coinbaseTX.FromPBData(b.Transactions()[0])
 	coinbaseAmount := coinbaseTX.Amount()
 
-	if !coinbaseTX.ValidateExtended(b.BlockNumber()) {
+	if !coinbaseTX.ValidateExtendedCoinbase(b.BlockNumber()) {
 		return false
 	}
 

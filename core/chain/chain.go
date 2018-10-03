@@ -113,7 +113,7 @@ func (c *Chain) Load(genesisBlock *block.Block) error {
 		coinBase.SetPBData(txs[0])
 		addressesState[string(coinBase.AddrTo())] = addressstate.GetDefaultAddressState(coinBase.AddrTo())
 
-		if !coinBase.ValidateExtended(gen.BlockNumber()) {
+		if !coinBase.ValidateExtendedCoinbase(gen.BlockNumber()) {
 			return errors.New("coinbase validation failed")
 		}
 
