@@ -93,7 +93,7 @@ func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*address
 	tx.applyStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
-		addrState.Balance() -= tx.Fee()
+		addrState.SubtractBalance(tx.Fee())
 		for i := 0; i < len(tx.SlavePKs()) ; i++ {
 			addrState.AddSlavePKSAccessType(tx.SlavePKs()[i], tx.AccessTypes()[i])
 		}
@@ -105,7 +105,7 @@ func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*addres
 	tx.revertStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
-		addrState.Balance() += tx.Fee()
+		addrState.AddBalance(tx.Fee())
 		for i := 0; i < len(tx.SlavePKs()) ; i++ {
 			addrState.RemoveSlavePKSAccessType(tx.SlavePKs()[i])
 		}

@@ -186,7 +186,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 	}
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
-		addrState.AddBalance(tx.Fee() * -1)
+		addrState.SubtractBalance(tx.Fee())
 		if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromProcessed {
 				addrState.AppendTransactionHash(tx.Txhash())
@@ -222,7 +222,7 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addres
 			addrFromPKProcessed = true
 		}
 		if addrState, ok := addressesState[string(addrAmount.Address)]; ok {
-			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount * -1)
+			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount, true)
 			addrState.RemoveTransactionHash(tx.Txhash())
 		}
 	}

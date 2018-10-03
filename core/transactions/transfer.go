@@ -119,7 +119,7 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
-		addrState.AddBalance(total * -1)
+		addrState.SubtractBalance(total)
 		addrState.AppendTransactionHash(tx.Txhash())
 	}
 
@@ -155,7 +155,7 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 		amount := amounts[index]
 
 		if addrState, ok := addressesState[string(addrTo)]; ok {
-			addrState.AddBalance(amount * -1)
+			addrState.SubtractBalance(amount)
 			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
 				addrState.RemoveTransactionHash(tx.Txhash())
 			}
