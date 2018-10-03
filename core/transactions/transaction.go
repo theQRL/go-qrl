@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	c "github.com/theQRL/go-qrl/config"
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/addressstate"
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/log"
@@ -34,6 +34,8 @@ type TransactionInterface interface {
 
 	AddrFrom() []byte
 
+	AddrFromPK() string
+
 	OtsKey() uint16
 
 	GetOtsFromSignature(signature []byte) uint64
@@ -54,23 +56,23 @@ type TransactionInterface interface {
 
 	Sign(xmss crypto.XMSS, message goqrllib.UcharVector)
 
-	ApplyStateChanges(addressesState map[string]*core.AddressState)
+	ApplyStateChanges(addressesState map[string]*addressstate.AddressState)
 
-	RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State)
+	RevertStateChanges(addressesState map[string]*addressstate.AddressState)
 
-	applyStateChangesForPK(addressesState map[string]*core.AddressState)
+	applyStateChangesForPK(addressesState map[string]*addressstate.AddressState)
 
-	revertStateChangesForPK(addressesState map[string]*core.AddressState, state *core.State)
+	revertStateChangesForPK(addressesState map[string]*addressstate.AddressState)
 
-	SetAffectedAddress(addressesState map[string]*core.AddressState)
+	SetAffectedAddress(addressesState map[string]*addressstate.AddressState)
 
 	validateCustom() bool
 
 	Validate(hashableBytes goqrllib.UcharVector, verifySignature bool) bool
 
-	ValidateSlave(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool
+	ValidateSlave(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool
 
-	ValidateExtended(addrFromState *core.AddressState, addrFromPkState *core.AddressState) bool
+	ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool
 
 	FromJSON(jsonData string) *Transaction
 
@@ -127,7 +129,11 @@ func (tx *Transaction) AddrFrom() []byte {
 
 }
 
-func (tx *Transaction) OtsKey() uint16 {
+func (tx *Transaction) AddrFromPK() string {
+	return misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+}
+
+func (tx *Transaction) OtsKey() uint16 { // Todo: Return type should uint64
 	return binary.BigEndian.Uint16(tx.data.Signature[0:8])
 }
 
@@ -180,7 +186,7 @@ func (tx *Transaction) Sign(xmss crypto.XMSS, message goqrllib.UcharVector) {
 	tx.data.Signature = xmss.Sign(message)
 }
 
-func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*core.AddressState) {
+func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	if _, ok := addressesState[addrFromPK]; ok {
 		if string(tx.AddrFrom()) != addrFromPK {
@@ -191,28 +197,28 @@ func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*core.Ad
 	}
 }
 
-func (tx *Transaction) revertStateChangesForPK(addressesState map[string]*core.AddressState, state *core.State) {
+func (tx *Transaction) revertStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	if _, ok := addressesState[addrFromPK]; ok {
 		if string(tx.AddrFrom()) != addrFromPK {
 			addressesState[addrFromPK].RemoveTransactionHash(tx.Txhash())
 		}
 		addressesState[addrFromPK].DecreaseNonce()
-		addressesState[addrFromPK].UnsetOTSKey(tx.OtsKey(), state) //TODO: Fix when state is ready
+		// Remember to Call UnsetOTSKey
 	}
 }
 
-func (tx *Transaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *Transaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	panic("Not Implemented")
 }
 
-func (tx *Transaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
+func (tx *Transaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	panic("Not Implemented")
 }
 
-func (tx *Transaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
-	addressesState[string(tx.PK())] = &core.AddressState{}
+func (tx *Transaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[string(tx.PK())] = &addressstate.AddressState{}
 }
 
 func (tx *Transaction) validateCustom() bool {
@@ -254,7 +260,7 @@ func (tx *Transaction) Validate(hashableBytes goqrllib.UcharVector, verifySignat
 	return true
 }
 
-func (tx *Transaction) ValidateSlave(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool {
+func (tx *Transaction) ValidateSlave(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 
 	if string(tx.MasterAddr()) == addrFromPK {
@@ -278,7 +284,7 @@ func (tx *Transaction) ValidateSlave(addrFromState *core.AddressState, addrFromP
 	return true
 }
 
-func (tx *Transaction) ValidateExtended(addrFromState *core.AddressState, addrFromPkState *core.AddressState) bool {
+func (tx *Transaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool {
 	panic("Not Implemented")
 	return false
 }

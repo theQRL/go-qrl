@@ -1,13 +1,11 @@
-package core
+package addressstate
 
 import (
-	"errors"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
 
 	c "github.com/theQRL/go-qrl/config"
-	"github.com/theQRL/go-qrl/core/transactions"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/misc"
 
@@ -46,10 +44,6 @@ type AddressStateInterface interface {
 
 	RemoveSlavePKSAccessType(slavePK []byte)
 
-	AddLatticePK(latticeTx *transactions.LatticePublicKey)
-
-	RemoveLatticePK(latticeTx *transactions.LatticePublicKey)
-
 	IncreaseNonce()
 
 	DecreaseNonce()
@@ -61,8 +55,6 @@ type AddressStateInterface interface {
 	OTSKeyReuse(otsKeyIndex uint16) bool
 
 	SetOTSKey(otsKeyIndex uint16)
-
-	UnsetOTSKey(otsKeyIndex uint16, state *State)
 
 	IsValidAddress(address []byte) bool
 
@@ -162,24 +154,6 @@ func (a *AddressState) RemoveSlavePKSAccessType(slavePK []byte) {
 	delete(a.data.SlavePksAccessType, string(slavePK))
 }
 
-func (a *AddressState) AddLatticePK(latticeTx *transactions.LatticePublicKey) {
-	latticePK := &generated.LatticePK{
-		Txhash: latticeTx.Txhash(),
-		DilithiumPk: latticeTx.DilithiumPk(),
-		KyberPk: latticeTx.KyberPk(),
-	}
-
-	a.data.LatticePKList = append(a.data.LatticePKList, latticePK)
-}
-
-func (a *AddressState) RemoveLatticePK(latticeTx *transactions.LatticePublicKey) {
-	for i, latticePK := range a.data.LatticePKList {
-		if reflect.DeepEqual(latticePK.Txhash, latticeTx.Txhash()) {
-			a.data.LatticePKList = append(a.data.LatticePKList[0:i], a.data.LatticePKList[i+1:]...)
-		}
-	}
-}
-
 func (a *AddressState) IncreaseNonce() {
 	a.data.Nonce++
 }
@@ -222,31 +196,6 @@ func (a *AddressState) SetOTSKey(otsKeyIndex uint64) {
 	} else {
 		a.data.OtsCounter = otsKeyIndex
 	}
-}
-
-func (a *AddressState) UnsetOTSKey(otsKeyIndex uint64, state *State) error {
-	if otsKeyIndex < uint64(a.config.Dev.MaxOTSTracking) {
-		offset := otsKeyIndex >> 3
-		relative := otsKeyIndex % 8
-		bitfield := a.data.OtsBitfield[offset]
-		a.data.OtsBitfield[offset][0] = bitfield[0] & ^(1 << relative)
-		return nil
-	} else {
-		a.data.OtsCounter = 0
-		hashes := a.TransactionHashes()
-		for i := len(hashes); i >= 0 ; i-- {
-			tm, err := state.GetTxMetadata(hashes[i])
-			if err != nil {
-				return err
-			}
-			tx := transactions.ProtoToTransaction(tm.Transaction)
-			if tx.OtsKey() >= a.config.Dev.MaxOTSTracking {
-				a.data.OtsCounter = uint64(tx.OtsKey())
-				return nil
-			}
-		}
-	}
-	return errors.New("OTS key didn't change")
 }
 
 func IsValidAddress(address []byte) bool {

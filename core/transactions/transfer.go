@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 	"reflect"
 
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/addressstate"
 	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -74,13 +74,13 @@ func (tx *TransferTransaction) validateCustom() bool {
 		return false
 	}
 
-	if !core.IsValidAddress(tx.AddrFrom()) {
+	if !addressstate.IsValidAddress(tx.AddrFrom()) {
 		tx.log.Warn("[TransferTransaction] Invalid address addr_from: %s", tx.AddrFrom())
 		return false
 	}
 
 	for _, addrTo := range tx.AddrsTo() {
-		if !core.IsValidAddress(addrTo) {
+		if !addressstate.IsValidAddress(addrTo) {
 			tx.log.Warn("[TransferTransaction] Invalid address addr_to: %s", tx.AddrsTo())
 			return false
 		}
@@ -90,8 +90,8 @@ func (tx *TransferTransaction) validateCustom() bool {
 }
 
 func (tx *TransferTransaction) ValidateExtended(
-	addrFromState *core.AddressState,
-	addrFromPkState *core.AddressState) bool {
+	addrFromState *addressstate.AddressState,
+	addrFromPkState *addressstate.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPkState) {
 		return false
 	}
@@ -114,7 +114,7 @@ func (tx *TransferTransaction) ValidateExtended(
 	return true
 }
 
-func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	tx.applyStateChangesForPK(addressesState)
 
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -138,8 +138,8 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*core
 	}
 }
 
-func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
-	tx.revertStateChangesForPK(addressesState, state)
+func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
+	tx.revertStateChangesForPK(addressesState)
 
 	//TODO: Fix when State is ready
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
@@ -163,12 +163,12 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*cor
 	}
 }
 
-func (tx *TransferTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
-	addressesState[string(tx.PK())] = &core.AddressState{}
+func (tx *TransferTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[string(tx.PK())] = &addressstate.AddressState{}
 
 	for _, element := range tx.AddrsTo() {
-		addressesState[string(element)] = &core.AddressState{}
+		addressesState[string(element)] = &addressstate.AddressState{}
 	}
 }
 

@@ -6,7 +6,7 @@ import (
 	"math"
 	"reflect"
 
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/addressstate"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
@@ -118,25 +118,25 @@ func (tx *TokenTransaction) validateCustom() bool {
 	return true
 }
 
-func (tx *TokenTransaction) ValidateExtended(addrFromState *core.AddressState, addrFromPkState *core.AddressState) bool {
+func (tx *TokenTransaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPkState) {
 		return false
 	}
 
 	txBalance := addrFromState.Balance()
 
-	if !core.IsValidAddress(tx.AddrFrom()) {
+	if !addressstate.IsValidAddress(tx.AddrFrom()) {
 		tx.log.Warn("Invalid address addr_from: %s", tx.AddrFrom())
 		return false
 	}
 
-	if !core.IsValidAddress(tx.Owner()) {
+	if !addressstate.IsValidAddress(tx.Owner()) {
 		tx.log.Warn("Invalid address owner_addr: %s", tx.Owner())
 		return false
 	}
 
 	for _, addrBalance := range tx.InitialBalances() {
-		if !core.IsValidAddress(addrBalance.Address) {
+		if !addressstate.IsValidAddress(addrBalance.Address) {
 			tx.log.Warn("Invalid address address in initial_balances: %s", addrBalance.Address)
 			return false
 		}
@@ -157,7 +157,7 @@ func (tx *TokenTransaction) ValidateExtended(addrFromState *core.AddressState, a
 	return true
 }
 
-func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
@@ -205,7 +205,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*core.Ad
 	}
 }
 
-func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
+func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
@@ -249,16 +249,16 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*core.A
 			}
 		}
 		addrState.DecreaseNonce()
-		addrState.UnsetOTSKey(uint64(tx.OtsKey()), state)
+		// Remember to Unset OTS Key
 	}
 }
 
-func (tx *TokenTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
-	addressesState[string(tx.PK())] = &core.AddressState{}
+func (tx *TokenTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[string(tx.PK())] = &addressstate.AddressState{}
 
 	for _, addrAmount := range tx.InitialBalances() {
-		addressesState[string(addrAmount.Address)] = &core.AddressState{}
+		addressesState[string(addrAmount.Address)] = &addressstate.AddressState{}
 	}
 }
 

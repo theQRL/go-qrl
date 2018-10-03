@@ -1,7 +1,8 @@
-package core
+package state
 
 import (
 	"encoding/binary"
+	"errors"
 	"math"
 	"reflect"
 	"sync"
@@ -10,6 +11,9 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 
 	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/addressstate"
+	"github.com/theQRL/go-qrl/core/block"
+	"github.com/theQRL/go-qrl/core/formulas"
 	"github.com/theQRL/go-qrl/core/metadata"
 	"github.com/theQRL/go-qrl/core/transactions"
 	"github.com/theQRL/go-qrl/db"
@@ -26,7 +30,7 @@ type State struct {
 }
 
 type RollbackStateInfo struct {
-	addressesState     map[string]*AddressState
+	addressesState     map[string]*addressstate.AddressState
 	rollbackHeaderHash []byte
 	hashPath           [][]byte
 }
@@ -55,23 +59,23 @@ func (s *State) WriteBatch(batch *leveldb.Batch) {
 	s.db.WriteBatch(batch, true)
 }
 
-func (s *State) GetBlockSizeLimit(b *Block) (int, error) {
+func (s *State) GetBlockSizeLimit(b *block.Block) (int, error) {
 	blockSizeList := make([]int, 10)
 	for i := 0; i < 10; i++ {
-		block, err := s.GetBlock(b.HeaderHash())
+		b, err := s.GetBlock(b.HeaderHash())
 		if err != nil {
 			return 0, err
 		}
-		blockSizeList[i] = block.Size()
-		if block.BlockNumber() == 0 {
+		blockSizeList[i] = b.Size()
+		if b.BlockNumber() == 0 {
 			break
 		}
 	}
 
-	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier * float64(Median(blockSizeList))))), nil
+	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier * float64(formulas.Median(blockSizeList))))), nil
 }
 
-func (s *State) PutBlock(b *Block, batch *leveldb.Batch) error {
+func (s *State) PutBlock(b *block.Block, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -86,7 +90,7 @@ func (s *State) PutBlock(b *Block, batch *leveldb.Batch) error {
 	return nil
 }
 
-func (s *State) GetBlock(headerHash []byte) (*Block, error) {
+func (s *State) GetBlock(headerHash []byte) (*block.Block, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -96,7 +100,7 @@ func (s *State) GetBlock(headerHash []byte) (*Block, error) {
 		return nil, err
 	}
 
-	return DeSerializeBlock(value)
+	return block.DeSerializeBlock(value)
 }
 
 func (s *State) RemoveBlock(headerHash []byte) error {
@@ -189,7 +193,7 @@ func (s *State) RemoveBlockNumberMapping(blockNumber uint64) error {
 	return s.db.Delete(key)
 }
 
-func (s *State) GetBlockByNumber(blockNumber uint64) (*Block, error) {
+func (s *State) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -218,7 +222,7 @@ func (s *State) GetBlockByNumber(blockNumber uint64) (*Block, error) {
 	return block, err
 }
 
-func (s *State) GetLastBlock() (*Block, error) {
+func (s *State) GetLastBlock() (*block.Block, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -263,7 +267,7 @@ func (s *State) GetChainHeight() (uint64, error) {
 }
 
 
-func (s *State) UpdateLastTransactions(block *Block, batch *leveldb.Batch) error {
+func (s *State) UpdateLastTransactions(block *block.Block, batch *leveldb.Batch) error {
 	// Skip if only coinbase transaction
 	if len(block.Transactions()) == 1 {
 		return nil
@@ -319,7 +323,7 @@ func (s *State) GetLastTransactions() (*generated.LastTransactions, error) {
 	return lastTransactions, err
 }
 
-func (s *State) RemoveLastTransactions(block *Block, batch *leveldb.Batch) error {
+func (s *State) RemoveLastTransactions(block *block.Block, batch *leveldb.Batch) error {
 	// Skip if only coinbase transaction
 	if len(block.Transactions()) == 1 {
 		return nil
@@ -535,7 +539,7 @@ func (s *State) RemoveTxMetadata(tx *transactions.Transaction) error {
 	return nil
 }
 
-func (s *State) UpdateTxMetadata(block *Block, batch *leveldb.Batch) error {
+func (s *State) UpdateTxMetadata(block *block.Block, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -576,7 +580,7 @@ func (s *State) UpdateTxMetadata(block *Block, batch *leveldb.Batch) error {
 	return nil
 }
 
-func (s *State) RollbackTxMetadata(block *Block, batch *leveldb.Batch) error {
+func (s *State) RollbackTxMetadata(block *block.Block, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -671,7 +675,7 @@ func (s *State) DeleteForkState() error {
 	return nil
 }
 
-func (s *State) PutAddressesState(addressesState map[string]*AddressState, batch *leveldb.Batch) error {
+func (s *State) PutAddressesState(addressesState map[string]*addressstate.AddressState, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -686,7 +690,7 @@ func (s *State) PutAddressesState(addressesState map[string]*AddressState, batch
 	return nil
 }
 
-func (s *State) GetAddressState(address []byte) (*AddressState, error) {
+func (s *State) GetAddressState(address []byte) (*addressstate.AddressState, error) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -696,10 +700,10 @@ func (s *State) GetAddressState(address []byte) (*AddressState, error) {
 		return nil, err
 	}
 
-	return DeSerializeAddressState(value)
+	return addressstate.DeSerializeAddressState(value)
 }
 
-func (s *State) GetAddressesState(addressesState map[string]*AddressState) error {
+func (s *State) GetAddressesState(addressesState map[string]*addressstate.AddressState) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -716,29 +720,29 @@ func (s *State) GetAddressesState(addressesState map[string]*AddressState) error
 	return nil
 }
 
-func (s *State) GetState(headerHash []byte, addressesState map[string]*AddressState) (*RollbackStateInfo, error) {
+func (s *State) GetState(headerHash []byte, addressesState map[string]*addressstate.AddressState) (*RollbackStateInfo, error) {
 	tmpHeaderHash := headerHash
 
 	var hashPath [][]byte
 
 	for {
-		block, err := s.GetBlock(headerHash)
+		b, err := s.GetBlock(headerHash)
 		if err != nil {
 			return nil, err
 		}
 
-		mainchainBlock, err := s.GetBlockByNumber(block.BlockNumber())
+		mainchainBlock, err := s.GetBlockByNumber(b.BlockNumber())
 
 		if err == nil {
-			if reflect.DeepEqual(mainchainBlock.HeaderHash(), block.HeaderHash()) {
+			if reflect.DeepEqual(mainchainBlock.HeaderHash(), b.HeaderHash()) {
 				break
 			}
 		}
-		if block.BlockNumber() == 0 {
+		if b.BlockNumber() == 0 {
 			panic("[GetState] Alternate chain genesis is different, Initiator" + string(tmpHeaderHash))
 		}
 		hashPath = append(hashPath, headerHash)
-		headerHash = block.PrevHeaderHash()
+		headerHash = b.PrevHeaderHash()
 	}
 
 	rollbackHeaderHash := headerHash
@@ -750,35 +754,35 @@ func (s *State) GetState(headerHash []byte, addressesState map[string]*AddressSt
 		}
 		addressesState[address] = addrState
 	}
-	block, err := s.GetLastBlock()
+	b, err := s.GetLastBlock()
 
 	if err != nil {
 		return nil, err
 	}
 
-	for reflect.DeepEqual(block.HeaderHash(), rollbackHeaderHash) {
-		txs := block.Transactions()
+	for reflect.DeepEqual(b.HeaderHash(), rollbackHeaderHash) {
+		txs := b.Transactions()
 		for i := len(txs); i >= 0; i-- {
 			tx := transactions.ProtoToTransaction(txs[i])
 			tx.RevertStateChanges(addressesState, s)
 		}
 
-		newBlock, err := s.GetBlock(block.PrevHeaderHash())
+		newBlock, err := s.GetBlock(b.PrevHeaderHash())
 		if err != nil {
 			return nil, err
 		}
 
-		block = newBlock
+		b = newBlock
 	}
 
 	for i := len(hashPath); i >= 0; i-- {
-		block, err := s.GetBlock(hashPath[i])
+		b, err := s.GetBlock(hashPath[i])
 
 		if err != nil {
 			return nil, err
 		}
 
-		for _, protoTX := range block.Transactions() {
+		for _, protoTX := range b.Transactions() {
 			tx := transactions.ProtoToTransaction(protoTX)
 			tx.ApplyStateChanges(addressesState)
 		}
@@ -845,7 +849,7 @@ func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	var nthBlock *Block
+	var nthBlock *block.Block
 	var err error
 
 	countHeaderHashes := uint64(len(parentMetaData.LastNHeaderHashes()))
@@ -873,6 +877,31 @@ func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 	}
 
 	return uint64(blockTimestamp - nthBlockTimestamp) / countHeaderHashes, nil
+}
+
+func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) error {
+	if otsKeyIndex < uint64(s.config.Dev.MaxOTSTracking) {
+		offset := otsKeyIndex >> 3
+		relative := otsKeyIndex % 8
+		bitfield := a.PBData().OtsBitfield[offset]
+		a.PBData().OtsBitfield[offset][0] = bitfield[0] & ^(1 << relative)
+		return nil
+	} else {
+		a.PBData().OtsCounter = 0
+		hashes := a.TransactionHashes()
+		for i := len(hashes); i >= 0 ; i-- {
+			tm, err := s.GetTxMetadata(hashes[i])
+			if err != nil {
+				return err
+			}
+			tx := transactions.ProtoToTransaction(tm.Transaction)
+			if tx.OtsKey() >= s.config.Dev.MaxOTSTracking {
+				a.PBData().OtsCounter = uint64(tx.OtsKey())
+				return nil
+			}
+		}
+	}
+	return errors.New("OTS key didn't change")
 }
 
 // TODO: Needed for API

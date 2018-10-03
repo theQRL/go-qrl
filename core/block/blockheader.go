@@ -1,4 +1,4 @@
-package core
+package block
 
 import (
 	"bytes"
@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 
 	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/formulas"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/misc"
@@ -309,5 +310,5 @@ func BlockRewardCalc(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}
-	return BlockReward(config.Dev.Genesis.MaxCoinSupply - config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
+	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply - config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
 }

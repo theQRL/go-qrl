@@ -6,12 +6,12 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/block"
 	"github.com/theQRL/go-qrl/generated"
 )
 
 type Genesis struct {
-	core.Block
+	block.Block
 }
 
 func (g *Genesis) GenesisBalance() []*generated.GenesisBalance {

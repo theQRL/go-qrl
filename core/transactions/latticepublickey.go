@@ -3,8 +3,10 @@ package transactions
 import (
 	"bytes"
 	"encoding/binary"
+	"reflect"
 
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/addressstate"
+	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -41,7 +43,7 @@ func (tx *LatticePublicKey) validateCustom() bool {
 	return true
 }
 
-func (tx *LatticePublicKey) ValidateExtended(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool {
+func (tx *LatticePublicKey) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPKState) {
 		return false
 	}
@@ -67,7 +69,7 @@ func (tx *LatticePublicKey) ValidateExtended(addrFromState *core.AddressState, a
 	return true
 }
 
-func (tx *LatticePublicKey) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *LatticePublicKey) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee() * -1)
 		addrState.AppendTransactionHash(tx.Txhash())
@@ -76,18 +78,36 @@ func (tx *LatticePublicKey) ApplyStateChanges(addressesState map[string]*core.Ad
 	tx.applyStateChangesForPK(addressesState)
 }
 
-func (tx *LatticePublicKey) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
+func (tx *LatticePublicKey) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
 		addrState.RemoveTransactionHash(tx.Txhash())
 	}
 
-	tx.revertStateChangesForPK(addressesState, state)
+	tx.revertStateChangesForPK(addressesState)
 }
 
-func (tx *LatticePublicKey) SetAffectedAddress(addressesState map[string]*core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
-	addressesState[string(tx.PK())] = &core.AddressState{}
+func (tx *LatticePublicKey) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[string(tx.PK())] = &addressstate.AddressState{}
+}
+
+func (tx *LatticePublicKey) AddLatticePK(a *addressstate.AddressState) {
+	latticePK := &generated.LatticePK{
+		Txhash: tx.Txhash(),
+		DilithiumPk: tx.DilithiumPk(),
+		KyberPk: tx.KyberPk(),
+	}
+
+	a.PBData().LatticePKList = append(a.PBData().LatticePKList, latticePK)
+}
+
+func (tx *LatticePublicKey) RemoveLatticePK(a *addressstate.AddressState) {
+	for i, latticePK := range a.PBData().LatticePKList {
+		if reflect.DeepEqual(latticePK.Txhash, tx.Txhash()) {
+			a.PBData().LatticePKList = append(a.PBData().LatticePKList[0:i], a.PBData().LatticePKList[i+1:]...)
+		}
+	}
 }
 
 func CreateLatticeTransaction(messageHash []byte, fee uint64, xmssPK []byte, masterAddr []byte) *LatticePublicKey {

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/addressstate"
 	"github.com/theQRL/go-qrl/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -41,7 +41,7 @@ func (tx *MessageTransaction) validateCustom() bool {
 	return true
 }
 
-func (tx *MessageTransaction) ValidateExtended(addrFromState *core.AddressState, addrFromPKState *core.AddressState) bool {
+func (tx *MessageTransaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool {
 	if !tx.ValidateSlave(addrFromState, addrFromPKState) {
 		return false
 	}
@@ -66,7 +66,7 @@ func (tx *MessageTransaction) ValidateExtended(addrFromState *core.AddressState,
 	return true
 }
 
-func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*core.AddressState) {
+func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee() * -1)
 		addrState.AppendTransactionHash(tx.Txhash())
@@ -75,18 +75,18 @@ func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*core.
 	tx.applyStateChangesForPK(addressesState)
 }
 
-func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*core.AddressState, state *core.State) {
+func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
 		addrState.RemoveTransactionHash(tx.Txhash())
 	}
 
-	tx.revertStateChangesForPK(addressesState, state)
+	tx.revertStateChangesForPK(addressesState)
 }
 
-func (tx *MessageTransaction) SetAffectedAddress(addressesState map[string]*core.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &core.AddressState{}
-	addressesState[string(tx.PK())] = &core.AddressState{}
+func (tx *MessageTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
+	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[string(tx.PK())] = &addressstate.AddressState{}
 }
 
 func CreateMessageTransaction(messageHash []byte, fee uint64, xmssPK []byte, masterAddr []byte) *MessageTransaction {

@@ -1,7 +1,9 @@
-package core
+package chain
 
 import (
 	"errors"
+	"github.com/theQRL/go-qrl/core/addressstate"
+	"github.com/theQRL/go-qrl/core/state"
 	"math/big"
 	"reflect"
 	"sync"
@@ -9,6 +11,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 
 	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core/block"
 	"github.com/theQRL/go-qrl/core/metadata"
 	"github.com/theQRL/go-qrl/core/pool"
 	"github.com/theQRL/go-qrl/core/transactions"
@@ -29,17 +32,17 @@ type Chain struct {
 
 	triggerMiner bool
 
-	state *State
+	state *state.State
 
 	txPool *pool.TransactionPool
 
-	lastBlock *Block
+	lastBlock *block.Block
 	currentDifficulty []byte
 
 }
 
 func CreateChain(log *log.Logger, config *c.Config) (*Chain, error) {
-	state, err := CreateState(log, config)
+	s, err := state.CreateState(log, config)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +53,7 @@ func CreateChain(log *log.Logger, config *c.Config) (*Chain, error) {
 		log: *log,
 		config: config,
 
-		state: state,
+		state: s,
 		txPool: txPool,
 	}
 
@@ -61,11 +64,11 @@ func (c *Chain) Height() uint64 {
 	return c.lastBlock.BlockNumber()
 }
 
-func (c *Chain) GetLastBlock() *Block {
+func (c *Chain) GetLastBlock() *block.Block {
 	return c.lastBlock
 }
 
-func (c *Chain) Load(genesisBlock *Block) error {
+func (c *Chain) Load(genesisBlock *block.Block) error {
 	// load() has the following tasks:
 	// Write Genesis Block into State immediately
 	// Register block_number <-> blockhash mapping
@@ -91,10 +94,10 @@ func (c *Chain) Load(genesisBlock *Block) error {
 
 		c.state.PutBlockMetaData(genesisBlock.HeaderHash(), blockMetaData, nil)
 
-		addressesState := make(map[string]*AddressState)
+		addressesState := make(map[string]*addressstate.AddressState)
 		gen := &genesis.Genesis{}
 		for _, genesisBalance := range gen.GenesisBalance() {
-			addrState := GetDefaultAddressState(genesisBalance.Address)
+			addrState := addressstate.GetDefaultAddressState(genesisBalance.Address)
 			addressesState[string(addrState.Address())] = addrState
 			addrState.SetBalance(genesisBalance.Balance)
 		}
@@ -102,13 +105,13 @@ func (c *Chain) Load(genesisBlock *Block) error {
 		txs := gen.Transactions()
 		for i := 1; i < len(txs); i++ {
 			for _, addr := range txs[i].GetTransfer().AddrsTo {
-				addressesState[string(addr)] = GetDefaultAddressState(addr)
+				addressesState[string(addr)] = addressstate.GetDefaultAddressState(addr)
 			}
 		}
 
 		coinBase := &transactions.CoinBase{}
 		coinBase.SetPBData(txs[0])
-		addressesState[string(coinBase.AddrTo())] = GetDefaultAddressState(coinBase.AddrTo())
+		addressesState[string(coinBase.AddrTo())] = addressstate.GetDefaultAddressState(coinBase.AddrTo())
 
 		if !coinBase.ValidateExtended(gen.BlockNumber()) {
 			return errors.New("coinbase validation failed")
@@ -137,17 +140,17 @@ func (c *Chain) Load(genesisBlock *Block) error {
 		c.currentDifficulty = blockMetadata.BlockDifficulty()
 		forkState, err := c.state.GetForkState()
 		if err == nil {
-			block, err := c.state.GetBlock(forkState.InitiatorHeaderhash)
+			b, err := c.state.GetBlock(forkState.InitiatorHeaderhash)
 			if err != nil {
 				return err
 			}
-			c.forkRecovery(block, forkState)
+			c.forkRecovery(b, forkState)
 		}
 	}
 	return nil
 }
 
-func (c *Chain) addBlock(block *Block, batch *leveldb.Batch) (bool, bool) {
+func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) {
 	blockSizeLimit, err := c.state.GetBlockSizeLimit(block)
 
 	if err == nil && block.Size() > blockSizeLimit {
@@ -193,7 +196,7 @@ func (c *Chain) addBlock(block *Block, batch *leveldb.Batch) (bool, bool) {
 	return true, false
 }
 
-func (c *Chain) AddBlock(block *Block) bool {
+func (c *Chain) AddBlock(block *block.Block) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -223,7 +226,7 @@ func (c *Chain) AddBlock(block *Block) bool {
 
 }
 
-func (c *Chain) applyBlock(block *Block, batch *leveldb.Batch) bool {
+func (c *Chain) applyBlock(block *block.Block, batch *leveldb.Batch) bool {
 	addressesState := block.PrepareAddressesList()
 	c.state.GetAddressesState(addressesState)
 	if !block.ApplyStateChanges(addressesState) {
@@ -239,7 +242,7 @@ func (c *Chain) applyBlock(block *Block, batch *leveldb.Batch) bool {
 	return true
 }
 
-func (c *Chain) updateChainState(block *Block, batch *leveldb.Batch) {
+func (c *Chain) updateChainState(block *block.Block, batch *leveldb.Batch) {
 	c.lastBlock = block
 	c.updateBlockNumberMapping(block, batch)
 	c.txPool.RemoveTxInBlock(block)
@@ -247,17 +250,18 @@ func (c *Chain) updateChainState(block *Block, batch *leveldb.Batch) {
 	c.state.UpdateTxMetadata(block, batch)
 }
 
-func (c *Chain) updateBlockNumberMapping(block *Block, batch *leveldb.Batch) {
+func (c *Chain) updateBlockNumberMapping(block *block.Block, batch *leveldb.Batch) {
 	blockNumberMapping := &generated.BlockNumberMapping{Headerhash:block.HeaderHash(), PrevHeaderhash:block.PrevHeaderHash()}
 	c.state.PutBlockNumberMapping(block.BlockNumber(), blockNumberMapping, batch)
 }
 
-func (c *Chain) RemoveBlockFromMainchain(block *Block, blockNumber uint64, batch *leveldb.Batch) {
+func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64, batch *leveldb.Batch) {
 	addressesState := block.PrepareAddressesList()
 	c.state.GetAddressesState(addressesState)
 	for i := len(block.Transactions()) - 1; i <= 0; i-- {
 		tx := transactions.ProtoToTransaction(block.Transactions()[i])
-		tx.RevertStateChanges(addressesState, c.state)
+		tx.RevertStateChanges(addressesState)
+		c.state.UnsetOTSKey(*addressesState[tx.AddrFromPK()], uint64(tx.OtsKey()))
 	}
 
 	c.txPool.AddTxFromBlock(block, blockNumber)
@@ -271,25 +275,25 @@ func (c *Chain) Rollback(forkedHeaderHash []byte, forkState *generated.ForkState
 	var hashPath [][]byte
 
 	for  ;!reflect.DeepEqual(c.lastBlock.HeaderHash(), forkedHeaderHash); {
-		block, err := c.state.GetBlock(c.lastBlock.HeaderHash())
+		b, err := c.state.GetBlock(c.lastBlock.HeaderHash())
 
 		if err != nil {
 			c.log.Info("self.state.get_block(self.last_block.headerhash) returned None")
 		}
 
-		mainchainBlock, err := c.state.GetBlockByNumber(block.BlockNumber())
+		mainchainBlock, err := c.state.GetBlockByNumber(b.BlockNumber())
 
 		if err != nil {
-			c.log.Info("self.get_block_by_number(block.block_number) returned None")
+			c.log.Info("self.get_block_by_number(b.block_number) returned None")
 		}
 
-		if reflect.DeepEqual(block.HeaderHash(), mainchainBlock.HeaderHash()) {
+		if reflect.DeepEqual(b.HeaderHash(), mainchainBlock.HeaderHash()) {
 			break
 		}
 		hashPath = append(hashPath, c.lastBlock.HeaderHash())
 
 		batch := c.state.GetBatch()
-		c.RemoveBlockFromMainchain(c.lastBlock, block.BlockNumber(), batch)
+		c.RemoveBlockFromMainchain(c.lastBlock, b.BlockNumber(), batch)
 
 		if forkState != nil {
 			forkState.OldMainchainHashPath = append(forkState.OldMainchainHashPath, c.lastBlock.HeaderHash())
@@ -308,7 +312,7 @@ func (c *Chain) Rollback(forkedHeaderHash []byte, forkState *generated.ForkState
 	return hashPath
 }
 
-func (c *Chain) GetForkPoint(block *Block) ([]byte, [][]byte, error) {
+func (c *Chain) GetForkPoint(block *block.Block) ([]byte, [][]byte, error) {
 	tmpBlock := block
 	var err error
 	var hashPath [][]byte
@@ -370,7 +374,7 @@ func (c *Chain) AddChain(hashPath [][]byte, forkState *generated.ForkState) bool
 	return true
 }
 
-func (c *Chain) forkRecovery(block *Block, forkState *generated.ForkState) bool {
+func (c *Chain) forkRecovery(block *block.Block, forkState *generated.ForkState) bool {
 	c.log.Info("Triggered Fork Recovery")
 
 	var forkHeaderHash []byte
@@ -420,47 +424,7 @@ func (c *Chain) forkRecovery(block *Block, forkState *generated.ForkState) bool 
 	return true
 }
 
-func (c *Chain) ValidateMiningNonce(bh *BlockHeader, enableLogging bool) bool {
-	c.lock.Lock()
-	defer c.lock.Unlock()
-
-	parentMetadata, err := c.state.GetBlockMetadata(bh.HeaderHash())
-
-	if err != nil {
-		panic(err.Error())
-	}
-
-	measurement, err := c.state.GetMeasurement(bh.Timestamp(), bh.PrevHeaderHash(), parentMetadata)
-	dt := pow.DifficultyTracker{}
-	diff, target := dt.Get(measurement, parentMetadata.BlockDifficulty())
-
-	if enableLogging {
-		parentBlock, err := c.state.GetBlock(bh.PrevHeaderHash())
-		if err != nil {
-
-		}
-		c.log.Debug("-----------------START--------------------")
-		c.log.Debug("Validate                #%s", bh.BlockNumber())
-		c.log.Debug("block.timestamp         %s", bh.Timestamp())
-		c.log.Debug("parent_block.timestamp  %s", parentBlock.Timestamp())
-		c.log.Debug("parent_block.difficulty %s", string(parentMetadata.BlockDifficulty()))
-		c.log.Debug("diff                    %s", string(diff))
-		c.log.Debug("target                  %s", string(target))
-		c.log.Debug("-------------------END--------------------")
-	}
-
-	if !pow.GetPowValidator().VerifyInput(bh.MiningBlob(), target) {
-		if enableLogging {
-			c.log.Warn("PoW verification failed")
-		}
-		return false
-	}
-
-	return true
-
-}
-
-func (c *Chain) GetBlock(headerhash []byte) (*Block, error) {
+func (c *Chain) GetBlock(headerhash []byte) (*block.Block, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
