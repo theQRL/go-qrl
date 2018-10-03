@@ -76,7 +76,7 @@ func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*addressstate.Ad
 	strAddrFrom := string(tx.config.Dev.Genesis.CoinbaseAddress)
 
 	if addrState, ok := addressesState[strAddrFrom]; ok {
-		addressesState[string(tx.MasterAddr())].AddBalance(tx.Amount() * -1)
+		addressesState[string(tx.MasterAddr())].SubtractBalance(tx.Amount())
 		addressesState[string(tx.MasterAddr())].AppendTransactionHash(tx.Txhash())
 		addrState.IncreaseNonce()
 	}
@@ -85,7 +85,7 @@ func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*addressstate.Ad
 func (tx *CoinBase) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	strAddrTo := string(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
-		addrState.AddBalance(tx.Amount() * -1)
+		addrState.SubtractBalance(tx.Amount())
 		addrState.RemoveTransactionHash(tx.Txhash())
 	}
 

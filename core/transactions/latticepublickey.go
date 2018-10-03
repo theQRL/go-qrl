@@ -71,7 +71,7 @@ func (tx *LatticePublicKey) ValidateExtended(addrFromState *addressstate.Address
 
 func (tx *LatticePublicKey) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
-		addrState.AddBalance(tx.Fee() * -1)
+		addrState.SubtractBalance(tx.Fee())
 		addrState.AppendTransactionHash(tx.Txhash())
 	}
 

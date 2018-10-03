@@ -24,6 +24,10 @@ type AddressStateInterface interface {
 
 	SetBalance(balance uint64)
 
+	AddBalance(balance uint64)
+
+	SubtractBalance(balance uint64)
+
 	OTSBitfield() [][]byte
 
 	OTSCounter() uint64
@@ -34,7 +38,7 @@ type AddressStateInterface interface {
 
 	SlavePKSAccessType() map[string]uint32
 
-	UpdateTokenBalance(tokenTxHash []byte, balance uint64)
+	UpdateTokenBalance(tokenTxHash []byte, balance uint64, subtract bool)
 
 	GetTokenBalance(tokenTxHash []byte) uint64
 
@@ -90,6 +94,10 @@ func (a *AddressState) AddBalance(balance uint64) {
 	a.data.Balance += balance
 }
 
+func (a *AddressState) SubtractBalance(balance uint64) {
+	a.data.Balance -= balance
+}
+
 func (a *AddressState) OtsBitfield() [][]byte {
 	return a.data.OtsBitfield
 }
@@ -124,9 +132,14 @@ func (a *AddressState) SlavePKSAccessType() map[string]uint32 {
 	return a.data.SlavePksAccessType
 }
 
-func (a *AddressState) UpdateTokenBalance(tokenTxHash []byte, balance uint64) {
+func (a *AddressState) UpdateTokenBalance(tokenTxHash []byte, balance uint64, subtract bool) {
 	strTokenTxHash := goqrllib.Bin2hstr(tokenTxHash)
-	a.data.Tokens[strTokenTxHash] += balance
+	if !subtract {
+		a.data.Tokens[strTokenTxHash] -= balance
+	} else {
+		a.data.Tokens[strTokenTxHash] += balance
+	}
+
 	if a.data.Tokens[strTokenTxHash] == 0 {
 		delete(a.data.Tokens, strTokenTxHash)
 	}
@@ -206,7 +219,7 @@ func IsValidAddress(address []byte) bool {
 	return false
 }
 
-func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfield [c.Config{}.Dev.OtsBitFieldSize][8]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *AddressState {
+func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfield [][]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *AddressState {
 	a := &AddressState{}
 	a.data.Address = address
 	a.data.Nonce = nonce
@@ -221,7 +234,7 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 	a.data.OtsCounter = otsCounter
 
 	for tokenTxhash, token := range tokens {
-		a.UpdateTokenBalance([]byte(tokenTxhash), token)
+		a.UpdateTokenBalance([]byte(tokenTxhash), token, false)
 	}
 
 	for slavePK, accessType := range slavePksAccessType {
@@ -233,7 +246,8 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 
 func GetDefaultAddressState(address []byte) *AddressState {
 	config := c.Config{}
-	var otsBitfield [config.Dev.OtsBitFieldSize][8]byte
+	otsBitfield := make([][]byte, c.Config{}.Dev.OtsBitFieldSize)
+
 	var tokens map[string]uint64
 	var slavePksAccessType map[string]uint32
 	return CreateAddressState(address, uint64(config.Dev.DefaultNonce), config.Dev.DefaultAccountBalance, otsBitfield, tokens, slavePksAccessType, 0)
