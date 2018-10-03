@@ -38,6 +38,25 @@ type Chain struct {
 
 }
 
+func CreateChain(log *log.Logger, config *c.Config) (*Chain, error) {
+	state, err := CreateState(log, config)
+	if err != nil {
+		return nil, err
+	}
+
+	txPool := &pool.TransactionPool{}
+
+	chain := &Chain {
+		log: *log,
+		config: config,
+
+		state: state,
+		txPool: txPool,
+	}
+
+	return chain, err
+}
+
 func (c *Chain) Height() uint64 {
 	return c.lastBlock.BlockNumber()
 }

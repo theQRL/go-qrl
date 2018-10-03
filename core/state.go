@@ -31,7 +31,7 @@ type RollbackStateInfo struct {
 	hashPath           [][]byte
 }
 
-func CreateState(log *log.Logger) (*State, error) {
+func CreateState(log *log.Logger, config *c.Config) (*State, error) {
 	newDB, err := db.NewDB("qrl", 16, 16, log)
 
 	if err != nil {
@@ -41,6 +41,7 @@ func CreateState(log *log.Logger) (*State, error) {
 	state := State {
 		db: newDB,
 		log: *log,
+		config: config,
 	}
 
 	return &state, err

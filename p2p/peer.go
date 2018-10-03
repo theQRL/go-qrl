@@ -11,6 +11,7 @@ import (
 	"github.com/willf/bloom"
 
 	"github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core"
 	"github.com/theQRL/go-qrl/generated"
 	"github.com/theQRL/go-qrl/log"
 )
@@ -18,6 +19,8 @@ import (
 type Peer struct {
 	conn    net.Conn
 	inbound bool
+
+	chain *core.Chain
 
 	wg     sync.WaitGroup
 	closed chan struct{}
@@ -27,10 +30,11 @@ type Peer struct {
 	config *config.Config
 }
 
-func newPeer(conn *net.Conn, inbound bool, log *log.Logger, filter *bloom.BloomFilter, config *config.Config) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *core.Chain, log *log.Logger, filter *bloom.BloomFilter, config *config.Config) *Peer {
 	p := &Peer {
 		conn: *conn,
 		inbound: inbound,
+		chain: chain,
 		log: *log,
 		filter: filter,
 		config: config,
@@ -131,15 +135,16 @@ func (p* Peer) handle(msg Msg) error {
 
 		switch mrData.Type {
 		case generated.LegacyMessage_BK:
-			if mrData.BlockNumber > chainHeight + p.config.Dev.MaxMarginBlocKNumber {
+			if mrData.BlockNumber > p.chain.Height() + uint64(p.config.Dev.MaxMarginBlockNumber) {
 				p.log.Debug("Skipping block #%s as beyond lead limit", "Block #", mrData.BlockNumber)
 				return nil
 			}
-			if mrData.BlockNumber < chainHeight - p.config.Dev.MinMarginBlockNumber {
+			if mrData.BlockNumber < p.chain.Height() - uint64(p.config.Dev.MinMarginBlockNumber) {
 				p.log.Debug("'Skipping block #%s as beyond the limit", "Block #", mrData.BlockNumber)
 				return nil
 			}
-			if !IsBlockExist(mrData.PrevHeaderhash) {
+			_, err := p.chain.GetBlock(mrData.PrevHeaderhash)
+			if err != nil {
 				p.log.Debug("Missing Parent Block", "Block:", mrData.Hash,
 					"Parent Block ", mrData.PrevHeaderhash)
 				return nil

@@ -76,11 +76,11 @@ type APIConfig struct {
 type DevConfig struct {
 	Genesis              *GenesisConfig
 
-	BlocksPerEpoch		 uint64
+	BlocksPerEpoch       uint64
 	BlockLeadTimestamp   uint32
 	BlockMaxDrift        uint16
 	MaxFutureBlockLength uint16
-	MaxMarginBlocKNumber uint16
+	MaxMarginBlockNumber uint16
 	MinMarginBlockNumber uint16
 
 	ReorgLimit uint64
@@ -273,11 +273,11 @@ func GetDevConfig() (dev *DevConfig) {
 	dev = &DevConfig{
 		Genesis: genesis,
 
-		BlocksPerEpoch:		 100,
+		BlocksPerEpoch:       100,
 		BlockLeadTimestamp:   30,
 		BlockMaxDrift:        15,
 		MaxFutureBlockLength: 256,
-		MaxMarginBlocKNumber: 32,
+		MaxMarginBlockNumber: 32,
 		MinMarginBlockNumber: 7,
 
 		ReorgLimit: 22000,
