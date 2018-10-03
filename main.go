@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	c "github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/config"
 	"github.com/theQRL/go-qrl/core/chain"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/p2p"
@@ -13,18 +13,18 @@ import (
 
 var (
 	server *p2p.Server
-	config *c.Config
+	conf *config.Config
 	input = bufio.NewReader(os.Stdin)
 	logger = log.New()
 )
 
 func startServer() error {
-	chain, err := chain.CreateChain(&logger, config)
+	c, err := chain.CreateChain(&logger, conf)
 	if err != nil {
 		return err
 	}
 
-	err = server.Start(logger, config, chain)
+	err = server.Start(logger, conf, c)
 	if err != nil {
 		return err
 	}
@@ -32,7 +32,7 @@ func startServer() error {
 }
 
 func initialize() {
-	config = c.GetConfig()
+	conf = config.GetConfig()
 	server = &p2p.Server{}
 }
 
