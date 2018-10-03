@@ -9,6 +9,7 @@ import (
 	"github.com/willf/bloom"
 
 	"github.com/theQRL/go-qrl/config"
+	"github.com/theQRL/go-qrl/core"
 	"github.com/theQRL/go-qrl/log"
 )
 
@@ -19,6 +20,8 @@ type conn struct {
 
 type Server struct {
 	config *config.Config
+
+	chain *core.Chain
 
 	listener net.Listener
 	lock     sync.Mutex
@@ -40,7 +43,7 @@ type peerDrop struct {
 	requested bool // true if signaled by the peer
 }
 
-func (srv *Server) Start(log log.Logger, config *config.Config) (err error) {
+func (srv *Server) Start(log log.Logger, config *config.Config, chain *core.Chain) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
@@ -52,6 +55,7 @@ func (srv *Server) Start(log log.Logger, config *config.Config) (err error) {
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan peerDrop)
 	srv.log = log
+	srv.chain = chain
 
 	srv.filter = bloom.New(200000, 5)
 	if err := srv.startListening(); err != nil {
@@ -119,7 +123,7 @@ running:
 			break running
 		case c := <-srv.addpeer:
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
-			p := newPeer(&c.fd, c.inbound, &srv.log, srv.filter, srv.config)
+			p := newPeer(&c.fd, c.inbound, srv.chain, &srv.log, srv.filter, srv.config)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
 			if p.inbound {
