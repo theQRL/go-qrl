@@ -51,7 +51,7 @@ func (tx *CoinBase) validateCustom() bool {
 	return true
 }
 
-func (tx *CoinBase) ValidateExtended(blockNumber uint64) bool {
+func (tx *CoinBase) ValidateExtendedCoinbase(blockNumber uint64) bool {
 	if reflect.DeepEqual(tx.MasterAddr(), tx.config.Dev.Genesis.CoinbaseAddress) {
 		tx.log.Warn("Master address doesnt match with coinbase_address")
 		tx.log.Warn(string(tx.MasterAddr()), tx.config.Dev.Genesis.CoinbaseAddress)
