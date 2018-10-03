@@ -21,7 +21,7 @@ func (tx *SlaveTransaction) AccessTypes() []uint32 {
 	return tx.data.GetSlave().AccessTypes
 }
 
-func (tx *SlaveTransaction) GetHashableBytes() goqrllib.UcharVector {
+func (tx *SlaveTransaction) GetHashableBytes() []byte {
 	tmp := new(bytes.Buffer)
 	tmp.Write(tx.MasterAddr())
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
@@ -35,7 +35,7 @@ func (tx *SlaveTransaction) GetHashableBytes() goqrllib.UcharVector {
 	tmptxhash.AddBytes(tmp.Bytes())
 	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
 
-	return tmptxhash.GetData()
+	return tmptxhash.GetBytes()
 }
 
 func (tx *SlaveTransaction) validateCustom() bool {
