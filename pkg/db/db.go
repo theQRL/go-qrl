@@ -94,12 +94,12 @@ func (db *LDB) GetBatch() *leveldb.Batch {
 	return &leveldb.Batch{}
 }
 
-func (db *LDB) WriteBatch(batch *leveldb.Batch, sync bool) {
+func (db *LDB) WriteBatch(batch *leveldb.Batch, sync bool) (error) {
 	var wo *opt.WriteOptions
 	if sync {
 		wo = &opt.WriteOptions{Sync: sync}
 	}
-	db.db.Write(batch, wo)
+	return db.db.Write(batch, wo)
 }
 
 func (db *LDB) NewBatch() *ldbBatch {
