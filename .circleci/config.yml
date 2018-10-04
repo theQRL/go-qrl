@@ -2,7 +2,7 @@ version: 2
 jobs:
   build:
     docker:
-      - image: zondax/qrl-build-images:xenial-qrllib
+      - image: qrledger/qrl-docker:xenial
     steps:
       - checkout
       - run: add-apt-repository ppa:ubuntu-toolchain-r/test
@@ -20,10 +20,8 @@ jobs:
       - run: mkdir -p ~/go/src/github.com/theQRL/go-qrl
       - run: cp -r . ~/go/src/github.com/theQRL/go-qrl/
       - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qrllib && cd qrllib && git submodule update --init
-      - run: cd ~/go/src/github.com/theQRL/qrllib/ && cmake -DBUILD_GO=ON
-      - run: cd ~/go/src/github.com/theQRL/qrllib/ && make
+      - run: cd ~/go/src/github.com/theQRL/qrllib/ && cmake -DBUILD_GO=ON && make
       - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qryptonight && cd qryptonight && git submodule update --init
-      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON
-      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && make
+      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON && make
       - run: cd ~/go/src/github.com/theQRL/qo-qrl && go get -v -t -d ./...
       - run: cd ~/go/src/github.com/theQRL/qo-qrl && go test -v ./...
