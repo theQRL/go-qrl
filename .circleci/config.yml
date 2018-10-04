@@ -17,7 +17,6 @@ jobs:
             echo 'export GOROOT="/go"' >> $BASH_ENV
             echo 'export PATH="$PATH:/go/bin/"' >> $BASH_ENV
       - run: go get github.com/magiconair/properties/assert
-      - run: go get github.com/cyyber/qryptonight
       - run: mkdir -p ~/go/src/github.com/theQRL/go-qrl
       - run: cp -r . ~/go/src/github.com/theQRL/go-qrl/
       - run: cd ~/go/src/github.com/theQRL && git clone github.com/cyyber/qrllib
