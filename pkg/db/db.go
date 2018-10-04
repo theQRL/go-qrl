@@ -1,6 +1,7 @@
 package db
 
 import (
+	"path"
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -26,14 +27,15 @@ type ldbBatch struct {
 	size int
 }
 
-func NewDB(file string, cache int, handles int, log *log.Logger) (*LDB, error) {
+func NewDB(directory string, filename string, cache int, handles int, log *log.Logger) (*LDB, error) {
+	dbDir := path.Join(directory, filename)
 	if cache < 16 {
 		cache = 16
 	}
 	if handles < 16 {
 		handles = 16
 	}
-	db, err := leveldb.OpenFile(file, &opt.Options{
+	db, err := leveldb.OpenFile(dbDir, &opt.Options{
 		OpenFilesCacheCapacity: handles,
 		BlockCacheCapacity:     cache / 2 * opt.MiB,
 		WriteBuffer:            cache / 4 * opt.MiB,
@@ -45,7 +47,7 @@ func NewDB(file string, cache int, handles int, log *log.Logger) (*LDB, error) {
 	}
 
 	return &LDB{
-		filename: file,
+		filename: filename,
 		db:       db,
 		log:      *log,
 	}, nil

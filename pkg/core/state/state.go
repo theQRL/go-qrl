@@ -36,7 +36,7 @@ type RollbackStateInfo struct {
 }
 
 func CreateState(log *log.Logger, config *c.Config) (*State, error) {
-	newDB, err := db.NewDB("qrl", 16, 16, log)
+	newDB, err := db.NewDB(c.GetUserConfig().DataDir(), c.GetDevConfig().DBName, 16, 16, log)
 
 	if err != nil {
 		return nil, err
