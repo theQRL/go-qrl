@@ -4,12 +4,25 @@ import (
 	"bytes"
 	"container/list"
 	"math"
+	"runtime"
 
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
 type UcharVector struct {
 	data goqrllib.UcharVector
+}
+
+func NewUCharVector() *UcharVector {
+	u := &UcharVector{}
+	u.data = goqrllib.NewUcharVector()
+
+	// Finalizer to clean up memory allocated by C++ when object becomes unreachable
+	runtime.SetFinalizer(u,
+		func(u *UcharVector) {
+			goqrllib.DeleteUcharVector(u.data)
+		})
+	return u
 }
 
 func (v *UcharVector) AddBytes(data []byte) {
