@@ -1,6 +1,9 @@
 package config
 
-import "sync"
+import (
+	"path"
+	"sync"
+)
 
 type Config struct {
 	Dev  *DevConfig
@@ -61,6 +64,7 @@ type UserConfig struct {
 	TransactionPool *TransactionPoolConfig
 
 	QrlDir string
+	ChainFileDirectory  string
 
 	API *API
 }
@@ -101,7 +105,6 @@ type DevConfig struct {
 
 	DBName              string
 	PeersFilename       string
-	ChainFileDirectory  string
 	WalletDatFilename   string
 	BannedPeersFilename string
 
@@ -244,11 +247,16 @@ func GetUserConfig() (user *UserConfig) {
 		TransactionPool: transactionPool,
 
 		QrlDir: "~/.qrl",
+		ChainFileDirectory:  "data",
 
 		API: api,
 	}
 
 	return user
+}
+
+func (u *UserConfig) DataDir() string {
+	return path.Join(u.QrlDir, u.ChainFileDirectory)
 }
 
 func GetDevConfig() (dev *DevConfig) {
@@ -298,7 +306,6 @@ func GetDevConfig() (dev *DevConfig) {
 
 		DBName:              "state",
 		PeersFilename:       "peers.qrl",
-		ChainFileDirectory:  "data",
 		WalletDatFilename:   "wallet.json",
 		BannedPeersFilename: "banned_peers.qrl",
 
