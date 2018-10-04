@@ -1,15 +1,12 @@
 package crypto
 
 import (
+	"fmt"
+	"runtime"
+
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
-
-var hashFunctions = map[string] goqrllib.EHashFunction {
-	"shake128": goqrllib.SHAKE_128,
-	"shake256": goqrllib.SHAKE_256,
-	"sha2_256": goqrllib.SHA2_256,
-}
 
 var hashFunctionsReverse = map[goqrllib.EHashFunction] string {
 	goqrllib.SHAKE_128: "shake128",
@@ -18,10 +15,6 @@ var hashFunctionsReverse = map[goqrllib.EHashFunction] string {
 }
 
 type XMSSInterface interface {
-
-	FromExtendedSeed([]byte) *XMSSInterface
-
-	FromHeight(treeHeight uint64, hashFunctions string) *XMSSInterface
 
 	HashFunction() string
 
@@ -33,9 +26,9 @@ type XMSSInterface interface {
 
 	pk() []byte
 
-	NumberSignatures() uint
+	NumberSignatures() uint64
 
-	RemainingSignatures() uint
+	RemainingSignatures() uint64
 
 	Mnemonic() string
 
@@ -57,52 +50,57 @@ type XMSSInterface interface {
 }
 
 type XMSS struct {
-
 	xmss goqrllib.XmssFast
-
 }
 
-func (x *XMSS) FromExtendedSeed(extendedSeed goqrllib.UcharVector) *XMSS {
-	moddedExtendedSeed := misc.UcharVector{}
+func NewXMSS(xmssFast goqrllib.XmssFast) *XMSS {
+	x := &XMSS{xmssFast}
+
+	// Finalizer to clean up memory allocated by C++ when object becomes unreachable
+	runtime.SetFinalizer(x,
+		func(x *XMSS) {
+			goqrllib.DeleteXmssFast(x.xmss)
+		})
+	return x
+}
+
+func FromExtendedSeed(extendedSeed goqrllib.UcharVector) *XMSS {
+	moddedExtendedSeed := misc.NewUCharVector()
 	moddedExtendedSeed.New(extendedSeed)
 	if extendedSeed.Size() != 51 {
-		//RAISE EXCEPTION
+		message := fmt.Sprintf("Extended seed size not equals to 51 %v", extendedSeed.Size())
+		panic(message)
 	}
 
-	tmp := misc.UcharVector{}
+	tmp := misc.NewUCharVector()
 	tmp.AddBytes(moddedExtendedSeed.GetBytes()[0:3])
 	descr := goqrllib.QRLDescriptorFromBytes(tmp.GetData())
+
 	if descr.GetSignatureType() != goqrllib.XMSS {
-		//RAISE EXCEPTION
+		message := fmt.Sprintf("Signature Type not supported %v", descr.GetSignatureType())
+		panic(message)
 	}
 
 	height := descr.GetHeight()
 	hashFunction := descr.GetHashFunction()
-	tmp = misc.UcharVector{}
+	tmp = misc.NewUCharVector()
 	tmp.AddBytes(moddedExtendedSeed.GetBytes()[3:])
-	goqrllib.NewXmssFast__SWIG_1(tmp.GetData(), height, hashFunction)
 
-	return x
+	return NewXMSS(goqrllib.NewXmssFast__SWIG_1(tmp.GetData(), height, hashFunction))
 }
 
-func (x *XMSS) FromHeight(treeHeight uint, hashFunction string) *XMSS {
-
-	if _, ok := hashFunctions[hashFunction]; !ok {
-		//RAISE EXCEPTION
-	}
-
+func FromHeight(treeHeight uint, hashFunction goqrllib.EHashFunction) *XMSS {
 	seed := goqrllib.GetRandomSeed(48, "")
-	x.xmss = goqrllib.NewXmssFast__SWIG_1(seed, byte(treeHeight), hashFunctions[hashFunction])
-
-	return x
+	return NewXMSS(goqrllib.NewXmssFast__SWIG_1(seed, byte(treeHeight), hashFunction))
 }
 
 func (x *XMSS) HashFunction() string {
 	descr := x.xmss.GetDescriptor()
-	functionNum := descr.GetHashFunction()
-	functionName, ok := hashFunctionsReverse[functionNum]
+	eHashFunction := descr.GetHashFunction()
+	functionName, ok := hashFunctionsReverse[eHashFunction]
 	if !ok {
-		//RAISE EXCEPTION + LOG
+		message := fmt.Sprintf("Invalid eHashFunction %v", eHashFunction)
+		panic(message)
 	}
 	return functionName
 
@@ -110,12 +108,11 @@ func (x *XMSS) HashFunction() string {
 
 func (x *XMSS) SignatureType() goqrllib.ESignatureType {
 	descr := x.xmss.GetDescriptor()
-	answer := descr.GetSignatureType()
-	return answer
+	return descr.GetSignatureType()
 }
 
 func (x *XMSS) Height() uint64 {
-	return x.Height()
+	return uint64(x.xmss.GetHeight())
 }
 
 func (x *XMSS) sk() goqrllib.UcharVector {
@@ -126,12 +123,12 @@ func (x *XMSS) pk() goqrllib.UcharVector {
 	return x.xmss.GetPK()
 }
 
-func (x *XMSS) NumberSignatures() uint {
-	return x.xmss.GetNumberSignatures()
+func (x *XMSS) NumberSignatures() uint64 {
+	return uint64(x.xmss.GetNumberSignatures())
 }
 
-func (x *XMSS) RemainingSignatures() uint {
-	return x.xmss.GetRemainingSignatures()
+func (x *XMSS) RemainingSignatures() uint64 {
+	return uint64(x.xmss.GetRemainingSignatures())
 }
 
 func (x *XMSS) Mnemonic() string {
@@ -146,8 +143,8 @@ func (x *XMSS) QAddress() string {
 	return "Q" + goqrllib.Bin2hstr(x.Address())
 }
 
-func (x *XMSS) OTSIndex() uint {
-	return x.xmss.GetIndex()
+func (x *XMSS) OTSIndex() uint64 {
+	return uint64(x.xmss.GetIndex())
 }
 
 func (x *XMSS) SetOTSIndex(newIndex uint) {
