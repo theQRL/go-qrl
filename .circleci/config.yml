@@ -17,13 +17,14 @@ jobs:
             echo 'export GOROOT="/go"' >> $BASH_ENV
             echo 'export PATH="$PATH:/go/bin/"' >> $BASH_ENV
       - run: go get github.com/magiconair/properties/assert
-      - run: go get github.com/cyyber/qrllib
       - run: go get github.com/cyyber/qryptonight
       - run: mkdir -p ~/go/src/github.com/theQRL/go-qrl
       - run: cp -r . ~/go/src/github.com/theQRL/go-qrl/
+      - run: cd ~/go/src/github.com/theQRL && git clone github.com/cyyber/qrllib
       - run: cd ~/go/src/github.com/theQRL/qrllib/ && cmake -DBUILD_GO=ON
       - run: cd ~/go/src/github.com/theQRL/qrllib/ && make
+      - run: cd ~/go/src/github.com/theQRL && git clone github.com/cyyber/qryptonight
       - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON
-      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON
+      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && make
       - run: cd ~/go/src/github.com/theQRL/qo-qrl && go get -v -t -d ./...
       - run: cd ~/go/src/github.com/theQRL/qo-qrl && go test -v ./...
