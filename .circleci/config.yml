@@ -5,7 +5,7 @@ jobs:
       - image: qrledger/qrl-docker:xenial
     steps:
       - checkout
-      - run: add-apt-repository ppa:ubuntu-toolchain-r/test
+      - run: add-apt-repository ppa:ubuntu-toolchain-r/test -y
       - run: apt update
       - run: apt install g++-7 -y
       - run: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
@@ -22,6 +22,6 @@ jobs:
       - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qrllib && cd qrllib && git submodule update --init
       - run: cd ~/go/src/github.com/theQRL/qrllib/ && cmake -DBUILD_GO=ON && make
       - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qryptonight && cd qryptonight && git submodule update --init
-      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON && make
+      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON -DSANITIZE_ADDRESS=ON -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_CXX_COMPILER=g++-5 && make
       - run: cd ~/go/src/github.com/theQRL/qo-qrl && go get -v -t -d ./...
       - run: cd ~/go/src/github.com/theQRL/qo-qrl && go test -v ./...
