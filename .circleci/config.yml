@@ -10,7 +10,7 @@ jobs:
       - run: apt install g++-7 -y
       - run: update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-7 60 --slave /usr/bin/g++ g++ /usr/bin/g++-7
       - run: git submodule update --init --recursive
-      - run: cd / && curl -O https://storage.googleapis.com/golang/go1.8.linux-amd64.tar.gz && tar zxvf go1.8.linux-amd64.tar.gz
+      - run: cd / && curl -O https://storage.googleapis.com/golang/go1.10.linux-amd64.tar.gz && tar zxvf go1.10.linux-amd64.tar.gz
       - run:
           name: Setting up Environment Variables for Golang
           command: |
