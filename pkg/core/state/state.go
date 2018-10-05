@@ -72,7 +72,7 @@ func (s *State) GetBlockSizeLimit(b *block.Block) (int, error) {
 		}
 	}
 
-	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier * float64(formulas.Median(blockSizeList))))), nil
+	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier * formulas.Median(blockSizeList)))), nil
 }
 
 func (s *State) PutBlock(b *block.Block, batch *leveldb.Batch) error {
@@ -206,20 +206,20 @@ func (s *State) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
 		return nil, err
 	}
 
-	b := &generated.BlockNumberMapping{}
-	err = proto.Unmarshal(value, b)
+	bm := &generated.BlockNumberMapping{}
+	err = proto.Unmarshal(value, bm)
 
 	if err != nil {
 		return nil, err
 	}
 
-	block, err := s.GetBlock(b.Headerhash)
+	b, err := s.GetBlock(bm.Headerhash)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return block, err
+	return b, err
 }
 
 func (s *State) GetLastBlock() (*block.Block, error) {
