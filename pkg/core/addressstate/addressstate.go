@@ -67,7 +67,6 @@ type AddressStateInterface interface {
 
 type AddressState struct {
 	data *generated.AddressState
-	config *c.Config
 }
 
 func (a *AddressState) PBData() *generated.AddressState {
@@ -185,7 +184,7 @@ func (a *AddressState) GetDefault(address []byte) *AddressState {
 }
 
 func (a *AddressState) OTSKeyReuse(otsKeyIndex uint16) bool {
-	if otsKeyIndex < a.config.Dev.MaxOTSTracking {
+	if otsKeyIndex < c.GetConfig().Dev.MaxOTSTracking {
 		offset := otsKeyIndex >> 3
 		relative := otsKeyIndex % 8
 		if (a.data.OtsBitfield[offset][0] >> relative) & 1 == 1 {
@@ -201,7 +200,7 @@ func (a *AddressState) OTSKeyReuse(otsKeyIndex uint16) bool {
 }
 
 func (a *AddressState) SetOTSKey(otsKeyIndex uint64) {
-	if otsKeyIndex < uint64(a.config.Dev.MaxOTSTracking) {
+	if otsKeyIndex < uint64(c.GetConfig().Dev.MaxOTSTracking) {
 		offset := otsKeyIndex >> 3
 		relative := otsKeyIndex % 8
 		bitfield := a.data.OtsBitfield[offset]
@@ -213,19 +212,19 @@ func (a *AddressState) SetOTSKey(otsKeyIndex uint64) {
 
 func IsValidAddress(address []byte) bool {
 	// Warning: Never pass this validation True for Coinbase Address
-	if !goqrllib.QRLHelperAddressIsValid(misc.BytesToUCharVector(address)) {
+	if goqrllib.QRLHelperAddressIsValid(misc.BytesToUCharVector(address)) {
 		return true
 	}
 	return false
 }
 
 func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfield [][]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *AddressState {
-	a := &AddressState{}
+	a := &AddressState{&generated.AddressState{}}
 	a.data.Address = address
 	a.data.Nonce = nonce
 	a.data.Balance = balance
-	a.data.OtsBitfield = make([][]byte, c.Config{}.Dev.OtsBitFieldSize)
-	for i := 0; i < int(c.Config{}.Dev.OtsBitFieldSize); i++ {
+	a.data.OtsBitfield = otsBitfield
+	for i := 0; i < int(c.GetConfig().Dev.OtsBitFieldSize); i++ {
 		a.data.OtsBitfield[i] = make([]byte, 8)
 		for j := 0; j < 8; j++ {
 			a.data.OtsBitfield[i][j] = otsBitfield[i][j]
@@ -245,8 +244,8 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 }
 
 func GetDefaultAddressState(address []byte) *AddressState {
-	config := c.Config{}
-	otsBitfield := make([][]byte, c.Config{}.Dev.OtsBitFieldSize)
+	config := c.GetConfig()
+	otsBitfield := make([][]byte, config.Dev.OtsBitFieldSize)
 
 	var tokens map[string]uint64
 	var slavePksAccessType map[string]uint32
