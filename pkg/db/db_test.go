@@ -6,8 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	"github.com/theQRL/go-qrl/pkg/log"
 )
 
 type TestLDB struct {
@@ -17,8 +15,7 @@ type TestLDB struct {
 
 func NewTestLDB() *TestLDB {
 	tempDir, err := ioutil.TempDir("", "")
-	logger := log.New()
-	ldb, err := NewDB(tempDir, "state",16, 16, &logger)
+	ldb, err := NewDB(tempDir, "state",16, 16)
 
 	if err != nil {
 		panic(err)
