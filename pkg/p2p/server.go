@@ -28,7 +28,7 @@ type Server struct {
 
 	running bool
 	loopWG  sync.WaitGroup
-	log     log.Logger
+	log     log.LoggerInterface
 
 	exit    chan struct{}
 	addpeer chan *conn
@@ -43,18 +43,18 @@ type peerDrop struct {
 	requested bool // true if signaled by the peer
 }
 
-func (srv *Server) Start(log log.Logger, config *config.Config, chain *chain.Chain) (err error) {
+func (srv *Server) Start(chain *chain.Chain) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
 		return errors.New("server is already running")
 	}
 
-	srv.config = config
+	srv.config = config.GetConfig()
 	srv.exit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan peerDrop)
-	srv.log = log
+	srv.log = log.GetLogger()
 	srv.chain = chain
 
 	srv.filter = bloom.New(200000, 5)
@@ -123,7 +123,7 @@ running:
 			break running
 		case c := <-srv.addpeer:
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
-			p := newPeer(&c.fd, c.inbound, srv.chain, &srv.log, srv.filter, srv.config)
+			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
 			if p.inbound {

@@ -18,7 +18,7 @@ type LDB struct {
 
 	exitLock sync.Mutex
 
-	log log.Logger
+	log log.LoggerInterface
 }
 
 type ldbBatch struct {
@@ -27,7 +27,7 @@ type ldbBatch struct {
 	size int
 }
 
-func NewDB(directory string, filename string, cache int, handles int, log *log.Logger) (*LDB, error) {
+func NewDB(directory string, filename string, cache int, handles int) (*LDB, error) {
 	dbDir := path.Join(directory, filename)
 	if cache < 16 {
 		cache = 16
@@ -49,7 +49,7 @@ func NewDB(directory string, filename string, cache int, handles int, log *log.L
 	return &LDB{
 		filename: filename,
 		db:       db,
-		log:      *log,
+		log:      log.GetLogger(),
 	}, nil
 }
 

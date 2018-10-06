@@ -25,7 +25,7 @@ type State struct {
 	db	*db.LDB
 
 	lock sync.Mutex
-	log log.Logger
+	log log.LoggerInterface
 	config *c.Config
 }
 
@@ -35,8 +35,8 @@ type RollbackStateInfo struct {
 	hashPath           [][]byte
 }
 
-func CreateState(log *log.Logger, config *c.Config) (*State, error) {
-	newDB, err := db.NewDB(c.GetUserConfig().DataDir(), c.GetDevConfig().DBName, 16, 16, log)
+func CreateState() (*State, error) {
+	newDB, err := db.NewDB(c.GetUserConfig().DataDir(), c.GetDevConfig().DBName, 16, 16)
 
 	if err != nil {
 		return nil, err
@@ -44,8 +44,8 @@ func CreateState(log *log.Logger, config *c.Config) (*State, error) {
 
 	state := State {
 		db: newDB,
-		log: *log,
-		config: config,
+		log: log.GetLogger(),
+		config: c.GetConfig(),
 	}
 
 	return &state, err
@@ -110,7 +110,7 @@ func (s *State) RemoveBlock(headerHash []byte) error {
 	return s.db.Delete(headerHash)
 }
 
-func (s *State) PutBlockMetaData(headerHash []byte, b *metadata.BlockMetaData, batch *leveldb.Batch) error {
+func (s *State) PutBlockMetadata(headerHash []byte, b *metadata.BlockMetaData, batch *leveldb.Batch) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -139,7 +139,7 @@ func (s *State) GetBlockMetadata(headerHash []byte) (*metadata.BlockMetaData, er
 	return metadata.DeSerializeBlockMetaData(value)
 }
 
-func (s *State) RemoveBlockMetaData(headerHash []byte) error {
+func (s *State) RemoveBlockMetadata(headerHash []byte) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -232,13 +232,13 @@ func (s *State) GetLastBlock() (*block.Block, error) {
 		return nil, err
 	}
 
-	block, err := s.GetBlockByNumber(blockNumber)
+	b, err := s.GetBlockByNumber(blockNumber)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return block, err
+	return b, err
 }
 
 func (s *State) PutChainHeight(height uint64, batch *leveldb.Batch) error {
