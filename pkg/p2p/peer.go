@@ -25,19 +25,19 @@ type Peer struct {
 	wg     sync.WaitGroup
 	closed chan struct{}
 	disc   chan DiscReason
-	log    log.Logger
+	log    log.LoggerInterface
 	filter *bloom.BloomFilter
 	config *config.Config
 }
 
-func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, log *log.Logger, filter *bloom.BloomFilter, config *config.Config) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter) *Peer {
 	p := &Peer {
 		conn: *conn,
 		inbound: inbound,
 		chain: chain,
-		log: *log,
+		log: log.GetLogger(),
 		filter: filter,
-		config: config,
+		config: config.GetConfig(),
 	}
 	return p
 }

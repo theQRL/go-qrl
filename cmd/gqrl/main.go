@@ -15,16 +15,16 @@ var (
 	server *p2p.Server
 	conf *config.Config
 	input = bufio.NewReader(os.Stdin)
-	logger = log.New()
+	logger = log.GetLogger()
 )
 
 func startServer() error {
-	c, err := chain.CreateChain(&logger, conf)
+	c, err := chain.CreateChain()
 	if err != nil {
 		return err
 	}
 
-	err = server.Start(logger, conf, c)
+	err = server.Start(c)
 	if err != nil {
 		return err
 	}

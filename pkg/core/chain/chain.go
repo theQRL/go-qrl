@@ -27,7 +27,7 @@ import (
 type Chain struct {
 	lock sync.Mutex
 
-	log log.Logger
+	log log.LoggerInterface
 	config *c.Config
 
 	triggerMiner bool
@@ -41,8 +41,8 @@ type Chain struct {
 
 }
 
-func CreateChain(log *log.Logger, config *c.Config) (*Chain, error) {
-	s, err := state.CreateState(log, config)
+func CreateChain() (*Chain, error) {
+	s, err := state.CreateState()
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +50,8 @@ func CreateChain(log *log.Logger, config *c.Config) (*Chain, error) {
 	txPool := &pool.TransactionPool{}
 
 	chain := &Chain {
-		log: *log,
-		config: config,
+		log: log.GetLogger(),
+		config: c.GetConfig(),
 
 		state: s,
 		txPool: txPool,
@@ -92,7 +92,7 @@ func (c *Chain) Load(genesisBlock *block.Block) error {
 
 		blockMetaData := metadata.CreateBlockMetadata(currentDifficulty, currentDifficulty, nil)
 
-		c.state.PutBlockMetaData(genesisBlock.HeaderHash(), blockMetaData, nil)
+		c.state.PutBlockMetadata(genesisBlock.HeaderHash(), blockMetaData, nil)
 
 		addressesState := make(map[string]*addressstate.AddressState)
 		gen := &genesis.Genesis{}

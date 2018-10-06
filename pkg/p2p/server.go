@@ -28,7 +28,7 @@ type Server struct {
 
 	running bool
 	loopWG  sync.WaitGroup
-	log     log.Logger
+	log     log.LoggerInterface
 
 	exit    chan struct{}
 	addpeer chan *conn
@@ -43,7 +43,7 @@ type peerDrop struct {
 	requested bool // true if signaled by the peer
 }
 
-func (srv *Server) Start(log log.Logger, config *config.Config, chain *chain.Chain) (err error) {
+func (srv *Server) Start(config *config.Config, chain *chain.Chain) (err error) {
 	srv.lock.Lock()
 	defer srv.lock.Unlock()
 	if srv.running {
@@ -54,7 +54,7 @@ func (srv *Server) Start(log log.Logger, config *config.Config, chain *chain.Cha
 	srv.exit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan peerDrop)
-	srv.log = log
+	srv.log = log.GetLogger()
 	srv.chain = chain
 
 	srv.filter = bloom.New(200000, 5)
