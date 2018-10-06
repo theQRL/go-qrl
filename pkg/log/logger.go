@@ -13,7 +13,7 @@ import (
 const errorKey = "LOG15_ERROR"
 const floatFormat = 'f'
 
-// A Record is what a Logger asks its handler to write
+// A Record is what a LoggerInterface asks its handler to write
 type Record struct {
 	Time     time.Time
 	//Lvl      Lvl
@@ -29,7 +29,7 @@ type RecordKeyNames struct {
 	Lvl  string
 }
 
-type Logger interface {
+type LoggerInterface interface {
 	Trace(msg string, ctx ...interface{})
 	Debug(msg string, ctx ...interface{})
 	Info(msg string, ctx ...interface{})
@@ -38,7 +38,7 @@ type Logger interface {
 	Crit(msg string, ctx ...interface{})
 }
 
-type logger struct {
+type Logger struct {
 	trace *log.Logger
 	debug *log.Logger
 	info *log.Logger
@@ -80,17 +80,20 @@ func normalize(ctx []interface{}) []interface{} {
 	return ctx
 }
 
-func NewContext(prefix []interface{}, suffix []interface{}) []interface{} {
-	normalizedSuffix := normalize(suffix)
-	newCtx := make([]interface{}, len(prefix)+len(normalizedSuffix))
-	n := copy(newCtx, prefix)
-	copy(newCtx[n:], normalizedSuffix)
-	return newCtx
+var once sync.Once
+var logger *Logger
+
+func GetLogger() (*Logger) {
+	once.Do(func() {
+		logger = createLogger()
+	})
+
+	return logger
 }
 
-func New() Logger {
+func createLogger() *Logger {
 	handler := os.Stdout
-	logger := &logger{
+	logger := &Logger{
 		trace: log.New(handler, "TRACE ", log.Ldate|log.Ltime),
 		debug: log.New(handler, "DEBUG ", log.Ldate|log.Ltime),
 		info: log.New(handler, "INFO ", log.Ldate|log.Ltime),
@@ -101,32 +104,32 @@ func New() Logger {
 	return logger
 }
 
-func (l *logger) Trace(msg string, ctx ...interface{}) {
+func (l *Logger) Trace(msg string, ctx ...interface{}) {
 	record := &Record {Msg: msg, Ctx: normalize(ctx)}
 	l.trace.Println(msg, TerminalFormat(record))
 }
 
-func (l *logger) Debug(msg string, ctx ...interface{}) {
+func (l *Logger) Debug(msg string, ctx ...interface{}) {
 	record := &Record {Msg: msg, Ctx: normalize(ctx)}
 	l.debug.Println(msg, TerminalFormat(record))
 }
 
-func (l *logger) Info(msg string, ctx ...interface{}) {
+func (l *Logger) Info(msg string, ctx ...interface{}) {
 	record := &Record {Msg: msg, Ctx: normalize(ctx)}
 	l.info.Println(msg, TerminalFormat(record))
 }
 
-func (l *logger) Warn(msg string, ctx ...interface{}) {
+func (l *Logger) Warn(msg string, ctx ...interface{}) {
 	record := &Record {Msg: msg, Ctx: normalize(ctx)}
 	l.warn.Println(msg, TerminalFormat(record))
 }
 
-func (l *logger) Error(msg string, ctx ...interface{}) {
+func (l *Logger) Error(msg string, ctx ...interface{}) {
 	record := &Record {Msg: msg, Ctx: normalize(ctx)}
 	l.error.Println(msg, TerminalFormat(record))
 }
 
-func (l *logger) Crit(msg string, ctx ...interface{}) {
+func (l *Logger) Crit(msg string, ctx ...interface{}) {
 	record := &Record {Msg: msg, Ctx: normalize(ctx)}
 	l.crit.Println(msg, TerminalFormat(record))
 }
