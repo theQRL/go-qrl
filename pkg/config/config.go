@@ -1,6 +1,7 @@
 package config
 
 import (
+	"github.com/theQRL/go-qrl/pkg/misc"
 	"path"
 	"sync"
 )
@@ -266,7 +267,7 @@ func GetDevConfig() (dev *DevConfig) {
 		MaxCoinSupply: 105000000 * (10 ^ 9),
 		SuppliedCoins: 65000000 * (10 ^ 9),
 		GenesisDifficulty: 5000,
-		CoinbaseAddress: []byte("000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+		CoinbaseAddress: misc.HStr2Bin("000000000000000000000000000000000000000000000000000000000000000000000000000000"),
 		GenesisTimestamp: 1524928900,
 	}
 	transaction := &TransactionConfig{

@@ -187,7 +187,7 @@ func CreateTransfer(addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byt
 
 	tx.data.GetTransfer().Amounts = amounts
 
-	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+	if !tx.Validate(false) {
 		return nil
 	}
 

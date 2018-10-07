@@ -5,8 +5,10 @@ import (
 	"encoding/binary"
 	"reflect"
 
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
 	"github.com/theQRL/go-qrl/pkg/generated"
+	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -30,7 +32,7 @@ func (tx *CoinBase) GetHashableBytes() []byte {
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Nonce()))
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Amount()))
 
-	tmptxhash := misc.UcharVector{}
+	tmptxhash := misc.NewUCharVector()
 	tmptxhash.AddBytes(tmp.Bytes())
 	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
 
@@ -43,6 +45,11 @@ func (tx *CoinBase) UpdateMiningAddress(miningAddress []byte) {
 }
 
 func (tx *CoinBase) validateCustom() bool {
+	if !reflect.DeepEqual(tx.MasterAddr(), tx.config.Dev.Genesis.CoinbaseAddress) {
+		tx.log.Warn("Master address doesnt match with coinbase_address")
+		return false
+	}
+
 	if tx.Fee() != 0 {
 		tx.log.Warn("Fee for coinbase transaction should be 0")
 		return false
@@ -52,74 +59,99 @@ func (tx *CoinBase) validateCustom() bool {
 }
 
 func (tx *CoinBase) ValidateExtendedCoinbase(blockNumber uint64) bool {
-	if reflect.DeepEqual(tx.MasterAddr(), tx.config.Dev.Genesis.CoinbaseAddress) {
-		tx.log.Warn("Master address doesnt match with coinbase_address")
-		tx.log.Warn(string(tx.MasterAddr()), tx.config.Dev.Genesis.CoinbaseAddress)
+	if !reflect.DeepEqual(tx.MasterAddr(), tx.config.Dev.Genesis.CoinbaseAddress) {
+		tx.log.Warn(
+			"Master address doesnt match with coinbase_address",
+			"MasterAddr", misc.Bin2HStr(tx.MasterAddr()))
 		return false
 	}
 
-	if !(addressstate.IsValidAddress(tx.MasterAddr()) && addressstate.IsValidAddress(tx.AddrTo())) {
-		tx.log.Warn("Invalid address addr_from: %s addr_to: %s", tx.MasterAddr(), tx.AddrTo())
+	if !addressstate.IsValidAddress(tx.AddrTo()) {
+		tx.log.Warn(
+			"Invalid address",
+			"addr_from", misc.Bin2HStr(tx.MasterAddr()),
+			"addr_to", misc.Bin2HStr(tx.AddrTo()))
+		return false
+	}
+
+	if tx.Nonce() != blockNumber + 1 {
+		tx.log.Warn(
+			"Nonce doesnt match",
+			"nonce", tx.Nonce(),
+			"blockNumber", blockNumber)
 		return false
 	}
 
 	return tx.validateCustom()
 }
 
+func (tx *CoinBase) Validate(verifySignature bool) bool {
+	if !tx.validateCustom() {
+		tx.log.Warn("Custom validation failed")
+		return false
+	}
+
+	expectedTransactionHash := tx.GetHashableBytes()
+	if !reflect.DeepEqual(expectedTransactionHash, tx.Txhash()) {
+		tx.log.Warn("CoinBase TransactionHash mismatch")
+		return false
+	}
+
+	return true
+}
+
 func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
-	strAddrTo := string(tx.AddrTo())
+	strAddrTo := misc.Bin2Qaddress(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
 		addrState.AddBalance(tx.Amount())
 		addrState.AppendTransactionHash(tx.Txhash())
 	}
 
-	strAddrFrom := string(tx.config.Dev.Genesis.CoinbaseAddress)
+	strAddrFrom := misc.Bin2Qaddress(tx.config.Dev.Genesis.CoinbaseAddress)
 
 	if addrState, ok := addressesState[strAddrFrom]; ok {
-		addressesState[string(tx.MasterAddr())].SubtractBalance(tx.Amount())
-		addressesState[string(tx.MasterAddr())].AppendTransactionHash(tx.Txhash())
+		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].SubtractBalance(tx.Amount())
+		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].AppendTransactionHash(tx.Txhash())
 		addrState.IncreaseNonce()
 	}
 }
 
 func (tx *CoinBase) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
-	strAddrTo := string(tx.AddrTo())
+	strAddrTo := misc.Bin2Qaddress(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
 		addrState.SubtractBalance(tx.Amount())
 		addrState.RemoveTransactionHash(tx.Txhash())
 	}
 
-	strAddrFrom := string(tx.config.Dev.Genesis.CoinbaseAddress)
+	strAddrFrom := misc.Bin2Qaddress(tx.config.Dev.Genesis.CoinbaseAddress)
 
 	if addrState, ok := addressesState[strAddrFrom]; ok {
-		addressesState[string(tx.MasterAddr())].AddBalance(tx.Amount())
-		addressesState[string(tx.MasterAddr())].RemoveTransactionHash(tx.Txhash())
+		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].AddBalance(tx.Amount())
+		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].RemoveTransactionHash(tx.Txhash())
 		addrState.DecreaseNonce()
 	}
 }
 
 func (tx *CoinBase) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[string(tx.PK())] = &addressstate.AddressState{}
-
-	addressesState[string(tx.MasterAddr())] = &addressstate.AddressState{}
-	addressesState[string(tx.AddrTo())] = &addressstate.AddressState{}
-}
-
-func (tx *CoinBase) FromPBData(transaction *generated.Transaction) *CoinBase {
-	tx.data = transaction
-	return tx
+	addressesState[misc.Bin2Qaddress(tx.MasterAddr())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrTo())] = &addressstate.AddressState{}
 }
 
 func CreateCoinBase(minerAddress []byte, blockNumber uint64, amount uint64) *CoinBase {
 	tx := &CoinBase{}
+	tx.config = config.GetConfig()
+	tx.log = log.GetLogger()
+
+	tx.data = &generated.Transaction{}
+	tx.data.TransactionType = &generated.Transaction_Coinbase{Coinbase:&generated.Transaction_CoinBase{}}
+
 	tx.data.MasterAddr = tx.config.Dev.Genesis.CoinbaseAddress
 	tx.data.GetCoinbase().AddrTo = minerAddress
 	tx.data.GetCoinbase().Amount = amount
 	tx.data.Nonce = blockNumber + 1
 	tx.data.TransactionHash = tx.GetHashableBytes()
 
-	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+	if !tx.Validate(false) {
 		return nil
 	}
 

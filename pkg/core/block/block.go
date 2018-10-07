@@ -206,7 +206,7 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 		tx := transactions.ProtoToTransaction(b.Transactions()[i])
 
 
-		if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), true) {
+		if !tx.Validate(true) {
 			b.log.Warn("failed transaction validation")
 			return false
 		}
@@ -310,7 +310,7 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	}
 
 	coinbaseTX := transactions.CoinBase{}
-	coinbaseTX.FromPBData(b.Transactions()[0])
+	coinbaseTX.FromPBdata(*b.Transactions()[0])
 	coinbaseAmount := coinbaseTX.Amount()
 
 	if !coinbaseTX.ValidateExtendedCoinbase(b.BlockNumber()) {

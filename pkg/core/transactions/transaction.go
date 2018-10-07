@@ -45,13 +45,13 @@ type TransactionInterface interface {
 
 	Signature() []byte
 
-	FromPBdata(pbdata *generated.Transaction) //Set return type
+	FromPBdata(pbdata generated.Transaction) //Set return type
 
 	GetSlave() []byte
 
 	Txhash() []byte
 
-	UpdateTxhash(hashableBytes goqrllib.UcharVector)
+	UpdateTxhash()
 
 	GetHashableBytes() []byte
 
@@ -69,7 +69,7 @@ type TransactionInterface interface {
 
 	validateCustom() bool
 
-	Validate(hashableBytes goqrllib.UcharVector, verifySignature bool) bool
+	Validate(verifySignature bool) bool
 
 	ValidateSlave(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool
 
@@ -84,9 +84,9 @@ type TransactionInterface interface {
 }
 
 type Transaction struct {
-	log    log.Logger
+	log    log.LoggerInterface
 	data   *generated.Transaction
-	config c.Config
+	config *c.Config
 }
 
 func (tx *Transaction) Size() int {
@@ -152,8 +152,8 @@ func (tx *Transaction) Signature() []byte {
 	return tx.data.Signature
 }
 
-func (tx *Transaction) FromPBdata(pbdata *generated.Transaction) {
-	tx.data = pbdata
+func (tx *Transaction) FromPBdata(pbdata generated.Transaction) {
+	tx.data = &pbdata
 }
 
 func (tx *Transaction) GetSlave() []byte {
@@ -173,12 +173,8 @@ func (tx *Transaction) Txhash() []byte {
 	return tx.data.TransactionHash
 }
 
-func (tx *Transaction) UpdateTxhash(hashableBytes goqrllib.UcharVector) {
-	tmp := misc.UcharVector{}
-	tmp.New(hashableBytes)
-	tmp.AddBytes(tx.Signature())
-	tmp.AddBytes(tx.PK())
-	tx.data.TransactionHash = tmp.GetBytes()
+func (tx *Transaction) UpdateTxhash() {
+	tx.data.TransactionHash = tx.GenerateTxHash()
 }
 
 func (tx *Transaction) GetHashableBytes() []byte {
@@ -243,7 +239,7 @@ func (tx *Transaction) validateCustom() bool {
 	return false
 }
 
-func (tx *Transaction) Validate(hashableBytes goqrllib.UcharVector, verifySignature bool) bool {
+func (tx *Transaction) Validate(verifySignature bool) bool {
 	if !tx.validateCustom() {
 		tx.log.Warn("Custom validation failed")
 		return false
@@ -265,7 +261,7 @@ func (tx *Transaction) Validate(hashableBytes goqrllib.UcharVector, verifySignat
 			return false
 		}
 
-		if !goqrllib.XmssFastVerify(hashableBytes,
+		if !goqrllib.XmssFastVerify(misc.BytesToUCharVector(tx.GetHashableBytes()),
 			misc.BytesToUCharVector(tx.Signature()),
 			misc.BytesToUCharVector(tx.PK())) {
 			tx.log.Warn("XMSS Verification Failed")
