@@ -78,7 +78,7 @@ type Block struct {
 	blockheader *BlockHeader
 
 	config *config.Config
-	log log.Logger
+	log log.LoggerInterface
 }
 
 func (b *Block) PBData() *generated.Block {
@@ -125,10 +125,12 @@ func (b *Block) MiningBlob() []byte {
 	return b.blockheader.MiningBlob()
 }
 
-func (b *Block) CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs list.List, timestamp uint64) *Block {
+func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs []transactions.Transaction, timestamp uint64) *Block {
+	b := &Block{}
+	b.config = config.GetConfig() // TODO: Make Config Singleton
 	feeReward := uint64(0)
-	for _, tx := range b.Transactions() {
-		feeReward += tx.Fee
+	for _, tx := range txs {
+		feeReward += tx.Fee()
 	}
 
 	totalRewardAmount := BlockRewardCalc(blockNumber, b.config) + feeReward
@@ -137,8 +139,7 @@ func (b *Block) CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHe
 	hashes.PushBack(coinbaseTX.Txhash())
 	b.block.Transactions = append(b.block.Transactions, coinbaseTX.PBData())
 
-	for e := txs.Front(); e != nil; e = e.Next() {
-		tx := e.Value.(transactions.TransactionInterface)
+	for _, tx := range txs {
 		hashes.PushBack(tx.Txhash())
 		b.block.Transactions = append(b.block.Transactions, tx.PBData())
 	}
