@@ -12,7 +12,7 @@ import (
 
 type BlockMetaData struct {
 	data *generated.BlockMetaData
-	log log.Logger
+	log log.LoggerInterface
 	config *config.Config
 }
 
