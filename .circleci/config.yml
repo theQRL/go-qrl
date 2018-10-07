@@ -23,8 +23,10 @@ jobs:
       - run: cd ~/go/src/github.com/theQRL/qrllib/ && cmake -DBUILD_GO=ON && make
       - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qryptonight && cd qryptonight && git submodule update --init
       - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON -DSANITIZE_ADDRESS=ON -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_CXX_COMPILER=g++-5 && make
+      - run: go get github.com/schrej/godacov && go get -u github.com/haya14busa/goverage
       - run: cd ~/go/src/github.com/theQRL/go-qrl && go get -v -t -d ./...
-      - run: cd ~/go/src/github.com/theQRL/go-qrl && go test -v ./...
+      - run: cd ~/go/src/github.com/theQRL/go-qrl && goverage -v -coverprofile=coverage.out ./...
+      - run: cd ~/go/src/github.com/theQRL/go-qrl && godacov -t $CODACY_PROJECT_TOKEN -r ./coverage.out -c $CIRCLE_SHA1
 
 workflows:
   version: 2
