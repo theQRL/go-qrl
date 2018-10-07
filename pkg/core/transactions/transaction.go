@@ -179,7 +179,6 @@ func (tx *Transaction) UpdateTxhash() {
 
 func (tx *Transaction) GetHashableBytes() []byte {
 	panic("Not Implemented")
-	return nil
 }
 
 func (tx *Transaction) GenerateTxHash() []byte {
@@ -236,7 +235,6 @@ func (tx *Transaction) SetAffectedAddress(addressesState map[string]*addressstat
 
 func (tx *Transaction) validateCustom() bool {
 	panic("Not Implemented")
-	return false
 }
 
 func (tx *Transaction) Validate(verifySignature bool) bool {
@@ -299,12 +297,10 @@ func (tx *Transaction) ValidateSlave(addrFromState *addressstate.AddressState, a
 
 func (tx *Transaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool {
 	panic("Not Implemented")
-	return false
 }
 
 func (tx *Transaction) ValidateExtendedCoinbase(blockNumber uint64) bool {
 	panic("Not Implemented")
-	return false
 }
 
 func (tx *Transaction) FromJSON(jsonData string) *Transaction {

@@ -887,21 +887,22 @@ func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) err
 		bitfield := a.PBData().OtsBitfield[offset]
 		a.PBData().OtsBitfield[offset][0] = bitfield[0] & ^(1 << relative)
 		return nil
-	} else {
-		a.PBData().OtsCounter = 0
-		hashes := a.TransactionHashes()
-		for i := len(hashes); i >= 0 ; i-- {
-			tm, err := s.GetTxMetadata(hashes[i])
-			if err != nil {
-				return err
-			}
-			tx := transactions.ProtoToTransaction(tm.Transaction)
-			if tx.OtsKey() >= s.config.Dev.MaxOTSTracking {
-				a.PBData().OtsCounter = uint64(tx.OtsKey())
-				return nil
-			}
+	}
+
+	a.PBData().OtsCounter = 0
+	hashes := a.TransactionHashes()
+	for i := len(hashes); i >= 0 ; i-- {
+		tm, err := s.GetTxMetadata(hashes[i])
+		if err != nil {
+			return err
+		}
+		tx := transactions.ProtoToTransaction(tm.Transaction)
+		if tx.OtsKey() >= s.config.Dev.MaxOTSTracking {
+			a.PBData().OtsCounter = uint64(tx.OtsKey())
+			return nil
 		}
 	}
+
 	return errors.New("OTS key didn't change")
 }
 
