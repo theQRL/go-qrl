@@ -15,16 +15,21 @@ jobs:
           name: Setting up Environment Variables for Golang
           command: |
             echo 'export GOROOT="/go"' >> $BASH_ENV
-            echo 'export PATH="$PATH:/go/bin/"' >> $BASH_ENV
+            echo 'export GOPATH="/root/go"' >> $BASH_ENV
+            echo 'export GOGITHUB="$GOPATH/src/github.com"' >> $BASH_ENV
+            echo 'export PATH="$PATH:/go/bin/:$GOGITHUB/haya14busa/goverage:$GOGITHUB/schrej/godacov/"' >> $BASH_ENV
       - run: go get github.com/magiconair/properties/assert
-      - run: mkdir -p ~/go/src/github.com/theQRL/go-qrl
-      - run: cp -r . ~/go/src/github.com/theQRL/go-qrl/
-      - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qrllib && cd qrllib && git submodule update --init
-      - run: cd ~/go/src/github.com/theQRL/qrllib/ && cmake -DBUILD_GO=ON && make
-      - run: cd ~/go/src/github.com/theQRL && git clone https://github.com/cyyber/qryptonight && cd qryptonight && git submodule update --init
-      - run: cd ~/go/src/github.com/theQRL/qryptonight/ && cmake -DBUILD_GO=ON -DSANITIZE_ADDRESS=ON -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_CXX_COMPILER=g++-5 && make
-      - run: cd ~/go/src/github.com/theQRL/go-qrl && go get -v -t -d ./...
-      - run: cd ~/go/src/github.com/theQRL/go-qrl && go test -v ./...
+      - run: mkdir -p $GOGITHUB/theQRL/go-qrl
+      - run: cp -r . $GOGITHUB/theQRL/go-qrl/
+      - run: cd $GOGITHUB/theQRL && git clone https://github.com/cyyber/qrllib && cd qrllib && git submodule update --init
+      - run: cd $GOGITHUB/theQRL/qrllib/ && cmake -DBUILD_GO=ON && make
+      - run: cd $GOGITHUB/theQRL && git clone https://github.com/cyyber/qryptonight && cd qryptonight && git submodule update --init
+      - run: cd $GOGITHUB/theQRL/qryptonight/ && cmake -DBUILD_GO=ON -DSANITIZE_ADDRESS=ON -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_CXX_COMPILER=g++-5 && make
+      - run: go get -u github.com/schrej/godacov && cd $GOGITHUB/schrej/godacov && go build
+      - run: go get -u github.com/haya14busa/goverage && cd $GOGITHUB/haya14busa/goverage && go build
+      - run: cd $GOGITHUB/theQRL/go-qrl && go get -v -t -d ./...
+      - run: cd $GOGITHUB/theQRL/go-qrl && goverage -v -coverprofile=coverage.out ./...
+      - run: if [[ -v CODACY_PROJECT_TOKEN ]]; then cd $GOGITHUB/theQRL/go-qrl && godacov -t $CODACY_PROJECT_TOKEN -r ./coverage.out -c $CIRCLE_SHA1 || echo "failed"; fi
 
 workflows:
   version: 2
