@@ -32,10 +32,14 @@ func (t *TransactionInfo) IsStale(currentBlockHeight uint64) bool {
 	// If chain recovered from a fork where chain height is reduced
 	// then update block_number of the transactions in pool
 	if currentBlockHeight < t.blockNumber {
-		t.blockNumber = currentBlockHeight
+		t.UpdateBlockNumber(currentBlockHeight)
 	}
 
 	return false
+}
+
+func (t *TransactionInfo) UpdateBlockNumber(currentBlockHeight uint64) {
+	t.blockNumber = currentBlockHeight
 }
 
 func CreateTransactionInfo(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64) *TransactionInfo {

@@ -12,6 +12,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
 	"github.com/theQRL/go-qrl/pkg/pow"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -69,7 +70,7 @@ type BlockHeader struct {
 	blockHeader *generated.BlockHeader
 
 	config *c.Config
-	log    log.Logger
+	log    log.LoggerInterface
 }
 
 func (bh *BlockHeader) BlockNumber() uint64 {
@@ -177,8 +178,8 @@ func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
 }
 
 func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkleRoot []byte) bool {
-	ntp := misc.GetNTP()
-	currentTime := uint32(ntp.Time())
+	n := ntp.GetNTP()
+	currentTime := uint32(n.Time())
 	allowedTimestamp := currentTime + bh.config.Dev.BlockLeadTimestamp
 	if bh.Timestamp() > allowedTimestamp {
 		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")

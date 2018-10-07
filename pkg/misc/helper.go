@@ -126,3 +126,19 @@ func Reverse(s [][]byte) [][]byte {
 
 	return s
 }
+
+func Bin2HStr(data []byte) string {
+	return goqrllib.Bin2hstr(BytesToUCharVector(data))
+}
+
+func HStr2Bin(data string) []byte {
+	return UCharVectorToBytes(goqrllib.Hstr2bin(data))
+}
+
+func Qaddress2Bin(qaddress string) []byte {
+	return HStr2Bin(qaddress[1:])
+}
+
+func Bin2Qaddress(binAddress []byte) string {
+	return "Q" + Bin2HStr(binAddress)
+}

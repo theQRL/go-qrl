@@ -1,4 +1,4 @@
-package misc
+package ntp
 
 import (
 	"sync"
