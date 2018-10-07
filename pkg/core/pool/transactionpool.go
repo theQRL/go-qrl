@@ -8,13 +8,13 @@ import (
 	c "github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
-	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
 )
 
 type TransactionPool struct {
 	txPool list.List
 	config c.Config
-	ntp *misc.NTP
+	ntp *ntp.NTP
 }
 
 func (t *TransactionPool) IsFull() bool {
@@ -98,7 +98,11 @@ func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
 	for e := t.txPool.Front(); e != nil; e = e.Next() {
 		ti := e.Value.(TransactionInfo)
 		if ti.IsStale(currentBlockHeight) {
-			ti.blockNumber = currentBlockHeight
+			/*
+			TODO: Add Code for State validation of stale txn
+			In case of state validation fails, removes the transaction from pool
+			*/
+			ti.UpdateBlockNumber(currentBlockHeight)
 			// TODO: Broadcast txn to other peers
 		}
 	}
