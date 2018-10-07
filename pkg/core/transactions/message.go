@@ -101,7 +101,7 @@ func CreateMessageTransaction(messageHash []byte, fee uint64, xmssPK []byte, mas
 
 	tx.data.PublicKey = xmssPK
 
-	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+	if !tx.Validate(false) {
 		return nil
 	}
 

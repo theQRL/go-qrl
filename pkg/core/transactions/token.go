@@ -284,7 +284,7 @@ func CreateToken(
 	tokenTx.Decimals = decimals
 	tokenTx.InitialBalances = initialBalance
 
-	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+	if !tx.Validate(false) {
 		return nil
 	}
 

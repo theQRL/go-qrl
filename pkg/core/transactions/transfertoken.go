@@ -191,7 +191,7 @@ func CreateTransferToken(tokenTxhash []byte, addrsTo [][]byte, amounts []uint64,
 	transferTx.AddrsTo = addrsTo
 	transferTx.Amounts = amounts
 
-	if !tx.Validate(misc.BytesToUCharVector(tx.GetHashableBytes()), false) {
+	if !tx.Validate(false) {
 		return nil
 	}
 
