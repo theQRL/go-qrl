@@ -7,6 +7,7 @@ import (
 	"runtime"
 
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
+	"github.com/theQRL/qrllib/tests/golang/misc"
 )
 
 type UcharVector struct {
@@ -141,4 +142,8 @@ func Qaddress2Bin(qaddress string) []byte {
 
 func Bin2Qaddress(binAddress []byte) string {
 	return "Q" + Bin2HStr(binAddress)
+}
+
+func PK2Qaddress(pk []byte) string {
+	return Bin2Qaddress(misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(pk))))
 }
