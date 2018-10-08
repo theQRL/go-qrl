@@ -92,7 +92,7 @@ func TestXMSS_sk(t *testing.T) {
 	assert.Equal(t, misc.UCharVectorToBytes(x.xmss.sk()), expectedSK, "%v != %v", misc.UCharVectorToBytes(x.xmss.sk()), expectedSK)
 }
 
-func TestXMSS_pk(t *testing.T) {
+func TestXMSS_PK(t *testing.T) {
 	x := TestXMSS{}
 	hexseed := "010400589c3e0bf438bcdc5575c9cb367e9dbb96c7182c9ed5fd6711f832b94d1d5782b345f77d71c1f2f4fa4aa609f040b69f"
 	qaddress := "Q010400d9f1efe5b272e042dcc8ef690f0e90ca8b0b6edba0d26f81e7aff12a6754b21788169f7f"
@@ -102,7 +102,7 @@ func TestXMSS_pk(t *testing.T) {
 	x.xmss = FromExtendedSeed(binSeed)
 
 	assert.Equal(t, x.xmss.QAddress(), qaddress, "%v != %v", x.xmss.QAddress(), qaddress)
-	assert.Equal(t, misc.UCharVectorToBytes(x.xmss.pk()), expectedPK, "%v != %v", misc.UCharVectorToBytes(x.xmss.pk()), expectedPK)
+	assert.Equal(t, misc.UCharVectorToBytes(x.xmss.PK()), expectedPK, "%v != %v", misc.UCharVectorToBytes(x.xmss.PK()), expectedPK)
 }
 
 func TestXMSS_NumberSignatures(t *testing.T) {

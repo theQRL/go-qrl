@@ -119,7 +119,7 @@ func (x *XMSS) sk() goqrllib.UcharVector {
 	return x.xmss.GetSK()
 }
 
-func (x *XMSS) pk() goqrllib.UcharVector {
+func (x *XMSS) PK() goqrllib.UcharVector {
 	return x.xmss.GetPK()
 }
 
