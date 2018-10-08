@@ -93,8 +93,8 @@ type DevConfig struct {
 	MessageReceiptTimeout uint32
 	MessageBufferSize     uint32
 
-	MaxOTSTracking  uint16
-	OtsBitFieldSize uint16
+	MaxOTSTracking  uint64
+	OtsBitFieldSize uint64
 
 	MiningNonceOffset uint16
 	ExtraNonceOffset  uint16
