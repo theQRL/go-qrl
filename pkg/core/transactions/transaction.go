@@ -37,7 +37,7 @@ type TransactionInterface interface {
 
 	AddrFromPK() string
 
-	OtsKey() uint16
+	OtsKey() uint64
 
 	GetOtsFromSignature(signature []byte) uint64
 
@@ -51,11 +51,11 @@ type TransactionInterface interface {
 
 	Txhash() []byte
 
-	UpdateTxhash()
+	UpdateTxhash(hashableBytes []byte)
 
 	GetHashableBytes() []byte
 
-	Sign(xmss crypto.XMSS, message goqrllib.UcharVector)
+	Sign(xmss *crypto.XMSS, message goqrllib.UcharVector)
 
 	ApplyStateChanges(addressesState map[string]*addressstate.AddressState)
 
@@ -123,21 +123,15 @@ func (tx *Transaction) AddrFrom() []byte {
 		return tx.MasterAddr()
 	}
 
-	pk := tx.PK()
-	upk := misc.UcharVector{}
-	upk.AddBytes(pk)
-	upk.New(goqrllib.QRLHelperGetAddress(upk.GetData()))
-
-	return upk.GetBytes()
-
+	return misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 }
 
 func (tx *Transaction) AddrFromPK() string {
 	return misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 }
 
-func (tx *Transaction) OtsKey() uint16 { // Todo: Return type should uint64
-	return binary.BigEndian.Uint16(tx.data.Signature[0:8])
+func (tx *Transaction) OtsKey() uint64 {
+	return uint64(binary.BigEndian.Uint32(tx.data.Signature[0:4]))
 }
 
 func (tx *Transaction) GetOtsFromSignature(signature []byte) uint64 {
@@ -173,29 +167,26 @@ func (tx *Transaction) Txhash() []byte {
 	return tx.data.TransactionHash
 }
 
-func (tx *Transaction) UpdateTxhash() {
-	tx.data.TransactionHash = tx.GenerateTxHash()
+func (tx *Transaction) UpdateTxhash(hashableBytes []byte) {
+	tx.data.TransactionHash = tx.GenerateTxHash(hashableBytes)
 }
 
 func (tx *Transaction) GetHashableBytes() []byte {
 	panic("Not Implemented")
 }
 
-func (tx *Transaction) GenerateTxHash() []byte {
+func (tx *Transaction) GenerateTxHash(hashableBytes []byte) []byte {
 	tmp := new(bytes.Buffer)
-	tmp.Write(tx.GetHashableBytes())
+	tmp.Write(hashableBytes)
 	tmp.Write(tx.Signature())
 	tmp.Write(tx.PK())
 
-	tmptxhash := misc.UcharVector{}
-	tmptxhash.AddBytes(tmp.Bytes())
-	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
-
-	return tmptxhash.GetBytes()
+	return misc.UCharVectorToBytes(goqrllib.Sha2_256(misc.BytesToUCharVector(tmp.Bytes())))
 }
 
-func (tx *Transaction) Sign(xmss crypto.XMSS, message goqrllib.UcharVector) {
+func (tx *Transaction) Sign(xmss *crypto.XMSS, message goqrllib.UcharVector) {
 	tx.data.Signature = xmss.Sign(message)
+	tx.data.TransactionHash = tx.GenerateTxHash(misc.UCharVectorToBytes(message))
 }
 
 func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
@@ -238,48 +229,22 @@ func (tx *Transaction) validateCustom() bool {
 }
 
 func (tx *Transaction) Validate(verifySignature bool) bool {
-	if !tx.validateCustom() {
-		tx.log.Warn("Custom validation failed")
-		return false
-	}
-
-	if reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.PK()) || reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.MasterAddr()) {
-		tx.log.Warn("Coinbase Address only allowed to do Coinbase Transaction")
-		return false
-	}
-
-	if verifySignature {
-
-		expectedTransactionHash := tx.GenerateTxHash()
-
-		if reflect.DeepEqual(expectedTransactionHash, tx.Txhash()) {
-			tx.log.Warn("Invalid Transaction hash")
-			tx.log.Warn("Expected Transaction hash %s", string(expectedTransactionHash))
-			tx.log.Warn("Found Transaction hash %s", string(tx.Txhash()))
-			return false
-		}
-
-		if !goqrllib.XmssFastVerify(misc.BytesToUCharVector(tx.GetHashableBytes()),
-			misc.BytesToUCharVector(tx.Signature()),
-			misc.BytesToUCharVector(tx.PK())) {
-			tx.log.Warn("XMSS Verification Failed")
-			return false
-		}
-
-
-	}
-	return true
+	panic("Not Implemented")
 }
 
 func (tx *Transaction) ValidateSlave(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool {
-	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+	addrFromPK := misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 
-	if string(tx.MasterAddr()) == addrFromPK {
+	if reflect.DeepEqual(tx.MasterAddr(), addrFromPK) {
 		tx.log.Warn("Matching master_addr field and address from PK")
 		return false
 	}
 
-	accessType, ok := addrFromPKState.GetSlavePermission(tx.PK())
+	if reflect.DeepEqual(addrFromPK, tx.AddrFrom()) {
+		return true
+	}
+
+	accessType, ok := addrFromState.GetSlavePermission(tx.PK())
 
 	if !ok {
 		tx.log.Warn("Public key and address don't match")

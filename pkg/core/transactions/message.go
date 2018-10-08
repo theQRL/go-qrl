@@ -3,8 +3,12 @@ package transactions
 import (
 	"bytes"
 	"encoding/binary"
+	"reflect"
 
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
+	"github.com/theQRL/go-qrl/pkg/generated"
+	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -23,7 +27,7 @@ func (tx *MessageTransaction) GetHashableBytes() []byte {
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
 	tmp.Write(tx.MessageHash())
 
-	tmptxhash := misc.UcharVector{}
+	tmptxhash := misc.NewUCharVector()
 	tmptxhash.AddBytes(tmp.Bytes())
 	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
 
@@ -53,21 +57,56 @@ func (tx *MessageTransaction) ValidateExtended(addrFromState *addressstate.Addre
 	}
 
 	if balance < tx.Fee() {
-		tx.log.Warn("State validation failed for %s because: Insufficient funds", string(tx.Txhash()))
-		tx.log.Warn("Balance: %s, Fee: %s", balance, tx.Fee())
+		tx.log.Warn("State validation failed for %s because: Insufficient funds",
+			"TxHash", misc.Bin2HStr(tx.Txhash()),
+			"Balance", balance,
+			"Fee", tx.Fee())
 		return false
 	}
 
 	if addrFromPKState.OTSKeyReuse(tx.OtsKey()) {
-		tx.log.Warn("State validation failed for %s because: OTS Public key re-use detected", string(tx.Txhash()))
+		tx.log.Warn("State validation failed",
+			"Txhash", misc.Bin2HStr(tx.Txhash()),
+			"Ots Key", tx.OtsKey())
 		return false
 	}
 
 	return true
 }
 
+func (tx *MessageTransaction) Validate(verifySignature bool) bool {
+	if !tx.validateCustom() {
+		tx.log.Warn("Custom validation failed")
+		return false
+	}
+
+	if reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.PK()) || reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.MasterAddr()) {
+		tx.log.Warn("Coinbase Address only allowed to do Coinbase Transaction")
+		return false
+	}
+
+	expectedTransactionHash := tx.GenerateTxHash(tx.GetHashableBytes())
+
+	if verifySignature && !reflect.DeepEqual(expectedTransactionHash, tx.Txhash()) {
+		tx.log.Warn("Invalid Transaction hash",
+			"Expected Transaction hash", misc.Bin2HStr(expectedTransactionHash),
+			"Found Transaction hash", misc.Bin2HStr(tx.Txhash()))
+		return false
+	}
+
+	if verifySignature {
+		if !goqrllib.XmssFastVerify(misc.BytesToUCharVector(tx.GetHashableBytes()),
+			misc.BytesToUCharVector(tx.Signature()),
+			misc.BytesToUCharVector(tx.PK())) {
+			tx.log.Warn("XMSS Verification Failed")
+			return false
+		}
+	}
+	return true
+}
+
 func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
-	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.SubtractBalance(tx.Fee())
 		addrState.AppendTransactionHash(tx.Txhash())
 	}
@@ -76,7 +115,7 @@ func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*addre
 }
 
 func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
-	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
 		addrState.RemoveTransactionHash(tx.Txhash())
 	}
@@ -85,20 +124,24 @@ func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*addr
 }
 
 func (tx *MessageTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[string(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
 }
 
-func CreateMessageTransaction(messageHash []byte, fee uint64, xmssPK []byte, masterAddr []byte) *MessageTransaction {
+func CreateMessageTransaction(message []byte, fee uint64, xmssPK []byte, masterAddr []byte) *MessageTransaction {
 	tx := &MessageTransaction{}
+	tx.config = config.GetConfig()
+	tx.log = log.GetLogger()
+
+	tx.data = &generated.Transaction{}
+	tx.data.TransactionType = &generated.Transaction_Message_{Message:&generated.Transaction_Message{}}
 
 	if masterAddr != nil {
 		tx.data.MasterAddr = masterAddr
 	}
 
-	tx.data.GetMessage().MessageHash = messageHash
+	tx.data.GetMessage().MessageHash = message
 	tx.data.Fee = fee
-
 	tx.data.PublicKey = xmssPK
 
 	if !tx.Validate(false) {

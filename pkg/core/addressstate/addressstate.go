@@ -56,9 +56,9 @@ type AddressStateInterface interface {
 
 	GetDefault(address []byte) *AddressState
 
-	OTSKeyReuse(otsKeyIndex uint16) bool
+	OTSKeyReuse(otsKeyIndex uint64) bool
 
-	SetOTSKey(otsKeyIndex uint16)
+	SetOTSKey(otsKeyIndex uint64)
 
 	IsValidAddress(address []byte) bool
 
@@ -183,8 +183,8 @@ func (a *AddressState) GetDefault(address []byte) *AddressState {
 	return a
 }
 
-func (a *AddressState) OTSKeyReuse(otsKeyIndex uint16) bool {
-	if otsKeyIndex < c.GetConfig().Dev.MaxOTSTracking {
+func (a *AddressState) OTSKeyReuse(otsKeyIndex uint64) bool {
+	if otsKeyIndex < uint64(c.GetConfig().Dev.MaxOTSTracking) {
 		offset := otsKeyIndex >> 3
 		relative := otsKeyIndex % 8
 		if (a.data.OtsBitfield[offset][0] >> relative) & 1 == 1 {
@@ -200,7 +200,7 @@ func (a *AddressState) OTSKeyReuse(otsKeyIndex uint16) bool {
 }
 
 func (a *AddressState) SetOTSKey(otsKeyIndex uint64) {
-	if otsKeyIndex < uint64(c.GetConfig().Dev.MaxOTSTracking) {
+	if otsKeyIndex < c.GetConfig().Dev.MaxOTSTracking {
 		offset := otsKeyIndex >> 3
 		relative := otsKeyIndex % 8
 		bitfield := a.data.OtsBitfield[offset]
@@ -235,6 +235,8 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 	for tokenTxhash, token := range tokens {
 		a.UpdateTokenBalance([]byte(tokenTxhash), token, false)
 	}
+
+	a.data.SlavePksAccessType = make(map[string] uint32)
 
 	for slavePK, accessType := range slavePksAccessType {
 		a.AddSlavePKSAccessType([]byte(slavePK), accessType)
