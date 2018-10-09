@@ -190,20 +190,20 @@ func (tx *Transaction) Sign(xmss *crypto.XMSS, message goqrllib.UcharVector) {
 }
 
 func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
-	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+	addrFromPK := misc.PK2Qaddress(tx.PK())
 	if _, ok := addressesState[addrFromPK]; ok {
-		if string(tx.AddrFrom()) != addrFromPK {
+		if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
 			addressesState[addrFromPK].AppendTransactionHash(tx.Txhash())
 		}
 		addressesState[addrFromPK].IncreaseNonce()
-		addressesState[addrFromPK].SetOTSKey(uint64(tx.OtsKey()))
+		addressesState[addrFromPK].SetOTSKey(tx.OtsKey())
 	}
 }
 
 func (tx *Transaction) revertStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	if _, ok := addressesState[addrFromPK]; ok {
-		if string(tx.AddrFrom()) != addrFromPK {
+		if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
 			addressesState[addrFromPK].RemoveTransactionHash(tx.Txhash())
 		}
 		addressesState[addrFromPK].DecreaseNonce()
@@ -220,8 +220,8 @@ func (tx *Transaction) RevertStateChanges(addressesState map[string]*addressstat
 }
 
 func (tx *Transaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[string(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.PK())] = &addressstate.AddressState{}
 }
 
 func (tx *Transaction) validateCustom() bool {
