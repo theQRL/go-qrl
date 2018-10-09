@@ -5,7 +5,10 @@ import (
 	"encoding/binary"
 	"reflect"
 
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
+	"github.com/theQRL/go-qrl/pkg/generated"
+	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -24,7 +27,7 @@ func (tx *TransferTransaction) Amounts() []uint64 {
 
 func (tx *TransferTransaction) TotalAmounts() uint64 {
 	totalAmount := uint64(0)
-	for amount := range tx.Amounts() {
+	for _, amount := range tx.Amounts() {
 		totalAmount += uint64(amount)
 	}
 	return totalAmount
@@ -39,11 +42,9 @@ func (tx *TransferTransaction) GetHashableBytes() []byte {
 		binary.Write(tmp, binary.BigEndian, tx.Amounts()[i])
 	}
 
-	tmptxhash := misc.UcharVector{}
-	tmptxhash.AddBytes(tmp.Bytes())
-	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
+	tmptxhash := goqrllib.Sha2_256(misc.BytesToUCharVector(tmp.Bytes()))
 
-	return tmptxhash.GetBytes()
+	return misc.UCharVectorToBytes(tmptxhash)
 }
 
 func (tx *TransferTransaction) validateCustom() bool {
@@ -100,24 +101,55 @@ func (tx *TransferTransaction) ValidateExtended(
 	totalAmount := tx.TotalAmounts()
 
 	if balance < totalAmount + tx.Fee() {
-		tx.log.Warn("State validation failed for %s because: Insufficient funds", goqrllib.Bin2hstr(tx.Txhash()))
+		tx.log.Warn("State validation failed for %s because: Insufficient funds", misc.Bin2HStr(tx.Txhash()))
 		tx.log.Warn("balance: %s, fee: %s, amount: %s", balance, tx.Fee(), totalAmount)
 		return false
 	}
 
 	if addrFromPkState.OTSKeyReuse(tx.OtsKey()) {
 		tx.log.Warn("State validation failed for %s because: OTS Public key re-use detected",
-			goqrllib.Bin2hstr(tx.Txhash()))
+			misc.Bin2HStr(tx.Txhash()))
 		return false
 	}
 
 	return true
 }
 
+func (tx *TransferTransaction) Validate(verifySignature bool) bool {
+	if !tx.validateCustom() {
+		tx.log.Warn("Custom validation failed")
+		return false
+	}
+
+	if reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.PK()) || reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.MasterAddr()) {
+		tx.log.Warn("Coinbase Address only allowed to do Coinbase Transaction")
+		return false
+	}
+
+	expectedTransactionHash := tx.GenerateTxHash(tx.GetHashableBytes())
+
+	if verifySignature && !reflect.DeepEqual(expectedTransactionHash, tx.Txhash()) {
+		tx.log.Warn("Invalid Transaction hash",
+			"Expected Transaction hash", misc.Bin2HStr(expectedTransactionHash),
+			"Found Transaction hash", misc.Bin2HStr(tx.Txhash()))
+		return false
+	}
+
+	if verifySignature {
+		if !goqrllib.XmssFastVerify(misc.BytesToUCharVector(tx.GetHashableBytes()),
+			misc.BytesToUCharVector(tx.Signature()),
+			misc.BytesToUCharVector(tx.PK())) {
+			tx.log.Warn("XMSS Verification Failed")
+			return false
+		}
+	}
+	return true
+}
+
 func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	tx.applyStateChangesForPK(addressesState)
 
-	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.SubtractBalance(total)
 		addrState.AppendTransactionHash(tx.Txhash())
@@ -129,7 +161,7 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 		addrTo := addrsTo[index]
 		amount := amounts[index]
 
-		if addrState, ok := addressesState[string(addrTo)]; ok {
+		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.AddBalance(amount)
 			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
 				addrState.AppendTransactionHash(tx.Txhash())
@@ -142,7 +174,7 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 	tx.revertStateChangesForPK(addressesState)
 
 	//TODO: Fix when State is ready
-	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.AddBalance(total)
 		addrState.RemoveTransactionHash(tx.Txhash())
@@ -154,7 +186,7 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 		addrTo := addrsTo[index]
 		amount := amounts[index]
 
-		if addrState, ok := addressesState[string(addrTo)]; ok {
+		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.SubtractBalance(amount)
 			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
 				addrState.RemoveTransactionHash(tx.Txhash())
@@ -164,27 +196,29 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 }
 
 func (tx *TransferTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[string(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
 
 	for _, element := range tx.AddrsTo() {
-		addressesState[string(element)] = &addressstate.AddressState{}
+		addressesState[misc.Bin2Qaddress(element)] = &addressstate.AddressState{}
 	}
 }
 
-func CreateTransfer(addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TransferTransaction {
+func CreateTransferTransaction(addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TransferTransaction {
 	tx := &TransferTransaction{}
+	tx.config = config.GetConfig()
+	tx.log = log.GetLogger()
+
+	tx.data = &generated.Transaction{}
+	tx.data.TransactionType = &generated.Transaction_Transfer_{Transfer:&generated.Transaction_Transfer{}}
 
 	if masterAddr != nil {
 		tx.data.MasterAddr = masterAddr
 	}
 
 	tx.data.PublicKey = xmssPK
-
 	tx.data.Fee = fee
-
 	tx.data.GetTransfer().AddrsTo = addrsTo
-
 	tx.data.GetTransfer().Amounts = amounts
 
 	if !tx.Validate(false) {
