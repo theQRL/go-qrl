@@ -1,0 +1,4 @@
+---
+exclude_paths:
+  - 'pkg/generated/*.go'
+  - 'pkg/protos/*.go'
