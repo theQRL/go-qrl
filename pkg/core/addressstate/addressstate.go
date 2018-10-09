@@ -8,7 +8,6 @@ import (
 	c "github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/misc"
-
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
@@ -132,8 +131,8 @@ func (a *AddressState) SlavePKSAccessType() map[string]uint32 {
 }
 
 func (a *AddressState) UpdateTokenBalance(tokenTxHash []byte, balance uint64, subtract bool) {
-	strTokenTxHash := goqrllib.Bin2hstr(tokenTxHash)
-	if !subtract {
+	strTokenTxHash := misc.Bin2HStr(tokenTxHash)
+	if subtract {
 		a.data.Tokens[strTokenTxHash] -= balance
 	} else {
 		a.data.Tokens[strTokenTxHash] += balance
@@ -145,7 +144,7 @@ func (a *AddressState) UpdateTokenBalance(tokenTxHash []byte, balance uint64, su
 }
 
 func (a *AddressState) GetTokenBalance(tokenTxHash []byte) uint64 {
-	strTokenTxHash := goqrllib.Bin2hstr(tokenTxHash)
+	strTokenTxHash := misc.Bin2HStr(tokenTxHash)
 	if balance, ok := a.data.Tokens[strTokenTxHash]; ok {
 		return balance
 	}
@@ -153,7 +152,7 @@ func (a *AddressState) GetTokenBalance(tokenTxHash []byte) uint64 {
 }
 
 func (a *AddressState) IsTokenExists(tokenTxHash []byte) bool {
-	strTokenTxHash := goqrllib.Bin2hstr(tokenTxHash)
+	strTokenTxHash := misc.Bin2HStr(tokenTxHash)
 	_, ok := a.data.Tokens[strTokenTxHash]
 	return ok
 }
@@ -232,12 +231,12 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 	}
 	a.data.OtsCounter = otsCounter
 
+	a.data.Tokens = make(map[string] uint64)
 	for tokenTxhash, token := range tokens {
 		a.UpdateTokenBalance([]byte(tokenTxhash), token, false)
 	}
 
 	a.data.SlavePksAccessType = make(map[string] uint32)
-
 	for slavePK, accessType := range slavePksAccessType {
 		a.AddSlavePKSAccessType([]byte(slavePK), accessType)
 	}
