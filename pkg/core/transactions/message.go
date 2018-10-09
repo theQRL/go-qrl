@@ -27,11 +27,9 @@ func (tx *MessageTransaction) GetHashableBytes() []byte {
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
 	tmp.Write(tx.MessageHash())
 
-	tmptxhash := misc.NewUCharVector()
-	tmptxhash.AddBytes(tmp.Bytes())
-	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
+	tmptxhash := goqrllib.Sha2_256(misc.BytesToUCharVector(tmp.Bytes()))
 
-	return tmptxhash.GetBytes()
+	return misc.UCharVectorToBytes(tmptxhash)
 }
 
 func (tx *MessageTransaction) validateCustom() bool {
