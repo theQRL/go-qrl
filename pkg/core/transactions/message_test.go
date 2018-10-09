@@ -257,6 +257,7 @@ func TestMessageTransaction_ApplyStateChanges(t *testing.T) {
 
 	messageTx := NewTestMessageTransaction(message, fee, xmssPK, nil)
 	assert.NotNil(t, messageTx.tx)
+	messageTx.tx.Sign(xmss, misc.BytesToUCharVector(messageTx.tx.GetHashableBytes()))
 
 	addressesState := make(map[string]*addressstate.AddressState)
 	messageTx.tx.SetAffectedAddress(addressesState)
@@ -281,7 +282,8 @@ func TestMessageTransaction_RevertStateChanges(t *testing.T) {
 
 	messageTx := NewTestMessageTransaction(message, fee, xmssPK, nil)
 	assert.NotNil(t, messageTx.tx)
-
+	messageTx.tx.Sign(xmss, misc.BytesToUCharVector(messageTx.tx.GetHashableBytes()))
+	
 	addressesState := make(map[string]*addressstate.AddressState)
 	messageTx.tx.SetAffectedAddress(addressesState)
 
