@@ -6,8 +6,10 @@ import (
 	"math"
 	"reflect"
 
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
 	"github.com/theQRL/go-qrl/pkg/generated"
+	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
@@ -50,11 +52,9 @@ func (tx *TokenTransaction) GetHashableBytes() []byte {
 		binary.Write(tmp, binary.BigEndian, addrAmount.Amount)
 	}
 
-	tmptxhash := misc.UcharVector{}
-	tmptxhash.AddBytes(tmp.Bytes())
-	tmptxhash.New(goqrllib.Sha2_256(tmptxhash.GetData()))
+	tmptxhash := goqrllib.Sha2_256(misc.BytesToUCharVector(tmp.Bytes()))
 
-	return tmptxhash.GetBytes()
+	return misc.UCharVectorToBytes(tmptxhash)
 }
 
 func (tx *TokenTransaction) validateCustom() bool {
@@ -87,7 +87,7 @@ func (tx *TokenTransaction) validateCustom() bool {
 		return false
 	}
 
-	var sumOfInitialBalances uint64
+	sumOfInitialBalances := uint64(0)
 	for _, addrBalance := range tx.InitialBalances() {
 		sumOfInitialBalances += addrBalance.Amount
 		if addrBalance.Amount <= 0 {
@@ -97,7 +97,7 @@ func (tx *TokenTransaction) validateCustom() bool {
 		}
 	}
 
-	allowedDecimals, err := CalcAllowedDecimals(uint64(sumOfInitialBalances / 10 ^ tx.Decimals()))
+	allowedDecimals, err := CalcAllowedDecimals(uint64(sumOfInitialBalances / uint64(math.Pow10(int(tx.Decimals())))))
 
 	if err != nil {
 		return false
@@ -114,16 +114,6 @@ func (tx *TokenTransaction) validateCustom() bool {
 		tx.log.Warn("TokenTransaction [%s] Invalid Fee = %d", string(tx.Txhash()), tx.Fee())
 		return false
 	}
-
-	return true
-}
-
-func (tx *TokenTransaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPkState *addressstate.AddressState) bool {
-	if !tx.ValidateSlave(addrFromState, addrFromPkState) {
-		return false
-	}
-
-	txBalance := addrFromState.Balance()
 
 	if !addressstate.IsValidAddress(tx.AddrFrom()) {
 		tx.log.Warn("Invalid address addr_from: %s", tx.AddrFrom())
@@ -142,18 +132,59 @@ func (tx *TokenTransaction) ValidateExtended(addrFromState *addressstate.Address
 		}
 	}
 
+	return true
+}
+
+func (tx *TokenTransaction) ValidateExtended(addrFromState *addressstate.AddressState, addrFromPKState *addressstate.AddressState) bool {
+	if !tx.ValidateSlave(addrFromState, addrFromPKState) {
+		return false
+	}
+
+	txBalance := addrFromState.Balance()
+
 	if txBalance < tx.Fee() {
 		tx.log.Warn("TokenTxn State validation failed for %s because: Insufficient funds", string(tx.Txhash()))
 		tx.log.Warn("balance: %s, Fee: %s", txBalance, tx.Fee())
 		return false
 	}
 
-	if addrFromState.OTSKeyReuse(tx.OtsKey()) {
+	if addrFromPKState.OTSKeyReuse(tx.OtsKey()) {
 		tx.log.Warn("TokenTxn State validation failed for %s because: OTS Public key re-use detected",
 			string(tx.Txhash()))
 		return false
 	}
 
+	return true
+}
+
+func (tx *TokenTransaction) Validate(verifySignature bool) bool {
+	if !tx.validateCustom() {
+		tx.log.Warn("Custom validation failed")
+		return false
+	}
+
+	if reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.PK()) || reflect.DeepEqual(tx.config.Dev.Genesis.CoinbaseAddress, tx.MasterAddr()) {
+		tx.log.Warn("Coinbase Address only allowed to do Coinbase Transaction")
+		return false
+	}
+
+	expectedTransactionHash := tx.GenerateTxHash(tx.GetHashableBytes())
+
+	if verifySignature && !reflect.DeepEqual(expectedTransactionHash, tx.Txhash()) {
+		tx.log.Warn("Invalid Transaction hash",
+			"Expected Transaction hash", misc.Bin2HStr(expectedTransactionHash),
+			"Found Transaction hash", misc.Bin2HStr(tx.Txhash()))
+		return false
+	}
+
+	if verifySignature {
+		if !goqrllib.XmssFastVerify(misc.BytesToUCharVector(tx.GetHashableBytes()),
+			misc.BytesToUCharVector(tx.Signature()),
+			misc.BytesToUCharVector(tx.PK())) {
+			tx.log.Warn("XMSS Verification Failed")
+			return false
+		}
+	}
 	return true
 }
 
@@ -173,19 +204,19 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 		if reflect.DeepEqual(addrAmount.Address, addrFromPK) {
 			addrFromPKProcessed = true
 		}
-		if addrState, ok := addressesState[string(addrAmount.Address)]; ok {
+		if addrState, ok := addressesState[misc.Bin2Qaddress(addrAmount.Address)]; ok {
 			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount, false)
 			addrState.AppendTransactionHash(tx.Txhash())
 		}
 	}
 
 	if !ownerProcessed {
-		if addrState, ok := addressesState[string(tx.Owner())]; ok {
+		if addrState, ok := addressesState[misc.Bin2Qaddress(tx.Owner())]; ok {
 			addrState.AppendTransactionHash(tx.Txhash())
 		}
 	}
 
-	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.SubtractBalance(tx.Fee())
 		if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromProcessed {
@@ -221,19 +252,19 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addres
 		if reflect.DeepEqual(addrAmount.Address, addrFromPK) {
 			addrFromPKProcessed = true
 		}
-		if addrState, ok := addressesState[string(addrAmount.Address)]; ok {
+		if addrState, ok := addressesState[misc.Bin2Qaddress(addrAmount.Address)]; ok {
 			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount, true)
 			addrState.RemoveTransactionHash(tx.Txhash())
 		}
 	}
 
 	if !ownerProcessed {
-		if addrState, ok := addressesState[string(tx.Owner())]; ok {
+		if addrState, ok := addressesState[misc.Bin2Qaddress(tx.Owner())]; ok {
 			addrState.RemoveTransactionHash(tx.Txhash())
 		}
 	}
 
-	if addrState, ok := addressesState[string(tx.AddrFrom())]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
 		if  !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromProcessed {
@@ -254,24 +285,30 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addres
 }
 
 func (tx *TokenTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[string(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[string(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
+	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
 
 	for _, addrAmount := range tx.InitialBalances() {
-		addressesState[string(addrAmount.Address)] = &addressstate.AddressState{}
+		addressesState[misc.Bin2Qaddress(addrAmount.Address)] = &addressstate.AddressState{}
 	}
 }
 
-func CreateToken(
+func CreateTokenTransaction(
 	symbol []byte,
 	name []byte,
 	owner []byte,
 	decimals uint64,
-	initialBalance []*generated.AddressAmount,
+	initialBalance map[string] uint64,
 	fee uint64,
 	xmssPK []byte,
 	masterAddr []byte) *TokenTransaction {
+
 	tx := &TokenTransaction{}
+	tx.config = config.GetConfig()
+	tx.log = log.GetLogger()
+
+	tx.data = &generated.Transaction{}
+	tx.data.TransactionType = &generated.Transaction_Token_{Token:&generated.Transaction_Token{}}
 
 	tx.data.MasterAddr = masterAddr
 	tx.data.PublicKey = xmssPK
@@ -282,7 +319,12 @@ func CreateToken(
 	tokenTx.Name = name
 	tokenTx.Owner = owner
 	tokenTx.Decimals = decimals
-	tokenTx.InitialBalances = initialBalance
+	tokenTx.InitialBalances = make([]*generated.AddressAmount, len(initialBalance))
+	i := 0
+	for qAddress, amount := range initialBalance {
+		tokenTx.InitialBalances[i] = &generated.AddressAmount{Address: misc.Qaddress2Bin(qAddress), Amount: amount}
+		i++
+	}
 
 	if !tx.Validate(false) {
 		return nil
