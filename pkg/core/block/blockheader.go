@@ -280,6 +280,7 @@ func (bh *BlockHeader) JSON() (string, error)  {
 
 func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64) *BlockHeader {
 	bh := &BlockHeader{}
+	bh.blockHeader = &generated.BlockHeader{}
 	bh.blockHeader.BlockNumber = blockNumber
 
 	if bh.blockHeader.BlockNumber != 0 {
