@@ -53,7 +53,7 @@ func TestTransferTransaction_AddrFrom(t *testing.T) {
 	transferTx := NewTestTransferTransaction(addrsTo, amounts, fee, xmssPK, nil)
 	assert.NotNil(t, transferTx.tx)
 
-	assert.Equal(t, transferTx.tx.AddrFrom(), misc.UCharVectorToBytes(aliceXMSS.Address()))
+	assert.Equal(t, transferTx.tx.AddrFrom(), misc.UCharVectorToBytes(randomXMSS.Address()))
 }
 
 func TestTransferTransaction_AddrsTo(t *testing.T) {
