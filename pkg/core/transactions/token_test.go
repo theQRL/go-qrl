@@ -114,11 +114,11 @@ func TestTokenTransaction_InitialBalances(t *testing.T) {
 	assert.NotNil(t, tokenTx.tx)
 
 	assert.Len(t, tokenTx.tx.InitialBalances(), len(initialTokenBalance))
-	i := 0
-	for qAddress, amount := range initialTokenBalance {
-		assert.Equal(t, tokenTx.tx.InitialBalances()[i].Address, misc.Qaddress2Bin(qAddress))
-		assert.Equal(t, tokenTx.tx.InitialBalances()[i].Amount, amount)
-		i += 1
+
+	for i := 0; i < len(tokenTx.tx.InitialBalances()); i++ {
+		qAddress := misc.Bin2Qaddress(tokenTx.tx.InitialBalances()[i].Address)
+		assert.Contains(t, initialTokenBalance, qAddress)
+		assert.Equal(t, initialTokenBalance[qAddress], tokenTx.tx.InitialBalances()[i].Amount)
 	}
 }
 
