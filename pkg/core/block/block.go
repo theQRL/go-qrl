@@ -117,7 +117,7 @@ func (b *Block) BlockReward() uint64 {
 	return b.blockheader.BlockReward()
 }
 
-func (b *Block) Timestamp() uint32 {
+func (b *Block) Timestamp() uint64 {
 	return b.blockheader.Timestamp()
 }
 

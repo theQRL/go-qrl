@@ -81,8 +81,8 @@ func (bh *BlockHeader) Epoch() uint64 {
 	return bh.blockHeader.BlockNumber / bh.config.Dev.BlocksPerEpoch
 }
 
-func (bh *BlockHeader) Timestamp() uint32 {
-	return uint32(bh.blockHeader.TimestampSeconds)
+func (bh *BlockHeader) Timestamp() uint64 {
+	return bh.blockHeader.TimestampSeconds
 }
 
 func (bh *BlockHeader) HeaderHash() []byte {
@@ -179,8 +179,8 @@ func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
 
 func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkleRoot []byte) bool {
 	n := ntp.GetNTP()
-	currentTime := uint32(n.Time())
-	allowedTimestamp := currentTime + bh.config.Dev.BlockLeadTimestamp
+	currentTime := uint64(n.Time())
+	allowedTimestamp := currentTime + uint64(bh.config.Dev.BlockLeadTimestamp)
 	if bh.Timestamp() > allowedTimestamp {
 		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")
 		bh.log.Warn("Block timestamp %s", bh.Timestamp())
@@ -188,7 +188,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 		return false
 	}
 
-	if bh.Timestamp() < bh.config.Dev.Genesis.GenesisTimestamp {
+	if bh.Timestamp() < uint64(bh.config.Dev.Genesis.GenesisTimestamp) {
 		bh.log.Warn("Timestamp lower than genesis timestamp")
 		bh.log.Warn("Genesis Timestamp %s", bh.config.Dev.Genesis.GenesisTimestamp)
 		bh.log.Warn("Block Timestamp %s", bh.Timestamp())
