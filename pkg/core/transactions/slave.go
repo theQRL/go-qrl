@@ -61,7 +61,7 @@ func (tx *SlaveTransaction) validateCustom() bool {
 	}
 
 	for _, accessType := range tx.AccessTypes() {
-		if accessType < uint32(0)  || accessType > uint32(2) {
+		if accessType < 0  || accessType > 1 {
 			tx.log.Warn("Invalid Access type %s", accessType)
 			return false
 		}
