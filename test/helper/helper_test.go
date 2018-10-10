@@ -35,3 +35,17 @@ func TestStringAddressToBytesArray(t *testing.T) {
 		assert.Equal(t, misc.Bin2Qaddress(bytesAddrs[i]), addrs[i])
 	}
 }
+
+func TestStringArrayToBytesArray(t *testing.T) {
+	aliceXMSS := GetAliceXMSS(6)
+	bobXMSS := GetBobXMSS(6)
+	data := []string {misc.Bin2HStr(misc.UCharVectorToBytes(aliceXMSS.PK())),
+		misc.Bin2HStr(misc.UCharVectorToBytes(bobXMSS.PK()))}
+
+	bytesArray := StringArrayToBytesArray(data)
+	assert.Len(t, bytesArray, len(data))
+
+	for i := 0; i < len(bytesArray); i++ {
+		assert.Equal(t, bytesArray[i], misc.HStr2Bin(data[i]))
+	}
+}

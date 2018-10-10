@@ -35,3 +35,13 @@ func StringAddressToBytesArray(addrs []string) [][]byte {
 
 	return bytesAddrs
 }
+
+func StringArrayToBytesArray(data []string) [][]byte {
+	bytesData := make([][]byte, len(data))
+
+	for i := 0; i < len(data); i++ {
+		bytesData[i] = misc.HStr2Bin(data[i])
+	}
+
+	return bytesData
+}
