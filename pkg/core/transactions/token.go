@@ -298,7 +298,7 @@ func CreateTokenTransaction(
 	name []byte,
 	owner []byte,
 	decimals uint64,
-	initialBalance map[string] uint64,
+	initialBalances []*generated.AddressAmount,
 	fee uint64,
 	xmssPK []byte,
 	masterAddr []byte) *TokenTransaction {
@@ -319,18 +319,18 @@ func CreateTokenTransaction(
 	tokenTx.Name = name
 	tokenTx.Owner = owner
 	tokenTx.Decimals = decimals
-	tokenTx.InitialBalances = make([]*generated.AddressAmount, len(initialBalance))
-	i := 0
-	for qAddress, amount := range initialBalance {
-		tokenTx.InitialBalances[i] = &generated.AddressAmount{Address: misc.Qaddress2Bin(qAddress), Amount: amount}
-		i++
-	}
+	tokenTx.InitialBalances = initialBalances
 
 	if !tx.Validate(false) {
 		return nil
 	}
 
 	return tx
+}
+
+func GetAddressAmount(qAddress string, amount uint64) *generated.AddressAmount {
+	address := misc.Qaddress2Bin(qAddress)
+	return &generated.AddressAmount{Address:address, Amount:amount}
 }
 
 func CalcAllowedDecimals(value uint64) (uint64, error) {
