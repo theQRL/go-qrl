@@ -83,7 +83,7 @@ func TestXMSS_sk(t *testing.T) {
 	x := TestXMSS{}
 	hexseed := "010400589c3e0bf438bcdc5575c9cb367e9dbb96c7182c9ed5fd6711f832b94d1d5782b345f77d71c1f2f4fa4aa609f040b69f"
 	qaddress := "Q010400d9f1efe5b272e042dcc8ef690f0e90ca8b0b6edba0d26f81e7aff12a6754b21788169f7f"
-	expectedSK := []byte {0, 0, 0, 0, 169, 173, 27, 40, 30, 180, 23, 79, 145, 237, 116, 50, 91, 60, 27, 187, 253, 105, 115, 29, 151, 180, 39, 150, 174, 81, 161, 118, 227, 235, 115, 192, 125, 4, 204, 206, 188, 171, 109, 211, 151, 217, 230, 12, 202, 158, 219, 40, 129, 97, 155, 114, 43, 89, 39, 42, 28, 237, 125, 17, 254, 178, 159, 189, 189, 117, 199, 174, 37, 183, 171, 128, 23, 112, 166, 20, 119, 214, 153, 43, 123, 94, 93, 215, 60, 127, 215, 140, 184, 63, 143, 206, 213, 221, 176, 175, 124, 94, 44, 151, 128, 6, 175, 40, 215, 49, 48, 163, 181, 227, 45, 87, 136, 241, 225, 173, 133, 102, 191, 175, 155, 215, 251, 248, 168, 207, 121, 100}
+	expectedSK := []byte{0, 0, 0, 0, 169, 173, 27, 40, 30, 180, 23, 79, 145, 237, 116, 50, 91, 60, 27, 187, 253, 105, 115, 29, 151, 180, 39, 150, 174, 81, 161, 118, 227, 235, 115, 192, 125, 4, 204, 206, 188, 171, 109, 211, 151, 217, 230, 12, 202, 158, 219, 40, 129, 97, 155, 114, 43, 89, 39, 42, 28, 237, 125, 17, 254, 178, 159, 189, 189, 117, 199, 174, 37, 183, 171, 128, 23, 112, 166, 20, 119, 214, 153, 43, 123, 94, 93, 215, 60, 127, 215, 140, 184, 63, 143, 206, 213, 221, 176, 175, 124, 94, 44, 151, 128, 6, 175, 40, 215, 49, 48, 163, 181, 227, 45, 87, 136, 241, 225, 173, 133, 102, 191, 175, 155, 215, 251, 248, 168, 207, 121, 100}
 
 	binSeed := goqrllib.Hstr2bin(hexseed)
 	x.xmss = FromExtendedSeed(binSeed)
@@ -96,7 +96,7 @@ func TestXMSS_PK(t *testing.T) {
 	x := TestXMSS{}
 	hexseed := "010400589c3e0bf438bcdc5575c9cb367e9dbb96c7182c9ed5fd6711f832b94d1d5782b345f77d71c1f2f4fa4aa609f040b69f"
 	qaddress := "Q010400d9f1efe5b272e042dcc8ef690f0e90ca8b0b6edba0d26f81e7aff12a6754b21788169f7f"
-	expectedPK := []byte {1, 4, 0, 124, 94, 44, 151, 128, 6, 175, 40, 215, 49, 48, 163, 181, 227, 45, 87, 136, 241, 225, 173, 133, 102, 191, 175, 155, 215, 251, 248, 168, 207, 121, 100, 189, 117, 199, 174, 37, 183, 171, 128, 23, 112, 166, 20, 119, 214, 153, 43, 123, 94, 93, 215, 60, 127, 215, 140, 184, 63, 143, 206, 213, 221, 176, 175}
+	expectedPK := []byte{1, 4, 0, 124, 94, 44, 151, 128, 6, 175, 40, 215, 49, 48, 163, 181, 227, 45, 87, 136, 241, 225, 173, 133, 102, 191, 175, 155, 215, 251, 248, 168, 207, 121, 100, 189, 117, 199, 174, 37, 183, 171, 128, 23, 112, 166, 20, 119, 214, 153, 43, 123, 94, 93, 215, 60, 127, 215, 140, 184, 63, 143, 206, 213, 221, 176, 175}
 
 	binSeed := goqrllib.Hstr2bin(hexseed)
 	x.xmss = FromExtendedSeed(binSeed)
@@ -132,7 +132,7 @@ func TestXMSS_RemainingSignatures(t *testing.T) {
 
 	x.xmss.Sign(misc.NewUCharVector().GetData())
 
-	assert.Equal(t, x.xmss.RemainingSignatures(), expectedRemainingSigs - 1, "%v != %v", x.xmss.RemainingSignatures(), expectedRemainingSigs - 1)
+	assert.Equal(t, x.xmss.RemainingSignatures(), expectedRemainingSigs-1, "%v != %v", x.xmss.RemainingSignatures(), expectedRemainingSigs-1)
 }
 
 func TestXMSS_Mnemonic(t *testing.T) {
@@ -152,7 +152,7 @@ func TestXMSS_Address(t *testing.T) {
 	x := TestXMSS{}
 	hexseed := "010400589c3e0bf438bcdc5575c9cb367e9dbb96c7182c9ed5fd6711f832b94d1d5782b345f77d71c1f2f4fa4aa609f040b69f"
 	qaddress := "Q010400d9f1efe5b272e042dcc8ef690f0e90ca8b0b6edba0d26f81e7aff12a6754b21788169f7f"
-	address := []byte {1, 4, 0, 217, 241, 239, 229, 178, 114, 224, 66, 220, 200, 239, 105, 15, 14, 144, 202, 139, 11, 110, 219, 160, 210, 111, 129, 231, 175, 241, 42, 103, 84, 178, 23, 136, 22, 159, 127}
+	address := []byte{1, 4, 0, 217, 241, 239, 229, 178, 114, 224, 66, 220, 200, 239, 105, 15, 14, 144, 202, 139, 11, 110, 219, 160, 210, 111, 129, 231, 175, 241, 42, 103, 84, 178, 23, 136, 22, 159, 127}
 
 	binSeed := goqrllib.Hstr2bin(hexseed)
 	x.xmss = FromExtendedSeed(binSeed)
@@ -186,7 +186,7 @@ func TestXMSS_OTSIndex(t *testing.T) {
 
 	x.xmss.Sign(misc.NewUCharVector().GetData())
 
-	assert.Equal(t, x.xmss.OTSIndex(), expectedOTSIndex + 1, "%v != %v", x.xmss.OTSIndex(), expectedOTSIndex + 1)
+	assert.Equal(t, x.xmss.OTSIndex(), expectedOTSIndex+1, "%v != %v", x.xmss.OTSIndex(), expectedOTSIndex+1)
 }
 
 func TestXMSS_SetOTSIndex(t *testing.T) {
@@ -264,6 +264,6 @@ func TestXMSS_Sign(t *testing.T) {
 	hexSignature := goqrllib.Bin2hstr(misc.BytesToUCharVector(signature))
 	assert.Equal(t, hexSignature, expectedHexSignature, "%v != %v", hexSignature, expectedHexSignature)
 
-	assert.Equal(t, x.xmss.RemainingSignatures(), expectedRemainingSigs - 1, "%v != %v", x.xmss.RemainingSignatures(), expectedRemainingSigs - 1)
+	assert.Equal(t, x.xmss.RemainingSignatures(), expectedRemainingSigs-1, "%v != %v", x.xmss.RemainingSignatures(), expectedRemainingSigs-1)
 
 }

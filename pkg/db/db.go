@@ -53,7 +53,7 @@ func NewDB(directory string, filename string, cache int, handles int) (*LDB, err
 	}, nil
 }
 
-func (db *LDB) Put(key []byte, value[] byte, batch *leveldb.Batch) error {
+func (db *LDB) Put(key []byte, value []byte, batch *leveldb.Batch) error {
 	if batch != nil {
 		batch.Put(key, value)
 		return nil
@@ -94,7 +94,7 @@ func (db *LDB) GetBatch() *leveldb.Batch {
 	return &leveldb.Batch{}
 }
 
-func (db *LDB) WriteBatch(batch *leveldb.Batch, sync bool) (error) {
+func (db *LDB) WriteBatch(batch *leveldb.Batch, sync bool) error {
 	var wo *opt.WriteOptions
 	if sync {
 		wo = &opt.WriteOptions{Sync: sync}

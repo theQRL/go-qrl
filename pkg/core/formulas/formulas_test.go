@@ -25,18 +25,18 @@ func TestBlockReward(t *testing.T) {
 }
 
 func TestMedian(t *testing.T) {
-	data := []int {20,2,100,3,8,10,5,60}
+	data := []int{20, 2, 100, 3, 8, 10, 5, 60}
 	result := Median(data)
 	assert.Equal(t, result, float64(9))
 
-	data = []int {20}
+	data = []int{20}
 	result = Median(data)
 	assert.Equal(t, result, float64(20))
 
-	data = []int {20, 1, 100, 21}
+	data = []int{20, 1, 100, 21}
 	result = Median(data)
 	assert.Equal(t, result, float64(20.5))
 
-	data = []int {}
+	data = []int{}
 	assert.Panics(t, func() { Median(data) }, "Expected Panic")
 }

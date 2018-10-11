@@ -53,8 +53,8 @@ type API struct {
 }
 
 type UserConfig struct {
-	Node *NodeConfig
-	Miner *MinerConfig
+	Node      *NodeConfig
+	Miner     *MinerConfig
 	Ephemeral *EphemeralConfig
 
 	NTP *NTPConfig
@@ -64,8 +64,8 @@ type UserConfig struct {
 
 	TransactionPool *TransactionPoolConfig
 
-	QrlDir string
-	ChainFileDirectory  string
+	QrlDir             string
+	ChainFileDirectory string
 
 	API *API
 }
@@ -79,7 +79,7 @@ type APIConfig struct {
 }
 
 type DevConfig struct {
-	Genesis              *GenesisConfig
+	Genesis *GenesisConfig
 
 	BlocksPerEpoch       uint64
 	BlockLeadTimestamp   uint32
@@ -150,13 +150,13 @@ type GenesisConfig struct {
 var once sync.Once
 var config *Config
 
-func GetConfig() (*Config) {
+func GetConfig() *Config {
 	once.Do(func() {
 		userConfig := GetUserConfig()
 		devConfig := GetDevConfig()
 		config = &Config{
 			User: userConfig,
-			Dev: devConfig,
+			Dev:  devConfig,
 		}
 	})
 
@@ -164,7 +164,7 @@ func GetConfig() (*Config) {
 }
 
 func GetUserConfig() (user *UserConfig) {
-	node := &NodeConfig {
+	node := &NodeConfig{
 		EnablePeerDiscovery: true,
 		PeerList: []string{
 			"35.177.60.137",
@@ -173,82 +173,82 @@ func GetUserConfig() (user *UserConfig) {
 			"104.251.219.40",
 			"104.237.3.185",
 		},
-		BindingIP: "0.0.0.0",
-		LocalPort: 9000,
-		PublicPort: 9000,
-		PeerRateLimit: 500,
-		BanMinutes: 20,
-		MaxPeersLimit: 100,
+		BindingIP:               "0.0.0.0",
+		LocalPort:               9000,
+		PublicPort:              9000,
+		PeerRateLimit:           500,
+		BanMinutes:              20,
+		MaxPeersLimit:           100,
 		MaxRedundantConnections: 5,
 	}
 
-	miner := &MinerConfig {
-		MiningEnabled: false,
-		MiningAddress: "",
+	miner := &MinerConfig{
+		MiningEnabled:     false,
+		MiningAddress:     "",
 		MiningThreadCount: 0,
 	}
 
-	ephemeral := &EphemeralConfig {
+	ephemeral := &EphemeralConfig{
 		AcceptEphemeral: false,
 	}
 
-	ntp := &NTPConfig {
+	ntp := &NTPConfig{
 		Retries: 6,
 		Servers: []string{"pool.ntp.org", "ntp.ubuntu.com"},
 		Refresh: 12 * 60 * 60,
 	}
 
-	transactionPool := &TransactionPoolConfig {
-		TransactionPoolSize: 25000,
-		PendingTransactionPoolSize: 75000,
+	transactionPool := &TransactionPoolConfig{
+		TransactionPoolSize:          25000,
+		PendingTransactionPoolSize:   75000,
 		PendingTranactionPoolReserve: 750,
-		StaleTransactionThreshold: 15,
+		StaleTransactionThreshold:    15,
 	}
 
-	adminAPI := &APIConfig {
-		Enabled: false,
-		Host: "127.0.0.1",
-		Port: 9008,
-		Threads: 1,
+	adminAPI := &APIConfig{
+		Enabled:          false,
+		Host:             "127.0.0.1",
+		Port:             9008,
+		Threads:          1,
 		MaxConcurrentRPC: 100,
 	}
 
-	publicAPI := &APIConfig {
-		Enabled: true,
-		Host: "127.0.0.1",
-		Port: 9009,
-		Threads: 1,
+	publicAPI := &APIConfig{
+		Enabled:          true,
+		Host:             "127.0.0.1",
+		Port:             9009,
+		Threads:          1,
 		MaxConcurrentRPC: 100,
 	}
 
-	miningAPI := &APIConfig {
-		Enabled: false,
-		Host: "127.0.0.1",
-		Port: 9007,
-		Threads: 1,
+	miningAPI := &APIConfig{
+		Enabled:          false,
+		Host:             "127.0.0.1",
+		Port:             9007,
+		Threads:          1,
 		MaxConcurrentRPC: 100,
 	}
 
 	api := &API{
-		AdminAPI: adminAPI,
+		AdminAPI:  adminAPI,
 		PublicAPI: publicAPI,
 		MiningAPI: miningAPI,
 	}
 
 	user = &UserConfig{
-		Node: node,
-		Miner: miner,
+		Node:      node,
+		Miner:     miner,
 		Ephemeral: ephemeral,
 
 		NTP: ntp,
 
-		ChainStateTimeout: 180,
+		ChainStateTimeout:         180,
 		ChainStateBroadcastPeriod: 30,
 
 		TransactionPool: transactionPool,
 
-		QrlDir: "~/.qrl",
-		ChainFileDirectory:  "data",
+		QrlDir:             "~/.qrl",
+		ChainFileDirectory: "data",
 
 		API: api,
 	}
@@ -262,13 +262,13 @@ func (u *UserConfig) DataDir() string {
 
 func GetDevConfig() (dev *DevConfig) {
 	genesis := &GenesisConfig{
-		Version: "v0.63",
+		Version:              "v0.63",
 		GenesisPrevHeadehash: []byte("Outside Context Problem"),
-		MaxCoinSupply: 105000000 * (10 ^ 9),
-		SuppliedCoins: 65000000 * (10 ^ 9),
-		GenesisDifficulty: 5000,
-		CoinbaseAddress: misc.HStr2Bin("000000000000000000000000000000000000000000000000000000000000000000000000000000"),
-		GenesisTimestamp: 1524928900,
+		MaxCoinSupply:        105000000 * (10 ^ 9),
+		SuppliedCoins:        65000000 * (10 ^ 9),
+		GenesisDifficulty:    5000,
+		CoinbaseAddress:      misc.HStr2Bin("000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+		GenesisTimestamp:     1524928900,
 	}
 	transaction := &TransactionConfig{
 		MultiOutputLimit: 100,
@@ -276,7 +276,7 @@ func GetDevConfig() (dev *DevConfig) {
 
 	token := &TokenConfig{
 		MaxSymbolLength: 10,
-		MaxNameLength: 30,
+		MaxNameLength:   30,
 	}
 
 	dev = &DevConfig{

@@ -15,10 +15,10 @@ const floatFormat = 'f'
 
 // A Record is what a LoggerInterface asks its handler to write
 type Record struct {
-	Time     time.Time
+	Time time.Time
 	//Lvl      Lvl
-	Msg      string
-	Ctx      []interface{}
+	Msg string
+	Ctx []interface{}
 	//Call     stack.Call
 	KeyNames RecordKeyNames
 }
@@ -41,10 +41,10 @@ type LoggerInterface interface {
 type Logger struct {
 	trace *log.Logger
 	debug *log.Logger
-	info *log.Logger
-	warn *log.Logger
+	info  *log.Logger
+	warn  *log.Logger
 	error *log.Logger
-	crit *log.Logger
+	crit  *log.Logger
 }
 
 type Ctx map[string]interface{}
@@ -73,7 +73,7 @@ func normalize(ctx []interface{}) []interface{} {
 	// expected to be even, as we are expecting key value pairs
 	// in case of missing pair, log with sufficient information
 	// indicating the miss
-	if len(ctx) % 2 != 0 {
+	if len(ctx)%2 != 0 {
 		ctx = append(ctx, nil, errorKey, "nil added to Normalize Odd number of arguments")
 	}
 
@@ -83,7 +83,7 @@ func normalize(ctx []interface{}) []interface{} {
 var once sync.Once
 var logger *Logger
 
-func GetLogger() (*Logger) {
+func GetLogger() *Logger {
 	once.Do(func() {
 		logger = createLogger()
 	})
@@ -96,41 +96,41 @@ func createLogger() *Logger {
 	logger := &Logger{
 		trace: log.New(handler, "TRACE ", log.Ldate|log.Ltime),
 		debug: log.New(handler, "DEBUG ", log.Ldate|log.Ltime),
-		info: log.New(handler, "INFO ", log.Ldate|log.Ltime),
-		warn: log.New(handler, "WARN ", log.Ldate|log.Ltime),
+		info:  log.New(handler, "INFO ", log.Ldate|log.Ltime),
+		warn:  log.New(handler, "WARN ", log.Ldate|log.Ltime),
 		error: log.New(handler, "ERROR ", log.Ldate|log.Ltime),
-		crit: log.New(handler, "CRIT ", log.Ldate|log.Ltime),
+		crit:  log.New(handler, "CRIT ", log.Ldate|log.Ltime),
 	}
 	return logger
 }
 
 func (l *Logger) Trace(msg string, ctx ...interface{}) {
-	record := &Record {Msg: msg, Ctx: normalize(ctx)}
+	record := &Record{Msg: msg, Ctx: normalize(ctx)}
 	l.trace.Println(msg, TerminalFormat(record))
 }
 
 func (l *Logger) Debug(msg string, ctx ...interface{}) {
-	record := &Record {Msg: msg, Ctx: normalize(ctx)}
+	record := &Record{Msg: msg, Ctx: normalize(ctx)}
 	l.debug.Println(msg, TerminalFormat(record))
 }
 
 func (l *Logger) Info(msg string, ctx ...interface{}) {
-	record := &Record {Msg: msg, Ctx: normalize(ctx)}
+	record := &Record{Msg: msg, Ctx: normalize(ctx)}
 	l.info.Println(msg, TerminalFormat(record))
 }
 
 func (l *Logger) Warn(msg string, ctx ...interface{}) {
-	record := &Record {Msg: msg, Ctx: normalize(ctx)}
+	record := &Record{Msg: msg, Ctx: normalize(ctx)}
 	l.warn.Println(msg, TerminalFormat(record))
 }
 
 func (l *Logger) Error(msg string, ctx ...interface{}) {
-	record := &Record {Msg: msg, Ctx: normalize(ctx)}
+	record := &Record{Msg: msg, Ctx: normalize(ctx)}
 	l.error.Println(msg, TerminalFormat(record))
 }
 
 func (l *Logger) Crit(msg string, ctx ...interface{}) {
-	record := &Record {Msg: msg, Ctx: normalize(ctx)}
+	record := &Record{Msg: msg, Ctx: normalize(ctx)}
 	l.crit.Println(msg, TerminalFormat(record))
 }
 
@@ -209,7 +209,7 @@ func TerminalFormat(r *Record) string {
 		return k
 	}
 	buf := &bytes.Buffer{}
-	for i:=0; i < len(ctx); i += 2 {
+	for i := 0; i < len(ctx); i += 2 {
 		if i != 0 {
 			buf.WriteByte(' ')
 		}

@@ -18,7 +18,6 @@ import (
 )
 
 type TransactionInterface interface {
-
 	Size() int
 
 	PBData() *generated.Transaction
@@ -80,7 +79,6 @@ type TransactionInterface interface {
 	FromJSON(jsonData string) *Transaction
 
 	JSON() (string, error)
-
 }
 
 type Transaction struct {

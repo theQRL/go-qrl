@@ -8,14 +8,13 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
-var hashFunctionsReverse = map[goqrllib.EHashFunction] string {
+var hashFunctionsReverse = map[goqrllib.EHashFunction]string{
 	goqrllib.SHAKE_128: "shake128",
-	goqrllib.SHAKE_256: "shake256" ,
-	goqrllib.SHA2_256: "sha2_256",
+	goqrllib.SHAKE_256: "shake256",
+	goqrllib.SHA2_256:  "sha2_256",
 }
 
 type XMSSInterface interface {
-
 	HashFunction() string
 
 	SignatureType() goqrllib.ESignatureType

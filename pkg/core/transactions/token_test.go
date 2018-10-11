@@ -18,7 +18,6 @@ type TestTokenTransaction struct {
 	tx *TokenTransaction
 }
 
-
 func NewTestTokenTransaction(symbol string, name string, owner string, decimals uint64, initialTokenBalance []*generated.AddressAmount, fee uint64, xmssPK []byte, masterAddr []byte) *TestTokenTransaction {
 
 	tx := CreateTokenTransaction(
@@ -64,8 +63,8 @@ func TestCreateTokenTransaction(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -93,8 +92,8 @@ func TestTokenTransaction_AddrFrom(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -114,8 +113,8 @@ func TestTokenTransaction_InitialBalances(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -140,8 +139,8 @@ func TestTokenTransaction_Decimals(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -160,8 +159,8 @@ func TestTokenTransaction_Owner(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -180,8 +179,8 @@ func TestTokenTransaction_Name(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -200,8 +199,8 @@ func TestTokenTransaction_Symbol(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -220,8 +219,8 @@ func TestTokenTransaction_GetHashableBytes(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 	hashableBytes := "6cdab7800747d44eba0656de701c9bb0251538deb20447305251296f9b2feca5"
@@ -241,8 +240,8 @@ func TestTokenTransaction_Validate(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -297,8 +296,8 @@ func TestTokenTransaction_Validate(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom(t *testing.T) {
 	/*
-	Test for missing Token Symbol
-	 */
+		Test for missing Token Symbol
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -308,8 +307,8 @@ func TestTokenTransaction_ValidateCustom(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -319,8 +318,8 @@ func TestTokenTransaction_ValidateCustom(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom2(t *testing.T) {
 	/*
-	Test for missing Token Name
-	 */
+		Test for missing Token Name
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -330,8 +329,8 @@ func TestTokenTransaction_ValidateCustom2(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -341,8 +340,8 @@ func TestTokenTransaction_ValidateCustom2(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom3(t *testing.T) {
 	/*
-	Test for missing Decimals more than limit
-	 */
+		Test for missing Decimals more than limit
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -352,8 +351,8 @@ func TestTokenTransaction_ValidateCustom3(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(15)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -363,8 +362,8 @@ func TestTokenTransaction_ValidateCustom3(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom4(t *testing.T) {
 	/*
-	Test for Symbol more than limit
-	 */
+		Test for Symbol more than limit
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -374,8 +373,8 @@ func TestTokenTransaction_ValidateCustom4(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -385,8 +384,8 @@ func TestTokenTransaction_ValidateCustom4(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom5(t *testing.T) {
 	/*
-	Test for missing Decimals more than limit
-	 */
+		Test for missing Decimals more than limit
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -396,8 +395,8 @@ func TestTokenTransaction_ValidateCustom5(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -407,8 +406,8 @@ func TestTokenTransaction_ValidateCustom5(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom6(t *testing.T) {
 	/*
-	Test for one of the initial balance as 0
-	 */
+		Test for one of the initial balance as 0
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -418,8 +417,8 @@ func TestTokenTransaction_ValidateCustom6(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 0 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 0*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -429,8 +428,8 @@ func TestTokenTransaction_ValidateCustom6(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom7(t *testing.T) {
 	/*
-	Test for an invalid QRL Address in initialTokenBalance
-	 */
+		Test for an invalid QRL Address in initialTokenBalance
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
@@ -439,8 +438,8 @@ func TestTokenTransaction_ValidateCustom7(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount("Q01020304", 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 0 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount("Q01020304", 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 0*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -450,8 +449,8 @@ func TestTokenTransaction_ValidateCustom7(t *testing.T) {
 
 func TestTokenTransaction_ValidateCustom8(t *testing.T) {
 	/*
-	Test for an invalid Owner Address
-	 */
+		Test for an invalid Owner Address
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -461,8 +460,8 @@ func TestTokenTransaction_ValidateCustom8(t *testing.T) {
 	owner := "Q0101010203"
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 0 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 0*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -480,8 +479,8 @@ func TestTokenTransaction_ValidateExtended(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -511,8 +510,8 @@ func TestTokenTransaction_ValidateExtended2(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(slaveXMSS.PK())
 
@@ -533,8 +532,8 @@ func TestTokenTransaction_ValidateExtended2(t *testing.T) {
 
 func TestTokenTransaction_ValidateExtended3(t *testing.T) {
 	/*
-	Test for signing a token transaction via slave with an used ots key
-	 */
+		Test for signing a token transaction via slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -545,8 +544,8 @@ func TestTokenTransaction_ValidateExtended3(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(slaveXMSS.PK())
 
@@ -555,28 +554,28 @@ func TestTokenTransaction_ValidateExtended3(t *testing.T) {
 
 	addrFromState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(randomXMSS.Address()))
 	addrFromState.AddBalance(1)
-	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(slaveXMSS.PK()), 0)  // Adding slave
+	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(slaveXMSS.PK()), 0) // Adding slave
 
 	addrFromPKState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(slaveXMSS.Address()))
 
 	tokenTx.tx.Sign(slaveXMSS, misc.BytesToUCharVector(tokenTx.tx.GetHashableBytes()))
 	assert.True(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromPKState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 
 	randomXMSS.SetOTSIndex(10)
 	tokenTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(tokenTx.tx.GetHashableBytes()))
 	assert.True(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromPKState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 }
 
 func TestTokenTransaction_ValidateExtended4(t *testing.T) {
 	/*
-	Test for signing a token transaction without slave with an used ots key
-	 */
+		Test for signing a token transaction without slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -586,8 +585,8 @@ func TestTokenTransaction_ValidateExtended4(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -599,14 +598,14 @@ func TestTokenTransaction_ValidateExtended4(t *testing.T) {
 
 	tokenTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(tokenTx.tx.GetHashableBytes()))
 	assert.True(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromState))
 
 	randomXMSS.SetOTSIndex(10)
 	tokenTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(tokenTx.tx.GetHashableBytes()))
 	assert.True(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, tokenTx.tx.ValidateExtended(addrFromState, addrFromState))
 }
@@ -624,8 +623,8 @@ func TestTokenTransaction_ApplyStateChanges(t *testing.T) {
 	aliceInitialBalance := uint64(100)
 	bobInitialBalance := uint64(200)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -651,7 +650,7 @@ func TestTokenTransaction_ApplyStateChanges(t *testing.T) {
 	addressesState[bobXMSS.QAddress()].AddBalance(bobInitialBalance)
 
 	tokenTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance)
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance)
 	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(tokenTxHash), uint64(0))
@@ -672,8 +671,8 @@ func TestTokenTransaction_RevertStateChanges(t *testing.T) {
 	aliceInitialBalance := uint64(100)
 	bobInitialBalance := uint64(200)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -725,8 +724,8 @@ func TestTokenTransaction_SetAffectedAddress(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -753,8 +752,8 @@ func TestTokenTransaction_FromPBData(t *testing.T) {
 	owner := aliceXMSS.QAddress()
 	decimals := uint64(5)
 	initialTokenBalance := make([]*generated.AddressAmount, 2)
-	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000 * uint64(math.Pow10(int(decimals))))
-	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000 * uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[0] = GetAddressAmount(bobXMSS.QAddress(), 10000*uint64(math.Pow10(int(decimals))))
+	initialTokenBalance[1] = GetAddressAmount(aliceXMSS.QAddress(), 20000*uint64(math.Pow10(int(decimals))))
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 

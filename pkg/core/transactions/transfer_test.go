@@ -16,7 +16,6 @@ type TestTransferTransaction struct {
 	tx *TransferTransaction
 }
 
-
 func NewTestTransferTransaction(addrsTo []string, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TestTransferTransaction {
 	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
 	tx := CreateTransferTransaction(bytesAddrsTo, amounts, fee, xmssPK, masterAddr)
@@ -153,8 +152,8 @@ func TestTransferTransaction_Validate(t *testing.T) {
 
 func TestTransferTransaction_Validate2(t *testing.T) {
 	/*
-	Test for mismatching number of amounts and number of AddressTo
-	 */
+		Test for mismatching number of amounts and number of AddressTo
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -226,7 +225,7 @@ func TestTransferTransaction_ValidateCustom2(t *testing.T) {
 		addrsTo[i] = bobXMSS.QAddress()
 		amounts[i] = 100
 	}
-	amounts[len(amounts) - 1] = 0
+	amounts[len(amounts)-1] = 0
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -246,7 +245,7 @@ func TestTransferTransaction_ValidateCustom3(t *testing.T) {
 		addrsTo[i] = bobXMSS.QAddress()
 		amounts[i] = 100
 	}
-	addrsTo[len(addrsTo) - 1] = "Q01234567"
+	addrsTo[len(addrsTo)-1] = "Q01234567"
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -285,7 +284,7 @@ func TestTransferTransaction_ValidateExtended2(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
-	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)  // Another random XMSS for Slave
+	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128) // Another random XMSS for Slave
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
 	amounts := []uint64{100, 200}
@@ -309,12 +308,12 @@ func TestTransferTransaction_ValidateExtended2(t *testing.T) {
 
 func TestTransferTransaction_ValidateExtended3(t *testing.T) {
 	/*
-	Test for signing a transfer transaction via slave with an used ots key
-	 */
+		Test for signing a transfer transaction via slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
-	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)  // Another random XMSS for Slave
+	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128) // Another random XMSS for Slave
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
 	amounts := []uint64{100, 200}
@@ -326,28 +325,28 @@ func TestTransferTransaction_ValidateExtended3(t *testing.T) {
 
 	addrFromState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(randomXMSS.Address()))
 	addrFromState.AddBalance(301)
-	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(slaveXMSS.PK()), 0)  // Adding slave
+	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(slaveXMSS.PK()), 0) // Adding slave
 
 	addrFromPKState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(slaveXMSS.Address()))
 
 	transferTx.tx.Sign(slaveXMSS, misc.BytesToUCharVector(transferTx.tx.GetHashableBytes()))
 	assert.True(t, transferTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromPKState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 
 	randomXMSS.SetOTSIndex(10)
 	transferTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(transferTx.tx.GetHashableBytes()))
 	assert.True(t, transferTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromPKState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 }
 
 func TestTransferTransaction_ValidateExtended4(t *testing.T) {
 	/*
-	Test for signing a transfer transaction without slave with an used ots key
-	 */
+		Test for signing a transfer transaction without slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -365,14 +364,14 @@ func TestTransferTransaction_ValidateExtended4(t *testing.T) {
 
 	transferTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(transferTx.tx.GetHashableBytes()))
 	assert.True(t, transferTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTx.tx.ValidateExtended(addrFromState, addrFromState))
 
 	randomXMSS.SetOTSIndex(10)
 	transferTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(transferTx.tx.GetHashableBytes()))
 	assert.True(t, transferTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTx.tx.ValidateExtended(addrFromState, addrFromState))
 }
@@ -411,9 +410,9 @@ func TestTransferTransaction_ApplyStateChanges(t *testing.T) {
 	addressesState[bobXMSS.QAddress()].AddBalance(bobInitialBalance)
 
 	transferTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee - 300)
-	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance + 200)
-	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance + 100)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee-300)
+	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance+200)
+	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance+100)
 }
 
 func TestTransferTransaction_RevertStateChanges(t *testing.T) {
@@ -450,9 +449,9 @@ func TestTransferTransaction_RevertStateChanges(t *testing.T) {
 	addressesState[bobXMSS.QAddress()].AddBalance(bobInitialBalance)
 
 	transferTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee - 300)
-	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance + 200)
-	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance + 100)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee-300)
+	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance+200)
+	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance+100)
 
 	transferTx.tx.RevertStateChanges(addressesState)
 	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance)

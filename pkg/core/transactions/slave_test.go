@@ -14,7 +14,6 @@ type TestSlaveTransaction struct {
 	tx *SlaveTransaction
 }
 
-
 func NewTestSlaveTransaction(slavePKs [][]byte, accessTypes []uint32, fee uint64, xmssPK []byte, masterAddr []byte) *TestSlaveTransaction {
 	tx := CreateSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, masterAddr)
 
@@ -25,8 +24,8 @@ func TestCreateSlaveTransaction(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 
@@ -39,8 +38,8 @@ func TestSlaveTransaction_AddrFrom(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -53,8 +52,8 @@ func TestSlaveTransaction_SlavePKs(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -70,8 +69,8 @@ func TestSlaveTransaction_AccessTypes(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -87,8 +86,8 @@ func TestSlaveTransaction_GetHashableBytes(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -102,8 +101,8 @@ func TestSlaveTransaction_Validate(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -124,8 +123,8 @@ func TestSlaveTransaction_Validate2(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -138,7 +137,7 @@ func TestSlaveTransaction_Validate2(t *testing.T) {
 	assert.True(t, slaveTx.tx.Validate(true))
 
 	// Changed AccessTypes, validation must fail
-	slaveTx.tx.PBData().GetSlave().AccessTypes = []uint32{accessTypes[0], accessTypes[0]+1}
+	slaveTx.tx.PBData().GetSlave().AccessTypes = []uint32{accessTypes[0], accessTypes[0] + 1}
 	assert.False(t, slaveTx.tx.Validate(true))
 }
 
@@ -146,8 +145,8 @@ func TestSlaveTransaction_Validate3(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -165,8 +164,8 @@ func TestSlaveTransaction_ValidateCustom(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -213,8 +212,8 @@ func TestSlaveTransaction_ValidateCustom4(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 2}  // 2 is invalid AccessType
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 2} // 2 is invalid AccessType
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
@@ -227,8 +226,8 @@ func TestSlaveTransaction_ValidateExtended(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 
@@ -252,8 +251,8 @@ func TestSlaveTransaction_ValidateExtended2(t *testing.T) {
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
 	xmss2 := helper.GetAliceXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(xmss2.PK())
 
@@ -274,14 +273,14 @@ func TestSlaveTransaction_ValidateExtended2(t *testing.T) {
 
 func TestSlaveTransaction_ValidateExtended3(t *testing.T) {
 	/*
-	Test for signing a slave transaction via slave with an used ots key
-	 */
+		Test for signing a slave transaction via slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
 	xmss2 := helper.GetAliceXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(xmss2.PK())
 
@@ -290,33 +289,33 @@ func TestSlaveTransaction_ValidateExtended3(t *testing.T) {
 
 	addrFromState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(aliceXMSS.Address()))
 	addrFromState.AddBalance(1)
-	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(xmss2.PK()), 0)  // Adding slave
+	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(xmss2.PK()), 0) // Adding slave
 
 	addrFromPKState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(xmss2.Address()))
 
 	slaveTx.tx.Sign(xmss2, misc.BytesToUCharVector(slaveTx.tx.GetHashableBytes()))
 	assert.True(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromPKState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 
 	aliceXMSS.SetOTSIndex(10)
 	slaveTx.tx.Sign(aliceXMSS, misc.BytesToUCharVector(slaveTx.tx.GetHashableBytes()))
 	assert.True(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromPKState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 }
 
 func TestSlaveTransaction_ValidateExtended4(t *testing.T) {
 	/*
-	Test for signing a slave transaction without slave with an used ots key
-	 */
+		Test for signing a slave transaction without slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 
@@ -328,14 +327,14 @@ func TestSlaveTransaction_ValidateExtended4(t *testing.T) {
 
 	slaveTx.tx.Sign(aliceXMSS, misc.BytesToUCharVector(slaveTx.tx.GetHashableBytes()))
 	assert.True(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromState))
 
 	aliceXMSS.SetOTSIndex(10)
 	slaveTx.tx.Sign(aliceXMSS, misc.BytesToUCharVector(slaveTx.tx.GetHashableBytes()))
 	assert.True(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, slaveTx.tx.ValidateExtended(addrFromState, addrFromState))
 }
@@ -344,8 +343,8 @@ func TestSlaveTransaction_ApplyStateChanges(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 
@@ -366,15 +365,15 @@ func TestSlaveTransaction_ApplyStateChanges(t *testing.T) {
 	addressesState[aliceXMSS.QAddress()].PBData().Balance = aliceInitialBalance
 
 	slaveTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance - fee)
+	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance-fee)
 }
 
 func TestSlaveTransaction_RevertStateChanges(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 
@@ -395,7 +394,7 @@ func TestSlaveTransaction_RevertStateChanges(t *testing.T) {
 	addressesState[aliceXMSS.QAddress()].PBData().Balance = aliceInitialBalance
 
 	slaveTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance - fee)
+	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance-fee)
 
 	slaveTx.tx.RevertStateChanges(addressesState)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance)
@@ -405,8 +404,8 @@ func TestSlaveTransaction_SetAffectedAddress(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 
@@ -425,8 +424,8 @@ func TestSlaveTransaction_FromPBData(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := helper.GetBobXMSS(8)
-	slavePKs := [][]byte {misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
-	accessTypes := []uint32 {0, 0}
+	slavePKs := [][]byte{misc.UCharVectorToBytes(bobXMSS.PK()), misc.UCharVectorToBytes(randomXMSS.PK())}
+	accessTypes := []uint32{0, 0}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 

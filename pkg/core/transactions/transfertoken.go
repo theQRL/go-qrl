@@ -211,13 +211,13 @@ func (tx *TransferTokenTransaction) SetAffectedAddress(addressesState map[string
 	}
 }
 
-func CreateTransferTokenTransaction(tokenTxhash []byte, addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TransferTokenTransaction{
+func CreateTransferTokenTransaction(tokenTxhash []byte, addrsTo [][]byte, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TransferTokenTransaction {
 	tx := &TransferTokenTransaction{}
 	tx.config = config.GetConfig()
 	tx.log = log.GetLogger()
 
 	tx.data = &generated.Transaction{}
-	tx.data.TransactionType = &generated.Transaction_TransferToken_{TransferToken:&generated.Transaction_TransferToken{}}
+	tx.data.TransactionType = &generated.Transaction_TransferToken_{TransferToken: &generated.Transaction_TransferToken{}}
 
 	tx.data.MasterAddr = masterAddr
 	tx.data.PublicKey = xmssPK

@@ -226,7 +226,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 	}
 
 	if addrState, ok := addressesState[string(addrFromPK)]; ok {
-		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()){
+		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromPKProcessed {
 				addrState.AppendTransactionHash(tx.Txhash())
 			}
@@ -266,7 +266,7 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addres
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
-		if  !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+		if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromProcessed {
 				addrState.RemoveTransactionHash(tx.Txhash())
 			}
@@ -308,7 +308,7 @@ func CreateTokenTransaction(
 	tx.log = log.GetLogger()
 
 	tx.data = &generated.Transaction{}
-	tx.data.TransactionType = &generated.Transaction_Token_{Token:&generated.Transaction_Token{}}
+	tx.data.TransactionType = &generated.Transaction_Token_{Token: &generated.Transaction_Token{}}
 
 	tx.data.MasterAddr = masterAddr
 	tx.data.PublicKey = xmssPK
@@ -330,7 +330,7 @@ func CreateTokenTransaction(
 
 func GetAddressAmount(qAddress string, amount uint64) *generated.AddressAmount {
 	address := misc.Qaddress2Bin(qAddress)
-	return &generated.AddressAmount{Address:address, Amount:amount}
+	return &generated.AddressAmount{Address: address, Amount: amount}
 }
 
 func CalcAllowedDecimals(value uint64) (uint64, error) {
@@ -338,5 +338,5 @@ func CalcAllowedDecimals(value uint64) (uint64, error) {
 		return 19, nil
 	}
 
-	return uint64(math.Max(math.Floor(19 - math.Log10(float64(value))), 0)), nil
+	return uint64(math.Max(math.Floor(19-math.Log10(float64(value))), 0)), nil
 }

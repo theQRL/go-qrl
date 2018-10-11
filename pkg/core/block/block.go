@@ -17,7 +17,6 @@ import (
 )
 
 type BlockInterface interface {
-
 	PBData() *generated.Block
 
 	Size() int
@@ -74,11 +73,11 @@ type BlockInterface interface {
 }
 
 type Block struct {
-	block *generated.Block
+	block       *generated.Block
 	blockheader *BlockHeader
 
 	config *config.Config
-	log log.LoggerInterface
+	log    log.LoggerInterface
 }
 
 func (b *Block) PBData() *generated.Block {
@@ -127,9 +126,9 @@ func (b *Block) MiningBlob() []byte {
 
 func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs []transactions.Transaction, timestamp uint64) *Block {
 	b := &Block{
-		block: &generated.Block{},
+		block:  &generated.Block{},
 		config: config.GetConfig(), // TODO: Make Config Singleton
-		log: log.GetLogger(),
+		log:    log.GetLogger(),
 	}
 
 	feeReward := uint64(0)
@@ -152,7 +151,7 @@ func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []
 
 	b.blockheader = CreateBlockHeader(blockNumber, prevBlockHeaderhash, prevBlockTimestamp, merkleRoot, feeReward, timestamp)
 	b.block.Header = b.blockheader.blockHeader
-	b.blockheader.SetNonces(0 ,0)
+	b.blockheader.SetNonces(0, 0)
 
 	return b
 }
@@ -208,7 +207,6 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 
 	for i := 1; i <= len(b.Transactions()); i++ {
 		tx := transactions.ProtoToTransaction(b.Transactions()[i])
-
 
 		if !tx.Validate(true) {
 			b.log.Warn("failed transaction validation")
@@ -299,7 +297,7 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 		return false
 	}
 
-	if !b.ValidateMiningNonce(b.blockheader, parentBlock, parentMetadata, measurement,false) {
+	if !b.ValidateMiningNonce(b.blockheader, parentBlock, parentMetadata, measurement, false) {
 		b.log.Warn("Failed PoW Validation")
 		return false
 	}

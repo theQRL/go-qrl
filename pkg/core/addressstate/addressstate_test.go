@@ -18,7 +18,7 @@ type TestAddressState struct {
 
 func NewTestAddressState(qAddress string, nonce uint64, balance uint64, otsBitfield [][]byte, tokens map[string]uint64, slavePksAccessType map[string]uint32, otsCounter uint64) *TestAddressState {
 	a := CreateAddressState(misc.Qaddress2Bin(qAddress), nonce, balance, otsBitfield, tokens, slavePksAccessType, otsCounter)
-	return &TestAddressState{a:a}
+	return &TestAddressState{a: a}
 }
 
 func TestCreateAddressState(t *testing.T) {
@@ -112,7 +112,7 @@ func TestAddressState_AddBalance(t *testing.T) {
 
 	balance2 := uint64(10000)
 	a.a.AddBalance(balance2)
-	assert.Equal(t, a.a.Balance(), balance + balance2)
+	assert.Equal(t, a.a.Balance(), balance+balance2)
 }
 
 func TestAddressState_SubtractBalance(t *testing.T) {
@@ -130,7 +130,7 @@ func TestAddressState_SubtractBalance(t *testing.T) {
 
 	balance2 := uint64(10)
 	a.a.SubtractBalance(balance2)
-	assert.Equal(t, a.a.Balance(), balance - balance2)
+	assert.Equal(t, a.a.Balance(), balance-balance2)
 }
 
 func TestAddressState_OtsBitfield(t *testing.T) {

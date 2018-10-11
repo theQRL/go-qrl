@@ -13,7 +13,6 @@ type TestCoinBase struct {
 	tx *CoinBase
 }
 
-
 func NewTestCoinBase(qaddress string, blockNumber uint64, amount uint64) *TestCoinBase {
 	minerAddress := misc.Qaddress2Bin(qaddress)
 	tx := CreateCoinBase(minerAddress, blockNumber, amount)
@@ -207,7 +206,7 @@ func TestCoinBase_ApplyStateChanges(t *testing.T) {
 	coinbase.tx.ApplyStateChanges(addressesState)
 
 	assert.Equal(t, addressesState[qaddress].Balance(), amount)
-	assert.Equal(t, addressesState[coinbaseQaddress].Balance(), coinbaseBalance - amount)
+	assert.Equal(t, addressesState[coinbaseQaddress].Balance(), coinbaseBalance-amount)
 }
 
 func TestCoinBase_RevertStateChanges(t *testing.T) {
@@ -235,7 +234,7 @@ func TestCoinBase_RevertStateChanges(t *testing.T) {
 	coinbase.tx.ApplyStateChanges(addressesState)
 
 	assert.Equal(t, addressesState[qaddress].Balance(), amount)
-	assert.Equal(t, addressesState[coinbaseQaddress].Balance(), coinbaseBalance - amount)
+	assert.Equal(t, addressesState[coinbaseQaddress].Balance(), coinbaseBalance-amount)
 
 	coinbase.tx.RevertStateChanges(addressesState)
 

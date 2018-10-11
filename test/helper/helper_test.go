@@ -24,7 +24,7 @@ func TestGetBobXMSS(t *testing.T) {
 }
 
 func TestStringAddressToBytesArray(t *testing.T) {
-	addrs := []string {
+	addrs := []string{
 		"Q010300a1da274e68c88b0ccf448e0b1916fa789b01eb2ed4e9ad565ce264c9390782a9c61ac02f",
 		"Q0103001d65d7e59aed5efbeae64246e0f3184d7c42411421eb385ba30f2c1c005a85ebc4419cfd"}
 
@@ -39,7 +39,7 @@ func TestStringAddressToBytesArray(t *testing.T) {
 func TestStringArrayToBytesArray(t *testing.T) {
 	aliceXMSS := GetAliceXMSS(6)
 	bobXMSS := GetBobXMSS(6)
-	data := []string {misc.Bin2HStr(misc.UCharVectorToBytes(aliceXMSS.PK())),
+	data := []string{misc.Bin2HStr(misc.UCharVectorToBytes(aliceXMSS.PK())),
 		misc.Bin2HStr(misc.UCharVectorToBytes(bobXMSS.PK()))}
 
 	bytesArray := StringArrayToBytesArray(data)

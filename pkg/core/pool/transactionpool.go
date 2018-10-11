@@ -14,7 +14,7 @@ import (
 type TransactionPool struct {
 	txPool list.List
 	config c.Config
-	ntp *ntp.NTP
+	ntp    *ntp.NTP
 }
 
 func (t *TransactionPool) IsFull() bool {
@@ -99,8 +99,8 @@ func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
 		ti := e.Value.(TransactionInfo)
 		if ti.IsStale(currentBlockHeight) {
 			/*
-			TODO: Add Code for State validation of stale txn
-			In case of state validation fails, removes the transaction from pool
+				TODO: Add Code for State validation of stale txn
+				In case of state validation fails, removes the transaction from pool
 			*/
 			ti.UpdateBlockNumber(currentBlockHeight)
 			// TODO: Broadcast txn to other peers

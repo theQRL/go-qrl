@@ -74,7 +74,7 @@ func (tx *CoinBase) ValidateExtendedCoinbase(blockNumber uint64) bool {
 		return false
 	}
 
-	if tx.Nonce() != blockNumber + 1 {
+	if tx.Nonce() != blockNumber+1 {
 		tx.log.Warn(
 			"Nonce doesnt match",
 			"nonce", tx.Nonce(),
@@ -143,7 +143,7 @@ func CreateCoinBase(minerAddress []byte, blockNumber uint64, amount uint64) *Coi
 	tx.log = log.GetLogger()
 
 	tx.data = &generated.Transaction{}
-	tx.data.TransactionType = &generated.Transaction_Coinbase{Coinbase:&generated.Transaction_CoinBase{}}
+	tx.data.TransactionType = &generated.Transaction_Coinbase{Coinbase: &generated.Transaction_CoinBase{}}
 
 	tx.data.MasterAddr = tx.config.Dev.Genesis.CoinbaseAddress
 	tx.data.GetCoinbase().AddrTo = minerAddress

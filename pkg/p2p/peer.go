@@ -31,13 +31,13 @@ type Peer struct {
 }
 
 func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter) *Peer {
-	p := &Peer {
-		conn: *conn,
+	p := &Peer{
+		conn:    *conn,
 		inbound: inbound,
-		chain: chain,
-		log: log.GetLogger(),
-		filter: filter,
-		config: config.GetConfig(),
+		chain:   chain,
+		log:     log.GetLogger(),
+		filter:  filter,
+		config:  config.GetConfig(),
 	}
 	return p
 }
@@ -60,7 +60,7 @@ func (p *Peer) WriteMsg(msg Msg) error {
 	return nil
 }
 
-func (p *Peer) ReadMsg() (msg Msg, err error){
+func (p *Peer) ReadMsg() (msg Msg, err error) {
 	buf := make([]byte, 4)
 	if _, err := io.ReadFull(p.conn, buf); err != nil {
 		return msg, err
@@ -99,18 +99,18 @@ func (p *Peer) pingLoop() {
 
 }
 
-func (p* Peer) handle(msg Msg) error {
+func (p *Peer) handle(msg Msg) error {
 	switch msg.msg.FuncName {
 	case generated.LegacyMessage_VE:
 		p.log.Debug("Received VE MSG")
 		if msg.msg.GetVeData() == nil {
 			out := Msg{}
 			veData := generated.VEData{
-				Version: "",
+				Version:         "",
 				GenesisPrevHash: []byte("0"),
-				RateLimit: 100,
+				RateLimit:       100,
 			}
-			out.msg = &generated.LegacyMessage {
+			out.msg = &generated.LegacyMessage{
 				FuncName: generated.LegacyMessage_VE,
 				Data: &generated.LegacyMessage_VeData{
 					VeData: &veData,
@@ -135,11 +135,11 @@ func (p* Peer) handle(msg Msg) error {
 
 		switch mrData.Type {
 		case generated.LegacyMessage_BK:
-			if mrData.BlockNumber > p.chain.Height() + uint64(p.config.Dev.MaxMarginBlockNumber) {
+			if mrData.BlockNumber > p.chain.Height()+uint64(p.config.Dev.MaxMarginBlockNumber) {
 				p.log.Debug("Skipping block #%s as beyond lead limit", "Block #", mrData.BlockNumber)
 				return nil
 			}
-			if mrData.BlockNumber < p.chain.Height() - uint64(p.config.Dev.MinMarginBlockNumber) {
+			if mrData.BlockNumber < p.chain.Height()-uint64(p.config.Dev.MinMarginBlockNumber) {
 				p.log.Debug("'Skipping block #%s as beyond the limit", "Block #", mrData.BlockNumber)
 				return nil
 			}
@@ -180,9 +180,9 @@ func (p* Peer) handle(msg Msg) error {
 func (p *Peer) run() (remoteRequested bool, err error) {
 	var (
 		writeStart = make(chan struct{}, 1)
-		writeErr = make(chan error, 1)
-		readErr	 = make(chan error, 1)
-		reason 	 DiscReason
+		writeErr   = make(chan error, 1)
+		readErr    = make(chan error, 1)
+		reason     DiscReason
 	)
 	p.wg.Add(2)
 	go p.readLoop(readErr)
@@ -223,5 +223,5 @@ func (p *Peer) Disconnect(reason DiscReason) {
 }
 
 func convertBytesToLong(b []byte) uint32 {
-	return uint32(b[0]) << 24 | uint32(b[1]) << 16 | uint32(b[2]) << 8 | uint32(b[3])
+	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }

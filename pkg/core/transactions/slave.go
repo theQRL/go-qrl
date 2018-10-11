@@ -61,7 +61,7 @@ func (tx *SlaveTransaction) validateCustom() bool {
 	}
 
 	for _, accessType := range tx.AccessTypes() {
-		if accessType < 0  || accessType > 1 {
+		if accessType < 0 || accessType > 1 {
 			tx.log.Warn("Invalid Access type %s", accessType)
 			return false
 		}
@@ -127,7 +127,7 @@ func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*address
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.SubtractBalance(tx.Fee())
-		for i := 0; i < len(tx.SlavePKs()) ; i++ {
+		for i := 0; i < len(tx.SlavePKs()); i++ {
 			addrState.AddSlavePKSAccessType(tx.SlavePKs()[i], tx.AccessTypes()[i])
 		}
 		addrState.AppendTransactionHash(tx.Txhash())
@@ -139,7 +139,7 @@ func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*addres
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
-		for i := 0; i < len(tx.SlavePKs()) ; i++ {
+		for i := 0; i < len(tx.SlavePKs()); i++ {
 			addrState.RemoveSlavePKSAccessType(tx.SlavePKs()[i])
 		}
 		addrState.RemoveTransactionHash(tx.Txhash())

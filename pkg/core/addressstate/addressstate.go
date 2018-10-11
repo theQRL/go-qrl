@@ -12,7 +12,6 @@ import (
 )
 
 type AddressStateInterface interface {
-
 	PBData() *generated.AddressState
 
 	Address() []byte
@@ -181,7 +180,7 @@ func (a *AddressState) OTSKeyReuse(otsKeyIndex uint64) bool {
 	if otsKeyIndex < uint64(c.GetConfig().Dev.MaxOTSTracking) {
 		offset := otsKeyIndex >> 3
 		relative := otsKeyIndex % 8
-		if (a.data.OtsBitfield[offset][0] >> relative) & 1 == 1 {
+		if (a.data.OtsBitfield[offset][0]>>relative)&1 == 1 {
 			return true
 		}
 	} else {
@@ -226,12 +225,12 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 	}
 	a.data.OtsCounter = otsCounter
 
-	a.data.Tokens = make(map[string] uint64)
+	a.data.Tokens = make(map[string]uint64)
 	for tokenTxhash, token := range tokens {
 		a.UpdateTokenBalance([]byte(tokenTxhash), token, false)
 	}
 
-	a.data.SlavePksAccessType = make(map[string] uint32)
+	a.data.SlavePksAccessType = make(map[string]uint32)
 	for slavePK, accessType := range slavePksAccessType {
 		a.AddSlavePKSAccessType([]byte(slavePK), accessType)
 	}
