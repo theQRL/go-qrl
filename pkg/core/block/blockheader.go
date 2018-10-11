@@ -164,6 +164,7 @@ func (bh *BlockHeader) UpdateMerkleRoot(hashedtransactions []byte) {
 func (bh *BlockHeader) SetNonces(miningNonce uint32, extraNonce uint64) {
 	bh.blockHeader.MiningNonce = miningNonce
 	bh.blockHeader.ExtraNonce = extraNonce
+	bh.blockHeader.HashHeader = bh.GenerateHeaderHash()
 }
 
 func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
