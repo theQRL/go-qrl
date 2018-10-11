@@ -27,7 +27,7 @@ import (
 type Chain struct {
 	lock sync.Mutex
 
-	log log.LoggerInterface
+	log    log.LoggerInterface
 	config *c.Config
 
 	triggerMiner bool
@@ -36,9 +36,8 @@ type Chain struct {
 
 	txPool *pool.TransactionPool
 
-	lastBlock *block.Block
+	lastBlock         *block.Block
 	currentDifficulty []byte
-
 }
 
 func CreateChain() (*Chain, error) {
@@ -49,11 +48,11 @@ func CreateChain() (*Chain, error) {
 
 	txPool := &pool.TransactionPool{}
 
-	chain := &Chain {
-		log: log.GetLogger(),
+	chain := &Chain{
+		log:    log.GetLogger(),
 		config: c.GetConfig(),
 
-		state: s,
+		state:  s,
 		txPool: txPool,
 	}
 
@@ -80,8 +79,8 @@ func (c *Chain) Load(genesisBlock *block.Block) error {
 
 	if err != nil {
 		c.state.PutBlock(genesisBlock, nil)
-		blockNumberMapping := &generated.BlockNumberMapping{Headerhash:genesisBlock.HeaderHash(),
-			PrevHeaderhash:genesisBlock.PrevHeaderHash()}
+		blockNumberMapping := &generated.BlockNumberMapping{Headerhash: genesisBlock.HeaderHash(),
+			PrevHeaderhash: genesisBlock.PrevHeaderHash()}
 
 		c.state.PutBlockNumberMapping(genesisBlock.BlockNumber(), blockNumberMapping, nil)
 		parentDifficulty := goqryptonight.StringToUInt256(string(c.config.Dev.Genesis.GenesisDifficulty))
@@ -180,7 +179,7 @@ func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) 
 
 	if newBlockDifficulty.Cmp(lastBlockDifficulty) == 1 {
 		if !reflect.DeepEqual(c.lastBlock.HeaderHash(), block.PrevHeaderHash()) {
-			forkState := &generated.ForkState{InitiatorHeaderhash:block.HeaderHash()}
+			forkState := &generated.ForkState{InitiatorHeaderhash: block.HeaderHash()}
 			err = c.state.PutForkState(forkState, batch)
 			if err != nil {
 				c.log.Info("PutForkState Error %s", err.Error())
@@ -200,7 +199,7 @@ func (c *Chain) AddBlock(block *block.Block) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if block.BlockNumber() < c.Height() - c.config.Dev.ReorgLimit {
+	if block.BlockNumber() < c.Height()-c.config.Dev.ReorgLimit {
 		c.log.Debug("Skipping block #%s as beyond re-org limit", block.BlockNumber())
 		return false
 	}
@@ -251,7 +250,7 @@ func (c *Chain) updateChainState(block *block.Block, batch *leveldb.Batch) {
 }
 
 func (c *Chain) updateBlockNumberMapping(block *block.Block, batch *leveldb.Batch) {
-	blockNumberMapping := &generated.BlockNumberMapping{Headerhash:block.HeaderHash(), PrevHeaderhash:block.PrevHeaderHash()}
+	blockNumberMapping := &generated.BlockNumberMapping{Headerhash: block.HeaderHash(), PrevHeaderhash: block.PrevHeaderHash()}
 	c.state.PutBlockNumberMapping(block.BlockNumber(), blockNumberMapping, batch)
 }
 
@@ -265,7 +264,7 @@ func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64,
 	}
 
 	c.txPool.AddTxFromBlock(block, blockNumber)
-	c.state.PutChainHeight(block.BlockNumber() - 1, batch)
+	c.state.PutChainHeight(block.BlockNumber()-1, batch)
 	c.state.RollbackTxMetadata(block, batch)
 	c.state.RemoveBlockNumberMapping(block.BlockNumber())
 	c.state.PutAddressesState(addressesState, batch)
@@ -274,7 +273,7 @@ func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64,
 func (c *Chain) Rollback(forkedHeaderHash []byte, forkState *generated.ForkState) [][]byte {
 	var hashPath [][]byte
 
-	for  ;!reflect.DeepEqual(c.lastBlock.HeaderHash(), forkedHeaderHash); {
+	for !reflect.DeepEqual(c.lastBlock.HeaderHash(), forkedHeaderHash) {
 		b, err := c.state.GetBlock(c.lastBlock.HeaderHash())
 
 		if err != nil {
@@ -316,9 +315,9 @@ func (c *Chain) GetForkPoint(block *block.Block) ([]byte, [][]byte, error) {
 	tmpBlock := block
 	var err error
 	var hashPath [][]byte
-	for ;; {
+	for {
 		if block == nil {
-			return nil, nil, errors.New("No Block Found " + string(block.HeaderHash()) +", Initiator " +
+			return nil, nil, errors.New("No Block Found " + string(block.HeaderHash()) + ", Initiator " +
 				string(tmpBlock.HeaderHash()))
 		}
 		mainchainBlock, err := c.state.GetBlockByNumber(block.BlockNumber())
@@ -396,7 +395,7 @@ func (c *Chain) forkRecovery(block *block.Block, forkState *generated.ForkState)
 
 	rollbackDone := false
 	if len(forkState.OldMainchainHashPath) > 0 {
-		b, err := c.state.GetBlock(forkState.OldMainchainHashPath[len(forkState.OldMainchainHashPath) - 1])
+		b, err := c.state.GetBlock(forkState.OldMainchainHashPath[len(forkState.OldMainchainHashPath)-1])
 		if err == nil && reflect.DeepEqual(b.PrevHeaderHash(), forkState.ForkPointHeaderhash) {
 			rollbackDone = true
 		}

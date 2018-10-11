@@ -27,7 +27,7 @@ func (t *TokenMetadata) Append(transferTokenTxHash []byte) {
 func (t *TokenMetadata) Remove(transferTokenTxHash []byte) {
 	for index, hash := range t.data.TransferTokenTxHashes {
 		if reflect.DeepEqual(hash, transferTokenTxHash) {
-			t.data.TransferTokenTxHashes = append(t.data.TransferTokenTxHashes[:index], t.data.TransferTokenTxHashes[index + 1:]...)
+			t.data.TransferTokenTxHashes = append(t.data.TransferTokenTxHashes[:index], t.data.TransferTokenTxHashes[index+1:]...)
 		}
 	}
 }

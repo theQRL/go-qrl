@@ -16,7 +16,6 @@ type TestTransferTokenTransaction struct {
 	tx *TransferTokenTransaction
 }
 
-
 func NewTestTransferTokenTransaction(tokenTxHash string, addrsTo []string, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TestTransferTokenTransaction {
 
 	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
@@ -24,7 +23,6 @@ func NewTestTransferTokenTransaction(tokenTxHash string, addrsTo []string, amoun
 
 	return &TestTransferTokenTransaction{tx: tx}
 }
-
 
 func TestCreateTransferTokenTransaction(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
@@ -204,8 +202,8 @@ func TestTransferTokenTransaction_Validate2(t *testing.T) {
 
 func TestTransferTokenTransaction_Validate3(t *testing.T) {
 	/*
-	Test for mismatching number of amounts and number of AddressTo
-	 */
+		Test for mismatching number of amounts and number of AddressTo
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -281,7 +279,7 @@ func TestTransferTokenTransaction_ValidateCustom2(t *testing.T) {
 		addrsTo[i] = bobXMSS.QAddress()
 		amounts[i] = 100
 	}
-	amounts[len(amounts) - 1] = 0
+	amounts[len(amounts)-1] = 0
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -302,7 +300,7 @@ func TestTransferTokenTransaction_ValidateCustom3(t *testing.T) {
 		addrsTo[i] = bobXMSS.QAddress()
 		amounts[i] = 100
 	}
-	addrsTo[len(addrsTo) - 1] = "Q01234567"
+	addrsTo[len(addrsTo)-1] = "Q01234567"
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
 
@@ -343,7 +341,7 @@ func TestTransferTokenTransaction_ValidateExtended2(t *testing.T) {
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
-	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)  // Another random XMSS for Slave
+	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128) // Another random XMSS for Slave
 
 	tokenTxHash := "0a0fff"
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
@@ -369,12 +367,12 @@ func TestTransferTokenTransaction_ValidateExtended2(t *testing.T) {
 
 func TestTransferTokenTransaction_ValidateExtended3(t *testing.T) {
 	/*
-	Test for signing a transfer token transaction via slave with an used ots key
-	 */
+		Test for signing a transfer token transaction via slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
-	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)  // Another random XMSS for Slave
+	slaveXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128) // Another random XMSS for Slave
 
 	tokenTxHash := "0a0fff"
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
@@ -388,28 +386,28 @@ func TestTransferTokenTransaction_ValidateExtended3(t *testing.T) {
 	addrFromState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(randomXMSS.Address()))
 	addrFromState.UpdateTokenBalance(misc.HStr2Bin(tokenTxHash), 300, false)
 	addrFromState.AddBalance(1)
-	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(slaveXMSS.PK()), 0)  // Adding slave
+	addrFromState.AddSlavePKSAccessType(misc.UCharVectorToBytes(slaveXMSS.PK()), 0) // Adding slave
 
 	addrFromPKState := addressstate.GetDefaultAddressState(misc.UCharVectorToBytes(slaveXMSS.Address()))
 
 	transferTokenTx.tx.Sign(slaveXMSS, misc.BytesToUCharVector(transferTokenTx.tx.GetHashableBytes()))
 	assert.True(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromPKState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 
 	randomXMSS.SetOTSIndex(10)
 	transferTokenTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(transferTokenTx.tx.GetHashableBytes()))
 	assert.True(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
-	addrFromPKState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromPKState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromPKState))
 }
 
 func TestTransferTokenTransaction_ValidateExtended4(t *testing.T) {
 	/*
-	Test for signing a transfer token transaction without slave with an used ots key
-	 */
+		Test for signing a transfer token transaction without slave with an used ots key
+	*/
 	aliceXMSS := helper.GetAliceXMSS(6)
 	bobXMSS := helper.GetBobXMSS(6)
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
@@ -429,14 +427,14 @@ func TestTransferTokenTransaction_ValidateExtended4(t *testing.T) {
 
 	transferTokenTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(transferTokenTx.tx.GetHashableBytes()))
 	assert.True(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(0)  // Marked ots key 0 as used
+	addrFromState.SetOTSKey(0) // Marked ots key 0 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromState))
 
 	randomXMSS.SetOTSIndex(10)
 	transferTokenTx.tx.Sign(randomXMSS, misc.BytesToUCharVector(transferTokenTx.tx.GetHashableBytes()))
 	assert.True(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromState))
-	addrFromState.SetOTSKey(10)  // Marked ots key 10 as used
+	addrFromState.SetOTSKey(10) // Marked ots key 10 as used
 	// Signed by an used ots key, validation must fail
 	assert.False(t, transferTokenTx.tx.ValidateExtended(addrFromState, addrFromState))
 }
@@ -482,11 +480,11 @@ func TestTransferTokenTransaction_ApplyStateChanges(t *testing.T) {
 	addressesState[randomXMSS.QAddress()].UpdateTokenBalance(bytesTokenTxHash, initialTokenBalance, false)
 
 	transferTokenTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance)
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance)
 
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance - 300)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance-300)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), uint64(200))
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), uint64(100))
 }
@@ -536,13 +534,13 @@ func TestTransferTokenTransaction_ApplyStateChanges2(t *testing.T) {
 	addressesState[bobXMSS.QAddress()].UpdateTokenBalance(bytesTokenTxHash, bobInitialTokenBalance, false)
 
 	transferTokenTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance)
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance)
 
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance - 300)
-	assert.Equal(t, addressesState[aliceXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), aliceInitialTokenBalance + uint64(200))
-	assert.Equal(t, addressesState[bobXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), bobInitialTokenBalance + uint64(100))
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance-300)
+	assert.Equal(t, addressesState[aliceXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), aliceInitialTokenBalance+uint64(200))
+	assert.Equal(t, addressesState[bobXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), bobInitialTokenBalance+uint64(100))
 }
 
 func TestTransferTokenTransaction_RevertStateChanges(t *testing.T) {
@@ -586,14 +584,13 @@ func TestTransferTokenTransaction_RevertStateChanges(t *testing.T) {
 	addressesState[randomXMSS.QAddress()].UpdateTokenBalance(bytesTokenTxHash, initialTokenBalance, false)
 
 	transferTokenTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance)
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance)
 
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance - 300)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance-300)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), uint64(200))
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), uint64(100))
-
 
 	transferTokenTx.tx.RevertStateChanges(addressesState)
 	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance)
@@ -650,14 +647,13 @@ func TestTransferTokenTransaction_RevertStateChanges2(t *testing.T) {
 	addressesState[bobXMSS.QAddress()].UpdateTokenBalance(bytesTokenTxHash, bobInitialTokenBalance, false)
 
 	transferTokenTx.tx.ApplyStateChanges(addressesState)
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance - fee)
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance-fee)
 	assert.Equal(t, addressesState[aliceXMSS.QAddress()].Balance(), aliceInitialBalance)
 	assert.Equal(t, addressesState[bobXMSS.QAddress()].Balance(), bobInitialBalance)
 
-	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance - 300)
-	assert.Equal(t, addressesState[aliceXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), aliceInitialTokenBalance + uint64(200))
-	assert.Equal(t, addressesState[bobXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), bobInitialTokenBalance + uint64(100))
-
+	assert.Equal(t, addressesState[randomXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), initialTokenBalance-300)
+	assert.Equal(t, addressesState[aliceXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), aliceInitialTokenBalance+uint64(200))
+	assert.Equal(t, addressesState[bobXMSS.QAddress()].GetTokenBalance(bytesTokenTxHash), bobInitialTokenBalance+uint64(100))
 
 	transferTokenTx.tx.RevertStateChanges(addressesState)
 	assert.Equal(t, addressesState[randomXMSS.QAddress()].Balance(), initialBalance)

@@ -6,10 +6,10 @@ import (
 )
 
 type TransactionInfo struct {
-	tx transactions.TransactionInterface
+	tx          transactions.TransactionInterface
 	blockNumber uint64
-	timestamp uint64
-	config *c.Config
+	timestamp   uint64
+	config      *c.Config
 }
 
 func (t *TransactionInfo) Transaction() transactions.TransactionInterface {
@@ -25,7 +25,7 @@ func (t *TransactionInfo) Timestamp() uint64 {
 }
 
 func (t *TransactionInfo) IsStale(currentBlockHeight uint64) bool {
-	if currentBlockHeight > t.blockNumber + t.config.User.TransactionPool.StaleTransactionThreshold {
+	if currentBlockHeight > t.blockNumber+t.config.User.TransactionPool.StaleTransactionThreshold {
 		return true
 	}
 

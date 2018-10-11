@@ -80,14 +80,14 @@ func Int64ToUCharVector(data int64) goqrllib.UcharVector {
 	return goqrllib.NewUcharVector__SWIG_1(data)
 }
 
-func UCharVectorToBytes(data goqrllib.UcharVector) []byte  {
+func UCharVectorToBytes(data goqrllib.UcharVector) []byte {
 	vector := UcharVector{}
 	vector.New(data)
 
 	return vector.GetBytes()
 }
 
-func UCharVectorToString(data goqrllib.UcharVector) string  {
+func UCharVectorToString(data goqrllib.UcharVector) string {
 	return string(UCharVectorToBytes(data))
 }
 
@@ -98,11 +98,11 @@ func MerkleTXHash(hashes list.List) []byte {
 	for x := 0; x < j; x++ {
 		var nextLayer list.List
 		h := lArray.Back().Value.(list.List)
-		i := h.Len() % 2 + h.Len() / 2
+		i := h.Len()%2 + h.Len()/2
 		e := h.Front()
 		z := 0
 		for k := 0; k < i; k++ {
-			if h.Len() == z + 1 {
+			if h.Len() == z+1 {
 				nextLayer.PushBack(e.Value.([]byte))
 			} else {
 				tmp := UcharVector{}

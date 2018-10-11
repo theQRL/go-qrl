@@ -100,7 +100,7 @@ func (tx *TransferTransaction) ValidateExtended(
 	balance := addrFromState.Balance()
 	totalAmount := tx.TotalAmounts()
 
-	if balance < totalAmount + tx.Fee() {
+	if balance < totalAmount+tx.Fee() {
 		tx.log.Warn("State validation failed for %s because: Insufficient funds", misc.Bin2HStr(tx.Txhash()))
 		tx.log.Warn("balance: %s, fee: %s, amount: %s", balance, tx.Fee(), totalAmount)
 		return false
@@ -210,7 +210,7 @@ func CreateTransferTransaction(addrsTo [][]byte, amounts []uint64, fee uint64, x
 	tx.log = log.GetLogger()
 
 	tx.data = &generated.Transaction{}
-	tx.data.TransactionType = &generated.Transaction_Transfer_{Transfer:&generated.Transaction_Transfer{}}
+	tx.data.TransactionType = &generated.Transaction_Transfer_{Transfer: &generated.Transaction_Transfer{}}
 
 	if masterAddr != nil {
 		tx.data.MasterAddr = masterAddr

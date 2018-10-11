@@ -9,13 +9,13 @@ import (
 )
 
 type TestLDB struct {
-	ldb *LDB
+	ldb     *LDB
 	tempDir string
 }
 
 func NewTestLDB() *TestLDB {
 	tempDir, err := ioutil.TempDir("", "")
-	ldb, err := NewDB(tempDir, "state",16, 16)
+	ldb, err := NewDB(tempDir, "state", 16, 16)
 
 	if err != nil {
 		panic(err)

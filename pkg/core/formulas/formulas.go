@@ -11,11 +11,11 @@ import (
 var (
 	// Precision is 28 as Python Decimal by default supports upto 28 decimal precision
 	// Warning: Change in precision will result into fork
-	PythonPrecision=28
+	PythonPrecision = 28
 )
 
 type Generator struct {
-	data []math2.Term
+	data  []math2.Term
 	index int
 }
 
@@ -27,28 +27,28 @@ func BigDiv(dividend *decimal.Big, divisor *decimal.Big) *decimal.Big {
 
 func NewGenerator(data []decimal.Big) *Generator {
 	/*
-	data[0] should be dividend
-	data[1] should be divisor
-	 */
+		data[0] should be dividend
+		data[1] should be divisor
+	*/
 	g := &Generator{}
 	g.index = -1
 	g.data = make([]math2.Term, len(data))
 	zero := decimal.WithPrecision(PythonPrecision)
 
-	g.data[0] = math2.Term{A:zero, B:zero}
-	g.data[1] = math2.Term{A:&data[0], B:&data[1]}
+	g.data[0] = math2.Term{A: zero, B: zero}
+	g.data[1] = math2.Term{A: &data[0], B: &data[1]}
 	return g
 }
 
-func(g *Generator) Next() bool {
-	if g.index < len(g.data) - 1 {
+func (g *Generator) Next() bool {
+	if g.index < len(g.data)-1 {
 		g.index++
 		return true
 	}
 	return false
 }
 
-func(g *Generator) Term() math2.Term {
+func (g *Generator) Term() math2.Term {
 	return g.data[g.index]
 }
 
@@ -79,10 +79,10 @@ func CalcCoeff(coinRemainingAtGenesis uint64) *decimal.Big {
 
 func RemainingEmission(coinRemainingAtGenesis uint64, shorPerQuanta uint64, blockNumber uint64) int64 {
 	/*
-	The simplified formula of RemainingEmission is
+		The simplified formula of RemainingEmission is
 
-	(coinRemainingAtGenesis * shorPerQuanta) * math.Exp(-coeff * blockNumber)
-	 */
+		(coinRemainingAtGenesis * shorPerQuanta) * math.Exp(-coeff * blockNumber)
+	*/
 
 	coeff := CalcCoeff(coinRemainingAtGenesis)
 	coeff.Neg(coeff)
@@ -108,7 +108,7 @@ func RemainingEmission(coinRemainingAtGenesis uint64, shorPerQuanta uint64, bloc
 }
 
 func BlockReward(coinRemainingAtGenesis uint64, shorPerQuanta uint64, blockNumber uint64) uint64 {
-	return uint64(RemainingEmission(coinRemainingAtGenesis, shorPerQuanta, blockNumber - 1) - RemainingEmission(coinRemainingAtGenesis, shorPerQuanta, blockNumber))
+	return uint64(RemainingEmission(coinRemainingAtGenesis, shorPerQuanta, blockNumber-1) - RemainingEmission(coinRemainingAtGenesis, shorPerQuanta, blockNumber))
 }
 
 func Median(data []int) float64 {
@@ -121,5 +121,5 @@ func Median(data []int) float64 {
 		return float64(data[len(data)/2])
 	}
 
-	return float64(data[len(data)/2 - 1] + data[len(data)/2]) / 2
+	return float64(data[len(data)/2-1]+data[len(data)/2]) / 2
 }

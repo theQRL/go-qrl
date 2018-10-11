@@ -7,14 +7,12 @@ import (
 )
 
 type DifficultyTrackerInterface interface {
-
 	GetTarget([]byte) []byte
 
 	Get(uint64, []byte) ([]byte, []byte)
 }
 
 type DifficultyTracker struct {
-
 }
 
 func (d *DifficultyTracker) GetTarget(currentDifficulty goqryptonight.UcharVector) []byte {

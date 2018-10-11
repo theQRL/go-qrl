@@ -9,7 +9,7 @@ import (
 func GetAliceXMSS(height uint64) *crypto.XMSS {
 	seed := make([]byte, 48)
 
-	for i := 0; i < len(seed) ; i++ {
+	for i := 0; i < len(seed); i++ {
 		seed[i] = byte(i)
 	}
 
@@ -19,7 +19,7 @@ func GetAliceXMSS(height uint64) *crypto.XMSS {
 func GetBobXMSS(height uint64) *crypto.XMSS {
 	seed := make([]byte, 48)
 
-	for i := 0; i < len(seed) ; i++ {
+	for i := 0; i < len(seed); i++ {
 		seed[i] = byte(i + 5)
 	}
 

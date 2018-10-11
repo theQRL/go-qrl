@@ -22,10 +22,10 @@ import (
 )
 
 type State struct {
-	db	*db.LDB
+	db *db.LDB
 
-	lock sync.Mutex
-	log *log.Logger
+	lock   sync.Mutex
+	log    *log.Logger
 	config *c.Config
 }
 
@@ -42,9 +42,9 @@ func CreateState() (*State, error) {
 		return nil, err
 	}
 
-	state := State {
-		db: newDB,
-		log: log.GetLogger(),
+	state := State{
+		db:     newDB,
+		log:    log.GetLogger(),
 		config: c.GetConfig(),
 	}
 
@@ -72,7 +72,7 @@ func (s *State) GetBlockSizeLimit(b *block.Block) (int, error) {
 		}
 	}
 
-	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier * formulas.Median(blockSizeList)))), nil
+	return int(math.Max(float64(s.config.Dev.BlockMinSizeLimit), float64(s.config.Dev.SizeMultiplier*formulas.Median(blockSizeList)))), nil
 }
 
 func (s *State) PutBlock(b *block.Block, batch *leveldb.Batch) error {
@@ -265,7 +265,6 @@ func (s *State) GetChainHeight() (uint64, error) {
 
 	return binary.BigEndian.Uint64(value), nil
 }
-
 
 func (s *State) UpdateLastTransactions(block *block.Block, batch *leveldb.Batch) error {
 	// Skip if only coinbase transaction
@@ -567,7 +566,7 @@ func (s *State) UpdateTxMetadata(block *block.Block, batch *leveldb.Batch) error
 	}
 
 	tx := block.Transactions()[0]
-	err = s.AddTotalCoinSupply(tx.GetCoinbase().Amount - feeReward, batch)
+	err = s.AddTotalCoinSupply(tx.GetCoinbase().Amount-feeReward, batch)
 	if err != nil {
 		return err
 	}
@@ -608,7 +607,7 @@ func (s *State) RollbackTxMetadata(block *block.Block, batch *leveldb.Batch) err
 	}
 
 	tx := block.Transactions()[0]
-	err = s.ReduceTotalCoinSupply(tx.GetCoinbase().Amount - feeReward, batch)
+	err = s.ReduceTotalCoinSupply(tx.GetCoinbase().Amount-feeReward, batch)
 	if err != nil {
 		return err
 	}
@@ -877,7 +876,7 @@ func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 		nthBlockTimestamp -= uint64(s.config.Dev.MiningSetpointBlocktime)
 	}
 
-	return uint64(blockTimestamp) - nthBlockTimestamp / countHeaderHashes, nil
+	return uint64(blockTimestamp) - nthBlockTimestamp/countHeaderHashes, nil
 }
 
 func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) error {
@@ -891,7 +890,7 @@ func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) err
 
 	a.PBData().OtsCounter = 0
 	hashes := a.TransactionHashes()
-	for i := len(hashes); i >= 0 ; i-- {
+	for i := len(hashes); i >= 0; i-- {
 		tm, err := s.GetTxMetadata(hashes[i])
 		if err != nil {
 			return err

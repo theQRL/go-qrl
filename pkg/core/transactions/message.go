@@ -34,7 +34,7 @@ func (tx *MessageTransaction) GetHashableBytes() []byte {
 
 func (tx *MessageTransaction) validateCustom() bool {
 	lenMessageHash := len(tx.MessageHash())
-	if  lenMessageHash > 80 || lenMessageHash == 0 {
+	if lenMessageHash > 80 || lenMessageHash == 0 {
 		tx.log.Warn("Message length must be greater than 0 and less than 81")
 		tx.log.Warn("Found message length %s", len(tx.MessageHash()))
 		return false
@@ -132,7 +132,7 @@ func CreateMessageTransaction(message []byte, fee uint64, xmssPK []byte, masterA
 	tx.log = log.GetLogger()
 
 	tx.data = &generated.Transaction{}
-	tx.data.TransactionType = &generated.Transaction_Message_{Message:&generated.Transaction_Message{}}
+	tx.data.TransactionType = &generated.Transaction_Message_{Message: &generated.Transaction_Message{}}
 
 	if masterAddr != nil {
 		tx.data.MasterAddr = masterAddr

@@ -14,8 +14,8 @@ import (
 )
 
 type conn struct {
-	fd		net.Conn
-	inbound	bool
+	fd      net.Conn
+	inbound bool
 }
 
 type Server struct {

@@ -11,8 +11,8 @@ import (
 )
 
 type BlockMetaData struct {
-	data *generated.BlockMetaData
-	log log.LoggerInterface
+	data   *generated.BlockMetaData
+	log    log.LoggerInterface
 	config *config.Config
 }
 
@@ -73,6 +73,8 @@ func (b *BlockMetaData) UpdateLastHeaderHashes(parentLastNHeaderHashes [][]byte,
 
 func CreateBlockMetadata(blockDifficulty []byte, totalDifficulty []byte, childHeaderHashes [][]byte) *BlockMetaData {
 	b := &BlockMetaData{}
+	b.log = log.GetLogger()
+	b.config = config.GetConfig()
 
 	b.data.BlockDifficulty = blockDifficulty
 	b.data.CumulativeDifficulty = totalDifficulty
