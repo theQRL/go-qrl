@@ -182,7 +182,10 @@ func (b *Block) Serialize() ([]byte, error) {
 }
 
 func DeSerializeBlock(data []byte) (*Block, error) {
-	b := &Block{}
+	b := &Block{
+		block:       &generated.Block{},
+		blockheader: &BlockHeader{},
+	}
 
 	if err := proto.Unmarshal(data, b.block); err != nil {
 		return b, err
