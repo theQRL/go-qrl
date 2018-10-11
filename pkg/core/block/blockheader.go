@@ -18,7 +18,6 @@ import (
 )
 
 type BlockHeaderInterface interface {
-
 	BlockNumber() uint64
 
 	Epoch() uint64
@@ -81,8 +80,8 @@ func (bh *BlockHeader) Epoch() uint64 {
 	return bh.blockHeader.BlockNumber / bh.config.Dev.BlocksPerEpoch
 }
 
-func (bh *BlockHeader) Timestamp() uint32 {
-	return uint32(bh.blockHeader.TimestampSeconds)
+func (bh *BlockHeader) Timestamp() uint64 {
+	return bh.blockHeader.TimestampSeconds
 }
 
 func (bh *BlockHeader) HeaderHash() []byte {
@@ -130,11 +129,11 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	binary.Write(tmp, binary.BigEndian, uint64(bh.FeeReward()))
 	tmp.Write(bh.TxMerkleRoot())
 
-	blob := misc.UcharVector{}
+	blob := misc.NewUCharVector()
 	blob.AddByte(0)
 	blob.AddBytes(tmp.Bytes())
 
-	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize - 18), blob.GetData()))
+	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize-18), blob.GetData()))
 
 	if blob.GetData().Size() < int64(bh.config.Dev.MiningNonceOffset) {
 		panic("Mining blob size below 56 bytes")
@@ -144,7 +143,7 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	binary.BigEndian.PutUint32(miningNonce, bh.MiningNonce())
 	binary.BigEndian.PutUint64(miningNonce[4:], bh.ExtraNonce())
 
-	finalBlob := misc.UcharVector{}
+	finalBlob := misc.NewUCharVector()
 	finalBlob.AddBytes(blob.GetBytes()[:bh.NonceOffset()])
 	finalBlob.AddBytes(miningNonce)
 	finalBlob.AddBytes(blob.GetBytes()[bh.NonceOffset():])
@@ -168,10 +167,10 @@ func (bh *BlockHeader) SetNonces(miningNonce uint32, extraNonce uint64) {
 }
 
 func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
-	miningNonceBytes := blob[bh.NonceOffset():bh.NonceOffset() + 4]
+	miningNonceBytes := blob[bh.NonceOffset() : bh.NonceOffset()+4]
 	miningNonce := binary.BigEndian.Uint32(miningNonceBytes)
 
-	extraNonceBytes := blob[bh.ExtraNonceOffset():bh.ExtraNonceOffset() + 8]
+	extraNonceBytes := blob[bh.ExtraNonceOffset() : bh.ExtraNonceOffset()+8]
 	extraNonce := binary.BigEndian.Uint64(extraNonceBytes)
 
 	bh.SetNonces(miningNonce, extraNonce)
@@ -179,8 +178,8 @@ func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
 
 func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkleRoot []byte) bool {
 	n := ntp.GetNTP()
-	currentTime := uint32(n.Time())
-	allowedTimestamp := currentTime + bh.config.Dev.BlockLeadTimestamp
+	currentTime := uint64(n.Time())
+	allowedTimestamp := currentTime + uint64(bh.config.Dev.BlockLeadTimestamp)
 	if bh.Timestamp() > allowedTimestamp {
 		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")
 		bh.log.Warn("Block timestamp %s", bh.Timestamp())
@@ -188,7 +187,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 		return false
 	}
 
-	if bh.Timestamp() < bh.config.Dev.Genesis.GenesisTimestamp {
+	if bh.Timestamp() < uint64(bh.config.Dev.Genesis.GenesisTimestamp) {
 		bh.log.Warn("Timestamp lower than genesis timestamp")
 		bh.log.Warn("Genesis Timestamp %s", bh.config.Dev.Genesis.GenesisTimestamp)
 		bh.log.Warn("Block Timestamp %s", bh.Timestamp())
@@ -210,7 +209,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 		return false
 	}
 
-	if bh.BlockReward() + bh.FeeReward() != coinbaseAmount {
+	if bh.BlockReward()+bh.FeeReward() != coinbaseAmount {
 		bh.log.Warn("Block_reward + fee_reward doesnt sums up to coinbase_amount")
 		return false
 	}
@@ -229,7 +228,7 @@ func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
 		return false
 	}
 
-	if parentBlock.BlockNumber() != bh.BlockNumber() - 1 {
+	if parentBlock.BlockNumber() != bh.BlockNumber()-1 {
 		bh.log.Warn("Block numbers out of sequence: failed validation")
 		return false
 	}
@@ -251,12 +250,12 @@ func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
 
 func (bh *BlockHeader) VerifyBlob(blob []byte) bool {
 	miningNonceOffset := bh.config.Dev.MiningNonceOffset
-	blob = append(blob[:miningNonceOffset], blob[miningNonceOffset + 17:]...)
+	blob = append(blob[:miningNonceOffset], blob[miningNonceOffset+17:]...)
 
 	actualBlob := bh.MiningBlob()
-	actualBlob = append(actualBlob[:miningNonceOffset], actualBlob[miningNonceOffset + 17:]...)
+	actualBlob = append(actualBlob[:miningNonceOffset], actualBlob[miningNonceOffset+17:]...)
 
-	if reflect.DeepEqual(blob, actualBlob) {
+	if !reflect.DeepEqual(blob, actualBlob) {
 		return false
 	}
 
@@ -273,15 +272,17 @@ func (bh *BlockHeader) FromJSON(jsonData string) *BlockHeader {
 	return bh
 }
 
-func (bh *BlockHeader) JSON() (string, error)  {
+func (bh *BlockHeader) JSON() (string, error) {
 	ma := jsonpb.Marshaler{}
 	return ma.MarshalToString(bh.blockHeader)
 }
 
 func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64) *BlockHeader {
-	bh := &BlockHeader{}
-	bh.blockHeader = &generated.BlockHeader{}
-	bh.blockHeader.BlockNumber = blockNumber
+	bh := &BlockHeader{
+		blockHeader: &generated.BlockHeader{BlockNumber: blockNumber},
+		config:      c.GetConfig(),
+		log:         log.GetLogger(),
+	}
 
 	if bh.blockHeader.BlockNumber != 0 {
 		bh.blockHeader.TimestampSeconds = timestamp
@@ -295,7 +296,7 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 			return nil
 		}
 	} else {
-		bh.blockHeader.TimestampSeconds = prevBlockTimestamp  // Set timestamp for genesis block
+		bh.blockHeader.TimestampSeconds = prevBlockTimestamp // Set timestamp for genesis block
 	}
 
 	bh.blockHeader.HashHeaderPrev = prevBlockHeaderHash
@@ -312,5 +313,5 @@ func BlockRewardCalc(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}
-	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply - config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
+	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply-config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
 }

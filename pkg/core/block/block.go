@@ -117,7 +117,7 @@ func (b *Block) BlockReward() uint64 {
 	return b.blockheader.BlockReward()
 }
 
-func (b *Block) Timestamp() uint32 {
+func (b *Block) Timestamp() uint64 {
 	return b.blockheader.Timestamp()
 }
 
@@ -126,10 +126,11 @@ func (b *Block) MiningBlob() []byte {
 }
 
 func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs []transactions.Transaction, timestamp uint64) *Block {
-	b := &Block{}
-	b.block = &generated.Block{}
-	b.config = config.GetConfig() // TODO: Make Config Singleton
-	b.log = log.GetLogger()
+	b := &Block{
+		block: &generated.Block{},
+		config: config.GetConfig(), // TODO: Make Config Singleton
+		log: log.GetLogger(),
+	}
 
 	feeReward := uint64(0)
 	for _, tx := range txs {
