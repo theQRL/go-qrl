@@ -70,6 +70,7 @@ type BlockHeader struct {
 
 	config *c.Config
 	log    log.LoggerInterface
+	n      ntp.NTPInterface
 }
 
 func (bh *BlockHeader) BlockNumber() uint64 {
@@ -178,8 +179,7 @@ func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
 }
 
 func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkleRoot []byte) bool {
-	n := ntp.GetNTP()
-	currentTime := uint64(n.Time())
+	currentTime := bh.n.Time()
 	allowedTimestamp := currentTime + uint64(bh.config.Dev.BlockLeadTimestamp)
 	if bh.Timestamp() > allowedTimestamp {
 		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")
@@ -278,11 +278,28 @@ func (bh *BlockHeader) JSON() (string, error) {
 	return ma.MarshalToString(bh.blockHeader)
 }
 
-func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64) *BlockHeader {
+func (bh *BlockHeader) Option(options ...func(*BlockHeader)) {
+	for _, opt := range options {
+		opt(bh)
+	}
+}
+
+func MockNTP(n ntp.NTPInterface) func(*BlockHeader) {
+	return func(bh *BlockHeader) {
+		bh.n = n
+	}
+}
+
+func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64, options ...func(*BlockHeader)) *BlockHeader {
 	bh := &BlockHeader{
 		blockHeader: &generated.BlockHeader{BlockNumber: blockNumber},
 		config:      c.GetConfig(),
 		log:         log.GetLogger(),
+		n:           ntp.GetNTP(),
+	}
+
+	for _, option := range options {
+		option(bh)
 	}
 
 	if bh.blockHeader.BlockNumber != 0 {
