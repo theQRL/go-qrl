@@ -130,11 +130,11 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	binary.Write(tmp, binary.BigEndian, uint64(bh.FeeReward()))
 	tmp.Write(bh.TxMerkleRoot())
 
-	blob := misc.UcharVector{}
+	blob := misc.NewUCharVector()
 	blob.AddByte(0)
 	blob.AddBytes(tmp.Bytes())
 
-	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize - 18), blob.GetData()))
+	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize-18), blob.GetData()))
 
 	if blob.GetData().Size() < int64(bh.config.Dev.MiningNonceOffset) {
 		panic("Mining blob size below 56 bytes")
@@ -144,7 +144,7 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	binary.BigEndian.PutUint32(miningNonce, bh.MiningNonce())
 	binary.BigEndian.PutUint64(miningNonce[4:], bh.ExtraNonce())
 
-	finalBlob := misc.UcharVector{}
+	finalBlob := misc.NewUCharVector()
 	finalBlob.AddBytes(blob.GetBytes()[:bh.NonceOffset()])
 	finalBlob.AddBytes(miningNonce)
 	finalBlob.AddBytes(blob.GetBytes()[bh.NonceOffset():])
@@ -251,12 +251,12 @@ func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
 
 func (bh *BlockHeader) VerifyBlob(blob []byte) bool {
 	miningNonceOffset := bh.config.Dev.MiningNonceOffset
-	blob = append(blob[:miningNonceOffset], blob[miningNonceOffset + 17:]...)
+	blob = append(blob[:miningNonceOffset], blob[miningNonceOffset+17:]...)
 
 	actualBlob := bh.MiningBlob()
-	actualBlob = append(actualBlob[:miningNonceOffset], actualBlob[miningNonceOffset + 17:]...)
+	actualBlob = append(actualBlob[:miningNonceOffset], actualBlob[miningNonceOffset+17:]...)
 
-	if reflect.DeepEqual(blob, actualBlob) {
+	if !reflect.DeepEqual(blob, actualBlob) {
 		return false
 	}
 
