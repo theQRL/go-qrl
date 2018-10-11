@@ -114,9 +114,8 @@ func (a *AddressState) AppendTransactionHash(hash []byte) {
 
 func (a *AddressState) RemoveTransactionHash(hash []byte) {
 	for index, hash1 := range a.data.TransactionHashes {
-		if reflect.DeepEqual(index, hash1) {
+		if reflect.DeepEqual(hash, hash1) {
 			a.data.TransactionHashes = append(a.data.TransactionHashes[:index], a.data.TransactionHashes[index+1:]...)
-			//TODO: Fix remove code
 			return
 		}
 	}
@@ -176,10 +175,6 @@ func (a *AddressState) DecreaseNonce() {
 func (a *AddressState) GetSlavePermission(slavePK []byte) (uint32, bool) {
 	value, ok := a.data.SlavePksAccessType[string(slavePK)]
 	return value, ok
-}
-
-func (a *AddressState) GetDefault(address []byte) *AddressState {
-	return a
 }
 
 func (a *AddressState) OTSKeyReuse(otsKeyIndex uint64) bool {
@@ -258,7 +253,7 @@ func (a *AddressState) Serialize() ([]byte, error) {
 }
 
 func DeSerializeAddressState(data []byte) (*AddressState, error) {
-	a := &AddressState{}
+	a := &AddressState{&generated.AddressState{}}
 
 	if err := proto.Unmarshal(data, a.data); err != nil {
 		return a, err
