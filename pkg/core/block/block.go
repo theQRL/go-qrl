@@ -72,6 +72,14 @@ type BlockInterface interface {
 	ApplyStateChanges(addressesState map[string]*addressstate.AddressState)
 }
 
+// BlockBareInterface only includes the basics which other components working with Block might need to use.
+// Use it when you're too lazy to make a real Block.
+type BlockBareInterface interface {
+	BlockNumber() uint64
+	HeaderHash() []byte
+	Timestamp() uint64
+}
+
 type Block struct {
 	block       *generated.Block
 	blockheader *BlockHeader

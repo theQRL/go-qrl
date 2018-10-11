@@ -223,7 +223,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 	return true
 }
 
-func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
+func (bh *BlockHeader) ValidateParentChildRelation(parentBlock BlockBareInterface) bool {
 	if parentBlock == nil {
 		bh.log.Warn("Parent Block not found")
 		return false
