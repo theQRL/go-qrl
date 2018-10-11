@@ -1,13 +1,15 @@
 package addressstate
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-qrl/pkg/config"
-	"github.com/theQRL/go-qrl/pkg/misc"
-	"github.com/theQRL/go-qrl/test/helper"
 	"math"
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/theQRL/go-qrl/pkg/config"
+	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/test/helper"
 )
 
 type TestAddressState struct {

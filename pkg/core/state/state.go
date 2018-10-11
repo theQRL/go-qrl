@@ -25,7 +25,7 @@ type State struct {
 	db	*db.LDB
 
 	lock sync.Mutex
-	log log.LoggerInterface
+	log *log.Logger
 	config *c.Config
 }
 
@@ -874,10 +874,10 @@ func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 
 	nthBlockTimestamp := nthBlock.Timestamp()
 	if countHeaderHashes < uint64(s.config.Dev.NMeasurement) {
-		nthBlockTimestamp -= s.config.Dev.MiningSetpointBlocktime
+		nthBlockTimestamp -= uint64(s.config.Dev.MiningSetpointBlocktime)
 	}
 
-	return uint64(blockTimestamp - nthBlockTimestamp) / countHeaderHashes, nil
+	return uint64(blockTimestamp) - nthBlockTimestamp / countHeaderHashes, nil
 }
 
 func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) error {
