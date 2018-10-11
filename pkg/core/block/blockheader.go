@@ -18,7 +18,6 @@ import (
 )
 
 type BlockHeaderInterface interface {
-
 	BlockNumber() uint64
 
 	Epoch() uint64
@@ -168,10 +167,10 @@ func (bh *BlockHeader) SetNonces(miningNonce uint32, extraNonce uint64) {
 }
 
 func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
-	miningNonceBytes := blob[bh.NonceOffset():bh.NonceOffset() + 4]
+	miningNonceBytes := blob[bh.NonceOffset() : bh.NonceOffset()+4]
 	miningNonce := binary.BigEndian.Uint32(miningNonceBytes)
 
-	extraNonceBytes := blob[bh.ExtraNonceOffset():bh.ExtraNonceOffset() + 8]
+	extraNonceBytes := blob[bh.ExtraNonceOffset() : bh.ExtraNonceOffset()+8]
 	extraNonce := binary.BigEndian.Uint64(extraNonceBytes)
 
 	bh.SetNonces(miningNonce, extraNonce)
@@ -210,7 +209,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 		return false
 	}
 
-	if bh.BlockReward() + bh.FeeReward() != coinbaseAmount {
+	if bh.BlockReward()+bh.FeeReward() != coinbaseAmount {
 		bh.log.Warn("Block_reward + fee_reward doesnt sums up to coinbase_amount")
 		return false
 	}
@@ -229,7 +228,7 @@ func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
 		return false
 	}
 
-	if parentBlock.BlockNumber() != bh.BlockNumber() - 1 {
+	if parentBlock.BlockNumber() != bh.BlockNumber()-1 {
 		bh.log.Warn("Block numbers out of sequence: failed validation")
 		return false
 	}
@@ -273,7 +272,7 @@ func (bh *BlockHeader) FromJSON(jsonData string) *BlockHeader {
 	return bh
 }
 
-func (bh *BlockHeader) JSON() (string, error)  {
+func (bh *BlockHeader) JSON() (string, error) {
 	ma := jsonpb.Marshaler{}
 	return ma.MarshalToString(bh.blockHeader)
 }
@@ -281,8 +280,8 @@ func (bh *BlockHeader) JSON() (string, error)  {
 func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64) *BlockHeader {
 	bh := &BlockHeader{
 		blockHeader: &generated.BlockHeader{BlockNumber: blockNumber},
-		config: c.GetConfig(),
-		log: log.GetLogger(),
+		config:      c.GetConfig(),
+		log:         log.GetLogger(),
 	}
 
 	if bh.blockHeader.BlockNumber != 0 {
@@ -297,7 +296,7 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 			return nil
 		}
 	} else {
-		bh.blockHeader.TimestampSeconds = prevBlockTimestamp  // Set timestamp for genesis block
+		bh.blockHeader.TimestampSeconds = prevBlockTimestamp // Set timestamp for genesis block
 	}
 
 	bh.blockHeader.HashHeaderPrev = prevBlockHeaderHash
@@ -314,5 +313,5 @@ func BlockRewardCalc(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}
-	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply - config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
+	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply-config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
 }
