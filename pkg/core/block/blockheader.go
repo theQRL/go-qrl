@@ -327,7 +327,7 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 	return bh
 }
 
-func BlockRewardCalc(blockNumber uint64, config *c.Config) uint64 {
+var BlockRewardCalc = func(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}
