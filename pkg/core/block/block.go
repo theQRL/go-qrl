@@ -197,7 +197,7 @@ func DeSerializeBlock(data []byte) (*Block, error) {
 }
 
 func (b *Block) PrepareAddressesList() map[string]*addressstate.AddressState {
-	var addressesState map[string]*addressstate.AddressState
+	var addressesState = make(map[string]*addressstate.AddressState)
 	for _, protoTX := range b.Transactions() {
 		tx := transactions.ProtoToTransaction(protoTX)
 		tx.SetAffectedAddress(addressesState)
