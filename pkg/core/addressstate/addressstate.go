@@ -218,9 +218,11 @@ func CreateAddressState(address []byte, nonce uint64, balance uint64, otsBitfiel
 	a.data.Balance = balance
 	a.data.OtsBitfield = otsBitfield
 	for i := 0; i < int(c.GetConfig().Dev.OtsBitFieldSize); i++ {
-		a.data.OtsBitfield[i] = make([]byte, 8)
-		for j := 0; j < 8; j++ {
-			a.data.OtsBitfield[i][j] = otsBitfield[i][j]
+		if a.data.OtsBitfield[i] == nil {
+			a.data.OtsBitfield[i] = make([]byte, 8)
+			for j := 0; j < 8; j++ {
+				a.data.OtsBitfield[i][j] = otsBitfield[i][j]
+			}
 		}
 	}
 	a.data.OtsCounter = otsCounter
