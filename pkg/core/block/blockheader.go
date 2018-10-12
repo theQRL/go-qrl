@@ -17,6 +17,7 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
+// TODO: this Interface is outdated and does not correspond to BlockHeader method signatures
 type BlockHeaderInterface interface {
 	BlockNumber() uint64
 
@@ -24,7 +25,7 @@ type BlockHeaderInterface interface {
 
 	Timestamp() uint64
 
-	Headerhash() []byte
+	HeaderHash() []byte
 
 	PrevHeaderHash() []byte
 
@@ -52,17 +53,17 @@ type BlockHeaderInterface interface {
 
 	SetMiningNonceFromBlob([]byte)
 
-	Validate(uint64, uint64) bool
+	Validate(uint64, uint64, []byte) bool
 
-	ValidateParentChildRelation(block Block) bool
+	ValidateParentChildRelation(BlockBareInterface) bool
 
 	VerifyBlob([]byte) bool
 
 	SetPBData(*generated.BlockHeader)
 
-	FromJSON(string) BlockHeader
+	FromJSON(string) *BlockHeader
 
-	JSON() string
+	JSON() (string, error)
 }
 
 type BlockHeader struct {
