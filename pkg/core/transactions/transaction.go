@@ -97,6 +97,8 @@ func (tx *Transaction) PBData() *generated.Transaction {
 
 func (tx *Transaction) SetPBData(pbData *generated.Transaction) {
 	tx.data = pbData
+	tx.config = c.GetConfig()
+	tx.log = log.GetLogger()
 }
 
 func (tx *Transaction) Type() {
@@ -150,7 +152,7 @@ func (tx *Transaction) FromPBdata(pbdata generated.Transaction) {
 
 func (tx *Transaction) GetSlave() []byte {
 	pk := tx.PK()
-	upk := misc.UcharVector{}
+	upk := misc.NewUCharVector()
 	upk.AddBytes(pk)
 	upk.New(goqrllib.QRLHelperGetAddress(upk.GetData()))
 
