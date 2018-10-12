@@ -216,7 +216,7 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 
 	coinbase.ApplyStateChanges(addressesState)
 
-	for i := 1; i <= len(b.Transactions()); i++ {
+	for i := 1; i < len(b.Transactions()); i++ {
 		tx := transactions.ProtoToTransaction(b.Transactions()[i])
 
 		if !tx.Validate(true) {
