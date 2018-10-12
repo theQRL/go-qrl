@@ -323,7 +323,7 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	}
 
 	coinbaseTX := transactions.CoinBase{}
-	coinbaseTX.FromPBdata(*b.Transactions()[0])
+	coinbaseTX.SetPBData(b.Transactions()[0])
 	coinbaseAmount := coinbaseTX.Amount()
 
 	if !coinbaseTX.ValidateExtendedCoinbase(b.BlockNumber()) {
