@@ -114,6 +114,10 @@ func (tx *Transaction) Nonce() uint64 {
 	return tx.data.Nonce
 }
 
+func (tx *Transaction) SetNonce(n uint64) {
+	tx.data.Nonce = n
+}
+
 func (tx *Transaction) MasterAddr() []byte {
 	return tx.data.MasterAddr
 }
