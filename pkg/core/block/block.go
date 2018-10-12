@@ -2,7 +2,6 @@ package block
 
 import (
 	"container/list"
-
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
 	"github.com/theQRL/go-qrl/pkg/pow"
 )
 
@@ -344,4 +344,8 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	}
 
 	return true
+}
+
+func (b *Block) SetNTP(n ntp.NTPInterface) {
+	b.blockheader.Option(MockNTP(n))
 }
