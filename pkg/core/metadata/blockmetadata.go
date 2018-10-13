@@ -72,9 +72,11 @@ func (b *BlockMetaData) UpdateLastHeaderHashes(parentLastNHeaderHashes [][]byte,
 }
 
 func CreateBlockMetadata(blockDifficulty []byte, totalDifficulty []byte, childHeaderHashes [][]byte) *BlockMetaData {
-	b := &BlockMetaData{}
-	b.log = log.GetLogger()
-	b.config = config.GetConfig()
+	b := &BlockMetaData{
+		data:   &generated.BlockMetaData{},
+		log:    log.GetLogger(),
+		config: config.GetConfig(),
+	}
 
 	b.data.BlockDifficulty = blockDifficulty
 	b.data.CumulativeDifficulty = totalDifficulty

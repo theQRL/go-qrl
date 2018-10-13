@@ -105,7 +105,7 @@ func MerkleTXHash(hashes list.List) []byte {
 			if h.Len() == z+1 {
 				nextLayer.PushBack(e.Value.([]byte))
 			} else {
-				tmp := UcharVector{}
+				tmp := NewUCharVector()
 				tmp.AddBytes(e.Value.([]byte))
 				e := e.Next()
 				tmp.AddBytes(e.Value.([]byte))

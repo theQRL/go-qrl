@@ -17,6 +17,11 @@ type NTP struct {
 	config     *config.Config
 }
 
+type NTPInterface interface {
+	UpdateTime() error
+	Time() uint64
+}
+
 func (n *NTP) UpdateTime() error {
 	n.lock.Lock()
 	defer n.lock.Unlock()

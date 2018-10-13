@@ -17,6 +17,7 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
+// TODO: this Interface is outdated and does not correspond to BlockHeader method signatures
 type BlockHeaderInterface interface {
 	BlockNumber() uint64
 
@@ -24,7 +25,7 @@ type BlockHeaderInterface interface {
 
 	Timestamp() uint64
 
-	Headerhash() []byte
+	HeaderHash() []byte
 
 	PrevHeaderHash() []byte
 
@@ -52,17 +53,17 @@ type BlockHeaderInterface interface {
 
 	SetMiningNonceFromBlob([]byte)
 
-	Validate(uint64, uint64) bool
+	Validate(uint64, uint64, []byte) bool
 
-	ValidateParentChildRelation(block Block) bool
+	ValidateParentChildRelation(BlockBareInterface) bool
 
 	VerifyBlob([]byte) bool
 
 	SetPBData(*generated.BlockHeader)
 
-	FromJSON(string) BlockHeader
+	FromJSON(string) *BlockHeader
 
-	JSON() string
+	JSON() (string, error)
 }
 
 type BlockHeader struct {
@@ -70,6 +71,7 @@ type BlockHeader struct {
 
 	config *c.Config
 	log    log.LoggerInterface
+	n      ntp.NTPInterface
 }
 
 func (bh *BlockHeader) BlockNumber() uint64 {
@@ -164,6 +166,7 @@ func (bh *BlockHeader) UpdateMerkleRoot(hashedtransactions []byte) {
 func (bh *BlockHeader) SetNonces(miningNonce uint32, extraNonce uint64) {
 	bh.blockHeader.MiningNonce = miningNonce
 	bh.blockHeader.ExtraNonce = extraNonce
+	bh.blockHeader.HashHeader = bh.GenerateHeaderHash()
 }
 
 func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
@@ -177,8 +180,7 @@ func (bh *BlockHeader) SetMiningNonceFromBlob(blob []byte) {
 }
 
 func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkleRoot []byte) bool {
-	n := ntp.GetNTP()
-	currentTime := uint64(n.Time())
+	currentTime := bh.n.Time()
 	allowedTimestamp := currentTime + uint64(bh.config.Dev.BlockLeadTimestamp)
 	if bh.Timestamp() > allowedTimestamp {
 		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")
@@ -222,7 +224,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 	return true
 }
 
-func (bh *BlockHeader) ValidateParentChildRelation(parentBlock *Block) bool {
+func (bh *BlockHeader) ValidateParentChildRelation(parentBlock BlockBareInterface) bool {
 	if parentBlock == nil {
 		bh.log.Warn("Parent Block not found")
 		return false
@@ -277,11 +279,28 @@ func (bh *BlockHeader) JSON() (string, error) {
 	return ma.MarshalToString(bh.blockHeader)
 }
 
-func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64) *BlockHeader {
+func (bh *BlockHeader) Option(options ...func(*BlockHeader)) {
+	for _, opt := range options {
+		opt(bh)
+	}
+}
+
+func MockNTP(n ntp.NTPInterface) func(*BlockHeader) {
+	return func(bh *BlockHeader) {
+		bh.n = n
+	}
+}
+
+func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlockTimestamp uint64, merkleRoot []byte, feeReward uint64, timestamp uint64, options ...func(*BlockHeader)) *BlockHeader {
 	bh := &BlockHeader{
 		blockHeader: &generated.BlockHeader{BlockNumber: blockNumber},
 		config:      c.GetConfig(),
 		log:         log.GetLogger(),
+		n:           ntp.GetNTP(),
+	}
+
+	for _, option := range options {
+		option(bh)
 	}
 
 	if bh.blockHeader.BlockNumber != 0 {
@@ -309,7 +328,7 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 	return bh
 }
 
-func BlockRewardCalc(blockNumber uint64, config *c.Config) uint64 {
+var BlockRewardCalc = func(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}

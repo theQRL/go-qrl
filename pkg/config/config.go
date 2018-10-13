@@ -102,7 +102,7 @@ type DevConfig struct {
 
 	DefaultNonce            uint8
 	DefaultAccountBalance   uint64
-	MiningSetpointBlocktime uint32
+	MiningSetpointBlocktime uint64
 
 	DBName              string
 	PeersFilename       string
@@ -114,7 +114,7 @@ type DevConfig struct {
 	Token *TokenConfig
 
 	NMeasurement uint8
-	KP           uint8
+	KP           int64
 
 	NumberOfBlockAnalyze uint8
 	SizeMultiplier       float64

@@ -2,7 +2,6 @@ package block
 
 import (
 	"container/list"
-
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
 	"github.com/theQRL/go-qrl/pkg/pow"
 )
 
@@ -70,6 +70,14 @@ type BlockInterface interface {
 	ValidateParentChildRelation(block generated.Block) bool
 
 	ApplyStateChanges(addressesState map[string]*addressstate.AddressState)
+}
+
+// BlockBareInterface only includes the basics which other components working with Block might need to use.
+// Use it when you're too lazy to make a real Block.
+type BlockBareInterface interface {
+	BlockNumber() uint64
+	HeaderHash() []byte
+	Timestamp() uint64
 }
 
 type Block struct {
@@ -174,7 +182,10 @@ func (b *Block) Serialize() ([]byte, error) {
 }
 
 func DeSerializeBlock(data []byte) (*Block, error) {
-	b := &Block{}
+	b := &Block{
+		block:       &generated.Block{},
+		blockheader: &BlockHeader{},
+	}
 
 	if err := proto.Unmarshal(data, b.block); err != nil {
 		return b, err
@@ -186,7 +197,7 @@ func DeSerializeBlock(data []byte) (*Block, error) {
 }
 
 func (b *Block) PrepareAddressesList() map[string]*addressstate.AddressState {
-	var addressesState map[string]*addressstate.AddressState
+	var addressesState = make(map[string]*addressstate.AddressState)
 	for _, protoTX := range b.Transactions() {
 		tx := transactions.ProtoToTransaction(protoTX)
 		tx.SetAffectedAddress(addressesState)
@@ -205,7 +216,7 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 
 	coinbase.ApplyStateChanges(addressesState)
 
-	for i := 1; i <= len(b.Transactions()); i++ {
+	for i := 1; i < len(b.Transactions()); i++ {
 		tx := transactions.ProtoToTransaction(b.Transactions()[i])
 
 		if !tx.Validate(true) {
@@ -312,7 +323,7 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	}
 
 	coinbaseTX := transactions.CoinBase{}
-	coinbaseTX.FromPBdata(*b.Transactions()[0])
+	coinbaseTX.SetPBData(b.Transactions()[0])
 	coinbaseAmount := coinbaseTX.Amount()
 
 	if !coinbaseTX.ValidateExtendedCoinbase(b.BlockNumber()) {
@@ -333,4 +344,8 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	}
 
 	return true
+}
+
+func (b *Block) SetNTP(n ntp.NTPInterface) {
+	b.blockheader.Option(MockNTP(n))
 }
