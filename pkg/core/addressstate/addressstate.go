@@ -1,6 +1,7 @@
 package addressstate
 
 import (
+	"github.com/theQRL/go-qrl/pkg/log"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -130,6 +131,9 @@ func (a *AddressState) SlavePKSAccessType() map[string]uint32 {
 
 func (a *AddressState) UpdateTokenBalance(tokenTxHash []byte, balance uint64, subtract bool) {
 	strTokenTxHash := misc.Bin2HStr(tokenTxHash)
+	if a.data.Tokens == nil {
+		a.data.Tokens = make(map[string]uint64)
+	}
 	if subtract {
 		a.data.Tokens[strTokenTxHash] -= balance
 	} else {
@@ -156,6 +160,9 @@ func (a *AddressState) IsTokenExists(tokenTxHash []byte) bool {
 }
 
 func (a *AddressState) AddSlavePKSAccessType(slavePK []byte, accessType uint32) {
+	if a.data.SlavePksAccessType == nil {
+		a.data.SlavePksAccessType = make(map[string]uint32)
+	}
 	a.data.SlavePksAccessType[string(slavePK)] = accessType
 }
 
@@ -250,14 +257,21 @@ func GetDefaultAddressState(address []byte) *AddressState {
 }
 
 func (a *AddressState) Serialize() ([]byte, error) {
-	return proto.Marshal(a.data)
+	data, err := proto.Marshal(a.data)
+	if err != nil {
+		l := log.GetLogger()
+		l.Info("Error while serializing data",
+			"error", err.Error())
+		return nil, err
+	}
+	return data, err
 }
 
 func DeSerializeAddressState(data []byte) (*AddressState, error) {
 	a := &AddressState{&generated.AddressState{}}
 
 	if err := proto.Unmarshal(data, a.data); err != nil {
-		return a, err
+		return nil, err
 	}
 
 	return a, nil
