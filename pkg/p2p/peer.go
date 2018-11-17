@@ -1,8 +1,11 @@
 package p2p
 
 import (
-	"encoding/binary"
+	"github.com/theQRL/go-qrl/pkg/core/block"
+	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
 	"io"
+	"math/big"
 	"net"
 	"sync"
 	"time"
@@ -16,96 +19,274 @@ import (
 	"github.com/theQRL/go-qrl/pkg/log"
 )
 
+type MRDataConn struct {
+	mrData *generated.MRData
+	peer   *Peer
+}
+
 type Peer struct {
 	conn    net.Conn
 	inbound bool
 
 	chain *chain.Chain
 
-	wg     sync.WaitGroup
-	closed chan struct{}
-	disc   chan DiscReason
-	log    log.LoggerInterface
-	filter *bloom.BloomFilter
-	config *config.Config
+	wg                        sync.WaitGroup
+	closed                    chan struct{}
+	disc                      chan DiscReason
+	log                       log.LoggerInterface
+	filter                    *bloom.BloomFilter
+	mr                        *MessageReceipt
+	config                    *config.Config
+	ntp                       *ntp.NTP
+	chainState                *generated.NodeChainState
+	blockAndPeerChan          chan *BlockAndPeer
+	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
+	mrDataConn                chan *MRDataConn
+
+	inCounter           uint64
+	outCounter          uint64
+	lastRateLimitUpdate uint64
+	bytesSent           uint64
+	connectionTime      uint64
+	messagePriority     map[generated.LegacyMessage_FuncName]uint64
+	outgoingQueue       *PriorityQueue
 }
 
-func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
 	p := &Peer{
-		conn:    *conn,
-		inbound: inbound,
-		chain:   chain,
-		log:     log.GetLogger(),
-		filter:  filter,
-		config:  config.GetConfig(),
+		conn:                      *conn,
+		inbound:                   inbound,
+		chain:                     chain,
+		log:                       log.GetLogger(),
+		filter:                    filter,
+		mr:                        mr,
+		config:                    config.GetConfig(),
+		ntp:                       ntp.GetNTP(),
+		mrDataConn:                mrDataConn,
+		blockAndPeerChan:          blockAndPeerChan,
+		nodeHeaderHashAndPeerChan: nodeHeaderHashAndPeerChan,
+		connectionTime:            ntp.GetNTP().Time(),
+		messagePriority:           messagePriority,
+		outgoingQueue:             &PriorityQueue{},
 	}
+
+	p.log.Info("New Peer connected",
+		"Peer Addr", p.conn.RemoteAddr().String())
 	return p
 }
 
-func (p *Peer) WriteMsg(msg Msg) error {
-	data, err := proto.Marshal(msg.msg)
-	if err != nil {
-		p.log.Error("Error Parsing Data")
-		return err
+func (p *Peer) updateCounters() {
+	timeDiff := p.ntp.Time() - p.lastRateLimitUpdate
+	if timeDiff > 60 {
+		p.outCounter = 0
+		p.inCounter = 0
+		p.lastRateLimitUpdate = p.ntp.Time()
 	}
+}
 
-	bs := make([]byte, 4)
-	binary.BigEndian.PutUint32(bs, uint32(len(data)))
-	out := append(bs, data...)
-
-	_, err = p.conn.Write(out)
-	if err != nil {
-		p.log.Error("Error while writing message on socket", "error", err)
+func (p *Peer) Send(msg *Msg) error {
+	priority, ok := p.messagePriority[msg.msg.FuncName]
+	if !ok {
+		p.log.Warn("Unexpected FuncName while SEND",
+			"FuncName", msg.msg.FuncName)
+		return nil
 	}
+	outgoingMsg := CreateOutgoingMessage(priority, msg.msg)
+	if p.outgoingQueue.Full() {
+		p.log.Info("Outgoing Queue Full: Skipping Message")
+		return nil
+	}
+	p.outgoingQueue.Push(outgoingMsg)
+	p.SendNext()
 	return nil
 }
 
-func (p *Peer) ReadMsg() (msg Msg, err error) {
+func (p *Peer) SendNext() error {
+	p.updateCounters()
+	if float32(p.outCounter) >= float32(p.config.User.Node.PeerRateLimit) * 0.9 {
+		p.log.Info("Send Next Cancelled as",
+			"p.outcounter", p.outCounter,
+			"rate limit", float32(p.config.User.Node.PeerRateLimit) * 0.9)
+		return nil
+	}
+
+	for ;p.bytesSent < p.config.Dev.MaxBytesOut; {
+		data := p.outgoingQueue.Pop()
+		if data == nil {
+			return nil
+		}
+		om := data.(*OutgoingMessage)
+		//outgoingBytes, msg := om.bytesMessage, om.msg
+		outgoingBytes, _ := om.bytesMessage, om.msg
+
+		if outgoingBytes == nil {
+			p.log.Info("Outgoing bytes Nil")
+			return nil
+		}
+		p.bytesSent += uint64(len(outgoingBytes))
+		_, err := p.conn.Write(outgoingBytes)
+		//p.log.Info(">>>>>>>>>>>>>>>>>>> Sent message to ",
+		//	"peer", p.conn.RemoteAddr().String(),
+		//	"type", msg.FuncName)
+		if err != nil {
+			p.log.Error("Error while writing message on socket", "error", err)
+			p.Disconnect(DiscNetworkError)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (p *Peer) ReadMsg() (msg *Msg, size uint32, err error) {
+	// TODO: Add Read timeout
+	msg = &Msg{}
 	buf := make([]byte, 4)
 	if _, err := io.ReadFull(p.conn, buf); err != nil {
-		return msg, err
+		return msg, 0, err
 	}
-	size := convertBytesToLong(buf)
+	size = misc.ConvertBytesToLong(buf)
 	buf = make([]byte, size)
 	if _, err := io.ReadFull(p.conn, buf); err != nil {
-		return msg, err
+		p.log.Info("---------_>Error",
+			"error", err.Error())
+		return nil, 0, err
 	}
 	message := &generated.LegacyMessage{}
 	err = proto.Unmarshal(buf, message)
 	msg.msg = message
-	return msg, err
+	return msg, size+4, err  // 4 Byte Added for MetaData that includes the size of actual data
 }
 
 func (p *Peer) readLoop(errc chan<- error) {
 	defer p.wg.Done()
 	p.log.Debug("initiating readloop")
+
 	for {
-		msg, err := p.ReadMsg()
+		p.updateCounters()
+		totalBytesRead := uint32(0)
+		msg, size, err := p.ReadMsg()
 		if err != nil {
 			errc <- err
 			return
 		}
 		msg.ReceivedAt = time.Now()
-		p.log.Debug("Received msg")
 		if err = p.handle(msg); err != nil {
 			errc <- err
 			return
 		}
+		p.inCounter += 1
+		if float32(p.inCounter) > 2.2 * float32(p.config.User.Node.PeerRateLimit) {
+			p.log.Warn("Rate Limit Hit")
+			p.Disconnect(DiscProtocolError)
+			return
+		}
+
+		totalBytesRead += size
+		if msg.msg.FuncName != generated.LegacyMessage_P2P_ACK {
+			p2pAck := &generated.P2PAcknowledgement{
+				BytesProcessed: totalBytesRead,
+			}
+			out := &Msg{}
+			out.msg = &generated.LegacyMessage{
+				FuncName: generated.LegacyMessage_P2P_ACK,
+				Data: &generated.LegacyMessage_P2PAckData{
+					P2PAckData: p2pAck,
+				},
+			}
+			err = p.Send(out)
+		}
 	}
 }
 
-func (p *Peer) pingLoop() {
+func (p *Peer) monitorChainState() error {
 	defer p.wg.Done()
+	for ;; {
+		time.Sleep(30 * time.Second) // Move 30 to Config
+		currentTime := p.ntp.Time()
+		delta := int64(currentTime)
+		if p.chainState != nil {
+			delta -= int64(p.chainState.Timestamp)
+		} else {
+			delta -= int64(p.connectionTime)
+		}
+		if delta > int64(p.config.User.ChainStateTimeout) {
+			p.log.Warn("Disconnecting Peer due to Ping Timeout",
+				"delta", delta,
+				"currentTime", currentTime)
+			p.Disconnect(DiscProtocolError)
+			return nil
+		}
 
+		lastBlock := p.chain.GetLastBlock()
+		blockMetaData, err := p.chain.GetBlockMetaData(lastBlock.HeaderHash())
+		if err != nil {
+			p.log.Warn("Ping Failed Disconnecting",
+				"Peer", p.conn.RemoteAddr().String())
+			p.Disconnect(DiscNetworkError)
+			return err
+		}
+		chainStateData := &generated.NodeChainState{
+			BlockNumber:          lastBlock.BlockNumber(),
+			HeaderHash:           lastBlock.HeaderHash(),
+			CumulativeDifficulty: blockMetaData.TotalDifficulty(),
+			Version:              p.config.Dev.Version,
+			Timestamp:            p.ntp.Time(),
+		}
+		out := &Msg{}
+		out.msg = &generated.LegacyMessage{
+			FuncName: generated.LegacyMessage_CHAINSTATE,
+			Data: &generated.LegacyMessage_ChainStateData{
+				ChainStateData: chainStateData,
+			},
+		}
+		err = p.Send(out)
+
+		if p.chainState == nil {
+			continue
+		}
+
+		peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
+		localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
+		if peerCumulativeDifficulty.Cmp(localCumulativeDifficulty) > 0 {
+
+			startBlockNumber := uint64(0)
+			maxStartBlockNumber := uint64(0)
+			if lastBlock.BlockNumber() > p.config.Dev.ReorgLimit {
+				maxStartBlockNumber = lastBlock.BlockNumber() - p.config.Dev.ReorgLimit
+			}
+			if maxStartBlockNumber > startBlockNumber {
+				startBlockNumber = maxStartBlockNumber
+			}
+			nodeHeaderHash := &generated.NodeHeaderHash{
+				BlockNumber: startBlockNumber,
+			}
+			out := &Msg{}
+			out.msg = &generated.LegacyMessage{
+				FuncName: generated.LegacyMessage_HEADERHASHES,
+				Data: &generated.LegacyMessage_NodeHeaderHash{
+					NodeHeaderHash: nodeHeaderHash,
+				},
+			}
+			p.Send(out)
+		}
+
+		if err != nil {
+			p.log.Info("Error while sending ChainState",
+				"peer", p.conn.RemoteAddr().String())
+			return err
+		}
+	}
 }
 
-func (p *Peer) handle(msg Msg) error {
+func (p *Peer) handle(msg *Msg) error {
 	switch msg.msg.FuncName {
+
 	case generated.LegacyMessage_VE:
 		p.log.Debug("Received VE MSG")
 		if msg.msg.GetVeData() == nil {
-			out := Msg{}
-			veData := generated.VEData{
+			out := &Msg{}
+			veData := &generated.VEData{
 				Version:         "",
 				GenesisPrevHash: []byte("0"),
 				RateLimit:       100,
@@ -113,10 +294,10 @@ func (p *Peer) handle(msg Msg) error {
 			out.msg = &generated.LegacyMessage{
 				FuncName: generated.LegacyMessage_VE,
 				Data: &generated.LegacyMessage_VeData{
-					VeData: &veData,
+					VeData: veData,
 				},
 			}
-			err := p.WriteMsg(out)
+			err := p.Send(out)
 			return err
 		}
 		veData := msg.msg.GetVeData()
@@ -125,43 +306,75 @@ func (p *Peer) handle(msg Msg) error {
 
 	case generated.LegacyMessage_PL:
 		p.log.Debug("Received PL MSG")
+
 	case generated.LegacyMessage_PONG:
 		p.log.Debug("Received PONG MSG")
+
 	case generated.LegacyMessage_MR:
 		mrData := msg.msg.GetMrData()
-		if p.filter.Test(mrData.Hash) {
-			return nil
+		mrDataConn := &MRDataConn{
+			mrData,
+			p,
+		}
+		p.mrDataConn <- mrDataConn
+
+	case generated.LegacyMessage_SFM:
+		mrData := msg.msg.GetMrData()
+		msg := p.mr.Get(&mrData.Type, mrData.Hash)
+		if msg != nil {
+			out := &Msg{}
+			out.msg = msg
+			p.Send(out)
 		}
 
-		switch mrData.Type {
-		case generated.LegacyMessage_BK:
-			if mrData.BlockNumber > p.chain.Height()+uint64(p.config.Dev.MaxMarginBlockNumber) {
-				p.log.Debug("Skipping block #%s as beyond lead limit", "Block #", mrData.BlockNumber)
-				return nil
-			}
-			if mrData.BlockNumber < p.chain.Height()-uint64(p.config.Dev.MinMarginBlockNumber) {
-				p.log.Debug("'Skipping block #%s as beyond the limit", "Block #", mrData.BlockNumber)
-				return nil
-			}
-			_, err := p.chain.GetBlock(mrData.PrevHeaderhash)
-			if err != nil {
-				p.log.Debug("Missing Parent Block", "Block:", mrData.Hash,
-					"Parent Block ", mrData.PrevHeaderhash)
-				return nil
-			}
-			// Request for full message
-			// Check if its already being feeded by any other peer
-		case generated.LegacyMessage_TX:
-			// Check transactions pool Size,
-			// if full then ignore
-		default:
-			//connection lost
-		}
-	case generated.LegacyMessage_SFM:
 	case generated.LegacyMessage_BK:
+		b := msg.msg.GetBlock()
+		p.HandleBlock(b)
+
 	case generated.LegacyMessage_FB:
+		fbData := msg.msg.GetFbData()
+		blockNumber := fbData.Index
+		p.log.Info("Fetch Block Request",
+			"BlockNumber", blockNumber,
+			"Peer", p.conn.RemoteAddr().String())
+
+		h := p.chain.Height()
+		if blockNumber > h {
+			p.log.Info("Disconnecting Peer, as peer requested for block more than current block height",
+				"Requested Block Number", blockNumber,
+				"Current Chain Height", h)
+			p.Disconnect(DiscProtocolError)
+		}
+
+		b, err := p.chain.GetBlockByNumber(blockNumber)
+		if err == nil {
+			p.log.Info("Disconnecting Peer, as GetBlockByNumber returned nil")
+			p.Disconnect(DiscProtocolError)
+		}
+		pbData := &generated.PBData{
+			Block: b.PBData(),
+		}
+		out := &Msg{}
+		out.msg = &generated.LegacyMessage{
+			FuncName: generated.LegacyMessage_PB,
+			Data: &generated.LegacyMessage_PbData{
+				PbData: pbData,
+			},
+		}
+		p.Send(out)
+
 	case generated.LegacyMessage_PB:
+		pbData := msg.msg.GetPbData()
+		if pbData.Block == nil {
+			p.log.Info("Disconnecting Peer, as no block sent for Push Block")
+			p.Disconnect(DiscProtocolError)
+		}
+
+		b := block.BlockFromPBData(pbData.Block)
+		p.blockAndPeerChan <- &BlockAndPeer{b, p}
+
 	case generated.LegacyMessage_BH:
+		p.log.Warn("BH has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_TX:
 	case generated.LegacyMessage_LT:
 	case generated.LegacyMessage_EPH:
@@ -170,11 +383,131 @@ func (p *Peer) handle(msg Msg) error {
 	case generated.LegacyMessage_TT:
 	case generated.LegacyMessage_SL:
 	case generated.LegacyMessage_SYNC:
+		p.log.Warn("SYNC has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_CHAINSTATE:
+		chainStateData := msg.msg.GetChainStateData()
+		p.HandleChainState(chainStateData)
 	case generated.LegacyMessage_HEADERHASHES:
+		nodeHeaderHash := msg.msg.GetNodeHeaderHash()
+		if len(nodeHeaderHash.Headerhashes) == 0 {
+			outNodeHeaderHash, err := p.chain.GetHeaderHashes(nodeHeaderHash.BlockNumber)
+			if err != nil {
+				p.log.Warn("Error in GetHeaderHashes",
+					"Blocknumber", nodeHeaderHash.BlockNumber,
+					"peer", p.conn.RemoteAddr().String())
+				return nil
+			}
+			out := &Msg{}
+			out.msg = &generated.LegacyMessage{
+				FuncName: generated.LegacyMessage_HEADERHASHES,
+				Data: &generated.LegacyMessage_NodeHeaderHash{
+					NodeHeaderHash: outNodeHeaderHash,
+				},
+			}
+			p.Send(out)
+		} else {
+			p.log.Info(">>>>>Triggering Download")
+			nodeHeaderHashAndPeer := &NodeHeaderHashAndPeer {
+				nodeHeaderHash,
+				p,
+			}
+			p.nodeHeaderHashAndPeerChan <- nodeHeaderHashAndPeer
+		}
 	case generated.LegacyMessage_P2P_ACK:
+		p2pAckData := msg.msg.GetP2PAckData()
+		p.bytesSent -= uint64(p2pAckData.BytesProcessed)
+		if p.bytesSent < 0 {
+			p.log.Warn("Disconnecting Peer due to negative bytes sent",
+				"bytesSent", p.bytesSent,
+				"BytesProcessed", p2pAckData.BytesProcessed)
+			p.Disconnect(DiscProtocolError)
+			return DiscProtocolError
+		}
+		p.SendNext()
 	}
 	return nil
+}
+
+func (p *Peer) HandleBlock(b *generated.Block) {
+	// TODO: Validate Message
+	//recvBlock := block.BlockFromPBData(b)
+	p.log.Info("Received Block from ip:port block_number block_headerhash")
+
+}
+
+func (p *Peer) HandleChainState(nodeChainState *generated.NodeChainState) {
+	p.chainState = nodeChainState
+	p.chainState.Timestamp = p.ntp.Time()
+	p.log.Info("Chain State updated")
+}
+
+func (p *Peer) SendFetchBlock(blockNumber uint64) {
+	p.log.Info("Fetching",
+		"Block #", blockNumber,
+		"Peer", p.conn.RemoteAddr().String())
+	out := &Msg{}
+	fbData := &generated.FBData{
+		Index:blockNumber,
+	}
+	out.msg = &generated.LegacyMessage{
+		FuncName: generated.LegacyMessage_FB,
+		Data: &generated.LegacyMessage_FbData{
+			FbData: fbData,
+		},
+	}
+	p.Send(out)
+}
+
+func (p *Peer) SendPeerList() {
+	out := &Msg{}
+	plData := &generated.PLData{
+		PeerIps:[]string{},
+		PublicPort:19000,
+	}
+	out.msg = &generated.LegacyMessage{
+		FuncName: generated.LegacyMessage_PL,
+		Data: &generated.LegacyMessage_PlData{
+			PlData: plData,
+		},
+	}
+	p.Send(out)
+}
+
+
+func (p *Peer) SendVersion() {
+	out := &Msg{}
+	veData := &generated.VEData{
+		Version:p.config.Dev.Version,
+		GenesisPrevHash:p.config.Dev.Genesis.GenesisPrevHeadehash,
+		RateLimit:p.config.User.Node.PeerRateLimit,
+	}
+	out.msg = &generated.LegacyMessage{
+		FuncName: generated.LegacyMessage_PL,
+		Data: &generated.LegacyMessage_VeData{
+			VeData: veData,
+		},
+	}
+	p.Send(out)
+}
+
+func (p *Peer) SendSync() {
+	out := &Msg{}
+	syncData := &generated.SYNCData{
+		State: "Synced",
+	}
+	out.msg = &generated.LegacyMessage{
+		FuncName: generated.LegacyMessage_SYNC,
+		Data: &generated.LegacyMessage_SyncData{
+			SyncData: syncData,
+		},
+	}
+	p.Send(out)
+}
+
+func (p *Peer) handshake() {
+	p.SendPeerList()
+	// p.SendVersion()
+	p.SendSync()
 }
 
 func (p *Peer) run() (remoteRequested bool, err error) {
@@ -185,8 +518,9 @@ func (p *Peer) run() (remoteRequested bool, err error) {
 		reason     DiscReason
 	)
 	p.wg.Add(2)
+	p.handshake()
 	go p.readLoop(readErr)
-	go p.pingLoop()
+	go p.monitorChainState()
 
 loop:
 	for {
@@ -220,8 +554,4 @@ func (p *Peer) Disconnect(reason DiscReason) {
 	case p.disc <- reason:
 	case <-p.closed:
 	}
-}
-
-func convertBytesToLong(b []byte) uint32 {
-	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }
