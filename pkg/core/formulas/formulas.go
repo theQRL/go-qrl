@@ -3,6 +3,7 @@ package formulas
 import (
 	"github.com/ericlagergren/decimal"
 	math2 "github.com/ericlagergren/decimal/math"
+	"github.com/theQRL/go-qrl/pkg/config"
 	"math"
 	"sort"
 	"time"
@@ -77,14 +78,14 @@ func CalcCoeff(coinRemainingAtGenesis uint64) *decimal.Big {
 	return BigDiv(k, &TOTAL_BLOCKS)
 }
 
-func RemainingEmission(coinRemainingAtGenesis uint64, shorPerQuanta uint64, blockNumber uint64) int64 {
+func RemainingEmission(coinRemainingAtGenesis uint64, blockNumber uint64) int64 {
 	/*
 		The simplified formula of RemainingEmission is
 
 		(coinRemainingAtGenesis * shorPerQuanta) * math.Exp(-coeff * blockNumber)
 	*/
 
-	coeff := CalcCoeff(coinRemainingAtGenesis)
+	coeff := CalcCoeff(coinRemainingAtGenesis/config.GetConfig().Dev.ShorPerQuanta)
 	coeff.Neg(coeff)
 
 	bigBlockNumber := decimal.WithPrecision(PythonPrecision)
@@ -94,11 +95,15 @@ func RemainingEmission(coinRemainingAtGenesis uint64, shorPerQuanta uint64, bloc
 
 	coinRemaining := decimal.WithPrecision(PythonPrecision)
 	coinRemaining.Add(coinRemaining, decimal.New(int64(coinRemainingAtGenesis), 0))
-	coinRemaining.Mul(coinRemaining, decimal.New(int64(shorPerQuanta), 0))
 
-	result := decimal.WithPrecision(PythonPrecision)
+	//result := decimal.WithPrecision(PythonPrecision)
+	result := decimal.WithContext(decimal.Context{
+		Precision:PythonPrecision,
+		RoundingMode:decimal.ToNegativeInf,
+	})
 	result.Mul(coinRemaining, coeff)
-	result.Quantize(1)
+	//Quantize in Python is 1 but ROUND_DOWN
+	result.Quantize(1)  // TODO: Critical : Add Unit Tests for block reward till 10 million
 	value, ok := result.Int64()
 
 	if !ok {
@@ -107,8 +112,8 @@ func RemainingEmission(coinRemainingAtGenesis uint64, shorPerQuanta uint64, bloc
 	return value
 }
 
-func BlockReward(coinRemainingAtGenesis uint64, shorPerQuanta uint64, blockNumber uint64) uint64 {
-	return uint64(RemainingEmission(coinRemainingAtGenesis, shorPerQuanta, blockNumber-1) - RemainingEmission(coinRemainingAtGenesis, shorPerQuanta, blockNumber))
+func BlockReward(coinRemainingAtGenesis uint64, blockNumber uint64) uint64 {
+	return uint64(RemainingEmission(coinRemainingAtGenesis, blockNumber-1) - RemainingEmission(coinRemainingAtGenesis, blockNumber))
 }
 
 func Median(data []int) float64 {
