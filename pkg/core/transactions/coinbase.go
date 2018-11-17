@@ -62,7 +62,8 @@ func (tx *CoinBase) ValidateExtendedCoinbase(blockNumber uint64) bool {
 	if !reflect.DeepEqual(tx.MasterAddr(), tx.config.Dev.Genesis.CoinbaseAddress) {
 		tx.log.Warn(
 			"Master address doesnt match with coinbase_address",
-			"MasterAddr", misc.Bin2HStr(tx.MasterAddr()))
+			"MasterAddr", tx.MasterAddr(),
+				"Expected MasterAddr", tx.config.Dev.Genesis.CoinbaseAddress)
 		return false
 	}
 
@@ -110,8 +111,9 @@ func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*addressstate.Ad
 	strAddrFrom := misc.Bin2Qaddress(tx.config.Dev.Genesis.CoinbaseAddress)
 
 	if addrState, ok := addressesState[strAddrFrom]; ok {
-		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].SubtractBalance(tx.Amount())
-		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].AppendTransactionHash(tx.Txhash())
+		masterQAddr := misc.Bin2Qaddress(tx.MasterAddr())
+		addressesState[masterQAddr].SubtractBalance(tx.Amount())
+		addressesState[masterQAddr].AppendTransactionHash(tx.Txhash())
 		addrState.IncreaseNonce()
 	}
 }
@@ -126,15 +128,16 @@ func (tx *CoinBase) RevertStateChanges(addressesState map[string]*addressstate.A
 	strAddrFrom := misc.Bin2Qaddress(tx.config.Dev.Genesis.CoinbaseAddress)
 
 	if addrState, ok := addressesState[strAddrFrom]; ok {
-		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].AddBalance(tx.Amount())
-		addressesState[misc.Bin2Qaddress(tx.MasterAddr())].RemoveTransactionHash(tx.Txhash())
+		masterQAddr := misc.Bin2Qaddress(tx.MasterAddr())
+		addressesState[masterQAddr].AddBalance(tx.Amount())
+		addressesState[masterQAddr].RemoveTransactionHash(tx.Txhash())
 		addrState.DecreaseNonce()
 	}
 }
 
 func (tx *CoinBase) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[misc.Bin2Qaddress(tx.MasterAddr())] = &addressstate.AddressState{}
-	addressesState[misc.Bin2Qaddress(tx.AddrTo())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.MasterAddr())] = nil
+	addressesState[misc.Bin2Qaddress(tx.AddrTo())] = nil
 }
 
 func CreateCoinBase(minerAddress []byte, blockNumber uint64, amount uint64) *CoinBase {

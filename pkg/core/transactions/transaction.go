@@ -160,7 +160,7 @@ func (tx *Transaction) GetSlave() []byte {
 	upk.AddBytes(pk)
 	upk.New(goqrllib.QRLHelperGetAddress(upk.GetData()))
 
-	if reflect.DeepEqual(upk.GetBytes(), tx.AddrFrom()) {
+	if !reflect.DeepEqual(upk.GetBytes(), tx.AddrFrom()) {
 		return upk.GetBytes()
 	}
 
@@ -224,8 +224,8 @@ func (tx *Transaction) RevertStateChanges(addressesState map[string]*addressstat
 }
 
 func (tx *Transaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[misc.Bin2Qaddress(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = nil
+	addressesState[misc.PK2Qaddress(tx.PK())] = nil
 }
 
 func (tx *Transaction) validateCustom() bool {
@@ -296,6 +296,8 @@ func ProtoToTransaction(protoTX *generated.Transaction) TransactionInterface {
 		tx = &TransferTokenTransaction{}
 	case *generated.Transaction_Message_:
 		tx = &MessageTransaction{}
+	case *generated.Transaction_Slave_:
+		tx = &SlaveTransaction{}
 	}
 
 	if tx != nil {

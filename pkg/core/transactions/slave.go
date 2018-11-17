@@ -30,9 +30,11 @@ func (tx *SlaveTransaction) GetHashableBytes() []byte {
 	tmp.Write(tx.MasterAddr())
 	binary.Write(tmp, binary.BigEndian, uint64(tx.Fee()))
 
-	for i := 0; i < len(tx.SlavePKs()); i++ {
-		tmp.Write(tx.SlavePKs()[i])
-		binary.Write(tmp, binary.BigEndian, tx.AccessTypes()[i])
+	slavePKs := tx.SlavePKs()
+	accessTypes := tx.AccessTypes()
+	for i := 0; i < len(slavePKs); i++ {
+		tmp.Write(slavePKs[i])
+		binary.Write(tmp, binary.BigEndian, uint64(accessTypes[i]))
 	}
 
 	tmptxhash := goqrllib.Sha2_256(misc.BytesToUCharVector(tmp.Bytes()))
@@ -147,8 +149,8 @@ func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*addres
 }
 
 func (tx *SlaveTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = nil
+	addressesState[misc.PK2Qaddress(tx.PK())] = nil
 }
 
 func CreateSlaveTransaction(slavePKs [][]byte, accessTypes []uint32, fee uint64, xmssPK []byte, masterAddr []byte) *SlaveTransaction {

@@ -55,7 +55,7 @@ func TestCoinBase_GetHashableBytes(t *testing.T) {
 	blockNumber := uint64(5)
 	amount := uint64(10)
 	coinbase := NewTestCoinBase(qaddress, blockNumber, amount)
-	hashableBytes := "12a07d11db56f75a4661d79cc809fc57e672074a5903438d2e21bf339a7a360f"
+	hashableBytes := "a8fbfa16370009b63fd58aaf8c0f5eb01e555709a25f81cde5f7d760c212a31a"
 
 	assert.NotNil(t, coinbase.tx)
 	assert.Equal(t, misc.Bin2HStr(coinbase.tx.GetHashableBytes()), hashableBytes)
@@ -67,8 +67,8 @@ func TestCoinBase_UpdateMiningAddress(t *testing.T) {
 	blockNumber := uint64(5)
 	amount := uint64(10)
 	coinbase := NewTestCoinBase(qaddress, blockNumber, amount)
-	txHash := "12a07d11db56f75a4661d79cc809fc57e672074a5903438d2e21bf339a7a360f"
-	txHash2 := "a377355dbd5087f186b4dd0f2fc2b3395c3db4b1a212a1b01cb355622c31c5a2"
+	txHash := "a8fbfa16370009b63fd58aaf8c0f5eb01e555709a25f81cde5f7d760c212a31a"
+	txHash2 := "8187c8755a9580bedfe7782bdc8f4ce36ee2354b11da5cab26d48c094cadfe48"
 
 	assert.NotNil(t, coinbase.tx)
 	assert.Equal(t, coinbase.tx.AddrTo(), misc.Qaddress2Bin(qaddress))

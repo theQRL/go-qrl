@@ -203,11 +203,11 @@ func (tx *TransferTokenTransaction) RevertStateChanges(addressesState map[string
 }
 
 func (tx *TransferTokenTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = nil
+	addressesState[misc.PK2Qaddress(tx.PK())] = nil
 
 	for _, address := range tx.AddrsTo() {
-		addressesState[misc.Bin2Qaddress(address)] = &addressstate.AddressState{}
+		addressesState[misc.Bin2Qaddress(address)] = nil
 	}
 }
 
