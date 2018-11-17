@@ -119,10 +119,12 @@ func TestBlockValidate(t *testing.T) {
 	mockNtp := new(MockNTP)
 	mockNtp.On("Time").Return(1539008488)
 	b.SetNTP(mockNtp)
+	b.PBData().Header.HashHeaderPrev = parentB.HeaderHash()
+	b.PBData().Header.HashHeader = b.GenerateHeaderHash()
 
-	assert.True(t, b.Validate(nil, parentB, *parentMetaData, uint64(0), nil))
-	assert.False(t, b.Validate(parentB, parentB, *parentMetaData, uint64(0), nil))
-	assert.False(t, b.Validate(nil, nil, *parentMetaData, uint64(0), nil))
+	assert.True(t, b.Validate(nil, parentB, parentMetaData, uint64(0), nil))
+	assert.False(t, b.Validate(parentB, parentB, parentMetaData, uint64(0), nil))
+	assert.False(t, b.Validate(nil, nil, parentMetaData, uint64(0), nil))
 }
 
 func TestApplyStateChanges(t *testing.T) {
@@ -147,7 +149,7 @@ func TestApplyStateChanges(t *testing.T) {
 		make(map[string]uint32),
 		0,
 	}
-	a[string(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, addressstateParams.nonce, addressstateParams.balance, addressstateParams.otsBitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
+	a[misc.Bin2Qaddress(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, addressstateParams.nonce, addressstateParams.balance, addressstateParams.otsBitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
 
 	// Apply State Changes for a Block with only a Coinbase Transaction
 	b := NewBlock()
@@ -164,11 +166,11 @@ func TestApplyStateChanges(t *testing.T) {
 	assert.False(t, bTxsInvalid.ApplyStateChanges(a))
 
 	// Apply State Changes for a Block with an Valid Transfer Transaction, insufficient funds
-	a[string(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, addressstateParams.nonce, 0, addressstateParams.otsBitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
+	a[misc.Bin2Qaddress(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, addressstateParams.nonce, 0, addressstateParams.otsBitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
 	assert.False(t, bTxs.ApplyStateChanges(a))
 
 	// Apply State Changes for a Block with an Valid Transfer Transaction, invalid transaction nonce (the same thing as AddressState nonce)
-	a[string(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, 5, addressstateParams.balance, addressstateParams.otsBitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
+	a[misc.Bin2Qaddress(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, 5, addressstateParams.balance, addressstateParams.otsBitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
 	assert.False(t, bTxs.ApplyStateChanges(a))
 
 	// Apply State Changes for a Block with a Valid Transfer Transaction, but with reused OTS key
@@ -179,7 +181,7 @@ func TestApplyStateChanges(t *testing.T) {
 			bitfield[i][j] = 1
 		}
 	}
-	a[string(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, addressstateParams.nonce, addressstateParams.balance, bitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
+	a[misc.Bin2Qaddress(qaddrBin)] = addressstate.CreateAddressState(addressstateParams.address, addressstateParams.nonce, addressstateParams.balance, bitfield, addressstateParams.tokens, addressstateParams.slavePksAccessType, addressstateParams.otsCounter)
 	assert.False(t, bTxs.ApplyStateChanges(a))
 }
 

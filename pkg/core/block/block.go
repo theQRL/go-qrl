@@ -21,6 +21,8 @@ type BlockInterface interface {
 
 	Size() int
 
+	GenesisBalance() []*generated.GenesisBalance
+
 	BlockNumber() uint64
 
 	Epoch() uint64
@@ -96,6 +98,10 @@ func (b *Block) Size() int {
 	return proto.Size(b.block)
 }
 
+func (b *Block) GenesisBalance() []*generated.GenesisBalance {
+	return b.PBData().GenesisBalance
+}
+
 func (b *Block) BlockNumber() uint64 {
 	return b.blockheader.BlockNumber()
 }
@@ -132,6 +138,10 @@ func (b *Block) MiningBlob() []byte {
 	return b.blockheader.MiningBlob()
 }
 
+func (b *Block) GenerateHeaderHash() []byte {
+	return b.blockheader.GenerateHeaderHash()
+}
+
 func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs []transactions.Transaction, timestamp uint64) *Block {
 	b := &Block{
 		block:  &generated.Block{},
@@ -166,6 +176,7 @@ func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []
 
 func (b *Block) FromJSON(jsonData string) *Block {
 	b.block = &generated.Block{}
+	b.log = log.GetLogger()
 	jsonpb.UnmarshalString(jsonData, b.block)
 	b.blockheader = new(BlockHeader)
 	b.blockheader.SetPBData(b.block.Header)
@@ -224,13 +235,13 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 			return false
 		}
 
-		addrFromPKState := addressesState[string(tx.AddrFrom())]
+		addrFromPKState := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]
 		addrFromPK := tx.GetSlave()
 		if addrFromPK != nil {
-			addrFromPKState = addressesState[string(addrFromPK)]
+			addrFromPKState = addressesState[misc.Bin2Qaddress(addrFromPK)]
 		}
 
-		if !tx.ValidateExtended(addressesState[string(tx.AddrFrom())], addrFromPKState) {
+		if !tx.ValidateExtended(addressesState[misc.Bin2Qaddress(tx.AddrFrom())], addrFromPKState) {
 			b.log.Warn("tx validateExtend failed")
 			return false
 		}
@@ -244,18 +255,12 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 			return false
 		}
 
-		if addrFromPKState.OTSKeyReuse(tx.OtsKey()) {
-			b.log.Warn("pubkey reuse detected: invalid tx %s", string(tx.Txhash()))
-			//b.log.Warn("subtype: %s", tx.Type())
-			return false
-		}
-
 		tx.ApplyStateChanges(addressesState)
 	}
 	return true
 }
 
-func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentMetadata metadata.BlockMetaData, measurement uint64, enableLogging bool) bool {
+func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentMetadata *metadata.BlockMetaData, measurement uint64, enableLogging bool) bool {
 	// parentMetadata, err := c.state.GetBlockMetadata(bh.HeaderHash())
 
 	// measurement, err := c.state.GetMeasurement(bh.Timestamp(), bh.PrevHeaderHash(), parentMetadata)
@@ -266,12 +271,15 @@ func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentM
 		// parentBlock, err := c.state.GetBlock(bh.PrevHeaderHash())
 
 		b.log.Debug("-----------------START--------------------")
-		b.log.Debug("Validate                #%s", bh.BlockNumber())
-		b.log.Debug("block.timestamp         %s", bh.Timestamp())
-		b.log.Debug("parent_block.timestamp  %s", parentBlock.Timestamp())
-		b.log.Debug("parent_block.difficulty %s", string(parentMetadata.BlockDifficulty()))
-		b.log.Debug("diff                    %s", string(diff))
-		b.log.Debug("target                  %s", string(target))
+		b.log.Debug("Validate",
+			"Measurement", measurement,
+			"BlockNumber", bh.BlockNumber(),
+			"MiningBlob", bh.MiningBlob(),
+			"block.timestamp", bh.Timestamp(),
+			"parent_block.timestamp", parentBlock.Timestamp(),
+			"parent_block.difficulty", parentMetadata.BlockDifficulty(),
+			"diff", diff,
+			"target", target)
 		b.log.Debug("-------------------END--------------------")
 	}
 
@@ -286,19 +294,25 @@ func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentM
 
 }
 
-func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetadata metadata.BlockMetaData, measurement uint64, futureBlocks map[string]*Block) bool {
+func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetadata *metadata.BlockMetaData, measurement uint64, futureBlocks map[string]*Block) bool {
 	var ok bool
 
 	if blockFromState != nil {
-		b.log.Warn("Duplicate Block #%s %s", b.BlockNumber(), string(b.HeaderHash()))
+		b.log.Warn("Duplicate Block",
+			"block Number", b.BlockNumber(),
+			"Headerhash", misc.Bin2HStr(b.HeaderHash()))
 		return false
 	}
 
 	if parentBlock == nil {
+		if futureBlocks == nil {
+			return false
+		}
 		parentBlock, ok = futureBlocks[string(b.PrevHeaderHash())]
 		if !ok {
 			b.log.Warn("Parent block not found")
-			b.log.Warn("Parent block headerhash %s", string(b.PrevHeaderHash()))
+			b.log.Warn("Parent block ",
+				"Headerhash", misc.Bin2HStr(b.PrevHeaderHash()))
 			return false
 		}
 	}
@@ -331,9 +345,8 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	}
 
 	var hashes list.List
-	hashes.PushBack(coinbaseTX.Txhash())
 
-	for i := 1; i < len(b.Transactions()); i++ {
+	for i := 0; i < len(b.Transactions()); i++ {
 		hashes.PushBack(b.Transactions()[i].TransactionHash)
 	}
 
@@ -348,4 +361,11 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 
 func (b *Block) SetNTP(n ntp.NTPInterface) {
 	b.blockheader.Option(MockNTP(n))
+}
+
+func BlockFromPBData(block *generated.Block) *Block {
+	b := &Block{block: block, blockheader: BlockHeaderFromPBData(block.Header)}
+	b.config = config.GetConfig()
+	b.log = log.GetLogger()
+	return b
 }

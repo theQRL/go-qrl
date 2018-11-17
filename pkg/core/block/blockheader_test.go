@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/block"
+	"github.com/theQRL/go-qrl/pkg/misc"
 	"testing"
 )
 
@@ -69,7 +70,7 @@ func NewBlockHeader(config ...BlockHeaderConfig) *block.BlockHeader {
 	} else {
 		bh = block.CreateBlockHeader(config[0].blockNumber, config[0].prevBlockHeaderhash, config[0].prevBlockTimestamp, config[0].merkleRoot, config[0].feeReward, config[0].timestamp)
 	}
-
+	bh.SetNonces(0,0)
 	bh.Option(block.MockNTP(mockNtp))
 
 	return bh
@@ -126,10 +127,12 @@ func TestBlockHeaderValidateBadHeaderHash(t *testing.T) {
 
 func TestBlockHeaderValidateInconsistencyInBlockRewardCalculation(t *testing.T) {
 	bh := NewBlockHeader()
+	brc := block.BlockRewardCalc
 	block.BlockRewardCalc = func(blockNumber uint64, _ *config.Config) uint64 {
 		return 777777
 	}
 	assert.Equal(t, false, bh.Validate(defaultBhConfig.feeReward, uint64(bh.BlockReward()+defaultBhConfig.feeReward), defaultBhConfig.merkleRoot))
+	block.BlockRewardCalc = brc
 }
 
 func TestBlockHeaderValidateBadParams(t *testing.T) {
@@ -171,9 +174,9 @@ func TestBlockHeaderJSONSerialization(t *testing.T) {
 // Ensure that GenerateHeaderHash() works, nothing more
 func TestBlockHeaderGenerateHeaderHash(t *testing.T) {
 	bh := NewBlockHeader()
-	headerHash := bh.GenerateHeaderHash()
+	headerHash := misc.Bin2HStr(bh.GenerateHeaderHash())
 
-	assert.Equal(t, headerHash, []byte{0x23, 0xc4, 0xe0, 0xf, 0xc9, 0xb0, 0x20, 0xd1, 0xb, 0x7e, 0x85, 0xc1, 0xfd, 0xa2, 0xc9, 0x19, 0x22, 0x7c, 0x5b, 0x9a, 0x2b, 0x1b, 0xec, 0xdd, 0xe4, 0x45, 0x44, 0x66, 0xa2, 0x2c, 0x8e, 0x7f})
+	assert.Equal(t, headerHash, "cd4aaac22c424525bd7016aa8aad2d31c57f5826be9b6f08d0f3c82a915371f9")
 }
 
 func TestBlockHeaderMiningWorkflow(t *testing.T) {
@@ -182,13 +185,13 @@ func TestBlockHeaderMiningWorkflow(t *testing.T) {
 	// Miner found nonces of 5 and 23
 	bh.SetNonces(uint32(5), uint64(23))
 	// We can now hash the BlockHeader.
-	headerHash := bh.GenerateHeaderHash()
-	assert.Equal(t, headerHash, []byte{0x54, 0x9b, 0x2c, 0xae, 0xd4, 0xbe, 0xd9, 0x6e, 0x70, 0x68, 0x41, 0x8a, 0xcc, 0x9b, 0x1e, 0xa2, 0x23, 0x2d, 0x5, 0xe1, 0x4c, 0x55, 0xd5, 0xca, 0x92, 0x99, 0xd5, 0xee, 0xb7, 0x2a, 0x7e, 0xc8})
+	headerHash := misc.Bin2HStr(bh.GenerateHeaderHash())
+	assert.Equal(t, headerHash, "590cc85d6d5361760312ad517d2146f2ad8e16e24e19c6e77aa6494ffe63aaa4")
 
 	// HeaderHash depends on the nonces
 	bh.SetNonces(uint32(5), uint64(25))
-	headerHashOther := bh.GenerateHeaderHash()
-	assert.NotEqual(t, headerHashOther, []byte{0x54, 0x9b, 0x2c, 0xae, 0xd4, 0xbe, 0xd9, 0x6e, 0x70, 0x68, 0x41, 0x8a, 0xcc, 0x9b, 0x1e, 0xa2, 0x23, 0x2d, 0x5, 0xe1, 0x4c, 0x55, 0xd5, 0xca, 0x92, 0x99, 0xd5, 0xee, 0xb7, 0x2a, 0x7e, 0xc8})
+	headerHashOther := misc.Bin2HStr(bh.GenerateHeaderHash())
+	assert.Equal(t, headerHashOther, "ed5e2cfa38280cdeda5a813238842b8ea4a220d7473e29ae6510cd380d2d11b7")
 }
 
 func TestBlockHeaderSetMiningNonceFromBlob(t *testing.T) {
