@@ -13,7 +13,7 @@ import (
 
 type TransactionPool struct {
 	txPool list.List
-	config c.Config
+	config *c.Config
 	ntp    *ntp.NTP
 }
 
@@ -64,7 +64,7 @@ func (t *TransactionPool) Remove(tx transactions.TransactionInterface) {
 }
 
 func (t *TransactionPool) RemoveTxInBlock(block *block.Block) {
-	for _, protoTX := range block.Transactions() {
+	for _, protoTX := range block.Transactions()[1:] {
 		tx := transactions.ProtoToTransaction(protoTX)
 		if tx.OtsKey() < t.config.Dev.MaxOTSTracking {
 			t.Remove(tx)
@@ -85,7 +85,7 @@ func (t *TransactionPool) RemoveTxInBlock(block *block.Block) {
 }
 
 func (t *TransactionPool) AddTxFromBlock(block *block.Block, currentBlockHeight uint64) error {
-	for _, protoTX := range block.Transactions() {
+	for _, protoTX := range block.Transactions()[1:] {
 		err := t.Add(transactions.ProtoToTransaction(protoTX), currentBlockHeight, t.ntp.Time())
 		if err != nil {
 			return err
@@ -107,4 +107,12 @@ func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
 		}
 	}
 	return nil
+}
+
+func CreateTransactionPool() *TransactionPool {
+	t := &TransactionPool{
+		config: c.GetConfig(),
+		ntp: ntp.GetNTP(),
+	}
+	return t
 }
