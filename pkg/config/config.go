@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"os/user"
 	"path"
 	"sync"
 )
@@ -23,7 +24,7 @@ type NodeConfig struct {
 	BindingIP               string
 	LocalPort               uint16
 	PublicPort              uint16
-	PeerRateLimit           uint16
+	PeerRateLimit           uint64
 	BanMinutes              uint8
 	MaxPeersLimit           uint16
 	MaxRedundantConnections int
@@ -81,6 +82,8 @@ type APIConfig struct {
 type DevConfig struct {
 	Genesis *GenesisConfig
 
+	Version string
+
 	BlocksPerEpoch       uint64
 	BlockLeadTimestamp   uint32
 	BlockMaxDrift        uint16
@@ -90,6 +93,7 @@ type DevConfig struct {
 
 	ReorgLimit uint64
 
+	MessageQSize		  uint32
 	MessageReceiptTimeout uint32
 	MessageBufferSize     uint32
 
@@ -123,6 +127,8 @@ type DevConfig struct {
 	ShorPerQuanta uint64
 
 	MaxReceivableBytes uint64
+	ReservedQuota	   uint64
+	MaxBytesOut		   uint64
 	SyncDelayMining    uint8
 
 	BlockTimeSeriesSize uint32
@@ -138,7 +144,6 @@ type TokenConfig struct {
 }
 
 type GenesisConfig struct {
-	Version              string
 	GenesisPrevHeadehash []byte
 	MaxCoinSupply        uint64
 	SuppliedCoins        uint64
@@ -163,19 +168,18 @@ func GetConfig() *Config {
 	return config
 }
 
-func GetUserConfig() (user *UserConfig) {
+func GetUserConfig() (userConf *UserConfig) {
 	node := &NodeConfig{
 		EnablePeerDiscovery: true,
 		PeerList: []string{
-			"35.177.60.137",
-			"104.251.219.215",
-			"104.251.219.145",
-			"104.251.219.40",
-			"104.237.3.185",
+			"35.178.79.137:19000",
+			"35.177.182.85:19000",
+			"18.130.119.29:19000",
+			"18.130.25.64:19000",
 		},
 		BindingIP:               "0.0.0.0",
-		LocalPort:               9000,
-		PublicPort:              9000,
+		LocalPort:               19000,
+		PublicPort:              19000,
 		PeerRateLimit:           500,
 		BanMinutes:              20,
 		MaxPeersLimit:           100,
@@ -208,7 +212,7 @@ func GetUserConfig() (user *UserConfig) {
 	adminAPI := &APIConfig{
 		Enabled:          false,
 		Host:             "127.0.0.1",
-		Port:             9008,
+		Port:             19008,
 		Threads:          1,
 		MaxConcurrentRPC: 100,
 	}
@@ -216,7 +220,7 @@ func GetUserConfig() (user *UserConfig) {
 	publicAPI := &APIConfig{
 		Enabled:          true,
 		Host:             "127.0.0.1",
-		Port:             9009,
+		Port:             19009,
 		Threads:          1,
 		MaxConcurrentRPC: 100,
 	}
@@ -224,7 +228,7 @@ func GetUserConfig() (user *UserConfig) {
 	miningAPI := &APIConfig{
 		Enabled:          false,
 		Host:             "127.0.0.1",
-		Port:             9007,
+		Port:             19007,
 		Threads:          1,
 		MaxConcurrentRPC: 100,
 	}
@@ -234,8 +238,8 @@ func GetUserConfig() (user *UserConfig) {
 		PublicAPI: publicAPI,
 		MiningAPI: miningAPI,
 	}
-
-	user = &UserConfig{
+	userCurrentDir, _ := user.Current()  // TODO: Handle error
+	userConf = &UserConfig{
 		Node:      node,
 		Miner:     miner,
 		Ephemeral: ephemeral,
@@ -247,13 +251,13 @@ func GetUserConfig() (user *UserConfig) {
 
 		TransactionPool: transactionPool,
 
-		QrlDir:             "~/.qrl",
+		QrlDir:             path.Join(userCurrentDir.HomeDir, ".qrl"),
 		ChainFileDirectory: "data",
 
 		API: api,
 	}
 
-	return user
+	return userConf
 }
 
 func (u *UserConfig) DataDir() string {
@@ -262,13 +266,12 @@ func (u *UserConfig) DataDir() string {
 
 func GetDevConfig() (dev *DevConfig) {
 	genesis := &GenesisConfig{
-		Version:              "v0.63",
 		GenesisPrevHeadehash: []byte("Outside Context Problem"),
-		MaxCoinSupply:        105000000 * (10 ^ 9),
-		SuppliedCoins:        65000000 * (10 ^ 9),
-		GenesisDifficulty:    5000,
-		CoinbaseAddress:      misc.HStr2Bin("000000000000000000000000000000000000000000000000000000000000000000000000000000"),
-		GenesisTimestamp:     1524928900,
+		MaxCoinSupply:        105000000000000000,
+		SuppliedCoins:        65000000000000000,
+		GenesisDifficulty:    10000000,
+		CoinbaseAddress:      misc.HStr2Bin("0000000000000000000000000000000000000000000000000000000000000000"),
+		GenesisTimestamp:     1530004179,
 	}
 	transaction := &TransactionConfig{
 		MultiOutputLimit: 100,
@@ -282,6 +285,8 @@ func GetDevConfig() (dev *DevConfig) {
 	dev = &DevConfig{
 		Genesis: genesis,
 
+		Version: "0.0.1 go",
+
 		BlocksPerEpoch:       100,
 		BlockLeadTimestamp:   30,
 		BlockMaxDrift:        15,
@@ -291,6 +296,7 @@ func GetDevConfig() (dev *DevConfig) {
 
 		ReorgLimit: 22000,
 
+		MessageQSize:		   300,
 		MessageReceiptTimeout: 10,
 		MessageBufferSize:     64 * 1024 * 1024,
 
@@ -321,12 +327,14 @@ func GetDevConfig() (dev *DevConfig) {
 		SizeMultiplier:       1.1,
 		BlockMinSizeLimit:    1024 * 1024,
 
-		ShorPerQuanta: 10 ^ 9,
+		ShorPerQuanta: 1000000000,
 
 		MaxReceivableBytes: 10 * 1024 * 1024,
+		ReservedQuota: 1024,
 		SyncDelayMining:    60,
 
 		BlockTimeSeriesSize: 1440,
 	}
+	dev.MaxBytesOut = dev.MaxReceivableBytes - dev.ReservedQuota
 	return dev
 }
