@@ -91,7 +91,7 @@ func TestSlaveTransaction_GetHashableBytes(t *testing.T) {
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(aliceXMSS.PK())
 	slaveTx := NewTestSlaveTransaction(slavePKs, accessTypes, fee, xmssPK, nil)
-	hashableBytes := "3458180b6e47adc2f43474a37e16a9ff5800558799255ef9956818f07cf5a579"
+	hashableBytes := "1fc41b50832f999868480b0cb96ad77038ed29054e74aa65f1da2a6233b5ef5e"
 
 	assert.NotNil(t, slaveTx.tx)
 	assert.Equal(t, misc.Bin2HStr(slaveTx.tx.GetHashableBytes()), hashableBytes)
