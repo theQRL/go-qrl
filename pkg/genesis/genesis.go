@@ -1,36 +1,31 @@
 package genesis
 
 import (
-	"encoding/json"
-	"io/ioutil"
-
-	"gopkg.in/yaml.v2"
-
+	"github.com/ghodss/yaml"
 	"github.com/theQRL/go-qrl/pkg/core/block"
-	"github.com/theQRL/go-qrl/pkg/generated"
+	"github.com/theQRL/go-qrl/pkg/log"
+	"io/ioutil"
 )
 
-type Genesis struct {
-	block.Block
-}
-
-func (g *Genesis) GenesisBalance() []*generated.GenesisBalance {
-	return g.PBData().GenesisBalance
-}
-
-func CreateGenesisBlock() (*Genesis, error) {
-	yamlData, err := ioutil.ReadFile("genesis.yml")
-
-	m := make(map[string]interface{})
-	err = yaml.Unmarshal([]byte(yamlData), &m)
-	jsonData, err := json.Marshal(m)
+func CreateGenesisBlock() (*block.Block, error) {
+	yamlData, err := ioutil.ReadFile("../../pkg/genesis/genesis.yml") // TODO: Need better fix
+	l := log.GetLogger()
 
 	if err != nil {
+		l.Warn("Error while parsing Genesis.yml")
+		l.Info(err.Error())
 		return nil, err
 	}
-	b := &Genesis{}
 
-	b.Block.FromJSON(string(jsonData))
+	jsonData, err := yaml.YAMLToJSON(yamlData)
+	if err != nil {
+		l.Info("Error while parsing Genesis")
+		l.Info(err.Error())
+		return nil, err
+	}
+
+	b := &block.Block{}
+	b.FromJSON(string(jsonData))
 
 	return b, nil
 }
