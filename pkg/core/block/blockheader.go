@@ -132,16 +132,19 @@ func (bh *BlockHeader) MiningBlob() []byte {
 	tmp.Write(bh.TxMerkleRoot())
 
 	blob := misc.NewUCharVector()
-	blob.AddByte(0)
 	blob.AddBytes(tmp.Bytes())
-
 	blob.New(goqrllib.Shake128(int64(bh.config.Dev.MiningBlobSize-18), blob.GetData()))
+
+	blob2 := misc.NewUCharVector()
+	blob2.AddByte(0)
+	blob2.AddBytes(blob.GetBytes())
+	blob = blob2
 
 	if blob.GetData().Size() < int64(bh.config.Dev.MiningNonceOffset) {
 		panic("Mining blob size below 56 bytes")
 	}
 
-	miningNonce := make([]byte, 12)
+	miningNonce := make([]byte, 17)
 	binary.BigEndian.PutUint32(miningNonce, bh.MiningNonce())
 	binary.BigEndian.PutUint64(miningNonce[4:], bh.ExtraNonce())
 
@@ -197,7 +200,7 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 	}
 
 	if !reflect.DeepEqual(bh.GenerateHeaderHash(), bh.HeaderHash()) {
-		bh.log.Warn("Headerhash false for block: failed validation")
+		bh.log.Warn("Invalid Block Headerhash: failed validation")
 		return false
 	}
 
@@ -328,9 +331,18 @@ func CreateBlockHeader(blockNumber uint64, prevBlockHeaderHash []byte, prevBlock
 	return bh
 }
 
+func BlockHeaderFromPBData(header *generated.BlockHeader) *BlockHeader {
+	bh := &BlockHeader{blockHeader: header}
+	bh.config = c.GetConfig()
+	bh.n = ntp.GetNTP()
+	bh.log = log.GetLogger()
+	return bh
+}
+
 var BlockRewardCalc = func(blockNumber uint64, config *c.Config) uint64 {
 	if blockNumber == 0 {
 		return config.Dev.Genesis.SuppliedCoins
 	}
-	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply-config.Dev.Genesis.SuppliedCoins, config.Dev.ShorPerQuanta, blockNumber)
+	return formulas.BlockReward(config.Dev.Genesis.MaxCoinSupply-config.Dev.Genesis.SuppliedCoins, blockNumber)
 }
+
