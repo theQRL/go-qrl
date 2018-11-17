@@ -1,6 +1,7 @@
 package metadata
 
 import (
+	"github.com/theQRL/go-qrl/test/helper"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -78,8 +79,8 @@ func CreateBlockMetadata(blockDifficulty []byte, totalDifficulty []byte, childHe
 		config: config.GetConfig(),
 	}
 
-	b.data.BlockDifficulty = blockDifficulty
-	b.data.CumulativeDifficulty = totalDifficulty
+	b.data.BlockDifficulty = helper.BytesTo32Bytes(blockDifficulty)
+	b.data.CumulativeDifficulty = helper.BytesTo32Bytes(totalDifficulty)
 	b.data.ChildHeaderhashes = childHeaderHashes
 
 	return b
@@ -90,7 +91,11 @@ func (b *BlockMetaData) Serialize() ([]byte, error) {
 }
 
 func DeSerializeBlockMetaData(data []byte) (*BlockMetaData, error) {
-	b := &BlockMetaData{}
+	b := &BlockMetaData{
+		data:   &generated.BlockMetaData{},
+		log:    log.GetLogger(),
+		config: config.GetConfig(),
+	}
 
 	if err := proto.Unmarshal(data, b.data); err != nil {
 		return b, err
