@@ -45,3 +45,13 @@ func StringArrayToBytesArray(data []string) [][]byte {
 
 	return bytesData
 }
+
+func BytesTo32Bytes(data []byte) []byte {
+	targetSize := 32
+	diff := targetSize - len(data)
+	if diff > 0 {
+		tmp := make([]byte, diff)
+		data = append(tmp, data...)
+	}
+	return data
+}

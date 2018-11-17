@@ -1,10 +1,9 @@
 package helper
 
 import (
+	"github.com/stretchr/testify/assert"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
 
 func TestGetAliceXMSS(t *testing.T) {
