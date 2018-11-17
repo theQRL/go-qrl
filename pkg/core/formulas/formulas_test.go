@@ -12,16 +12,18 @@ func TestCalcCoeff(t *testing.T) {
 }
 
 func TestRemainingEmission(t *testing.T) {
-	assert.Equal(t, int64(40000000000000000), RemainingEmission(40000000, 1000000000, 0))
-	assert.Equal(t, int64(39999993343650538), RemainingEmission(40000000, 1000000000, 1))
-	assert.Equal(t, int64(39999986687302185), RemainingEmission(40000000, 1000000000, 2))
-	assert.Equal(t, int64(39999334370536850), RemainingEmission(40000000, 1000000000, 100))
+	assert.Equal(t, int64(40000000000000000), RemainingEmission(40000000*1000000000, 0))
+	assert.Equal(t, int64(39999993343650538), RemainingEmission(40000000*1000000000, 1))
+	assert.Equal(t, int64(39999986687302185), RemainingEmission(40000000*1000000000, 2))
+	assert.Equal(t, int64(39999334370536850), RemainingEmission(40000000*1000000000, 100))
 }
 
 func TestBlockReward(t *testing.T) {
-	assert.Equal(t, uint64(6656349462), BlockReward(40000000, 1000000000, 1))
-	assert.Equal(t, uint64(6656348353), BlockReward(40000000, 1000000000, 2))
-	assert.Equal(t, uint64(6656347246), BlockReward(40000000, 1000000000, 3))
+	assert.Equal(t, uint64(6656349462), BlockReward(40000000*1000000000, 1))
+	assert.Equal(t, uint64(6656348353), BlockReward(40000000*1000000000, 2))
+	assert.Equal(t, uint64(6656347246), BlockReward(40000000*1000000000, 3))
+	assert.Equal(t, uint64(6656337276), BlockReward(40000000*1000000000, 12))
+	assert.Equal(t, uint64(6655657201), BlockReward(40000000*1000000000, 626))
 }
 
 func TestMedian(t *testing.T) {
