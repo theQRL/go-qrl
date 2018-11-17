@@ -93,31 +93,31 @@ func UCharVectorToString(data goqrllib.UcharVector) string {
 
 func MerkleTXHash(hashes list.List) []byte {
 	j := int(math.Ceil(math.Log2(float64(hashes.Len()))))
-	var lArray list.List
-	lArray.PushBack(hashes)
+
+	lArray := hashes
 	for x := 0; x < j; x++ {
 		var nextLayer list.List
-		h := lArray.Back().Value.(list.List)
+		h := lArray
 		i := h.Len()%2 + h.Len()/2
 		e := h.Front()
 		z := 0
+
 		for k := 0; k < i; k++ {
 			if h.Len() == z+1 {
 				nextLayer.PushBack(e.Value.([]byte))
 			} else {
 				tmp := NewUCharVector()
 				tmp.AddBytes(e.Value.([]byte))
-				e := e.Next()
-				tmp.AddBytes(e.Value.([]byte))
-				nextLayer.PushBack(UCharVectorToBytes(goqrllib.Sha2_256(tmp.GetData())))
 				e = e.Next()
+				tmp.AddBytes(e.Value.([]byte))
+				e = e.Next()
+				nextLayer.PushBack(UCharVectorToBytes(goqrllib.Sha2_256(tmp.GetData())))
 			}
 			z += 2
 		}
-		lArray.PushBack(nextLayer)
+		lArray = nextLayer
 	}
-	//return lArray.Back().Value.(list.List).Back().Value.([]byte)
-	return nil
+	return lArray.Back().Value.([]byte)
 }
 
 func Reverse(s [][]byte) [][]byte {
@@ -146,4 +146,8 @@ func Bin2Qaddress(binAddress []byte) string {
 
 func PK2Qaddress(pk []byte) string {
 	return Bin2Qaddress(misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(pk))))
+}
+
+func ConvertBytesToLong(b []byte) uint32 {
+	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }
