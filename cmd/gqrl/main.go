@@ -1,11 +1,11 @@
-package gqrl
+package main
 
 import (
 	"bufio"
 	"os"
+	"os/signal"
 	"strings"
 
-	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/p2p"
@@ -13,7 +13,6 @@ import (
 
 var (
 	server *p2p.Server
-	conf *config.Config
 	input = bufio.NewReader(os.Stdin)
 	logger = log.GetLogger()
 )
@@ -24,6 +23,8 @@ func startServer() error {
 		return err
 	}
 
+	c.Load() // Loads Chain State
+
 	err = server.Start(c)
 	if err != nil {
 		return err
@@ -32,8 +33,8 @@ func startServer() error {
 }
 
 func initialize() {
-	conf = config.GetConfig()
 	server = &p2p.Server{}
+	logger.Info("Server Initialized")
 }
 
 func run() {
@@ -42,9 +43,13 @@ func run() {
 		logger.Error("error while starting server", err)
 		return
 	}
+	logger.Info("Connecting Peers")
+	server.ConnectPeers()
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	logger.Info("Shutting Down Server")
 	defer server.Stop()
-
-	sendLoop()
 }
 
 func sendLoop() {
