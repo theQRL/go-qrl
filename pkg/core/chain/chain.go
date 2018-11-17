@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/big"
 	"reflect"
+	"strconv"
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"
@@ -46,7 +47,7 @@ func CreateChain() (*Chain, error) {
 		return nil, err
 	}
 
-	txPool := &pool.TransactionPool{}
+	txPool := pool.CreateTransactionPool()
 
 	chain := &Chain{
 		log:    log.GetLogger(),
@@ -67,7 +68,7 @@ func (c *Chain) GetLastBlock() *block.Block {
 	return c.lastBlock
 }
 
-func (c *Chain) Load(genesisBlock *block.Block) error {
+func (c *Chain) Load() error {
 	// load() has the following tasks:
 	// Write Genesis Block into State immediately
 	// Register block_number <-> blockhash mapping
@@ -76,43 +77,47 @@ func (c *Chain) Load(genesisBlock *block.Block) error {
 	// Apply Genesis Block's transactions to the state
 	// Detect if we are forked from genesis block and if so initiate recovery.
 	h, err := c.state.GetChainHeight()
-
 	if err != nil {
+		genesisBlock, err := genesis.CreateGenesisBlock()
+		if err != nil {
+			c.log.Warn("Error Loading Genesis Block")
+		}
 		c.state.PutBlock(genesisBlock, nil)
 		blockNumberMapping := &generated.BlockNumberMapping{Headerhash: genesisBlock.HeaderHash(),
 			PrevHeaderhash: genesisBlock.PrevHeaderHash()}
 
 		c.state.PutBlockNumberMapping(genesisBlock.BlockNumber(), blockNumberMapping, nil)
-		parentDifficulty := goqryptonight.StringToUInt256(string(c.config.Dev.Genesis.GenesisDifficulty))
+
+		parentDifficulty := misc.UCharVectorToBytes(goqryptonight.StringToUInt256(strconv.FormatInt(int64(c.config.Dev.Genesis.GenesisDifficulty), 10)))
 
 		dt := pow.DifficultyTracker{}
 		currentDifficulty, _ := dt.Get(uint64(c.config.Dev.MiningSetpointBlocktime),
-			misc.UCharVectorToBytes(parentDifficulty))
+			parentDifficulty)
 
 		blockMetaData := metadata.CreateBlockMetadata(currentDifficulty, currentDifficulty, nil)
 
 		c.state.PutBlockMetadata(genesisBlock.HeaderHash(), blockMetaData, nil)
 
 		addressesState := make(map[string]*addressstate.AddressState)
-		gen := &genesis.Genesis{}
-		for _, genesisBalance := range gen.GenesisBalance() {
+
+		for _, genesisBalance := range genesisBlock.GenesisBalance() {
 			addrState := addressstate.GetDefaultAddressState(genesisBalance.Address)
-			addressesState[string(addrState.Address())] = addrState
+			addressesState[misc.Bin2Qaddress(addrState.Address())] = addrState
 			addrState.SetBalance(genesisBalance.Balance)
 		}
 
-		txs := gen.Transactions()
+		txs := genesisBlock.Transactions()
 		for i := 1; i < len(txs); i++ {
 			for _, addr := range txs[i].GetTransfer().AddrsTo {
-				addressesState[string(addr)] = addressstate.GetDefaultAddressState(addr)
+				addressesState[misc.Bin2Qaddress(addr)] = addressstate.GetDefaultAddressState(addr)
 			}
 		}
 
 		coinBase := &transactions.CoinBase{}
 		coinBase.SetPBData(txs[0])
-		addressesState[string(coinBase.AddrTo())] = addressstate.GetDefaultAddressState(coinBase.AddrTo())
+		addressesState[misc.Bin2Qaddress(coinBase.AddrTo())] = addressstate.GetDefaultAddressState(coinBase.AddrTo())
 
-		if !coinBase.ValidateExtendedCoinbase(gen.BlockNumber()) {
+		if !coinBase.ValidateExtendedCoinbase(genesisBlock.BlockNumber()) {
 			return errors.New("coinbase validation failed")
 		}
 
@@ -124,9 +129,15 @@ func (c *Chain) Load(genesisBlock *block.Block) error {
 			tx.ApplyStateChanges(addressesState)
 		}
 
-		c.state.PutAddressesState(addressesState, nil)
+		err = c.state.PutAddressesState(addressesState, nil)
+		if err != nil {
+			c.log.Info("Failed PutAddressesState for Genesis Block")
+			return err
+		}
+
 		c.state.UpdateTxMetadata(genesisBlock, nil)
 		c.state.PutChainHeight(0, nil)
+		c.lastBlock = genesisBlock
 	} else {
 		c.lastBlock, err = c.state.GetBlockByNumber(h)
 		var blockMetadata *metadata.BlockMetaData
@@ -151,26 +162,23 @@ func (c *Chain) Load(genesisBlock *block.Block) error {
 
 func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) {
 	blockSizeLimit, err := c.state.GetBlockSizeLimit(block)
-
 	if err == nil && block.Size() > blockSizeLimit {
 		c.log.Warn("Block Size greater than threshold limit %s > %s", block.Size(), blockSizeLimit)
 		return false, false
 	}
-
 	if reflect.DeepEqual(c.lastBlock.HeaderHash(), block.PrevHeaderHash()) {
 		if !c.applyBlock(block, batch) {
 			return false, false
 		}
 	}
-
 	err = c.state.PutBlock(block, batch)
 
 	if err != nil {
 		return false, false
 	}
-
 	lastBlockMetadata, err := c.state.GetBlockMetadata(c.lastBlock.HeaderHash())
-	newBlockMetadata, err := c.state.GetBlockMetadata(block.HeaderHash())
+	//newBlockMetadata, err := c.state.GetBlockMetadata(block.HeaderHash())
+	newBlockMetadata := c.addBlockMetaData(block.HeaderHash(), block.Timestamp(), block.PrevHeaderHash(), batch)
 
 	lastBlockDifficulty := big.NewInt(0)
 	lastBlockDifficulty.SetString(goqryptonight.UInt256ToString(misc.BytesToUCharVector(lastBlockMetadata.TotalDifficulty())), 10)
@@ -195,19 +203,47 @@ func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) 
 	return true, false
 }
 
+func (c *Chain) addBlockMetaData(headerhash []byte, timestamp uint64, prevHeaderHash []byte, batch *leveldb.Batch) (*metadata.BlockMetaData) {
+	parentMetaData, err := c.state.GetBlockMetadata(prevHeaderHash)
+	measurement, err := c.state.GetMeasurement(uint32(timestamp), prevHeaderHash, parentMetaData)
+	dt := pow.DifficultyTracker{}
+	blockDifficulty, _ := dt.Get(measurement, parentMetaData.BlockDifficulty())
+
+	parentBlockTotalDifficulty := big.NewInt(0)
+	parentBlockTotalDifficulty.SetString(goqryptonight.UInt256ToString(misc.BytesToUCharVector(parentMetaData.TotalDifficulty())), 10)
+	currentBlockTotalDifficulty := big.NewInt(0)
+	currentBlockTotalDifficulty.SetString(goqryptonight.UInt256ToString(misc.BytesToUCharVector(blockDifficulty)), 10)
+	currentBlockTotalDifficulty.Add(currentBlockTotalDifficulty, parentBlockTotalDifficulty)
+
+	blockMetaData, err := c.state.GetBlockMetadata(headerhash)
+
+	if err != nil {
+		blockMetaData = metadata.CreateBlockMetadata(blockDifficulty, currentBlockTotalDifficulty.Bytes(), nil)
+	}
+
+	blockMetaData.UpdateLastHeaderHashes(parentMetaData.LastNHeaderHashes(), prevHeaderHash)
+
+	c.state.PutBlockMetadata(prevHeaderHash, parentMetaData, batch)
+	c.state.PutBlockMetadata(headerhash, blockMetaData, batch)
+	return blockMetaData
+}
+
 func (c *Chain) AddBlock(block *block.Block) bool {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
-	if block.BlockNumber() < c.Height()-c.config.Dev.ReorgLimit {
-		c.log.Debug("Skipping block #%s as beyond re-org limit", block.BlockNumber())
-		return false
+	if c.Height() > c.config.Dev.ReorgLimit {
+		if block.BlockNumber() < c.Height()-c.config.Dev.ReorgLimit {
+			c.log.Debug("Skipping block, Reason: beyond re-org limit",
+				"BlockNumber", block.BlockNumber(),
+				"Re-org limit", c.Height()-c.config.Dev.ReorgLimit)
+			return false
+		}
 	}
-
 	_, err := c.state.GetBlock(block.HeaderHash())
-
 	if err == nil {
-		c.log.Debug("Skipping block #%s is duplicate block", block.BlockNumber())
+		c.log.Debug("Skipping block, Reason: duplicate block",
+			"BlockNumber", block.BlockNumber())
 		return false
 	}
 
@@ -215,12 +251,15 @@ func (c *Chain) AddBlock(block *block.Block) bool {
 	blockFlag, forkFlag := c.addBlock(block, batch)
 	if blockFlag {
 		if !forkFlag {
+			c.log.Info(">>Writing Batch")
 			c.state.WriteBatch(batch)
+			c.log.Info(">>Writing Batch Done<<")
 		}
-		c.log.Info("Added Block #%s %s", block.BlockNumber(), string(block.HeaderHash()))
+		c.log.Info("Added Block",
+			"BlockNumber", block.BlockNumber(),
+			"HeaderHash", misc.Bin2HStr(block.HeaderHash()))
 		return true
 	}
-
 	return false
 
 }
@@ -231,13 +270,11 @@ func (c *Chain) applyBlock(block *block.Block, batch *leveldb.Batch) bool {
 	if !block.ApplyStateChanges(addressesState) {
 		return false
 	}
-
 	err := c.state.PutAddressesState(addressesState, batch)
 	if err != nil {
 		c.log.Warn("Failed to apply Block %s", err.Error())
 		return false
 	}
-
 	return true
 }
 
@@ -350,7 +387,7 @@ func (c *Chain) AddChain(hashPath [][]byte, forkState *generated.ForkState) bool
 
 	for i := start; i < len(hashPath); i++ {
 		headerHash := hashPath[i]
-		block, err := c.state.GetBlock(headerHash)
+		b, err := c.state.GetBlock(headerHash)
 
 		if err != nil {
 
@@ -358,13 +395,13 @@ func (c *Chain) AddChain(hashPath [][]byte, forkState *generated.ForkState) bool
 
 		batch := c.state.GetBatch()
 
-		if !c.applyBlock(block, batch) {
+		if !c.applyBlock(b, batch) {
 			return false
 		}
 
-		c.updateChainState(block, batch)
+		c.updateChainState(b, batch)
 
-		c.log.Debug("Apply block #%d - [batch %d | %s]", block.BlockNumber(), i, hashPath[i])
+		c.log.Debug("Apply block #%d - [batch %d | %s]", b.BlockNumber(), i, hashPath[i])
 		c.state.WriteBatch(batch)
 	}
 
@@ -428,4 +465,73 @@ func (c *Chain) GetBlock(headerhash []byte) (*block.Block, error) {
 	defer c.lock.Unlock()
 
 	return c.state.GetBlock(headerhash)
+}
+
+func (c *Chain) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.state.GetBlockByNumber(blockNumber)
+}
+
+func (c *Chain) GetBlockMetaData(headerhash []byte) (*metadata.BlockMetaData, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.state.GetBlockMetadata(headerhash)
+}
+
+func (c *Chain) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, parentMetaData *metadata.BlockMetaData) (uint64, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.state.GetMeasurement(blockTimestamp, parentHeaderHash, parentMetaData)
+}
+
+func (c *Chain) GetHeaderHashes(blockNumber uint64) (*generated.NodeHeaderHash, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	startBlockNumber := uint64(0)
+	if blockNumber > startBlockNumber {
+		startBlockNumber = blockNumber
+	}
+
+	endBlockNumber := startBlockNumber + 2 * c.config.Dev.ReorgLimit
+	if endBlockNumber > c.lastBlock.BlockNumber() {
+		endBlockNumber = c.lastBlock.BlockNumber()
+	}
+
+	totalExpectedHeaderHash := endBlockNumber - startBlockNumber + 1
+
+	nodeHeaderHash := &generated.NodeHeaderHash {}
+	nodeHeaderHash.BlockNumber = startBlockNumber
+
+	b, err := c.state.GetBlockByNumber(startBlockNumber)
+	if err != nil {
+		c.log.Warn("GetNodeHeaderHash: Error in GetBlockByNumber",
+			"Block Number", startBlockNumber)
+		return nil, err
+	}
+	blockHeaderHash := b.HeaderHash()
+	nodeHeaderHash.Headerhashes = append(nodeHeaderHash.Headerhashes, blockHeaderHash)
+	startBlockNumber += 1
+
+	for i := 0 ; startBlockNumber <= endBlockNumber; i++ {
+		blockMetaData, err := c.state.GetBlockMetadata(blockHeaderHash)
+		if err != nil {
+			c.log.Warn("GetNodeHeaderHash: Error in GetBlockMetaData",
+				"HeaderHash", misc.Bin2HStr(blockHeaderHash))
+			return nil, err
+		}
+		headerHashes := blockMetaData.LastNHeaderHashes()
+		nodeHeaderHash.Headerhashes = append(nodeHeaderHash.Headerhashes, headerHashes...)
+		startBlockNumber += uint64(len(headerHashes))
+		if len(blockMetaData.LastNHeaderHashes()) == 0 {
+			break
+		}
+		blockHeaderHash = headerHashes[len(headerHashes)]
+	}
+	nodeHeaderHash.Headerhashes = nodeHeaderHash.Headerhashes[:totalExpectedHeaderHash]
+	return nodeHeaderHash, nil
 }
