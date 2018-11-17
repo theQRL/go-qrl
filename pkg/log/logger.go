@@ -94,12 +94,12 @@ func GetLogger() *Logger {
 func createLogger() *Logger {
 	handler := os.Stdout
 	logger := &Logger{
-		trace: log.New(handler, "TRACE ", log.Ldate|log.Ltime),
-		debug: log.New(handler, "DEBUG ", log.Ldate|log.Ltime),
-		info:  log.New(handler, "INFO ", log.Ldate|log.Ltime),
-		warn:  log.New(handler, "WARN ", log.Ldate|log.Ltime),
-		error: log.New(handler, "ERROR ", log.Ldate|log.Ltime),
-		crit:  log.New(handler, "CRIT ", log.Ldate|log.Ltime),
+		trace: log.New(handler, "TRACE ", log.Ldate|log.Lmicroseconds),
+		debug: log.New(handler, "DEBUG ", log.Ldate|log.Lmicroseconds),
+		info:  log.New(handler, "INFO ", log.Ldate|log.Lmicroseconds),
+		warn:  log.New(handler, "WARN ", log.Ldate|log.Lmicroseconds),
+		error: log.New(handler, "ERROR ", log.Ldate|log.Lmicroseconds),
+		crit:  log.New(handler, "CRIT ", log.Ldate|log.Lmicroseconds),
 	}
 	return logger
 }
