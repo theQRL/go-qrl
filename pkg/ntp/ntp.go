@@ -10,9 +10,9 @@ import (
 )
 
 type NTP struct {
-	lock *sync.Mutex
+	lock sync.Mutex
 
-	drift      uint64
+	drift      int64
 	lastUpdate uint64
 	config     *config.Config
 }
@@ -37,8 +37,8 @@ func (n *NTP) UpdateTime() error {
 				continue
 			}
 
-			n.drift = uint64(time.Now().Second() - t.Second())
-			n.lastUpdate = uint64(t.Second())
+			n.drift = int64(time.Now().Unix() - t.Unix())
+			n.lastUpdate = uint64(t.Unix())
 
 			return nil
 		}
@@ -48,7 +48,7 @@ func (n *NTP) UpdateTime() error {
 }
 
 func (n *NTP) Time() uint64 {
-	currentTime := uint64(time.Now().Second()) + n.drift
+	currentTime := uint64(time.Now().Unix() + n.drift)
 	if currentTime-n.lastUpdate > n.config.User.NTP.Refresh {
 		err := n.UpdateTime()
 		if err != nil {
@@ -56,7 +56,7 @@ func (n *NTP) Time() uint64 {
 		}
 	}
 
-	return uint64(time.Now().Second()) + n.drift
+	return uint64(time.Now().Unix() + n.drift)
 }
 
 var once sync.Once
