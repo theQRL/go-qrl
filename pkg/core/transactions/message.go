@@ -122,8 +122,8 @@ func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*addr
 }
 
 func (tx *MessageTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = nil
+	addressesState[misc.PK2Qaddress(tx.PK())] = nil
 }
 
 func CreateMessageTransaction(message []byte, fee uint64, xmssPK []byte, masterAddr []byte) *MessageTransaction {

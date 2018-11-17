@@ -57,7 +57,7 @@ func (tx *TransferTransaction) validateCustom() bool {
 	}
 
 	if tx.Fee() < 0 {
-		tx.log.Warn("TransferTransaction [%s] Invalid Fee = %d", goqrllib.Bin2hstr(tx.Txhash()), tx.Fee)
+		tx.log.Warn("TransferTransaction [%s] Invalid Fee = %d", misc.Bin2HStr(tx.Txhash()), tx.Fee)
 		return false
 	}
 

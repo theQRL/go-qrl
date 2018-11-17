@@ -143,14 +143,17 @@ func (tx *TokenTransaction) ValidateExtended(addrFromState *addressstate.Address
 	txBalance := addrFromState.Balance()
 
 	if txBalance < tx.Fee() {
-		tx.log.Warn("TokenTxn State validation failed for %s because: Insufficient funds", string(tx.Txhash()))
-		tx.log.Warn("balance: %s, Fee: %s", txBalance, tx.Fee())
+		tx.log.Warn("TokenTxn State validation failed due to insufficient funds",
+			"Txhash", misc.Bin2HStr(tx.Txhash()),
+			"Address", misc.Bin2Qaddress(addrFromState.Address()),
+			"txBalance", txBalance,
+			"fee", tx.Fee())
 		return false
 	}
 
 	if addrFromPKState.OTSKeyReuse(tx.OtsKey()) {
-		tx.log.Warn("TokenTxn State validation failed for %s because: OTS Public key re-use detected",
-			string(tx.Txhash()))
+		tx.log.Warn("TokenTxn State validation failed due OTS Public key re-use",
+			"TxHash", misc.Bin2HStr(tx.Txhash()))
 		return false
 	}
 
@@ -189,7 +192,7 @@ func (tx *TokenTransaction) Validate(verifySignature bool) bool {
 }
 
 func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
-	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+	addrFromPK := misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
 	addrFromPKProcessed := false
@@ -225,7 +228,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 		}
 	}
 
-	if addrState, ok := addressesState[string(addrFromPK)]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(addrFromPK)]; ok {
 		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromPKProcessed {
 				addrState.AppendTransactionHash(tx.Txhash())
@@ -237,7 +240,7 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 }
 
 func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
-	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+	addrFromPK := misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
 	addrFromProcessed := false
 	addrFromPKProcessed := false
@@ -273,7 +276,7 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addres
 		}
 	}
 
-	if addrState, ok := addressesState[string(addrFromPK)]; ok {
+	if addrState, ok := addressesState[misc.Bin2Qaddress(addrFromPK)]; ok {
 		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
 			if !addrFromPKProcessed {
 				addrState.RemoveTransactionHash(tx.Txhash())
@@ -285,11 +288,11 @@ func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addres
 }
 
 func (tx *TokenTransaction) SetAffectedAddress(addressesState map[string]*addressstate.AddressState) {
-	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = &addressstate.AddressState{}
-	addressesState[misc.PK2Qaddress(tx.PK())] = &addressstate.AddressState{}
+	addressesState[misc.Bin2Qaddress(tx.AddrFrom())] = nil
+	addressesState[misc.PK2Qaddress(tx.PK())] = nil
 
 	for _, addrAmount := range tx.InitialBalances() {
-		addressesState[misc.Bin2Qaddress(addrAmount.Address)] = &addressstate.AddressState{}
+		addressesState[misc.Bin2Qaddress(addrAmount.Address)] = nil
 	}
 }
 
