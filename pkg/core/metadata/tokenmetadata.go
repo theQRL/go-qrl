@@ -37,7 +37,7 @@ func (t *TokenMetadata) Serialize() ([]byte, error) {
 }
 
 func DeSerializeTokenMetadata(data []byte) (*TokenMetadata, error) {
-	t := &TokenMetadata{}
+	t := &TokenMetadata{&generated.TokenMetadata{}}
 
 	if err := proto.Unmarshal(data, t.data); err != nil {
 		return t, err
@@ -47,7 +47,7 @@ func DeSerializeTokenMetadata(data []byte) (*TokenMetadata, error) {
 }
 
 func CreateTokenMetadata(tokenTxHash []byte, transferTokenTxHash []byte) *TokenMetadata {
-	t := &TokenMetadata{}
+	t := &TokenMetadata{&generated.TokenMetadata{}}
 
 	t.data.TokenTxhash = tokenTxHash
 
