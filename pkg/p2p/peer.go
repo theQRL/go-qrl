@@ -28,11 +28,15 @@ type Peer struct {
 	conn    net.Conn
 	inbound bool
 
+	lock     sync.Mutex
+
 	chain *chain.Chain
 
 	wg                        sync.WaitGroup
 	closed                    chan struct{}
 	disc                      chan DiscReason
+	disconnected			  bool
+	exitMonitorChainState	  chan struct{}
 	log                       log.LoggerInterface
 	filter                    *bloom.BloomFilter
 	mr                        *MessageReceipt
@@ -57,6 +61,10 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 		conn:                      *conn,
 		inbound:                   inbound,
 		chain:                     chain,
+		closed:					   make(chan struct{}),
+		disc:				       make(chan DiscReason),
+		disconnected:			   false,
+		exitMonitorChainState:     make(chan struct{}),
 		log:                       log.GetLogger(),
 		filter:                    filter,
 		mr:                        mr,
@@ -116,7 +124,6 @@ func (p *Peer) SendNext() error {
 			return nil
 		}
 		om := data.(*OutgoingMessage)
-		//outgoingBytes, msg := om.bytesMessage, om.msg
 		outgoingBytes, _ := om.bytesMessage, om.msg
 
 		if outgoingBytes == nil {
@@ -125,9 +132,7 @@ func (p *Peer) SendNext() error {
 		}
 		p.bytesSent += uint64(len(outgoingBytes))
 		_, err := p.conn.Write(outgoingBytes)
-		//p.log.Info(">>>>>>>>>>>>>>>>>>> Sent message to ",
-		//	"peer", p.conn.RemoteAddr().String(),
-		//	"type", msg.FuncName)
+
 		if err != nil {
 			p.log.Error("Error while writing message on socket", "error", err)
 			p.Disconnect(DiscNetworkError)
@@ -159,6 +164,7 @@ func (p *Peer) ReadMsg() (msg *Msg, size uint32, err error) {
 }
 
 func (p *Peer) readLoop(errc chan<- error) {
+	p.wg.Add(1)
 	defer p.wg.Done()
 	p.log.Debug("initiating readloop")
 
@@ -200,81 +206,87 @@ func (p *Peer) readLoop(errc chan<- error) {
 }
 
 func (p *Peer) monitorChainState() error {
+	p.wg.Add(1)
 	defer p.wg.Done()
-	for ;; {
-		time.Sleep(30 * time.Second) // Move 30 to Config
-		currentTime := p.ntp.Time()
-		delta := int64(currentTime)
-		if p.chainState != nil {
-			delta -= int64(p.chainState.Timestamp)
-		} else {
-			delta -= int64(p.connectionTime)
-		}
-		if delta > int64(p.config.User.ChainStateTimeout) {
-			p.log.Warn("Disconnecting Peer due to Ping Timeout",
-				"delta", delta,
-				"currentTime", currentTime)
-			p.Disconnect(DiscProtocolError)
-			return nil
-		}
-
-		lastBlock := p.chain.GetLastBlock()
-		blockMetaData, err := p.chain.GetBlockMetaData(lastBlock.HeaderHash())
-		if err != nil {
-			p.log.Warn("Ping Failed Disconnecting",
-				"Peer", p.conn.RemoteAddr().String())
-			p.Disconnect(DiscNetworkError)
-			return err
-		}
-		chainStateData := &generated.NodeChainState{
-			BlockNumber:          lastBlock.BlockNumber(),
-			HeaderHash:           lastBlock.HeaderHash(),
-			CumulativeDifficulty: blockMetaData.TotalDifficulty(),
-			Version:              p.config.Dev.Version,
-			Timestamp:            p.ntp.Time(),
-		}
-		out := &Msg{}
-		out.msg = &generated.LegacyMessage{
-			FuncName: generated.LegacyMessage_CHAINSTATE,
-			Data: &generated.LegacyMessage_ChainStateData{
-				ChainStateData: chainStateData,
-			},
-		}
-		err = p.Send(out)
-
-		if p.chainState == nil {
-			continue
-		}
-
-		peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
-		localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
-		if peerCumulativeDifficulty.Cmp(localCumulativeDifficulty) > 0 {
-
-			startBlockNumber := uint64(0)
-			maxStartBlockNumber := uint64(0)
-			if lastBlock.BlockNumber() > p.config.Dev.ReorgLimit {
-				maxStartBlockNumber = lastBlock.BlockNumber() - p.config.Dev.ReorgLimit
+	for {
+		select {
+		case <-time.After(30 * time.Second):
+			//time.Sleep(30 * time.Second) // Move 30 to Config
+			currentTime := p.ntp.Time()
+			delta := int64(currentTime)
+			if p.chainState != nil {
+				delta -= int64(p.chainState.Timestamp)
+			} else {
+				delta -= int64(p.connectionTime)
 			}
-			if maxStartBlockNumber > startBlockNumber {
-				startBlockNumber = maxStartBlockNumber
+			if delta > int64(p.config.User.ChainStateTimeout) {
+				p.log.Warn("Disconnecting Peer due to Ping Timeout",
+					"delta", delta,
+					"currentTime", currentTime)
+				p.Disconnect(DiscProtocolError)
+				return nil
 			}
-			nodeHeaderHash := &generated.NodeHeaderHash{
-				BlockNumber: startBlockNumber,
+
+			lastBlock := p.chain.GetLastBlock()
+			blockMetaData, err := p.chain.GetBlockMetaData(lastBlock.HeaderHash())
+			if err != nil {
+				p.log.Warn("Ping Failed Disconnecting",
+					"Peer", p.conn.RemoteAddr().String())
+				p.Disconnect(DiscNetworkError)
+				return err
+			}
+			chainStateData := &generated.NodeChainState{
+				BlockNumber:          lastBlock.BlockNumber(),
+				HeaderHash:           lastBlock.HeaderHash(),
+				CumulativeDifficulty: blockMetaData.TotalDifficulty(),
+				Version:              p.config.Dev.Version,
+				Timestamp:            p.ntp.Time(),
 			}
 			out := &Msg{}
 			out.msg = &generated.LegacyMessage{
-				FuncName: generated.LegacyMessage_HEADERHASHES,
-				Data: &generated.LegacyMessage_NodeHeaderHash{
-					NodeHeaderHash: nodeHeaderHash,
+				FuncName: generated.LegacyMessage_CHAINSTATE,
+				Data: &generated.LegacyMessage_ChainStateData{
+					ChainStateData: chainStateData,
 				},
 			}
-			p.Send(out)
-		}
+			err = p.Send(out)
 
-		if err != nil {
-			p.log.Info("Error while sending ChainState",
-				"peer", p.conn.RemoteAddr().String())
-			return err
+			if p.chainState == nil {
+				continue
+			}
+
+			peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
+			localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
+			if peerCumulativeDifficulty.Cmp(localCumulativeDifficulty) > 0 {
+
+				startBlockNumber := uint64(0)
+				maxStartBlockNumber := uint64(0)
+				if lastBlock.BlockNumber() > p.config.Dev.ReorgLimit {
+					maxStartBlockNumber = lastBlock.BlockNumber() - p.config.Dev.ReorgLimit
+				}
+				if maxStartBlockNumber > startBlockNumber {
+					startBlockNumber = maxStartBlockNumber
+				}
+				nodeHeaderHash := &generated.NodeHeaderHash{
+					BlockNumber: startBlockNumber,
+				}
+				out := &Msg{}
+				out.msg = &generated.LegacyMessage{
+					FuncName: generated.LegacyMessage_HEADERHASHES,
+					Data: &generated.LegacyMessage_NodeHeaderHash{
+						NodeHeaderHash: nodeHeaderHash,
+					},
+				}
+				p.Send(out)
+			}
+
+			if err != nil {
+				p.log.Info("Error while sending ChainState",
+					"peer", p.conn.RemoteAddr().String())
+				return err
+			}
+		case <-p.exitMonitorChainState:
+			return nil
 		}
 	}
 }
@@ -473,7 +485,6 @@ func (p *Peer) SendPeerList() {
 	p.Send(out)
 }
 
-
 func (p *Peer) SendVersion() {
 	out := &Msg{}
 	veData := &generated.VEData{
@@ -517,11 +528,9 @@ func (p *Peer) run() (remoteRequested bool, err error) {
 		readErr    = make(chan error, 1)
 		reason     DiscReason
 	)
-	p.wg.Add(2)
 	p.handshake()
 	go p.readLoop(readErr)
 	go p.monitorChainState()
-
 loop:
 	for {
 		select {
@@ -539,19 +548,29 @@ loop:
 			}
 		}
 	}
-	close(p.closed)
+
 	p.close(reason)
 	p.wg.Wait()
 	return remoteRequested, err
 }
 
 func (p *Peer) close(err error) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.disconnected {
+		p.log.Info("Disconnected ",
+			"Peer", p.conn.RemoteAddr().String())
+		return
+	}
+	p.disconnected = true
+	close(p.closed)
+	close(p.exitMonitorChainState)
 	p.conn.Close()
 }
 
 func (p *Peer) Disconnect(reason DiscReason) {
-	select {
-	case p.disc <- reason:
-	case <-p.closed:
-	}
+	p.log.Info("Disconnecting ",
+		"Peer", p.conn.RemoteAddr().String())
+	p.close(reason)
+	p.wg.Wait()
 }
