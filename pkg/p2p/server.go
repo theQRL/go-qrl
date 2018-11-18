@@ -188,7 +188,7 @@ running:
 	for {
 		select {
 		case <-srv.exit:
-			srv.log.Debug("Quitting!!!")
+			srv.log.Debug("Shutting Down Server")
 			break running
 		case c := <-srv.addpeer:
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
