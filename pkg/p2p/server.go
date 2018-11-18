@@ -1,13 +1,19 @@
 package p2p
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/go-qrl/pkg/ntp"
+	"io/ioutil"
 	"net"
+	"os"
+	"path"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -21,6 +27,16 @@ import (
 type conn struct {
 	fd      net.Conn
 	inbound bool
+}
+
+type PeerInfo struct {
+	IP                      string `json:"IP"`
+	Port                    uint16 `json:"Port"`
+	LastConnectionTimestamp uint64 `json:"LastConnectionTimestamp"`
+}
+
+type PeersInfo struct {
+	PeersInfo []PeerInfo `json:"PeersInfo"`
 }
 
 type Server struct {
@@ -40,6 +56,7 @@ type Server struct {
 	mrDataConn                chan *MRDataConn
 	blockAndPeerChan          chan *BlockAndPeer
 	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
+	addPeerToPeerList         chan *generated.PLData
 	addpeer                   chan *conn
 	delpeer                   chan peerDrop
 
@@ -76,6 +93,7 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	srv.mrDataConn = make(chan *MRDataConn)
 	srv.blockAndPeerChan = make(chan *BlockAndPeer)
 	srv.nodeHeaderHashAndPeerChan = make(chan *NodeHeaderHashAndPeer)
+	srv.addPeerToPeerList = make(chan *generated.PLData)
 
 	srv.messagePriority = make(map[generated.LegacyMessage_FuncName]uint64)
 	srv.messagePriority[generated.LegacyMessage_VE] = 0
@@ -192,7 +210,7 @@ running:
 			break running
 		case c := <-srv.addpeer:
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
-			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter, srv.mr, srv.mrDataConn, srv.blockAndPeerChan, srv.nodeHeaderHashAndPeerChan, srv.messagePriority)
+			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter, srv.mr, srv.mrDataConn, srv.addPeerToPeerList, srv.blockAndPeerChan, srv.nodeHeaderHashAndPeerChan, srv.messagePriority)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
 			if p.inbound {
@@ -257,12 +275,97 @@ running:
 			srv.downloader.NewTargetNode(startSyncing.nodeHeaderHash, startSyncing.peer)
 			go srv.downloader.BlockDownloader()
 			srv.log.Info("Start Downloading Thread")
+		case addPeerToPeerList := <-srv.addPeerToPeerList:
+			srv.UpdatePeerList(addPeerToPeerList)
 		}
 	}
 
 	for _, p := range peers {
 		p.Disconnect(DiscQuitting)
 	}
+}
+
+func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
+	peerFileName := path.Join(srv.config.User.DataDir(), srv.config.Dev.PeersFilename)
+	jsonFile, err := os.Open(peerFileName)
+
+	if err != nil {
+		if err, ok := err.(*os.PathError); !ok {
+			srv.log.Error("Error while opening ",
+				"FileName", srv.config.Dev.PeersFilename,
+				"Error", err.Error())
+			return err
+		}
+	}
+
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	jsonFile.Close()
+
+	var peersInfo PeersInfo
+	json.Unmarshal([]byte(byteValue), &peersInfo)
+
+	peers := make(map[string]*PeerInfo)
+
+	for _, p := range peersInfo.PeersInfo {
+		if _, ok := peers[p.IP]; !ok {
+			peers[p.IP] = &p
+		}
+	}
+
+	var ip string
+	var port uint16
+
+	for _, p := range pl.GetPeerIps() {
+		ipPort := strings.Split(p, ":")
+		if len(ipPort) == 1 {
+			ip = ipPort[0]
+			port = 19000
+		} else if len(ipPort) == 2 {
+			ip = ipPort[0]
+			port64, err := strconv.ParseUint(ipPort[1], 10, 64)
+			if err != nil {
+				// TODO: Invalid Port
+				continue
+			}
+			port = uint16(port64)
+		} else {
+			// TODO: Invalid Peer List
+			continue
+		}
+
+		// TODO: Validate IP, should not be local ip
+		if !(port >= uint16(0) && port <= uint16(65535)) {
+			// TODO: Invalid Port Ban peer
+			continue
+		}
+
+		if _, ok := peers[ip]; !ok {
+			peerInfo := &PeerInfo{
+				IP: ip,
+				Port: port,
+				LastConnectionTimestamp: 0,
+			}
+			peers[ip] = peerInfo
+			peersInfo.PeersInfo = append(peersInfo.PeersInfo, *peerInfo)
+		}
+	}
+
+	peersInfoJson, err := json.Marshal(peersInfo)
+	if err != nil {
+		srv.log.Info("Error while parsing before writing peersInfo",
+			"Error", err.Error())
+		return err
+	}
+
+	err = ioutil.WriteFile(peerFileName, peersInfoJson, 0644)
+	if err != nil {
+		srv.log.Info("Error while writing file",
+			"FileName", peerFileName,
+			"Error", err.Error())
+		return err
+	}
+
+	return nil
 }
 
 func (srv *Server) RequestFullMessage(mrData *generated.MRData) {

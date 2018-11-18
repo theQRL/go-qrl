@@ -43,6 +43,7 @@ type Peer struct {
 	config                    *config.Config
 	ntp                       *ntp.NTP
 	chainState                *generated.NodeChainState
+	addPeerToPeerList         chan *generated.PLData
 	blockAndPeerChan          chan *BlockAndPeer
 	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
 	mrDataConn                chan *MRDataConn
@@ -54,9 +55,11 @@ type Peer struct {
 	connectionTime      uint64
 	messagePriority     map[generated.LegacyMessage_FuncName]uint64
 	outgoingQueue       *PriorityQueue
+
+	isPLShared			bool
 }
 
-func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, addPeerToPeerList chan *generated.PLData, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
 	p := &Peer{
 		conn:                      *conn,
 		inbound:                   inbound,
@@ -71,6 +74,7 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 		config:                    config.GetConfig(),
 		ntp:                       ntp.GetNTP(),
 		mrDataConn:                mrDataConn,
+		addPeerToPeerList:         addPeerToPeerList,
 		blockAndPeerChan:          blockAndPeerChan,
 		nodeHeaderHashAndPeerChan: nodeHeaderHashAndPeerChan,
 		connectionTime:            ntp.GetNTP().Time(),
@@ -318,6 +322,12 @@ func (p *Peer) handle(msg *Msg) error {
 
 	case generated.LegacyMessage_PL:
 		p.log.Debug("Received PL MSG")
+		if p.isPLShared {
+			p.log.Debug("Peer list already shared before")
+			return nil
+		}
+		p.isPLShared = true
+		p.addPeerToPeerList <- msg.msg.GetPlData()
 
 	case generated.LegacyMessage_PONG:
 		p.log.Debug("Received PONG MSG")
