@@ -259,13 +259,9 @@ running:
 			srv.log.Info("Start Downloading Thread")
 		}
 	}
+
 	for _, p := range peers {
 		p.Disconnect(DiscQuitting)
-	}
-
-	for len(peers) > 0 {
-		p := <-srv.delpeer
-		p.log.Trace("")
 	}
 }
 
