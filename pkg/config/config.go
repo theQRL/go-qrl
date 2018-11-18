@@ -312,7 +312,7 @@ func GetDevConfig() (dev *DevConfig) {
 		MiningSetpointBlocktime: 60,
 
 		DBName:              "state",
-		PeersFilename:       "peers.qrl",
+		PeersFilename:       "known_peers.json",
 		WalletDatFilename:   "wallet.json",
 		BannedPeersFilename: "banned_peers.qrl",
 
