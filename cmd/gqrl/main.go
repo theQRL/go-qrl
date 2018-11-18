@@ -43,13 +43,13 @@ func run() {
 		logger.Error("error while starting server", err)
 		return
 	}
+	defer server.Stop()
 	logger.Info("Connecting Peers")
 	server.ConnectPeers()
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
 	logger.Info("Shutting Down Server")
-	defer server.Stop()
 }
 
 func sendLoop() {
@@ -69,5 +69,5 @@ func main() {
 	logger.Info("Starting")
 	initialize()
 	run()
-	logger.Info("quitting..............")
+	logger.Info("Shutting Down Node")
 }
