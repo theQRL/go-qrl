@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/filter"
 	"github.com/syndtr/goleveldb/leveldb/opt"
 
 	"github.com/theQRL/go-qrl/pkg/log"
@@ -39,7 +38,7 @@ func NewDB(directory string, filename string, cache int, handles int) (*LDB, err
 		OpenFilesCacheCapacity: handles,
 		BlockCacheCapacity:     cache / 2 * opt.MiB,
 		WriteBuffer:            cache / 4 * opt.MiB,
-		Filter:                 filter.NewBloomFilter(10),
+		//Filter:                 filter.NewBloomFilter(10), Bloom filter disabled
 	})
 
 	if err != nil {
