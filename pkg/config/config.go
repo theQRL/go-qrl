@@ -27,6 +27,7 @@ type NodeConfig struct {
 	PeerRateLimit           uint64
 	BanMinutes              uint8
 	MaxPeersLimit           uint16
+	MaxPeersInPeerList		uint64
 	MaxRedundantConnections int
 }
 
@@ -182,7 +183,8 @@ func GetUserConfig() (userConf *UserConfig) {
 		PublicPort:              19000,
 		PeerRateLimit:           500,
 		BanMinutes:              20,
-		MaxPeersLimit:           100,
+		MaxPeersLimit:           32,
+		MaxPeersInPeerList:      100,
 		MaxRedundantConnections: 5,
 	}
 
