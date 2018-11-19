@@ -45,7 +45,8 @@ func run() {
 	}
 	defer server.Stop()
 	logger.Info("Connecting Peers")
-	server.ConnectPeers()
+	server.LoadPeerList()
+	go server.ConnectPeers()
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
