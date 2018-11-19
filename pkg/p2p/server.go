@@ -42,17 +42,22 @@ type PeersInfo struct {
 type Server struct {
 	config *config.Config
 
-	chain *chain.Chain
-	ntp   *ntp.NTP
+	chain        *chain.Chain
+	ntp          *ntp.NTP
+	peersInfo    *PeersInfo
+	ipCount      map[string]int
+	inboundCount uint16
 
-	listener net.Listener
-	lock     sync.Mutex
+	listener     net.Listener
+	lock         sync.Mutex
+	peerInfoLock sync.Mutex
 
 	running bool
 	loopWG  sync.WaitGroup
 	log     log.LoggerInterface
 
 	exit                      chan struct{}
+	connectPeersExit          chan struct{}
 	mrDataConn                chan *MRDataConn
 	blockAndPeerChan          chan *BlockAndPeer
 	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
@@ -82,11 +87,13 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 
 	srv.config = config.GetConfig()
 	srv.exit = make(chan struct{})
+	srv.connectPeersExit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan peerDrop)
 	srv.log = log.GetLogger()
 	srv.chain = chain
 	srv.ntp = ntp.GetNTP()
+	srv.ipCount = make(map[string]int)
 	srv.mr = CreateMR()
 	srv.downloader = CreateDownloader(chain)
 	srv.futureBlocks = make(map[string]*block.Block)
@@ -147,6 +154,26 @@ func (srv *Server) listenLoop(listener net.Listener) {
 	}
 }
 
+func (srv *Server) ConnectPeer(peer string) error {
+	ip, _, _ := net.SplitHostPort(peer)
+	if _, ok := srv.ipCount[ip]; ok {
+		return nil
+	}
+
+	c, err := net.DialTimeout("tcp", peer, 10*time.Second)
+
+	if err != nil {
+		srv.log.Warn("Error while connecting to Peer",
+			"IP:PORT", peer)
+		return err
+	}
+	srv.log.Debug("Connected to peer",
+		"IP:PORT", peer)
+	srv.addpeer <- &conn{c, false}
+
+	return nil
+}
+
 func (srv *Server) ConnectPeers() {
 	srv.loopWG.Add(1)
 	defer srv.loopWG.Done()
@@ -154,18 +181,71 @@ func (srv *Server) ConnectPeers() {
 	for _, peer := range srv.config.User.Node.PeerList {
 		srv.log.Info("Connecting peer",
 			"IP:PORT", peer)
-		c, err := net.DialTimeout("tcp", peer, 10*time.Second)
-
-		if err != nil {
-			srv.log.Warn("Error while connecting to Peer",
-				"IP:PORT", peer)
-			continue
-		}
-		srv.log.Debug("Connected to peer",
-			"IP:PORT", peer)
-		srv.addpeer <- &conn{c, false}
+		srv.ConnectPeer(peer)
+		// TODO: Update last connection time
 	}
 
+	for {
+		select {
+		case <-time.After(60*time.Second):
+			srv.peerInfoLock.Lock()
+			if srv.inboundCount > srv.config.User.Node.MaxPeersLimit {
+				break
+			}
+
+			maxConnectionTry := 10
+			peerList := make([]string, 0)
+			removePeerList := make([]string, 0)
+
+			count := 0
+
+			for _, p := range srv.peersInfo.PeersInfo {
+
+				if count > maxConnectionTry {
+					break
+				}
+
+				if _, ok := srv.ipCount[p.IP]; ok {
+					continue
+				}
+
+				count += 1
+				peerList = append(peerList, net.JoinHostPort(p.IP, strconv.FormatInt(int64(p.Port), 10)))
+				p.LastConnectionTimestamp = srv.ntp.Time()
+			}
+			srv.peerInfoLock.Unlock()
+
+			for _, ipPort := range peerList {
+				if !srv.running {
+					break
+				}
+				fmt.Println("Trying to Connect",
+					"Peer", ipPort)
+				err := srv.ConnectPeer(ipPort)
+				if err != nil {
+					removePeerList = append(removePeerList, ipPort)
+				}
+			}
+
+			srv.peerInfoLock.Lock()
+			for _, ipPort := range removePeerList {
+				ip, port, _ := net.SplitHostPort(ipPort)
+				var index int
+				for i, p := range srv.peersInfo.PeersInfo {
+					if p.IP == ip && strconv.FormatInt(int64(p.Port), 10) == port {
+						index = i
+						break
+					}
+				}
+				srv.peersInfo.PeersInfo = append(srv.peersInfo.PeersInfo[:index], srv.peersInfo.PeersInfo[index+1:]...)
+			}
+
+			srv.WritePeerList()
+			srv.peerInfoLock.Unlock()
+		case <-srv.connectPeersExit:
+			return
+		}
+	}
 }
 
 func (srv *Server) Stop() {
@@ -179,6 +259,7 @@ func (srv *Server) Stop() {
 		srv.listener.Close()
 	}
 	close(srv.exit)
+	close(srv.connectPeersExit)
 	srv.loopWG.Wait()
 }
 
@@ -196,7 +277,6 @@ func (srv *Server) startListening() error {
 func (srv *Server) run() {
 	var (
 		peers        = make(map[string]*Peer)
-		inboundCount = 0
 	)
 
 	srv.loopWG.Add(1)
@@ -209,19 +289,36 @@ running:
 			srv.log.Debug("Shutting Down Server")
 			break running
 		case c := <-srv.addpeer:
+			srv.peerInfoLock.Lock()
+
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
 			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter, srv.mr, srv.mrDataConn, srv.addPeerToPeerList, srv.blockAndPeerChan, srv.nodeHeaderHashAndPeerChan, srv.messagePriority)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
+
+			ip, _, _ := net.SplitHostPort(c.fd.RemoteAddr().String())
+			srv.ipCount[ip] += 1
 			if p.inbound {
-				inboundCount++
+				srv.inboundCount++
 			}
+			if srv.ipCount[ip] > srv.config.User.Node.MaxRedundantConnections {
+				p.Disconnect(DiscAlreadyConnected)
+				// TODO: Ban peer
+			}
+
+			srv.peerInfoLock.Unlock()
 		case pd := <-srv.delpeer:
+			srv.peerInfoLock.Lock()
+
 			pd.log.Debug("Removing Peer", "err", pd.err)
 			delete(peers, pd.conn.RemoteAddr().String())
 			if pd.inbound {
-				inboundCount--
+				srv.inboundCount--
 			}
+			ip, _, _ := net.SplitHostPort(pd.conn.RemoteAddr().String())
+			srv.ipCount[ip] -= 1
+
+			srv.peerInfoLock.Unlock()
 		case mrDataConn := <-srv.mrDataConn:
 			// TODO: Process Message Recpt
 			// Need to get connection too
@@ -285,7 +382,9 @@ running:
 	}
 }
 
-func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
+func (srv *Server) LoadPeerList() {
+	srv.peersInfo = &PeersInfo{}
+
 	peerFileName := path.Join(srv.config.User.DataDir(), srv.config.Dev.PeersFilename)
 	jsonFile, err := os.Open(peerFileName)
 
@@ -294,19 +393,51 @@ func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
 			srv.log.Error("Error while opening ",
 				"FileName", srv.config.Dev.PeersFilename,
 				"Error", err.Error())
-			return err
+			return
 		}
 	}
+	defer jsonFile.Close()
+	byteValue := make([]byte, 0)
 
-	byteValue, _ := ioutil.ReadAll(jsonFile)
-	jsonFile.Close()
+	// Parse only when peers file is found
+	if err == nil {
+		byteValue, err = ioutil.ReadAll(jsonFile)
+		if err != nil {
+			srv.log.Error("Error while parsing JsonFile",
+				"Error", err.Error())
+			return
+		}
+	}
+	json.Unmarshal([]byte(byteValue), srv.peersInfo)
+}
 
-	var peersInfo PeersInfo
-	json.Unmarshal([]byte(byteValue), &peersInfo)
+func (srv *Server) WritePeerList() error {
+	peerFileName := path.Join(srv.config.User.DataDir(), srv.config.Dev.PeersFilename)
+	peersInfoJson, err := json.Marshal(*srv.peersInfo)
+	if err != nil {
+		srv.log.Info("Error while parsing before writing peersInfo",
+			"Error", err.Error())
+		return err
+	}
+
+	err = ioutil.WriteFile(peerFileName, peersInfoJson, 0644)
+	if err != nil {
+		srv.log.Info("Error while writing file",
+			"FileName", peerFileName,
+			"Error", err.Error())
+		return err
+	}
+
+	return nil
+}
+
+func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
+	srv.peerInfoLock.Lock()
+	defer srv.peerInfoLock.Unlock()
 
 	peers := make(map[string]*PeerInfo)
 
-	for _, p := range peersInfo.PeersInfo {
+	for _, p := range srv.peersInfo.PeersInfo {
 		if _, ok := peers[p.IP]; !ok {
 			peers[p.IP] = &p
 		}
@@ -334,7 +465,8 @@ func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
 		}
 
 		// TODO: Validate IP, should not be local ip
-		if !(port >= uint16(0) && port <= uint16(65535)) {
+		// Ignores Ephemeral Port Range of Linux
+		if (port >= uint16(32768) && port <= uint16(61000)) || port <= 0 || port > 65535 {
 			// TODO: Invalid Port Ban peer
 			continue
 		}
@@ -346,31 +478,16 @@ func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
 				LastConnectionTimestamp: 0,
 			}
 			peers[ip] = peerInfo
-			peersInfo.PeersInfo = append(peersInfo.PeersInfo, *peerInfo)
+			srv.peersInfo.PeersInfo = append(srv.peersInfo.PeersInfo, *peerInfo)
 		}
 	}
 
-	peersInfoJson, err := json.Marshal(peersInfo)
-	if err != nil {
-		srv.log.Info("Error while parsing before writing peersInfo",
-			"Error", err.Error())
-		return err
-	}
-
-	err = ioutil.WriteFile(peerFileName, peersInfoJson, 0644)
-	if err != nil {
-		srv.log.Info("Error while writing file",
-			"FileName", peerFileName,
-			"Error", err.Error())
-		return err
-	}
-
-	return nil
+	return srv.WritePeerList()
 }
 
 func (srv *Server) RequestFullMessage(mrData *generated.MRData) {
 	outer:
-	for ;; {
+	for {
 		msgHash := misc.Bin2HStr(mrData.Hash)
 		_, ok := srv.mr.GetHashMsg(msgHash)
 		if ok {
