@@ -140,6 +140,11 @@ func (c *Chain) Load() error {
 		c.lastBlock = genesisBlock
 	} else {
 		c.lastBlock, err = c.state.GetBlockByNumber(h)
+		if err != nil {
+			c.log.Info("Error while loading Last Block",
+				"Block Number", h,
+				"Error", err.Error())
+		}
 		var blockMetadata *metadata.BlockMetaData
 		blockMetadata, err := c.state.GetBlockMetadata(c.lastBlock.HeaderHash())
 
@@ -251,9 +256,9 @@ func (c *Chain) AddBlock(block *block.Block) bool {
 	blockFlag, forkFlag := c.addBlock(block, batch)
 	if blockFlag {
 		if !forkFlag {
-			c.log.Info(">>Writing Batch")
+			c.log.Debug(">>Writing Batch")
 			c.state.WriteBatch(batch)
-			c.log.Info(">>Writing Batch Done<<")
+			c.log.Debug(">>Writing Batch Done<<")
 		}
 		c.log.Info("Added Block",
 			"BlockNumber", block.BlockNumber(),
