@@ -3,6 +3,8 @@ package log
 import (
 	"bytes"
 	"fmt"
+	"github.com/theQRL/go-qrl/pkg/config"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -92,7 +94,12 @@ func GetLogger() *Logger {
 }
 
 func createLogger() *Logger {
-	handler := os.Stdout
+	fileName := config.GetConfig().User.GetLogFileName()
+	logFile, err := os.OpenFile(fileName, os.O_CREATE | os.O_APPEND | os.O_RDWR, 0666)
+	if err != nil {
+		panic(err)
+	}
+	handler := io.MultiWriter(os.Stdout, logFile)
 	logger := &Logger{
 		trace: log.New(handler, "TRACE ", log.Ldate|log.Lmicroseconds),
 		debug: log.New(handler, "DEBUG ", log.Ldate|log.Lmicroseconds),
