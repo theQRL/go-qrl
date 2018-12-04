@@ -196,7 +196,10 @@ func (tx *Transaction) Sign(xmss *crypto.XMSS, message goqrllib.UcharVector) {
 func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.PK2Qaddress(tx.PK())
 	if _, ok := addressesState[addrFromPK]; ok {
-		if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
+		//if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
+		//	addressesState[addrFromPK].AppendTransactionHash(tx.Txhash())
+		//}
+		if tx.OtsKey() >= tx.config.Dev.MaxOTSTracking {
 			addressesState[addrFromPK].AppendTransactionHash(tx.Txhash())
 		}
 		addressesState[addrFromPK].IncreaseNonce()
@@ -207,7 +210,10 @@ func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*address
 func (tx *Transaction) revertStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	if _, ok := addressesState[addrFromPK]; ok {
-		if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
+		//if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
+		//	addressesState[addrFromPK].RemoveTransactionHash(tx.Txhash())
+		//}
+		if tx.OtsKey() >= tx.config.Dev.MaxOTSTracking {
 			addressesState[addrFromPK].RemoveTransactionHash(tx.Txhash())
 		}
 		addressesState[addrFromPK].DecreaseNonce()
