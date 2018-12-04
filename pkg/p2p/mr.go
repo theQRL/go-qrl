@@ -6,6 +6,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
 	"github.com/theQRL/go-qrl/pkg/generated"
+	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"reflect"
 	"sync"
@@ -43,7 +44,8 @@ type MessageReceipt struct {
 	requestedHash      map[string]*MessageRequest
 	requestedHashOrder []string
 
-	c *config.Config
+	c   *config.Config
+	log *log.Logger
 }
 
 func (mr *MessageReceipt) addPeer(mrData *generated.MRData, peer *Peer) {
@@ -300,9 +302,13 @@ func CreateMR() (mr *MessageReceipt) {
 
 	mr = &MessageReceipt {
 		allowedTypes: allowedTypes,
-		hashMsg: nil,
-		requestedHash: nil,
+		hashMsg: make(map[string]*generated.Message),
+		hashMsgOrder: make([]string, 1),
+		requestedHash: make(map[string]*MessageRequest),
+		requestedHashOrder: make([]string, 1),
 		servicesArgs: servicesArgs,
+		c: config.GetConfig(),
+		log: log.GetLogger(),
 	}
 
 	return
