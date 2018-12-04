@@ -347,7 +347,7 @@ func (d *Downloader) isSyncingFinished(forceFinish bool) bool {
 		d.targetNode = nil
 		d.targetPeers = make(map[string]*TargetNode)
 		d.targetPeerList = make([]string, 0)
-		d.done <- struct{}{}
+		close(d.done)
 		d.log.Info("Syncing FINISHED")
 		return true
 	}
@@ -368,7 +368,7 @@ func CreateDownloader(c *chain.Chain) (d *Downloader) {
 		blockNumberProcessed: make(chan uint64, SIZE),
 		retryBlockNumber: make(chan uint64, 1),
 		blockAndPeerChannel: make(chan *BlockAndPeer, SIZE*2),
-		done: make(chan struct{}, 2),
+		done: make(chan struct{}),
 	}
 	return
 }
@@ -376,6 +376,7 @@ func CreateDownloader(c *chain.Chain) (d *Downloader) {
 func (d *Downloader) Initialize(p *Peer) {
 	d.log.Info("Initializing Downloader")
 	d.isSyncing = true
+	d.done = make(chan struct{})
 	d.AddPeer(p)
 
 	nodeHeaderHash := d.targetNode.nodeHeaderHash
