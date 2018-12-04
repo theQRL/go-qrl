@@ -1,19 +1,18 @@
 package main
 
 import (
-	"bufio"
-	"os"
-	"os/signal"
-	"strings"
-
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/p2p"
+	"github.com/theQRL/go-qrl/pkg/p2p/notification"
+	"os"
+	"os/signal"
 )
 
 var (
 	server *p2p.Server
-	input = bufio.NewReader(os.Stdin)
+	notificationServer *notification.NotificationServer
 	logger = log.GetLogger()
 )
 
@@ -25,15 +24,36 @@ func startServer() error {
 
 	c.Load() // Loads Chain State
 
+	// Start Notification Server if enabled in config
+	var newBlockNotificationChannel chan []byte
+	if config.GetUserConfig().NotificationServerConfig.EnableNotificationServer {
+		notificationServer = &notification.NotificationServer{}
+		err := notificationServer.Start(c)
+		if err != nil {
+			logger.Error("Failed to start Notification Server!!!",
+				"Error", err.Error())
+		} else {
+			newBlockNotificationChannel = notificationServer.GetNewBlockNotificationChannel()
+		}
+	}
+
+	if newBlockNotificationChannel != nil {
+		c.SetNewBlockNotificationChannel(newBlockNotificationChannel)
+	}
+
+
+	server = &p2p.Server{}
+
 	err = server.Start(c)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func initialize() {
-	server = &p2p.Server{}
+
 	logger.Info("Server Initialized")
 }
 
@@ -44,6 +64,10 @@ func run() {
 		return
 	}
 	defer server.Stop()
+	if notificationServer != nil {
+		defer notificationServer.Stop()
+	}
+
 	logger.Info("Connecting Peers")
 	server.LoadPeerList()
 	go server.ConnectPeers()
@@ -53,20 +77,11 @@ func run() {
 	logger.Info("Shutting Down Server")
 }
 
-func sendLoop() {
-	for {
-		txt, err := input.ReadString('\n')
-		if err != nil {
-			logger.Error("input error: %s", err)
-		}
-		txt = strings.TrimRight(txt, "\n\r")
-		if txt == "quit" {
-			return
-		}
-	}
-}
-
 func main() {
+	//Enable only for debugging, Used for profiling
+	//go func() {
+	//	http.ListenAndServe("localhost:6060", nil)
+	//}()
 	logger.Info("Starting")
 	initialize()
 	run()
