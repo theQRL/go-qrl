@@ -29,6 +29,12 @@ type conn struct {
 	inbound bool
 }
 
+type peerDrop struct {
+	*Peer
+	err       error
+	requested bool // true if signaled by the peer
+}
+
 type PeerInfo struct {
 	IP                      string `json:"IP"`
 	Port                    uint16 `json:"Port"`
@@ -63,19 +69,13 @@ type Server struct {
 	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
 	addPeerToPeerList         chan *generated.PLData
 	addpeer                   chan *conn
-	delpeer                   chan peerDrop
+	delpeer                   chan *peerDrop
 
 	filter          *bloom.BloomFilter
 	mr              *MessageReceipt
 	downloader      *Downloader
 	futureBlocks    map[string]*block.Block
 	messagePriority map[generated.LegacyMessage_FuncName]uint64
-}
-
-type peerDrop struct {
-	*Peer
-	err       error
-	requested bool // true if signaled by the peer
 }
 
 func (srv *Server) Start(chain *chain.Chain) (err error) {
@@ -89,7 +89,7 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	srv.exit = make(chan struct{})
 	srv.connectPeersExit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
-	srv.delpeer = make(chan peerDrop)
+	srv.delpeer = make(chan *peerDrop)
 	srv.log = log.GetLogger()
 	srv.chain = chain
 	srv.ntp = ntp.GetNTP()
@@ -187,7 +187,7 @@ func (srv *Server) ConnectPeers() {
 
 	for {
 		select {
-		case <-time.After(60*time.Second):
+		case <-time.After(15*time.Second):
 			srv.peerInfoLock.Lock()
 			if srv.inboundCount > srv.config.User.Node.MaxPeersLimit {
 				break
@@ -258,6 +258,7 @@ func (srv *Server) Stop() {
 	if srv.listener != nil {
 		srv.listener.Close()
 	}
+	close(srv.downloader.done)
 	close(srv.exit)
 	close(srv.connectPeersExit)
 	srv.loopWG.Wait()
@@ -327,17 +328,21 @@ running:
 			switch mrData.Type {
 			case generated.LegacyMessage_BK:
 				if mrData.BlockNumber > srv.chain.Height()+uint64(srv.config.Dev.MaxMarginBlockNumber) {
-					srv.log.Debug("Skipping block #%s as beyond lead limit", "Block #", mrData.BlockNumber)
+					srv.log.Debug("Skipping block #%s as beyond lead limit",
+						"Block #", mrData.BlockNumber)
 					break
 				}
 				if mrData.BlockNumber < srv.chain.Height()-uint64(srv.config.Dev.MinMarginBlockNumber) {
-					srv.log.Debug("'Skipping block #%s as beyond the limit", "Block #", mrData.BlockNumber)
+					srv.log.Debug("'Skipping block #%s as beyond the limit",
+						"Block #", mrData.BlockNumber)
 					break
 				}
 				_, err := srv.chain.GetBlock(mrData.PrevHeaderhash)
 				if err != nil {
-					srv.log.Debug("Missing Parent Block", "Block:", mrData.Hash,
-						"Parent Block ", mrData.PrevHeaderhash)
+					srv.log.Debug("Missing Parent Block",
+						"#", mrData.BlockNumber,
+						"Block:", misc.Bin2HStr(mrData.Hash),
+						"Parent Block ", misc.Bin2HStr(mrData.PrevHeaderhash))
 					break
 				}
 				if srv.mr.contains(mrData.Hash, mrData.Type) {
@@ -357,26 +362,31 @@ running:
 			case generated.LegacyMessage_TX:
 				// Check transactions pool Size,
 				// if full then ignore
+			case generated.LegacyMessage_MT:
+			case generated.LegacyMessage_TK:
+			case generated.LegacyMessage_TT:
+			case generated.LegacyMessage_SL:
 			default:
-				srv.log.Warn("Unknown Message Receipt Type")
+				srv.log.Warn("Unknown Message Receipt Type",
+					"Type", mrData.Type)
 				mrDataConn.peer.Disconnect(DiscProtocolError)
 			}
 		case blockAndPeer := <-srv.blockAndPeerChan:
 			srv.BlockReceived(blockAndPeer.peer, blockAndPeer.block)
 		case startSyncing := <-srv.nodeHeaderHashAndPeerChan:
-			srv.log.Info("Running downloading thread")
 			if srv.downloader.isSyncing {
+				srv.downloader.AddPeer(startSyncing.peer) // Added new Peer
 				srv.log.Info("Node Already Syncing")
 				break
 			}
 			srv.downloader.NewTargetNode(startSyncing.nodeHeaderHash, startSyncing.peer)
-			go srv.downloader.BlockDownloader()
+			//go srv.downloader.BlockDownloader()
+			srv.downloader.Initialize(startSyncing.peer)
 			srv.log.Info("Start Downloading Thread")
 		case addPeerToPeerList := <-srv.addPeerToPeerList:
 			srv.UpdatePeerList(addPeerToPeerList)
 		}
 	}
-
 	for _, p := range peers {
 		p.Disconnect(DiscQuitting)
 	}
@@ -538,11 +548,12 @@ func (srv *Server) BlockReceived(peer *Peer, b *block.Block) {
 		"Block Number", b.BlockNumber(),
 		"HeaderHash", misc.Bin2HStr(b.HeaderHash()))
 
+	//srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}
 	srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}
 }
 
 func (srv *Server) runPeer(p *Peer) {
 	remoteRequested, err := p.run()
 
-	srv.delpeer <- peerDrop{p, err, remoteRequested}
+	srv.delpeer <- &peerDrop{p, err, remoteRequested}
 }
