@@ -19,16 +19,22 @@ type MinerConfig struct {
 }
 
 type NodeConfig struct {
-	EnablePeerDiscovery     bool
-	PeerList                []string
-	BindingIP               string
-	LocalPort               uint16
-	PublicPort              uint16
-	PeerRateLimit           uint64
-	BanMinutes              uint8
-	MaxPeersLimit           uint16
-	MaxPeersInPeerList		uint64
-	MaxRedundantConnections int
+	EnablePeerDiscovery      bool
+	PeerList                 []string
+	BindingIP                string
+	LocalPort                uint16
+	PublicPort               uint16
+	PeerRateLimit            uint64
+	BanMinutes               uint8
+	MaxPeersLimit            uint16
+	MaxPeersInPeerList       uint64
+	MaxRedundantConnections  int
+}
+
+type NotificationServerConfig struct {
+	EnableNotificationServer bool
+	BindingIP                string
+	LocalPort                uint16
 }
 
 type EphemeralConfig struct {
@@ -55,9 +61,10 @@ type API struct {
 }
 
 type UserConfig struct {
-	Node      *NodeConfig
-	Miner     *MinerConfig
-	Ephemeral *EphemeralConfig
+	Node                     *NodeConfig
+	NotificationServerConfig *NotificationServerConfig
+	Miner                    *MinerConfig
+	Ephemeral                *EphemeralConfig
 
 	NTP *NTPConfig
 
@@ -179,13 +186,19 @@ func GetUserConfig() (userConf *UserConfig) {
 			"18.130.25.64:19000",
 		},
 		BindingIP:               "0.0.0.0",
-		LocalPort:               19000,
-		PublicPort:              19000,
+		LocalPort:               18000,
+		PublicPort:              18000,
 		PeerRateLimit:           500,
 		BanMinutes:              20,
 		MaxPeersLimit:           32,
 		MaxPeersInPeerList:      100,
 		MaxRedundantConnections: 5,
+	}
+
+	notificationServerConfig := &NotificationServerConfig{
+		EnableNotificationServer: true,
+		BindingIP:                "0.0.0.0",
+		LocalPort:                18001,
 	}
 
 	miner := &MinerConfig{
@@ -242,7 +255,8 @@ func GetUserConfig() (userConf *UserConfig) {
 	}
 	userCurrentDir, _ := user.Current()  // TODO: Handle error
 	userConf = &UserConfig{
-		Node:      node,
+		Node: node,
+		NotificationServerConfig: notificationServerConfig,
 		Miner:     miner,
 		Ephemeral: ephemeral,
 
@@ -264,6 +278,10 @@ func GetUserConfig() (userConf *UserConfig) {
 
 func (u *UserConfig) DataDir() string {
 	return path.Join(u.QrlDir, u.ChainFileDirectory)
+}
+
+func (u *UserConfig) GetLogFileName() string {
+	return path.Join(u.QrlDir, "go-qrl.log")
 }
 
 func GetDevConfig() (dev *DevConfig) {
@@ -313,7 +331,7 @@ func GetDevConfig() (dev *DevConfig) {
 		DefaultAccountBalance:   0,
 		MiningSetpointBlocktime: 60,
 
-		DBName:              "state",
+		DBName:              "go-state",
 		PeersFilename:       "known_peers.json",
 		WalletDatFilename:   "wallet.json",
 		BannedPeersFilename: "banned_peers.qrl",
