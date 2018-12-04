@@ -93,8 +93,19 @@ func GetLogger() *Logger {
 	return logger
 }
 
+func CreateDirectoryIfNotExists(dir string) {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		err = os.MkdirAll(dir, 0755)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
 func createLogger() *Logger {
-	fileName := config.GetConfig().User.GetLogFileName()
+	c := config.GetConfig()
+	CreateDirectoryIfNotExists(c.User.QrlDir)
+	fileName := c.User.GetLogFileName()
 	logFile, err := os.OpenFile(fileName, os.O_CREATE | os.O_APPEND | os.O_RDWR, 0666)
 	if err != nil {
 		panic(err)
