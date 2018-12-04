@@ -1,0 +1,80 @@
+// Distributed under the MIT software license, see the accompanying
+// file LICENSE or http://www.opensource.org/licenses/mit-license.php.
+
+syntax = "proto3";
+
+package notification;
+
+import "qrl.proto";
+
+message NotificationMessage {
+    enum FuncName {
+        NM = 0;  // Notification Mode
+        PING = 1;  // Ping
+        BN = 2;  // Block Notification
+        BLOCKREQ = 3;
+        BLOCKRESP = 4;
+        HEADERHASHESREQ = 5;
+        HEADERHASHESRESP = 6;
+        HEIGHTREQ = 7;
+        HEIGHTRESP = 8;
+    }
+
+    FuncName func_name = 1;
+
+    oneof data {
+        NotificationMode nmData = 2;
+        Ping pingData = 3;
+        BlockNotification bnData = 4;
+        BlockRequest blockReqData = 5;
+        BlockResponse blockRespData = 6;
+        HeaderHashesReq headerHashesReqData = 7;
+        HeaderHashesResp headerHashesRespData = 8;
+        HeightReq heightReqData = 9;
+        HeightResp heightRespData = 10;
+    }
+}
+
+message NotificationMode {
+    bool enable = 1;  // True when notification is enabled
+}
+
+message BlockNotification {
+    uint64 block_number = 1;
+    bytes headerHash = 2;
+}
+
+message BlockRequest {
+    oneof blockParam {
+        bytes headerHash = 1;
+        uint64 blockNumber = 2;
+    }
+}
+
+message BlockResponse {
+    qrl.Block block = 1;
+    bool found = 2;  // True when requested block is found
+}
+
+message Ping {
+    uint64 timestamp = 1;
+}
+
+message HeaderHashesReq {
+    uint64 count = 1;
+    uint64 startBlockNumber = 2;
+}
+
+message HeaderHashesResp {
+    uint64 count = 1;
+    uint64 startBlockNumber = 2;
+    repeated bytes headerHashes = 3;
+}
+
+message HeightReq {
+
+}
+
+message HeightResp {
+    uint64 height = 1;
+}
