@@ -95,6 +95,7 @@ func (db *LDB) GetBatch() *leveldb.Batch {
 
 func (db *LDB) WriteBatch(batch *leveldb.Batch, sync bool) error {
 	var wo *opt.WriteOptions
+
 	if sync {
 		wo = &opt.WriteOptions{Sync: sync}
 	}

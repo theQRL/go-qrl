@@ -56,7 +56,7 @@ func (s *State) GetBatch() *leveldb.Batch {
 }
 
 func (s *State) WriteBatch(batch *leveldb.Batch) {
-	s.db.WriteBatch(batch, true)
+	s.db.WriteBatch(batch, false)
 }
 
 func (s *State) GetBlockSizeLimit(b *block.Block) (int, error) {
