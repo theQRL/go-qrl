@@ -39,6 +39,8 @@ type Chain struct {
 
 	lastBlock         *block.Block
 	currentDifficulty []byte
+
+	newBlockNotificationChannel chan []byte
 }
 
 func CreateChain() (*Chain, error) {
@@ -58,6 +60,10 @@ func CreateChain() (*Chain, error) {
 	}
 
 	return chain, err
+}
+
+func (c *Chain) SetNewBlockNotificationChannel(newBlockNotificationChannel chan []byte) {
+	c.newBlockNotificationChannel = newBlockNotificationChannel
 }
 
 func (c *Chain) Height() uint64 {
@@ -201,6 +207,9 @@ func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) 
 			c.state.WriteBatch(batch)
 			return c.forkRecovery(block, forkState), true
 		}
+		if c.newBlockNotificationChannel != nil {
+			c.newBlockNotificationChannel <- block.HeaderHash()
+		}
 		c.updateChainState(block, batch)
 		c.txPool.CheckStale(block.BlockNumber())
 		c.triggerMiner = true
@@ -256,9 +265,7 @@ func (c *Chain) AddBlock(block *block.Block) bool {
 	blockFlag, forkFlag := c.addBlock(block, batch)
 	if blockFlag {
 		if !forkFlag {
-			c.log.Debug(">>Writing Batch")
 			c.state.WriteBatch(batch)
-			c.log.Debug(">>Writing Batch Done<<")
 		}
 		c.log.Info("Added Block",
 			"BlockNumber", block.BlockNumber(),
@@ -266,7 +273,6 @@ func (c *Chain) AddBlock(block *block.Block) bool {
 		return true
 	}
 	return false
-
 }
 
 func (c *Chain) applyBlock(block *block.Block, batch *leveldb.Batch) bool {
@@ -299,10 +305,12 @@ func (c *Chain) updateBlockNumberMapping(block *block.Block, batch *leveldb.Batc
 func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64, batch *leveldb.Batch) {
 	addressesState := block.PrepareAddressesList()
 	c.state.GetAddressesState(addressesState)
-	for i := len(block.Transactions()) - 1; i <= 0; i-- {
+	for i := len(block.Transactions()) - 1; i >= 0; i-- {
 		tx := transactions.ProtoToTransaction(block.Transactions()[i])
 		tx.RevertStateChanges(addressesState)
-		c.state.UnsetOTSKey(*addressesState[tx.AddrFromPK()], uint64(tx.OtsKey()))
+		if i != 0 { // Skip OTS reset for Coinbase txn
+			c.state.UnsetOTSKey(*addressesState[tx.AddrFromPK()], uint64(tx.OtsKey()))
+		}
 	}
 
 	c.txPool.AddTxFromBlock(block, blockNumber)
@@ -314,21 +322,20 @@ func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64,
 
 func (c *Chain) Rollback(forkedHeaderHash []byte, forkState *generated.ForkState) [][]byte {
 	var hashPath [][]byte
-
 	for !reflect.DeepEqual(c.lastBlock.HeaderHash(), forkedHeaderHash) {
 		b, err := c.state.GetBlock(c.lastBlock.HeaderHash())
 
 		if err != nil {
-			c.log.Info("self.state.get_block(self.last_block.headerhash) returned None")
+			c.log.Info("No block found by GetBlock")
 		}
 
 		mainchainBlock, err := c.state.GetBlockByNumber(b.BlockNumber())
 
 		if err != nil {
-			c.log.Info("self.get_block_by_number(b.block_number) returned None")
+			c.log.Info("No block found by GetBlockByNumber")
 		}
 
-		if reflect.DeepEqual(b.HeaderHash(), mainchainBlock.HeaderHash()) {
+		if !reflect.DeepEqual(b.HeaderHash(), mainchainBlock.HeaderHash()) {
 			break
 		}
 		hashPath = append(hashPath, c.lastBlock.HeaderHash())
@@ -373,6 +380,10 @@ func (c *Chain) GetForkPoint(block *block.Block) ([]byte, [][]byte, error) {
 		hashPath = append(hashPath, block.HeaderHash())
 		block, err = c.state.GetBlock(block.PrevHeaderHash())
 		if err != nil {
+			c.log.Error("[GetForkPoint] Error while getting block",
+				"#", block.BlockNumber(),
+				"HeaderHash", misc.Bin2HStr(block.HeaderHash()),
+				"PrevHeaderHash", misc.Bin2HStr(block.PrevHeaderHash()))
 			return nil, nil, err
 		}
 	}
@@ -406,7 +417,9 @@ func (c *Chain) AddChain(hashPath [][]byte, forkState *generated.ForkState) bool
 
 		c.updateChainState(b, batch)
 
-		c.log.Debug("Apply block #%d - [batch %d | %s]", b.BlockNumber(), i, hashPath[i])
+		c.log.Debug("Apply block",
+			"#", b.BlockNumber(),
+			"batch", i, "hash", hashPath[i])
 		c.state.WriteBatch(batch)
 	}
 
@@ -419,6 +432,7 @@ func (c *Chain) forkRecovery(block *block.Block, forkState *generated.ForkState)
 	c.log.Info("Triggered Fork Recovery")
 
 	var forkHeaderHash []byte
+	var err error
 	var hashPath, oldHashPath [][]byte
 
 	if len(forkState.ForkPointHeaderhash) > 0 {
@@ -426,9 +440,9 @@ func (c *Chain) forkRecovery(block *block.Block, forkState *generated.ForkState)
 		forkHeaderHash = forkState.ForkPointHeaderhash
 		hashPath = forkState.NewMainchainHashPath
 	} else {
-		forkHeaderHash, hashPath, err := c.GetForkPoint(block)
+		forkHeaderHash, hashPath, err = c.GetForkPoint(block)
 		if err != nil {
-
+			c.log.Info("")
 		}
 		forkState.ForkPointHeaderhash = forkHeaderHash
 		forkState.NewMainchainHashPath = hashPath
@@ -493,7 +507,7 @@ func (c *Chain) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 	return c.state.GetMeasurement(blockTimestamp, parentHeaderHash, parentMetaData)
 }
 
-func (c *Chain) GetHeaderHashes(blockNumber uint64) (*generated.NodeHeaderHash, error) {
+func (c *Chain) GetHeaderHashes(blockNumber uint64, count uint64) (*generated.NodeHeaderHash, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -502,27 +516,26 @@ func (c *Chain) GetHeaderHashes(blockNumber uint64) (*generated.NodeHeaderHash, 
 		startBlockNumber = blockNumber
 	}
 
-	endBlockNumber := startBlockNumber + 2 * c.config.Dev.ReorgLimit
+	endBlockNumber := startBlockNumber + 2 * count //c.config.Dev.ReorgLimit
 	if endBlockNumber > c.lastBlock.BlockNumber() {
 		endBlockNumber = c.lastBlock.BlockNumber()
 	}
 
 	totalExpectedHeaderHash := endBlockNumber - startBlockNumber + 1
 
-	nodeHeaderHash := &generated.NodeHeaderHash {}
+	nodeHeaderHash := &generated.NodeHeaderHash{}
 	nodeHeaderHash.BlockNumber = startBlockNumber
 
-	b, err := c.state.GetBlockByNumber(startBlockNumber)
+	b, err := c.state.GetBlockByNumber(endBlockNumber)
 	if err != nil {
 		c.log.Warn("GetNodeHeaderHash: Error in GetBlockByNumber",
-			"Block Number", startBlockNumber)
+			"Block Number", endBlockNumber)
 		return nil, err
 	}
 	blockHeaderHash := b.HeaderHash()
 	nodeHeaderHash.Headerhashes = append(nodeHeaderHash.Headerhashes, blockHeaderHash)
-	startBlockNumber += 1
 
-	for i := 0 ; startBlockNumber <= endBlockNumber; i++ {
+	for ; endBlockNumber >= startBlockNumber; {
 		blockMetaData, err := c.state.GetBlockMetadata(blockHeaderHash)
 		if err != nil {
 			c.log.Warn("GetNodeHeaderHash: Error in GetBlockMetaData",
@@ -530,12 +543,16 @@ func (c *Chain) GetHeaderHashes(blockNumber uint64) (*generated.NodeHeaderHash, 
 			return nil, err
 		}
 		headerHashes := blockMetaData.LastNHeaderHashes()
-		nodeHeaderHash.Headerhashes = append(nodeHeaderHash.Headerhashes, headerHashes...)
-		startBlockNumber += uint64(len(headerHashes))
+		nodeHeaderHash.Headerhashes = append(headerHashes, nodeHeaderHash.Headerhashes...)
+		if endBlockNumber >= uint64(len(headerHashes)) {
+			endBlockNumber = 0
+		} else {
+			endBlockNumber -= uint64(len(headerHashes))
+		}
 		if len(blockMetaData.LastNHeaderHashes()) == 0 {
 			break
 		}
-		blockHeaderHash = headerHashes[len(headerHashes)]
+		blockHeaderHash = headerHashes[0]
 	}
 	nodeHeaderHash.Headerhashes = nodeHeaderHash.Headerhashes[:totalExpectedHeaderHash]
 	return nodeHeaderHash, nil
