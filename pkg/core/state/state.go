@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/binary"
-	"errors"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"math"
 	"reflect"
@@ -37,7 +36,7 @@ type RollbackStateInfo struct {
 }
 
 func CreateState() (*State, error) {
-	newDB, err := db.NewDB(c.GetUserConfig().DataDir(), c.GetDevConfig().DBName, 16, 16)
+	newDB, err := db.NewDB(c.GetUserConfig().DataDir(), c.GetDevConfig().DBName, 1*1024, 500)
 
 	if err != nil {
 		return nil, err
@@ -88,6 +87,7 @@ func (s *State) PutBlock(b *block.Block, batch *leveldb.Batch) error {
 	if err := s.db.Put(b.HeaderHash(), value, batch); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -153,16 +153,15 @@ func (s *State) PutBlockNumberMapping(blockNumber uint64, blockNumberMapping *ge
 
 	value, err := proto.Marshal(blockNumberMapping)
 	if err != nil {
-
+		s.log.Error("Error while Encoding BlockNumberMapping",
+			"#", blockNumber,
+			"Error", err.Error())
+		return err
 	}
 
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key[0:], blockNumber)
-	if err := s.db.Put(key, value, batch); err != nil {
-		return err
-	}
-
-	return nil
+	return s.db.Put(key, value, batch)
 }
 
 func (s *State) GetBlockNumberMapping(blockNumber uint64) (*generated.BlockNumberMapping, error) {
@@ -170,17 +169,21 @@ func (s *State) GetBlockNumberMapping(blockNumber uint64) (*generated.BlockNumbe
 	defer s.lock.Unlock()
 
 	key := make([]byte, 8)
-	binary.BigEndian.PutUint64(key[0:], blockNumber)
+	binary.BigEndian.PutUint64(key, blockNumber)
 
 	value, err := s.db.Get(key)
 
 	if err != nil {
-
+		s.log.Error("[GetBlockNumberMapping] Key not found",
+			"key", key)
+		return nil, err
 	}
 
 	b := &generated.BlockNumberMapping{}
 	err = proto.Unmarshal(value, b)
-
+	if err != nil {
+		s.log.Error("[GetBlockNumberMapping] Error Decoding")
+	}
 	return b, err
 }
 
@@ -195,29 +198,19 @@ func (s *State) RemoveBlockNumberMapping(blockNumber uint64) error {
 }
 
 func (s *State) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
-	s.lock.Lock()
 
-	key := make([]byte, 8)
-	binary.BigEndian.PutUint64(key[0:], blockNumber)
-
-	value, err := s.db.Get(key)
+	bm, err := s.GetBlockNumberMapping(blockNumber)
 
 	if err != nil {
+		s.log.Info("Failed to Unmarshal")
 		return nil, err
 	}
-
-	bm := &generated.BlockNumberMapping{}
-	err = proto.Unmarshal(value, bm)
-
-	if err != nil {
-		return nil, err
-	}
-
-	s.lock.Unlock()
 
 	b, err := s.GetBlock(bm.Headerhash)
 
 	if err != nil {
+		s.log.Info("Failed to get for Headerhash",
+			"hh", misc.Bin2HStr(bm.Headerhash))
 		return nil, err
 	}
 
@@ -225,9 +218,6 @@ func (s *State) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
 }
 
 func (s *State) GetLastBlock() (*block.Block, error) {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
 	blockNumber, err := s.GetChainHeight()
 
 	if err != nil {
@@ -250,9 +240,7 @@ func (s *State) PutChainHeight(height uint64, batch *leveldb.Batch) error {
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key[0:], height)
 
-	s.db.Put([]byte("blockheight"), key, batch)
-
-	return nil
+	return s.db.Put([]byte("blockheight"), key, batch)
 }
 
 func (s *State) GetChainHeight() (uint64, error) {
@@ -418,10 +406,7 @@ func (s *State) updateTokenMetadata(transferToken *transactions.TransferTokenTra
 	return nil
 }
 
-func (s *State) RemoveTransferTokenMetadata(transferToken *transactions.TransferTokenTransaction, batch *leveldb.Batch) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
+func (s *State) removeTransferTokenMetadata(transferToken *transactions.TransferTokenTransaction, batch *leveldb.Batch) error {
 	tokenMetadata, err := s.getTokenMetadata(transferToken.TokenTxhash())
 
 	if err != nil {
@@ -448,10 +433,7 @@ func (s *State) RemoveTransferTokenMetadata(transferToken *transactions.Transfer
 	return nil
 }
 
-func (s *State) RemoveTokenMetadata(token *transactions.TokenTransaction) error {
-	s.lock.Lock()
-	defer s.lock.Unlock()
-
+func (s *State) removeTokenMetadata(token *transactions.TokenTransaction) error {
 	key := []byte("token_")
 	key = append(key[:], token.Txhash()[:]...)
 
@@ -464,7 +446,7 @@ func (s *State) RemoveTokenMetadata(token *transactions.TokenTransaction) error 
 	return nil
 }
 
-func (s *State) PutTxMetadata(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64, batch *leveldb.Batch) error {
+func (s *State) putTxMetadata(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64, batch *leveldb.Batch) error {
 	m := &generated.TransactionMetadata{}
 	m.Transaction = tx.PBData()
 	m.BlockNumber = blockNumber
@@ -530,7 +512,7 @@ func (s *State) UpdateTxMetadata(block *block.Block, batch *leveldb.Batch) error
 		tx := transactions.ProtoToTransaction(protoTX)
 		feeReward += tx.Fee()
 
-		s.PutTxMetadata(tx, block.BlockNumber(), uint64(block.Timestamp()), batch)
+		s.putTxMetadata(tx, block.BlockNumber(), uint64(block.Timestamp()), batch)
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
@@ -547,7 +529,7 @@ func (s *State) UpdateTxMetadata(block *block.Block, batch *leveldb.Batch) error
 	}
 
 	tx := block.Transactions()[0]
-	err = s.AddTotalCoinSupply(tx.GetCoinbase().Amount-feeReward, batch)
+	err = s.addTotalCoinSupply(tx.GetCoinbase().Amount-feeReward, batch)
 	if err != nil {
 		s.log.Warn("Error while adding total coin supply")
 		s.log.Info(err.Error())
@@ -573,15 +555,15 @@ func (s *State) RollbackTxMetadata(block *block.Block, batch *leveldb.Batch) err
 		tx := transactions.ProtoToTransaction(protoTX)
 		feeReward += tx.Fee()
 
-		s.PutTxMetadata(tx, block.BlockNumber(), uint64(block.Timestamp()), batch)
+		s.putTxMetadata(tx, block.BlockNumber(), uint64(block.Timestamp()), batch)
 
 		switch protoTX.TransactionType.(type) {
 		case *generated.Transaction_Token_:
 			t := tx.(*transactions.TokenTransaction)
-			err = s.RemoveTokenMetadata(t)
+			err = s.removeTokenMetadata(t)
 		case *generated.Transaction_TransferToken_:
 			t := tx.(*transactions.TransferTokenTransaction)
-			err = s.RemoveTransferTokenMetadata(t, batch)
+			err = s.removeTransferTokenMetadata(t, batch)
 		}
 
 		if err != nil {
@@ -706,83 +688,6 @@ func (s *State) GetAddressesState(addressesState map[string]*addressstate.Addres
 	return nil
 }
 
-func (s *State) getState(headerHash []byte, addressesState map[string]*addressstate.AddressState) (*RollbackStateInfo, error) {
-	tmpHeaderHash := headerHash
-
-	var hashPath [][]byte
-
-	for {
-		b, err := s.GetBlock(headerHash)
-		if err != nil {
-			return nil, err
-		}
-
-		mainchainBlock, err := s.GetBlockByNumber(b.BlockNumber())
-
-		if err == nil {
-			if reflect.DeepEqual(mainchainBlock.HeaderHash(), b.HeaderHash()) {
-				break
-			}
-		}
-		if b.BlockNumber() == 0 {
-			panic("[GetState] Alternate chain genesis is different, Initiator" + string(tmpHeaderHash))
-		}
-		hashPath = append(hashPath, headerHash)
-		headerHash = b.PrevHeaderHash()
-	}
-
-	rollbackHeaderHash := headerHash
-
-	for address := range addressesState {
-		addrState, err := s.getAddressState([]byte(address))
-		if err != nil {
-			return nil, err
-		}
-		addressesState[address] = addrState
-	}
-	b, err := s.GetLastBlock()
-
-	if err != nil {
-		return nil, err
-	}
-
-	for reflect.DeepEqual(b.HeaderHash(), rollbackHeaderHash) {
-		txs := b.Transactions()
-		for i := len(txs); i >= 0; i-- {
-			tx := transactions.ProtoToTransaction(txs[i])
-			tx.RevertStateChanges(addressesState)
-			s.UnsetOTSKey(*addressesState[tx.AddrFromPK()], uint64(tx.OtsKey()))
-		}
-
-		newBlock, err := s.GetBlock(b.PrevHeaderHash())
-		if err != nil {
-			return nil, err
-		}
-
-		b = newBlock
-	}
-
-	for i := len(hashPath); i >= 0; i-- {
-		b, err := s.GetBlock(hashPath[i])
-
-		if err != nil {
-			return nil, err
-		}
-
-		for _, protoTX := range b.Transactions() {
-			tx := transactions.ProtoToTransaction(protoTX)
-			tx.ApplyStateChanges(addressesState)
-		}
-	}
-
-	rollbackStateInfo := &RollbackStateInfo{}
-	rollbackStateInfo.addressesState = addressesState
-	rollbackStateInfo.rollbackHeaderHash = rollbackHeaderHash
-	rollbackStateInfo.hashPath = hashPath
-
-	return rollbackStateInfo, nil
-}
-
 func (s *State) GetTotalCoinSupply() (uint64, error) {
 	value, err := s.db.Get([]byte("TotalCoinSupply"))
 
@@ -797,7 +702,7 @@ func (s *State) GetTotalCoinSupply() (uint64, error) {
 	return binary.BigEndian.Uint64(value), nil
 }
 
-func (s *State) AddTotalCoinSupply(value uint64, batch *leveldb.Batch) error {
+func (s *State) addTotalCoinSupply(value uint64, batch *leveldb.Batch) error {
 	oldValue, err := s.GetTotalCoinSupply()
 	if err != nil {
 		return err
@@ -828,6 +733,7 @@ func (s *State) ReduceTotalCoinSupply(value uint64, batch *leveldb.Batch) error 
 }
 
 func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, parentMetaData *metadata.BlockMetaData) (uint64, error) {
+	//return 1000000000, nil
 	var nthBlock *block.Block
 	var err error
 
@@ -869,7 +775,7 @@ func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) err
 
 	a.PBData().OtsCounter = 0
 	hashes := a.TransactionHashes()
-	for i := len(hashes); i >= 0; i-- {
+	for i := len(hashes) - 1; i >= 0; i-- {
 		tm, err := s.GetTxMetadata(hashes[i])
 		if err != nil {
 			return err
@@ -880,8 +786,7 @@ func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) err
 			return nil
 		}
 	}
-
-	return errors.New("OTS key didn't change")
+	return nil
 }
 
 // TODO: Needed for API
