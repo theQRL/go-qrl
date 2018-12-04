@@ -194,45 +194,51 @@ func (tx *TokenTransaction) Validate(verifySignature bool) bool {
 func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
-	addrFromProcessed := false
-	addrFromPKProcessed := false
+	//addrFromProcessed := false
+	//addrFromPKProcessed := false
 
 	for _, addrAmount := range tx.InitialBalances() {
 		if reflect.DeepEqual(addrAmount.Address, tx.Owner()) {
 			ownerProcessed = true
 		}
-		if reflect.DeepEqual(addrAmount.Address, tx.AddrFrom()) {
-			addrFromProcessed = true
-		}
-		if reflect.DeepEqual(addrAmount.Address, addrFromPK) {
-			addrFromPKProcessed = true
-		}
+		//if reflect.DeepEqual(addrAmount.Address, tx.AddrFrom()) {
+		//	addrFromProcessed = true
+		//}
+		//if reflect.DeepEqual(addrAmount.Address, addrFromPK) {
+		//	addrFromPKProcessed = true
+		//}
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrAmount.Address)]; ok {
 			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount, false)
-			addrState.AppendTransactionHash(tx.Txhash())
+			// Disabled Tracking of Transaction Hash into AddressState
+			//addrState.AppendTransactionHash(tx.Txhash())
 		}
 	}
 
 	if !ownerProcessed {
-		if addrState, ok := addressesState[misc.Bin2Qaddress(tx.Owner())]; ok {
-			addrState.AppendTransactionHash(tx.Txhash())
-		}
+		// Disabled Tracking of Transaction Hash into AddressState
+		//if addrState, ok := addressesState[misc.Bin2Qaddress(tx.Owner())]; ok {
+		//	addrState.AppendTransactionHash(tx.Txhash())
+		//}
 	}
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.SubtractBalance(tx.Fee())
-		if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
-			if !addrFromProcessed {
-				addrState.AppendTransactionHash(tx.Txhash())
-			}
-		}
+		// Disabled Tracking of Transaction Hash into AddressState
+		//if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+		//	if !addrFromProcessed {
+		//		addrState.AppendTransactionHash(tx.Txhash())
+		//	}
+		//}
 	}
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(addrFromPK)]; ok {
-		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
-			if !addrFromPKProcessed {
-				addrState.AppendTransactionHash(tx.Txhash())
-			}
+		//if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+		//	if !addrFromPKProcessed {
+		//		addrState.AppendTransactionHash(tx.Txhash())
+		//	}
+		//}
+		if tx.OtsKey() >= tx.config.Dev.MaxOTSTracking {
+			addrState.AppendTransactionHash(tx.Txhash())
 		}
 		addrState.IncreaseNonce()
 		addrState.SetOTSKey(uint64(tx.OtsKey()))
@@ -242,45 +248,51 @@ func (tx *TokenTransaction) ApplyStateChanges(addressesState map[string]*address
 func (tx *TokenTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	addrFromPK := misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
 	ownerProcessed := false
-	addrFromProcessed := false
-	addrFromPKProcessed := false
+	//addrFromProcessed := false
+	//addrFromPKProcessed := false
 
 	for _, addrAmount := range tx.InitialBalances() {
 		if reflect.DeepEqual(addrAmount.Address, tx.Owner()) {
 			ownerProcessed = true
 		}
-		if reflect.DeepEqual(addrAmount.Address, tx.AddrFrom()) {
-			addrFromProcessed = true
-		}
-		if reflect.DeepEqual(addrAmount.Address, addrFromPK) {
-			addrFromPKProcessed = true
-		}
+		//if reflect.DeepEqual(addrAmount.Address, tx.AddrFrom()) {
+		//	addrFromProcessed = true
+		//}
+		//if reflect.DeepEqual(addrAmount.Address, addrFromPK) {
+		//	addrFromPKProcessed = true
+		//}
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrAmount.Address)]; ok {
 			addrState.UpdateTokenBalance(tx.Txhash(), addrAmount.Amount, true)
-			addrState.RemoveTransactionHash(tx.Txhash())
+			// Disabled Tracking of Transaction Hash into AddressState
+			//addrState.RemoveTransactionHash(tx.Txhash())
 		}
 	}
 
 	if !ownerProcessed {
-		if addrState, ok := addressesState[misc.Bin2Qaddress(tx.Owner())]; ok {
-			addrState.RemoveTransactionHash(tx.Txhash())
-		}
+		// Disabled Tracking of Transaction Hash into AddressState
+		//if addrState, ok := addressesState[misc.Bin2Qaddress(tx.Owner())]; ok {
+		//	addrState.RemoveTransactionHash(tx.Txhash())
+		//}
 	}
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
-		if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
-			if !addrFromProcessed {
-				addrState.RemoveTransactionHash(tx.Txhash())
-			}
-		}
+		// Disabled Tracking of Transaction Hash into AddressState
+		//if !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+		//	if !addrFromProcessed {
+		//		addrState.RemoveTransactionHash(tx.Txhash())
+		//	}
+		//}
 	}
 
 	if addrState, ok := addressesState[misc.Bin2Qaddress(addrFromPK)]; ok {
-		if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
-			if !addrFromPKProcessed {
-				addrState.RemoveTransactionHash(tx.Txhash())
-			}
+		//if !reflect.DeepEqual(tx.AddrFrom(), addrFromPK) && !reflect.DeepEqual(tx.AddrFrom(), tx.Owner()) {
+		//	if !addrFromPKProcessed {
+		//		addrState.RemoveTransactionHash(tx.Txhash())
+		//	}
+		//}
+		if tx.OtsKey() >= tx.config.Dev.MaxOTSTracking {
+			addrState.RemoveTransactionHash(tx.Txhash())
 		}
 		addrState.DecreaseNonce()
 		// Remember to Unset OTS Key

@@ -132,7 +132,8 @@ func (tx *SlaveTransaction) ApplyStateChanges(addressesState map[string]*address
 		for i := 0; i < len(tx.SlavePKs()); i++ {
 			addrState.AddSlavePKSAccessType(tx.SlavePKs()[i], tx.AccessTypes()[i])
 		}
-		addrState.AppendTransactionHash(tx.Txhash())
+		// Disabled Tracking of Transaction Hash into AddressState
+		//addrState.AppendTransactionHash(tx.Txhash())
 	}
 }
 
@@ -144,7 +145,8 @@ func (tx *SlaveTransaction) RevertStateChanges(addressesState map[string]*addres
 		for i := 0; i < len(tx.SlavePKs()); i++ {
 			addrState.RemoveSlavePKSAccessType(tx.SlavePKs()[i])
 		}
-		addrState.RemoveTransactionHash(tx.Txhash())
+		// Disabled Tracking of Transaction Hash into AddressState
+		//addrState.RemoveTransactionHash(tx.Txhash())
 	}
 }
 

@@ -106,7 +106,8 @@ func (tx *MessageTransaction) Validate(verifySignature bool) bool {
 func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.SubtractBalance(tx.Fee())
-		addrState.AppendTransactionHash(tx.Txhash())
+		// Disabled Tracking of Transaction Hash into AddressState
+		//addrState.AppendTransactionHash(tx.Txhash())
 	}
 
 	tx.applyStateChangesForPK(addressesState)
@@ -115,7 +116,8 @@ func (tx *MessageTransaction) ApplyStateChanges(addressesState map[string]*addre
 func (tx *MessageTransaction) RevertStateChanges(addressesState map[string]*addressstate.AddressState) {
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		addrState.AddBalance(tx.Fee())
-		addrState.RemoveTransactionHash(tx.Txhash())
+		// Disabled Tracking of Transaction Hash into AddressState
+		//addrState.RemoveTransactionHash(tx.Txhash())
 	}
 
 	tx.revertStateChangesForPK(addressesState)

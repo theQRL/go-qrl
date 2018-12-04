@@ -152,7 +152,8 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.SubtractBalance(total)
-		addrState.AppendTransactionHash(tx.Txhash())
+		// Disabled Tracking of Transaction Hash into AddressState
+		//addrState.AppendTransactionHash(tx.Txhash())
 	}
 
 	addrsTo := tx.AddrsTo()
@@ -163,9 +164,10 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.AddBalance(amount)
-			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
-				addrState.AppendTransactionHash(tx.Txhash())
-			}
+			// Disabled Tracking of Transaction Hash into AddressState
+			//if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
+			//	addrState.AppendTransactionHash(tx.Txhash())
+			//}
 		}
 	}
 }
@@ -177,7 +179,8 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.AddBalance(total)
-		addrState.RemoveTransactionHash(tx.Txhash())
+		// Disabled Tracking of Transaction Hash into AddressState
+		//addrState.RemoveTransactionHash(tx.Txhash())
 	}
 
 	addrsTo := tx.AddrsTo()
@@ -188,9 +191,10 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.SubtractBalance(amount)
-			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
-				addrState.RemoveTransactionHash(tx.Txhash())
-			}
+			// Disabled Tracking of Transaction Hash into AddressState
+			//if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
+			//	addrState.RemoveTransactionHash(tx.Txhash())
+			//}
 		}
 	}
 }
