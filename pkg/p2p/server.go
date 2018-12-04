@@ -543,13 +543,19 @@ func (srv *Server) RequestFullMessage(mrData *generated.MRData) {
 }
 
 func (srv *Server) BlockReceived(peer *Peer, b *block.Block) {
-	// srv.downloader.lastPBTime = srv.ntp.Time()
+	headerHash := misc.Bin2HStr(b.HeaderHash())
 	srv.log.Info(">>> Received Block",
 		"Block Number", b.BlockNumber(),
-		"HeaderHash", misc.Bin2HStr(b.HeaderHash()))
+		"HeaderHash", headerHash)
 
 	//srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}
-	srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}
+	select {
+		case srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}:
+		case <-time.After(5 * time.Second):
+			srv.log.Info("Timeout for Received Block",
+				"#", b.BlockNumber(),
+				"HeaderHash", headerHash)
+	}
 }
 
 func (srv *Server) runPeer(p *Peer) {
