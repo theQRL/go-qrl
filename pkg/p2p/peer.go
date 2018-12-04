@@ -28,15 +28,15 @@ type Peer struct {
 	conn    net.Conn
 	inbound bool
 
-	lock     sync.Mutex
+	lock sync.Mutex
 
 	chain *chain.Chain
 
 	wg                        sync.WaitGroup
-	closed                    chan struct{}
 	disc                      chan DiscReason
-	disconnected			  bool
-	exitMonitorChainState	  chan struct{}
+	writeErr                  chan error
+	disconnected              bool
+	exitMonitorChainState     chan struct{}
 	log                       log.LoggerInterface
 	filter                    *bloom.BloomFilter
 	mr                        *MessageReceipt
@@ -56,18 +56,19 @@ type Peer struct {
 	messagePriority     map[generated.LegacyMessage_FuncName]uint64
 	outgoingQueue       *PriorityQueue
 
-	isPLShared			bool
+	isPLShared     bool // Flag to mark once peer list has been received by the peer
+	isDownloadPeer bool // FLag is Peer is in the list of Downloader's Peer List
 }
 
 func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, addPeerToPeerList chan *generated.PLData, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
 	p := &Peer{
-		conn:                      *conn,
-		inbound:                   inbound,
-		chain:                     chain,
-		closed:					   make(chan struct{}),
-		disc:				       make(chan DiscReason),
-		disconnected:			   false,
-		exitMonitorChainState:     make(chan struct{}),
+		conn:                  *conn,
+		inbound:               inbound,
+		chain:                 chain,
+		disc:                  make(chan DiscReason),
+		writeErr:              make(chan error, 1),
+		disconnected:          false,
+		exitMonitorChainState: make(chan struct{}),
 		log:                       log.GetLogger(),
 		filter:                    filter,
 		mr:                        mr,
@@ -85,6 +86,27 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 	p.log.Info("New Peer connected",
 		"Peer Addr", p.conn.RemoteAddr().String())
 	return p
+}
+
+func (p *Peer) ID() string {
+	return p.conn.RemoteAddr().String()
+}
+
+func (p *Peer) SetDownloaderPeerList(value bool) {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	p.isDownloadPeer = value
+}
+
+func (p *Peer) GetCumulativeDifficulty() []byte {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if p.chainState == nil {
+		return nil
+	}
+
+	return p.chainState.CumulativeDifficulty
 }
 
 func (p *Peer) updateCounters() {
@@ -109,11 +131,17 @@ func (p *Peer) Send(msg *Msg) error {
 		return nil
 	}
 	p.outgoingQueue.Push(outgoingMsg)
-	p.SendNext()
-	return nil
+	return p.SendNext()
 }
 
 func (p *Peer) SendNext() error {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	if p.disconnected {
+		return DiscUselessPeer
+	}
+
 	p.updateCounters()
 	if float32(p.outCounter) >= float32(p.config.User.Node.PeerRateLimit) * 0.9 {
 		p.log.Info("Send Next Cancelled as",
@@ -122,7 +150,7 @@ func (p *Peer) SendNext() error {
 		return nil
 	}
 
-	for ;p.bytesSent < p.config.Dev.MaxBytesOut; {
+	for p.bytesSent < p.config.Dev.MaxBytesOut {
 		data := p.outgoingQueue.Pop()
 		if data == nil {
 			return nil
@@ -139,7 +167,7 @@ func (p *Peer) SendNext() error {
 
 		if err != nil {
 			p.log.Error("Error while writing message on socket", "error", err)
-			p.Disconnect(DiscNetworkError)
+			p.writeErr <- err
 			return err
 		}
 	}
@@ -157,8 +185,6 @@ func (p *Peer) ReadMsg() (msg *Msg, size uint32, err error) {
 	size = misc.ConvertBytesToLong(buf)
 	buf = make([]byte, size)
 	if _, err := io.ReadFull(p.conn, buf); err != nil {
-		p.log.Info("---------_>Error",
-			"error", err.Error())
 		return nil, 0, err
 	}
 	message := &generated.LegacyMessage{}
@@ -215,7 +241,6 @@ func (p *Peer) monitorChainState() error {
 	for {
 		select {
 		case <-time.After(30 * time.Second):
-			//time.Sleep(30 * time.Second) // Move 30 to Config
 			currentTime := p.ntp.Time()
 			delta := int64(currentTime)
 			if p.chainState != nil {
@@ -226,7 +251,8 @@ func (p *Peer) monitorChainState() error {
 			if delta > int64(p.config.User.ChainStateTimeout) {
 				p.log.Warn("Disconnecting Peer due to Ping Timeout",
 					"delta", delta,
-					"currentTime", currentTime)
+					"currentTime", currentTime,
+					"peer", p.ID())
 				p.Disconnect(DiscProtocolError)
 				return nil
 			}
@@ -253,16 +279,28 @@ func (p *Peer) monitorChainState() error {
 					ChainStateData: chainStateData,
 				},
 			}
+
 			err = p.Send(out)
+			if err != nil {
+				p.log.Info("Error while sending ChainState",
+					"peer", p.conn.RemoteAddr().String())
+				return err
+			}
 
 			if p.chainState == nil {
 				continue
 			}
-
+			// If Peer is already in download peer list then skip further processing
+			if p.isDownloadPeer {
+				continue
+			}
+			// Ignore syncing if difference between blockheight is 3
+			if lastBlock.BlockNumber() - p.chainState.BlockNumber < 3 {
+				continue
+			}
 			peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
 			localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
 			if peerCumulativeDifficulty.Cmp(localCumulativeDifficulty) > 0 {
-
 				startBlockNumber := uint64(0)
 				maxStartBlockNumber := uint64(0)
 				if lastBlock.BlockNumber() > p.config.Dev.ReorgLimit {
@@ -282,12 +320,6 @@ func (p *Peer) monitorChainState() error {
 					},
 				}
 				p.Send(out)
-			}
-
-			if err != nil {
-				p.log.Info("Error while sending ChainState",
-					"peer", p.conn.RemoteAddr().String())
-				return err
 			}
 		case <-p.exitMonitorChainState:
 			return nil
@@ -410,9 +442,10 @@ func (p *Peer) handle(msg *Msg) error {
 		chainStateData := msg.msg.GetChainStateData()
 		p.HandleChainState(chainStateData)
 	case generated.LegacyMessage_HEADERHASHES:
+		p.log.Info(">>>Received HEADERHASHES")
 		nodeHeaderHash := msg.msg.GetNodeHeaderHash()
 		if len(nodeHeaderHash.Headerhashes) == 0 {
-			outNodeHeaderHash, err := p.chain.GetHeaderHashes(nodeHeaderHash.BlockNumber)
+			outNodeHeaderHash, err := p.chain.GetHeaderHashes(nodeHeaderHash.BlockNumber, p.config.Dev.ReorgLimit)
 			if err != nil {
 				p.log.Warn("Error in GetHeaderHashes",
 					"Blocknumber", nodeHeaderHash.BlockNumber,
@@ -460,10 +493,11 @@ func (p *Peer) HandleBlock(b *generated.Block) {
 func (p *Peer) HandleChainState(nodeChainState *generated.NodeChainState) {
 	p.chainState = nodeChainState
 	p.chainState.Timestamp = p.ntp.Time()
-	p.log.Info("Chain State updated")
+	p.log.Info("Chain State updated",
+		"Peer", p.ID())
 }
 
-func (p *Peer) SendFetchBlock(blockNumber uint64) {
+func (p *Peer) SendFetchBlock(blockNumber uint64) error {
 	p.log.Info("Fetching",
 		"Block #", blockNumber,
 		"Peer", p.conn.RemoteAddr().String())
@@ -477,7 +511,7 @@ func (p *Peer) SendFetchBlock(blockNumber uint64) {
 			FbData: fbData,
 		},
 	}
-	p.Send(out)
+	return p.Send(out)
 }
 
 func (p *Peer) SendPeerList() {
@@ -534,7 +568,6 @@ func (p *Peer) handshake() {
 func (p *Peer) run() (remoteRequested bool, err error) {
 	var (
 		writeStart = make(chan struct{}, 1)
-		writeErr   = make(chan error, 1)
 		readErr    = make(chan error, 1)
 		reason     DiscReason
 	)
@@ -544,7 +577,7 @@ func (p *Peer) run() (remoteRequested bool, err error) {
 loop:
 	for {
 		select {
-		case err = <-writeErr:
+		case err = <-p.writeErr:
 			if err != nil {
 				break loop
 			}
@@ -558,7 +591,6 @@ loop:
 			}
 		}
 	}
-
 	p.close(reason)
 	p.wg.Wait()
 	return remoteRequested, err
@@ -573,7 +605,6 @@ func (p *Peer) close(err error) {
 		return
 	}
 	p.disconnected = true
-	close(p.closed)
 	close(p.exitMonitorChainState)
 	p.conn.Close()
 }
