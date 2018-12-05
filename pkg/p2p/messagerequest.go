@@ -16,7 +16,7 @@ func (messageRequest *MessageRequest) addPeer(peer *Peer) {
 	messageRequest.lock.Lock()
 	defer messageRequest.lock.Unlock()
 
-	messageRequest.addPeer(peer)
+	messageRequest.peers[peer] = false
 }
 
 func (messageRequest *MessageRequest) SetPeer(peer *Peer, value bool) {
@@ -46,5 +46,6 @@ func CreateMessageRequest(mrData *generated.MRData, peer *Peer) (messageRequest 
 		mrData: mrData,
 		requested: false,
 	}
+	messageRequest.peers[peer] = false
 	return
 }
