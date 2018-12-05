@@ -55,7 +55,7 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 
 func (t *TransactionPool) Remove(tx transactions.TransactionInterface) {
 	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		ti := e.Value.(TransactionInfo)
+		ti := e.Value.(*TransactionInfo)
 		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
 			t.txPool.Remove(e)
 			break
@@ -73,7 +73,7 @@ func (t *TransactionPool) RemoveTxInBlock(block *block.Block) {
 				tmp := e
 				e := e.Next()
 
-				ti := e.Value.(TransactionInfo)
+				ti := e.Value.(*TransactionInfo)
 				if reflect.DeepEqual(tx.PK(), ti.tx.PK()) {
 					if ti.tx.OtsKey() <= tx.OtsKey() {
 						t.txPool.Remove(tmp)
@@ -96,7 +96,7 @@ func (t *TransactionPool) AddTxFromBlock(block *block.Block, currentBlockHeight 
 
 func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
 	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		ti := e.Value.(TransactionInfo)
+		ti := e.Value.(*TransactionInfo)
 		if ti.IsStale(currentBlockHeight) {
 			/*
 				TODO: Add Code for State validation of stale txn
