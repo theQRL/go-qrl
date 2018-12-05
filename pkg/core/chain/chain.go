@@ -309,7 +309,8 @@ func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64,
 		tx := transactions.ProtoToTransaction(block.Transactions()[i])
 		tx.RevertStateChanges(addressesState)
 		if i != 0 { // Skip OTS reset for Coinbase txn
-			c.state.UnsetOTSKey(*addressesState[tx.AddrFromPK()], uint64(tx.OtsKey()))
+			addrState, _ := addressesState[misc.PK2Qaddress(tx.PK())]
+			c.state.UnsetOTSKey(addrState, uint64(tx.OtsKey()))
 		}
 	}
 

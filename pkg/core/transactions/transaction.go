@@ -208,7 +208,7 @@ func (tx *Transaction) applyStateChangesForPK(addressesState map[string]*address
 }
 
 func (tx *Transaction) revertStateChangesForPK(addressesState map[string]*addressstate.AddressState) {
-	addrFromPK := misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+	addrFromPK := misc.PK2Qaddress(tx.PK())
 	if _, ok := addressesState[addrFromPK]; ok {
 		//if misc.Bin2Qaddress(tx.AddrFrom()) != addrFromPK {
 		//	addressesState[addrFromPK].RemoveTransactionHash(tx.Txhash())

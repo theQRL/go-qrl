@@ -31,7 +31,7 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 	}
 
 	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		ti := e.Value.(TransactionInfo)
+		ti := e.Value.(*TransactionInfo)
 		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
 			return errors.New("transaction already exists in pool")
 		}

@@ -764,7 +764,7 @@ func (s *State) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 	return (uint64(blockTimestamp) - nthBlockTimestamp)/countHeaderHashes, nil
 }
 
-func (s *State) UnsetOTSKey(a addressstate.AddressState, otsKeyIndex uint64) error {
+func (s *State) UnsetOTSKey(a *addressstate.AddressState, otsKeyIndex uint64) error {
 	if otsKeyIndex < uint64(s.config.Dev.MaxOTSTracking) {
 		offset := otsKeyIndex >> 3
 		relative := otsKeyIndex % 8
