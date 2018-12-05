@@ -190,6 +190,7 @@ func (srv *Server) ConnectPeers() {
 		case <-time.After(15*time.Second):
 			srv.peerInfoLock.Lock()
 			if srv.inboundCount > srv.config.User.Node.MaxPeersLimit {
+				srv.peerInfoLock.Unlock()
 				break
 			}
 
@@ -530,8 +531,7 @@ func (srv *Server) RequestFullMessage(mrData *generated.MRData) {
 			}
 			peer.Send(out)
 
-			start := srv.ntp.Time()
-			time.Sleep(time.Duration(start + uint64(srv.config.Dev.MessageReceiptTimeout)) * time.Second)
+			time.Sleep(time.Duration(uint64(srv.config.Dev.MessageReceiptTimeout)) * time.Second)
 
 			continue outer
 		}

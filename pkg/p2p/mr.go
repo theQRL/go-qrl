@@ -264,6 +264,19 @@ func (mr *MessageReceipt) GetRequestedHash(msgHash string) (value *MessageReques
 	return
 }
 
+func (mr *MessageReceipt) Register(msgHash string, msg *generated.Message) {
+	mr.lock.Lock()
+	defer mr.lock.Unlock()
+
+	if uint32(len(mr.hashMsg)) >= mr.c.Dev.MessageQSize {
+		delete(mr.hashMsg, mr.hashMsgOrder[0])
+		mr.hashMsgOrder = mr.hashMsgOrder[1:]
+	}
+
+	mr.hashMsg[msgHash] = msg
+	mr.hashMsgOrder = append(mr.hashMsgOrder, msgHash)
+}
+
 func CreateMR() (mr *MessageReceipt) {
 
 	allowedTypes := mapset.NewSet()
