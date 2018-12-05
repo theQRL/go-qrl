@@ -483,11 +483,42 @@ func (p *Peer) handle(msg *Msg) error {
 	return nil
 }
 
-func (p *Peer) HandleBlock(b *generated.Block) {
+func (p *Peer) HandleBlock(pbBlock *generated.Block) {
 	// TODO: Validate Message
-	//recvBlock := block.BlockFromPBData(b)
+	b := block.BlockFromPBData(pbBlock)
 	p.log.Info("Received Block from ip:port block_number block_headerhash")
+	parentBlock, err := p.chain.GetBlock(b.PrevHeaderHash())
+	if err != nil {
+		// TODO: Think of how to handle such cases
+		p.log.Warn("Parent Block Not Found")
+		return
+	}
+	parentMetaData, err := p.chain.GetBlockMetaData(b.PrevHeaderHash())
+	if err != nil {
+		p.log.Warn("Impossible Error : ParentMetaData Not Found")
+		return
+	}
 
+	blockFromState, _ := p.chain.GetBlock(b.HeaderHash())
+	measurement, err := p.chain.GetMeasurement(uint32(b.Timestamp()), b.PrevHeaderHash(), parentMetaData)
+	if !b.Validate(blockFromState, parentBlock, parentMetaData, measurement, nil) {
+		p.log.Warn("Block Validation Failed",
+			"BlockNumber", b.BlockNumber(),
+			"Headerhash", misc.Bin2HStr(b.HeaderHash()))
+		return
+	}
+
+	if !p.chain.AddBlock(b) {
+		p.log.Warn("Failed To Add Block")
+		return
+	}
+	msg := &generated.Message{
+		Msg:&generated.LegacyMessage_Block{
+			Block:b.PBData(),
+		},
+		MessageType:generated.LegacyMessage_BK,
+	}
+	p.mr.Register(misc.Bin2HStr(b.HeaderHash()), msg)
 }
 
 func (p *Peer) HandleChainState(nodeChainState *generated.NodeChainState) {
