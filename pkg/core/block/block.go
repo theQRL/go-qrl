@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"reflect"
 
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
@@ -88,10 +89,29 @@ type Block struct {
 
 	config *config.Config
 	log    log.LoggerInterface
+	dt     pow.DifficultyTrackerInterface
 }
 
 func (b *Block) PBData() *generated.Block {
 	return b.block
+}
+
+func (b *Block) IsEqual(b2 *Block) bool {
+	serializedBlock1, err := b.Serialize()
+	if err != nil {
+		b.log.Error("Error while Serializing Block1",
+			"Error", err.Error())
+	}
+	serializedBlock2, err := b2.Serialize()
+	if err != nil {
+		b.log.Error("Error while Serializing Block2",
+			"Error", err.Error())
+	}
+	return reflect.DeepEqual(serializedBlock1, serializedBlock2)
+}
+
+func (b *Block) SetDifficultyTracker(dt pow.DifficultyTrackerInterface) {
+	b.dt = dt
 }
 
 func (b *Block) Size() int {
@@ -134,6 +154,10 @@ func (b *Block) Timestamp() uint64 {
 	return b.blockheader.Timestamp()
 }
 
+func (b *Block) SetNonces(miningNonce uint32, extraNonce uint64) {
+	b.blockheader.SetNonces(miningNonce, extraNonce)
+}
+
 func (b *Block) MiningBlob() []byte {
 	return b.blockheader.MiningBlob()
 }
@@ -142,11 +166,12 @@ func (b *Block) GenerateHeaderHash() []byte {
 	return b.blockheader.GenerateHeaderHash()
 }
 
-func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs []transactions.Transaction, timestamp uint64) *Block {
+func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []byte, prevBlockTimestamp uint64, txs []transactions.TransactionInterface, timestamp uint64) *Block {
 	b := &Block{
 		block:  &generated.Block{},
 		config: config.GetConfig(), // TODO: Make Config Singleton
 		log:    log.GetLogger(),
+		dt:     &pow.DifficultyTracker{},
 	}
 
 	feeReward := uint64(0)
@@ -177,6 +202,7 @@ func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlockHeaderhash []
 func (b *Block) FromJSON(jsonData string) *Block {
 	b.block = &generated.Block{}
 	b.log = log.GetLogger()
+	b.dt = &pow.DifficultyTracker{}
 	jsonpb.UnmarshalString(jsonData, b.block)
 	b.blockheader = new(BlockHeader)
 	b.blockheader.SetPBData(b.block.Header)
@@ -266,22 +292,21 @@ func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentM
 	// parentMetadata, err := c.state.GetBlockMetadata(bh.HeaderHash())
 
 	// measurement, err := c.state.GetMeasurement(bh.Timestamp(), bh.PrevHeaderHash(), parentMetadata)
-	dt := pow.DifficultyTracker{}
-	diff, target := dt.Get(measurement, parentMetadata.BlockDifficulty())
+	diff, target := b.dt.Get(measurement, parentMetadata.BlockDifficulty())
 
 	if enableLogging {
 		// parentBlock, err := c.state.GetBlock(bh.PrevHeaderHash())
 
 		b.log.Debug("-----------------START--------------------")
 		b.log.Debug("Validate",
-			"Measurement", measurement,
-			"BlockNumber", bh.BlockNumber(),
-			"MiningBlob", bh.MiningBlob(),
-			"block.timestamp", bh.Timestamp(),
-			"parent_block.timestamp", parentBlock.Timestamp(),
-			"parent_block.difficulty", parentMetadata.BlockDifficulty(),
-			"diff", diff,
-			"target", target)
+			"\nMeasurement", measurement,
+			"\nBlockNumber", bh.BlockNumber(),
+			"\nMiningBlob", bh.MiningBlob(),
+			"\nblock.timestamp", bh.Timestamp(),
+			"\nparent_block.timestamp", parentBlock.Timestamp(),
+			"\nparent_block.difficulty", parentMetadata.BlockDifficulty(),
+			"\ndiff", diff,
+			"\ntarget", target)
 		b.log.Debug("-------------------END--------------------")
 	}
 
@@ -369,5 +394,6 @@ func BlockFromPBData(block *generated.Block) *Block {
 	b := &Block{block: block, blockheader: BlockHeaderFromPBData(block.Header)}
 	b.config = config.GetConfig()
 	b.log = log.GetLogger()
+	b.dt = &pow.DifficultyTracker{}
 	return b
 }
