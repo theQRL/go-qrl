@@ -186,16 +186,16 @@ func (bh *BlockHeader) Validate(feeReward uint64, coinbaseAmount uint64, txMerkl
 	currentTime := bh.n.Time()
 	allowedTimestamp := currentTime + uint64(bh.config.Dev.BlockLeadTimestamp)
 	if bh.Timestamp() > allowedTimestamp {
-		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp")
-		bh.log.Warn("Block timestamp %s", bh.Timestamp())
-		bh.log.Warn("threshold timestamp %s", allowedTimestamp)
+		bh.log.Warn("BLOCK timestamp is more than the allowed block lead timestamp",
+			"Block Timestamp", bh.Timestamp(),
+			"threshold Timestamp", allowedTimestamp)
 		return false
 	}
 
 	if bh.Timestamp() < uint64(bh.config.Dev.Genesis.GenesisTimestamp) {
-		bh.log.Warn("Timestamp lower than genesis timestamp")
-		bh.log.Warn("Genesis Timestamp %s", bh.config.Dev.Genesis.GenesisTimestamp)
-		bh.log.Warn("Block Timestamp %s", bh.Timestamp())
+		bh.log.Warn("Timestamp lower than genesis timestamp",
+			"Genesis Timestamp", bh.config.Dev.Genesis.GenesisTimestamp,
+			"Block Timestamp", bh.Timestamp())
 		return false
 	}
 
@@ -244,9 +244,9 @@ func (bh *BlockHeader) ValidateParentChildRelation(parentBlock BlockBareInterfac
 	}
 
 	if bh.Timestamp() <= parentBlock.Timestamp() {
-		bh.log.Warn("BLOCK timestamp must be greater than parent block timestamp")
-		bh.log.Warn("block timestamp %s", bh.Timestamp())
-		bh.log.Warn("must be greater than %s", parentBlock.Timestamp())
+		bh.log.Warn("BLOCK timestamp must be greater than parent block timestamp",
+			"block timestamp", bh.Timestamp(),
+			"must be greater than", parentBlock.Timestamp())
 		return false
 	}
 
