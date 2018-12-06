@@ -280,6 +280,10 @@ func (u *UserConfig) DataDir() string {
 	return path.Join(u.QrlDir, u.ChainFileDirectory)
 }
 
+func (u *UserConfig) SetDataDir(dataDir string) {
+	u.QrlDir = dataDir
+}
+
 func (u *UserConfig) GetLogFileName() string {
 	return path.Join(u.QrlDir, "go-qrl.log")
 }
