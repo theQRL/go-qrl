@@ -3,6 +3,8 @@ package main
 import (
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
+	"github.com/theQRL/go-qrl/pkg/core/state"
+	"github.com/theQRL/go-qrl/pkg/genesis"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/p2p"
 	"github.com/theQRL/go-qrl/pkg/p2p/notification"
@@ -17,12 +19,23 @@ var (
 )
 
 func startServer() error {
-	c, err := chain.CreateChain()
+	s, err := state.CreateState()
 	if err != nil {
 		return err
 	}
 
-	c.Load() // Loads Chain State
+	c := chain.CreateChain(s)
+	if err != nil {
+		return err
+	}
+
+	genesisBlock, err := genesis.CreateGenesisBlock()
+	if err != nil {
+		logger.Warn("Error Loading Genesis Block")
+		return err
+	}
+
+	c.Load(genesisBlock) // Loads Chain State
 
 	// Start Notification Server if enabled in config
 	var newBlockNotificationChannel chan []byte
