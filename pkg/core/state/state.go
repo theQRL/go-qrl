@@ -36,7 +36,8 @@ type RollbackStateInfo struct {
 }
 
 func CreateState() (*State, error) {
-	newDB, err := db.NewDB(c.GetUserConfig().DataDir(), c.GetDevConfig().DBName, 1*1024, 500)
+	c := c.GetConfig()
+	newDB, err := db.NewDB(c.User.DataDir(), c.Dev.DBName, 1*1024, 500)
 
 	if err != nil {
 		return nil, err
@@ -45,7 +46,7 @@ func CreateState() (*State, error) {
 	state := State{
 		db:     newDB,
 		log:    log.GetLogger(),
-		config: c.GetConfig(),
+		config: c,
 	}
 
 	return &state, err
@@ -174,8 +175,11 @@ func (s *State) GetBlockNumberMapping(blockNumber uint64) (*generated.BlockNumbe
 	value, err := s.db.Get(key)
 
 	if err != nil {
-		s.log.Error("[GetBlockNumberMapping] Key not found",
-			"key", key)
+		if err != leveldb.ErrNotFound {
+			s.log.Error("[GetBlockNumberMapping] Error while loading key",
+				"key", key,
+				"blockNumber", blockNumber)
+		}
 		return nil, err
 	}
 
@@ -202,7 +206,9 @@ func (s *State) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
 	bm, err := s.GetBlockNumberMapping(blockNumber)
 
 	if err != nil {
-		s.log.Info("Failed to Unmarshal")
+		if err != leveldb.ErrNotFound {
+			s.log.Info("Failed to Unmarshal")
+		}
 		return nil, err
 	}
 
@@ -652,6 +658,26 @@ func (s *State) PutAddressesState(addressesState map[string]*addressstate.Addres
 	}
 
 	return nil
+}
+
+func (s *State) GetAddressState(address []byte) (*addressstate.AddressState, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	value, err := s.db.Get(address)
+
+	if err != nil {
+		if err == leveldb.ErrNotFound {
+			return addressstate.GetDefaultAddressState(address), nil
+		} else {
+			s.log.Info("Error in getAddressState",
+				"address", address,
+				"error", err.Error())
+			return nil, err
+		}
+	}
+
+	return addressstate.DeSerializeAddressState(value)
 }
 
 func (s *State) getAddressState(address []byte) (*addressstate.AddressState, error) {
