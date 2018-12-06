@@ -12,10 +12,14 @@ type QryptonightInterface interface {
 }
 
 type Qryptonight struct {
-	qn goqryptonight.Qryptonight
+	lock sync.Mutex
+	qn   goqryptonight.Qryptonight
 }
 
 func (q *Qryptonight) Hash(blob []byte) []byte {
+	q.lock.Lock()
+	defer q.lock.Unlock()
+
 	return misc.UCharVectorToBytes(q.qn.Hash(misc.BytesToUCharVector(blob)))
 }
 
