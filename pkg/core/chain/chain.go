@@ -17,7 +17,6 @@ import (
 	"github.com/theQRL/go-qrl/pkg/core/state"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
 	"github.com/theQRL/go-qrl/pkg/generated"
-	"github.com/theQRL/go-qrl/pkg/genesis"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/qryptonight/goqryptonight"
@@ -31,6 +30,7 @@ type Chain struct {
 	log    log.LoggerInterface
 	config *c.Config
 
+	dt           pow.DifficultyTrackerInterface
 	triggerMiner bool
 
 	state *state.State
@@ -43,23 +43,19 @@ type Chain struct {
 	newBlockNotificationChannel chan []byte
 }
 
-func CreateChain() (*Chain, error) {
-	s, err := state.CreateState()
-	if err != nil {
-		return nil, err
-	}
-
+func CreateChain(s *state.State) *Chain {
 	txPool := pool.CreateTransactionPool()
 
 	chain := &Chain{
 		log:    log.GetLogger(),
 		config: c.GetConfig(),
+		dt:     &pow.DifficultyTracker{},
 
 		state:  s,
 		txPool: txPool,
 	}
 
-	return chain, err
+	return chain
 }
 
 func (c *Chain) SetNewBlockNotificationChannel(newBlockNotificationChannel chan []byte) {
@@ -74,7 +70,7 @@ func (c *Chain) GetLastBlock() *block.Block {
 	return c.lastBlock
 }
 
-func (c *Chain) Load() error {
+func (c *Chain) Load(genesisBlock *block.Block) error {
 	// load() has the following tasks:
 	// Write Genesis Block into State immediately
 	// Register block_number <-> blockhash mapping
@@ -84,10 +80,6 @@ func (c *Chain) Load() error {
 	// Detect if we are forked from genesis block and if so initiate recovery.
 	h, err := c.state.GetChainHeight()
 	if err != nil {
-		genesisBlock, err := genesis.CreateGenesisBlock()
-		if err != nil {
-			c.log.Warn("Error Loading Genesis Block")
-		}
 		c.state.PutBlock(genesisBlock, nil)
 		blockNumberMapping := &generated.BlockNumberMapping{Headerhash: genesisBlock.HeaderHash(),
 			PrevHeaderhash: genesisBlock.PrevHeaderHash()}
@@ -96,8 +88,7 @@ func (c *Chain) Load() error {
 
 		parentDifficulty := misc.UCharVectorToBytes(goqryptonight.StringToUInt256(strconv.FormatInt(int64(c.config.Dev.Genesis.GenesisDifficulty), 10)))
 
-		dt := pow.DifficultyTracker{}
-		currentDifficulty, _ := dt.Get(uint64(c.config.Dev.MiningSetpointBlocktime),
+		currentDifficulty, _ := c.dt.Get(uint64(c.config.Dev.MiningSetpointBlocktime),
 			parentDifficulty)
 
 		blockMetaData := metadata.CreateBlockMetadata(currentDifficulty, currentDifficulty, nil)
@@ -220,8 +211,7 @@ func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) 
 func (c *Chain) addBlockMetaData(headerhash []byte, timestamp uint64, prevHeaderHash []byte, batch *leveldb.Batch) (*metadata.BlockMetaData) {
 	parentMetaData, err := c.state.GetBlockMetadata(prevHeaderHash)
 	measurement, err := c.state.GetMeasurement(uint32(timestamp), prevHeaderHash, parentMetaData)
-	dt := pow.DifficultyTracker{}
-	blockDifficulty, _ := dt.Get(measurement, parentMetaData.BlockDifficulty())
+	blockDifficulty, _ := c.dt.Get(measurement, parentMetaData.BlockDifficulty())
 
 	parentBlockTotalDifficulty := big.NewInt(0)
 	parentBlockTotalDifficulty.SetString(goqryptonight.UInt256ToString(misc.BytesToUCharVector(parentMetaData.TotalDifficulty())), 10)
@@ -420,7 +410,7 @@ func (c *Chain) AddChain(hashPath [][]byte, forkState *generated.ForkState) bool
 
 		c.log.Debug("Apply block",
 			"#", b.BlockNumber(),
-			"batch", i, "hash", hashPath[i])
+			"batch", i, "hash", misc.Bin2HStr(hashPath[i]))
 		c.state.WriteBatch(batch)
 	}
 
@@ -443,7 +433,7 @@ func (c *Chain) forkRecovery(block *block.Block, forkState *generated.ForkState)
 	} else {
 		forkHeaderHash, hashPath, err = c.GetForkPoint(block)
 		if err != nil {
-			c.log.Info("")
+			c.log.Info("Failed At GetForkPoint")
 		}
 		forkState.ForkPointHeaderhash = forkHeaderHash
 		forkState.NewMainchainHashPath = hashPath
