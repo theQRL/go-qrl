@@ -5,10 +5,14 @@ import (
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"io/ioutil"
+	"path"
+	"runtime"
 )
 
 func CreateGenesisBlock() (*block.Block, error) {
-	yamlData, err := ioutil.ReadFile("../../pkg/genesis/genesis.yml") // TODO: Need better fix
+	_, filename, _, _ := runtime.Caller(0)
+	directory := path.Dir(filename) // Current Package path
+	yamlData, err := ioutil.ReadFile(path.Join(directory, "genesis.yml"))
 	l := log.GetLogger()
 
 	if err != nil {
