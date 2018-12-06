@@ -14,7 +14,7 @@ type OutgoingMessage struct {
 	priority     uint64
 	timestamp    uint64
 	bytesMessage []byte
-	ntp          *ntp.NTP
+	ntp          ntp.NTPInterface
 	index        int
 }
 

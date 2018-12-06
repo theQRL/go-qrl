@@ -49,7 +49,7 @@ type Server struct {
 	config *config.Config
 
 	chain        *chain.Chain
-	ntp          *ntp.NTP
+	ntp          ntp.NTPInterface
 	peersInfo    *PeersInfo
 	ipCount      map[string]int
 	inboundCount uint16

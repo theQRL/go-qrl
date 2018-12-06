@@ -14,7 +14,7 @@ import (
 type TransactionPool struct {
 	txPool list.List
 	config *c.Config
-	ntp    *ntp.NTP
+	ntp    ntp.NTPInterface
 }
 
 func (t *TransactionPool) IsFull() bool {
