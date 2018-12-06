@@ -27,7 +27,7 @@ type NotificationServer struct {
 	config *config.Config
 
 	chain *chain.Chain
-	ntp   *ntp.NTP
+	ntp   ntp.NTPInterface
 
 	listener net.Listener
 	lock     sync.Mutex

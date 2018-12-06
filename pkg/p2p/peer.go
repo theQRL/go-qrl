@@ -41,7 +41,7 @@ type Peer struct {
 	filter                    *bloom.BloomFilter
 	mr                        *MessageReceipt
 	config                    *config.Config
-	ntp                       *ntp.NTP
+	ntp                       ntp.NTPInterface
 	chainState                *generated.NodeChainState
 	addPeerToPeerList         chan *generated.PLData
 	blockAndPeerChan          chan *BlockAndPeer

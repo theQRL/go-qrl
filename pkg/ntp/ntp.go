@@ -60,12 +60,31 @@ func (n *NTP) Time() uint64 {
 }
 
 var once sync.Once
-var n *NTP
+var n NTPInterface
 
-func GetNTP() *NTP {
+func GetNTP() NTPInterface {
 	once.Do(func() {
 		n = &NTP{config: config.GetConfig()}
 	})
 
 	return n
+}
+
+type MockedNTP struct {
+	NTP
+	timestamp uint64
+}
+
+func (n *MockedNTP) SetTimestamp(timestamp uint64) {
+	n.timestamp = timestamp
+}
+
+func (n *MockedNTP) Time() uint64 {
+	return n.timestamp
+}
+
+func GetMockedNTP() *MockedNTP {
+	m := &MockedNTP{}
+	n = m
+	return m
 }

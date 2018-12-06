@@ -41,7 +41,7 @@ type Peer struct {
 	exitRunLoop         chan struct{}
 	log                 log.LoggerInterface
 	config              *config.Config
-	ntp                 *ntp.NTP
+	ntp                 ntp.NTPInterface
 	lastPingReceived    uint64
 
 	connectionTime uint64
@@ -116,7 +116,7 @@ func (p *Peer) readLoop(errc chan<- error) {
 			errc <- err
 			return
 		}
-		p.log.Info("Received message")
+		
 		if err = p.handle(msg); err != nil {
 			errc <- err
 			return
