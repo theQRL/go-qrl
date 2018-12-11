@@ -497,7 +497,6 @@ func (srv *Server) UpdatePeerList(pl *generated.PLData) error {
 }
 
 func (srv *Server) RequestFullMessage(mrData *generated.MRData) {
-	outer:
 	for {
 		msgHash := misc.Bin2HStr(mrData.Hash)
 		_, ok := srv.mr.GetHashMsg(msgHash)
@@ -513,32 +512,25 @@ func (srv *Server) RequestFullMessage(mrData *generated.MRData) {
 			return
 		}
 
-		for peer, requested := range requestedHash.peers {
-			if requested {
-				continue
-			}
-			requestedHash.SetPeer(peer, true)
-			mrData := &generated.MRData{
-				Hash: mrData.Hash,
-				Type: mrData.Type,
-			}
-			out := &Msg{}
-			out.msg = &generated.LegacyMessage{
-				FuncName: generated.LegacyMessage_SFM,
-				Data: &generated.LegacyMessage_MrData{
-					MrData: mrData,
-				},
-			}
-			peer.Send(out)
-
-			time.Sleep(time.Duration(uint64(srv.config.Dev.MessageReceiptTimeout)) * time.Second)
-
-			continue outer
+		peer := requestedHash.GetPeer()
+		if peer == nil {
+			return
 		}
-
-		if ok {
-			srv.mr.RemoveRequestedHash(msgHash)
+		requestedHash.SetPeer(peer, true)
+		mrData := &generated.MRData{
+			Hash: mrData.Hash,
+			Type: mrData.Type,
 		}
+		out := &Msg{}
+		out.msg = &generated.LegacyMessage{
+			FuncName: generated.LegacyMessage_SFM,
+			Data: &generated.LegacyMessage_MrData{
+				MrData: mrData,
+			},
+		}
+		peer.Send(out)
+
+		time.Sleep(time.Duration(uint64(srv.config.Dev.MessageReceiptTimeout)) * time.Second)
 	}
 }
 
