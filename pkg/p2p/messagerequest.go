@@ -40,6 +40,19 @@ func (messageRequest *MessageRequest) GetRequested() bool {
 	return messageRequest.requested
 }
 
+func (messageRequest *MessageRequest) GetPeer() *Peer {
+	messageRequest.lock.Lock()
+	defer messageRequest.lock.Unlock()
+
+	for peer, requested := range messageRequest.peers {
+		if requested {
+			continue
+		}
+		return peer
+	}
+	return nil
+}
+
 func CreateMessageRequest(mrData *generated.MRData, peer *Peer) (messageRequest *MessageRequest) {
 	messageRequest = &MessageRequest {
 		peers: make(map[*Peer]bool),
