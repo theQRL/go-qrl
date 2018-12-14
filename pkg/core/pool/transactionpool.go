@@ -1,7 +1,6 @@
 package pool
 
 import (
-	"container/list"
 	"errors"
 	"sync"
 
@@ -13,21 +12,13 @@ import (
 
 type TransactionPool struct {
 	lock   sync.Mutex
-	txPool2 list.List
 	txPool *PriorityQueue
 	config *c.Config
 	ntp    ntp.NTPInterface
 }
 
-func (t *TransactionPool) IsFull() bool {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
-	if t.txPool.Len() >= int(t.config.User.TransactionPool.TransactionPoolSize) {
-		return true
-	}
-
-	return false
+func (t *TransactionPool) isFull() bool {
+	return t.txPool.Full()
 }
 
 func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64) error {
@@ -35,7 +26,7 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 	defer t.lock.Unlock()
 
 
-	if t.IsFull() {
+	if t.isFull() {
 		return errors.New("transaction pool is full")
 	}
 
@@ -70,9 +61,6 @@ func (t *TransactionPool) RemoveTxInBlock(block *block.Block) {
 }
 
 func (t *TransactionPool) AddTxFromBlock(block *block.Block, currentBlockHeight uint64) error {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-
 	for _, protoTX := range block.Transactions()[1:] {
 		err := t.Add(transactions.ProtoToTransaction(protoTX), currentBlockHeight, t.ntp.Time())
 		if err != nil {
@@ -106,6 +94,7 @@ func CreateTransactionPool() *TransactionPool {
 	t := &TransactionPool{
 		config: c.GetConfig(),
 		ntp: ntp.GetNTP(),
+		txPool: &PriorityQueue{},
 	}
 	return t
 }
