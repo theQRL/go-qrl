@@ -9,6 +9,8 @@ type TransactionInfo struct {
 	tx          transactions.TransactionInterface
 	blockNumber uint64
 	timestamp   uint64
+	index       int
+	priority    uint64
 	config      *c.Config
 }
 
@@ -47,6 +49,7 @@ func CreateTransactionInfo(tx transactions.TransactionInterface, blockNumber uin
 	t.tx = tx
 	t.blockNumber = blockNumber
 	t.timestamp = timestamp
+	t.priority = tx.Fee()
 
 	return t
 }
