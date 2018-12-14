@@ -664,20 +664,7 @@ func (s *State) GetAddressState(address []byte) (*addressstate.AddressState, err
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	value, err := s.db.Get(address)
-
-	if err != nil {
-		if err == leveldb.ErrNotFound {
-			return addressstate.GetDefaultAddressState(address), nil
-		} else {
-			s.log.Info("Error in getAddressState",
-				"address", address,
-				"error", err.Error())
-			return nil, err
-		}
-	}
-
-	return addressstate.DeSerializeAddressState(value)
+	return s.getAddressState(address)
 }
 
 func (s *State) getAddressState(address []byte) (*addressstate.AddressState, error) {
