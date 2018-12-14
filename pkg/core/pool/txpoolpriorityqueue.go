@@ -29,13 +29,15 @@ func (pq PriorityQueue) Swap(i, j int) {
 }
 
 func (pq *PriorityQueue) Push(newTi *TransactionInfo) error {
-	for _, ti := range *pq {
-		if reflect.DeepEqual(ti.tx.Txhash(), newTi.tx.Txhash()) {
-			return errors.New("transaction already exists in pool")
-		}
-		if reflect.DeepEqual(ti.tx.PK(), newTi.tx.PK()) {
-			if ti.tx.OtsKey() == newTi.tx.OtsKey() {
-				return errors.New("a transaction already exists signed with same ots key")
+	if pq != nil {
+		for _, ti := range *pq {
+			if reflect.DeepEqual(ti.tx.Txhash(), newTi.tx.Txhash()) {
+				return errors.New("transaction already exists in pool")
+			}
+			if reflect.DeepEqual(ti.tx.PK(), newTi.tx.PK()) {
+				if ti.tx.OtsKey() == newTi.tx.OtsKey() {
+					return errors.New("a transaction already exists signed with same ots key")
+				}
 			}
 		}
 	}
@@ -60,10 +62,12 @@ func (pq *PriorityQueue) Pop() *TransactionInfo {
 }
 
 func (pq *PriorityQueue) Remove(tx transactions.TransactionInterface) {
-	for index, ti := range *pq {
-		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
-			pq.removeByIndex(index)
-			return
+	if pq != nil {
+		for index, ti := range *pq {
+			if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
+				pq.removeByIndex(index)
+				return
+			}
 		}
 	}
 }
@@ -73,6 +77,9 @@ func (pq *PriorityQueue) removeByIndex(index int) {
 }
 
 func (pq *PriorityQueue) RemoveTxInBlock(block *block.Block, maxOTSTracking uint64) {
+	if pq == nil {
+		return
+	}
 	for _, protoTX := range block.Transactions()[1:] {
 		tx := transactions.ProtoToTransaction(protoTX)
 		if tx.OtsKey() < maxOTSTracking {
