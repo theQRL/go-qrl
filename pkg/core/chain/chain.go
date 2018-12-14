@@ -498,6 +498,20 @@ func (c *Chain) GetMeasurement(blockTimestamp uint32, parentHeaderHash []byte, p
 	return c.state.GetMeasurement(blockTimestamp, parentHeaderHash, parentMetaData)
 }
 
+func (c *Chain) GetAddressState(address []byte) (*addressstate.AddressState, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.state.GetAddressState(address)
+}
+
+func (c *Chain) GetBlockSizeLimit(b *block.Block) (int, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	return c.state.GetBlockSizeLimit(b)
+}
+
 func (c *Chain) GetHeaderHashes(blockNumber uint64, count uint64) (*generated.NodeHeaderHash, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
