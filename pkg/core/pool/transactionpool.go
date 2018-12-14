@@ -3,7 +3,7 @@ package pool
 import (
 	"container/list"
 	"errors"
-	"reflect"
+	"sync"
 
 	c "github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/block"
@@ -12,12 +12,17 @@ import (
 )
 
 type TransactionPool struct {
-	txPool list.List
+	lock   sync.Mutex
+	txPool2 list.List
+	txPool *PriorityQueue
 	config *c.Config
 	ntp    ntp.NTPInterface
 }
 
 func (t *TransactionPool) IsFull() bool {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	if t.txPool.Len() >= int(t.config.User.TransactionPool.TransactionPoolSize) {
 		return true
 	}
@@ -26,20 +31,12 @@ func (t *TransactionPool) IsFull() bool {
 }
 
 func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+
 	if t.IsFull() {
 		return errors.New("transaction pool is full")
-	}
-
-	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		ti := e.Value.(*TransactionInfo)
-		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
-			return errors.New("transaction already exists in pool")
-		}
-		if reflect.DeepEqual(ti.tx.PK(), tx.PK()) {
-			if ti.tx.OtsKey() == tx.OtsKey() {
-				return errors.New("a transaction already exists signed with same ots key")
-			}
-		}
 	}
 
 	if timestamp == 0 {
@@ -48,43 +45,34 @@ func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber 
 
 	ti := CreateTransactionInfo(tx, blockNumber, timestamp)
 
-	t.txPool.PushBack(ti)
+	return t.txPool.Push(ti)
+}
 
-	return nil
+func (t *TransactionPool) Pop() *TransactionInfo {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	return t.txPool.Pop()
 }
 
 func (t *TransactionPool) Remove(tx transactions.TransactionInterface) {
-	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		ti := e.Value.(*TransactionInfo)
-		if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
-			t.txPool.Remove(e)
-			break
-		}
-	}
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	t.txPool.Remove(tx)
 }
 
 func (t *TransactionPool) RemoveTxInBlock(block *block.Block) {
-	for _, protoTX := range block.Transactions()[1:] {
-		tx := transactions.ProtoToTransaction(protoTX)
-		if tx.OtsKey() < t.config.Dev.MaxOTSTracking {
-			t.Remove(tx)
-		} else {
-			for e := t.txPool.Front(); e != nil; {
-				tmp := e
-				e := e.Next()
+	t.lock.Lock()
+	defer t.lock.Unlock()
 
-				ti := e.Value.(*TransactionInfo)
-				if reflect.DeepEqual(tx.PK(), ti.tx.PK()) {
-					if ti.tx.OtsKey() <= tx.OtsKey() {
-						t.txPool.Remove(tmp)
-					}
-				}
-			}
-		}
-	}
+	t.txPool.RemoveTxInBlock(block, t.config.Dev.MaxOTSTracking)
 }
 
 func (t *TransactionPool) AddTxFromBlock(block *block.Block, currentBlockHeight uint64) error {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
 	for _, protoTX := range block.Transactions()[1:] {
 		err := t.Add(transactions.ProtoToTransaction(protoTX), currentBlockHeight, t.ntp.Time())
 		if err != nil {
@@ -95,17 +83,22 @@ func (t *TransactionPool) AddTxFromBlock(block *block.Block, currentBlockHeight 
 }
 
 func (t *TransactionPool) CheckStale(currentBlockHeight uint64) error {
-	for e := t.txPool.Front(); e != nil; e = e.Next() {
-		ti := e.Value.(*TransactionInfo)
-		if ti.IsStale(currentBlockHeight) {
-			/*
-				TODO: Add Code for State validation of stale txn
-				In case of state validation fails, removes the transaction from pool
-			*/
-			ti.UpdateBlockNumber(currentBlockHeight)
-			// TODO: Broadcast txn to other peers
-		}
-	}
+	t.lock.Lock()
+	defer t.lock.Unlock()
+
+	// TODO: CheckStale transaction in progress
+	//for e := t.txPool.Front(); e != nil; e = e.Next() {
+	//	ti := e.Value.(*TransactionInfo)
+	//	if ti.IsStale(currentBlockHeight) {
+	//		/*
+	//			TODO: Add Code for State validation of stale txn
+	//			In case of state validation fails, removes the 00
+	//			transaction from pool
+	//		*/
+	//		ti.UpdateBlockNumber(currentBlockHeight)
+	//		// TODO: Broadcast txn to other peers
+	//	}
+	//}
 	return nil
 }
 
