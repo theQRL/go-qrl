@@ -55,7 +55,7 @@ func (pq PriorityQueue) Len() int {
 }
 
 func (pq PriorityQueue) Less(i, j int) bool {
-	return i < j
+	return pq[i].priority < pq[j].priority
 }
 
 func (pq PriorityQueue) Swap(i, j int) {
@@ -79,8 +79,8 @@ func (pq *PriorityQueue) Pop() interface{} {
 	}
 	outgoingMessage := old[n-1]
 	outgoingMessage.index = -1 // for safety
-	*pq = old[0 : n-1]
-	return outgoingMessage//.bytesMessage
+	*pq = old[:n-1]
+	return outgoingMessage
 }
 
 func (pq *PriorityQueue) update(o *OutgoingMessage, bytesMessage []byte, priority uint64) {
