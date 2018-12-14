@@ -131,7 +131,7 @@ func (tx *Transaction) AddrFrom() []byte {
 }
 
 func (tx *Transaction) AddrFromPK() string {
-	return misc.UCharVectorToString(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(tx.PK())))
+	return misc.PK2Qaddress(tx.PK())
 }
 
 func (tx *Transaction) OtsKey() uint64 {
