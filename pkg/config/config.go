@@ -131,6 +131,7 @@ type DevConfig struct {
 	NumberOfBlockAnalyze uint8
 	SizeMultiplier       float64
 	BlockMinSizeLimit    int
+	TxExtraOverhead		 int
 
 	ShorPerQuanta uint64
 
@@ -350,6 +351,7 @@ func GetDevConfig() (dev *DevConfig) {
 		NumberOfBlockAnalyze: 10,
 		SizeMultiplier:       1.1,
 		BlockMinSizeLimit:    1024 * 1024,
+		TxExtraOverhead:      15,
 
 		ShorPerQuanta: 1000000000,
 
