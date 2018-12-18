@@ -15,7 +15,7 @@ type Config struct {
 type MinerConfig struct {
 	MiningEnabled     bool
 	MiningAddress     string
-	MiningThreadCount uint16
+	MiningThreadCount uint
 }
 
 type NodeConfig struct {
@@ -108,7 +108,7 @@ type DevConfig struct {
 	MaxOTSTracking  uint64
 	OtsBitFieldSize uint64
 
-	MiningNonceOffset uint16
+	MiningNonceOffset int64
 	ExtraNonceOffset  uint16
 	MiningBlobSize    uint16
 
