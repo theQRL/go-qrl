@@ -857,3 +857,21 @@ func (s *State) UnsetOTSKey(a *addressstate.AddressState, otsKeyIndex uint64) er
 //		}
 //	}
 //}
+
+func (s *State) MockAddressState(address []byte, nonce uint64, balance uint64) error {
+	otsBitfield := make([][]byte, s.config.Dev.OtsBitFieldSize)
+	var tokens map[string]uint64
+	var slavePksAccessType map[string]uint32
+	addressState := addressstate.CreateAddressState(
+		address,
+		nonce,
+		balance,
+		otsBitfield,
+		tokens,
+		slavePksAccessType,
+		0,
+		)
+	addressesState := make(map[string]*addressstate.AddressState)
+	addressesState[misc.Bin2Qaddress(address)] = addressState
+	return s.PutAddressesState(addressesState, nil)
+}
