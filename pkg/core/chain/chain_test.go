@@ -67,7 +67,13 @@ func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlock *block.Block
 
 }
 
-func TestAddBlock(t *testing.T) {
+func TestCreateChain(t *testing.T) {
+	c, dt := NewTestChain()
+	assert.NotNil(t, c)
+	assert.NotNil(t, dt)
+}
+
+func TestChain_AddBlock(t *testing.T) {
 	/*
 		Add block1 on genesis block (that registers Bob as Alice's slave)
     	Bob should be slave of Alice's XMSS.
@@ -165,7 +171,7 @@ func TestAddBlock(t *testing.T) {
 	assert.NotContains(t, aliceState.SlavePKSAccessType(), misc.UCharVectorToString(bobXMSS.PK()))
 }
 
-func TestForkRecovery(t *testing.T) {
+func TestChain_AddChain2(t *testing.T) {
 	c, _ := NewTestChain()
 	defer CleanUp(c.c.config.User.QrlDir)
 
