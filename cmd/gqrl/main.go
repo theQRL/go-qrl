@@ -37,9 +37,11 @@ func startServer() error {
 
 	c.Load(genesisBlock) // Loads Chain State
 
+	conf := config.GetConfig()
+
 	// Start Notification Server if enabled in config
 	var newBlockNotificationChannel chan []byte
-	if config.GetUserConfig().NotificationServerConfig.EnableNotificationServer {
+	if conf.User.NotificationServerConfig.EnableNotificationServer {
 		notificationServer = &notification.NotificationServer{}
 		err := notificationServer.Start(c)
 		if err != nil {
@@ -66,7 +68,6 @@ func startServer() error {
 }
 
 func initialize() {
-
 	logger.Info("Server Initialized")
 }
 
