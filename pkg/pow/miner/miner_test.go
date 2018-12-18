@@ -8,6 +8,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/go-qrl/pkg/ntp"
+	"github.com/theQRL/go-qrl/pkg/p2p/messages"
 	"github.com/theQRL/go-qrl/pkg/pow"
 	"github.com/theQRL/go-qrl/test/genesis"
 	"github.com/theQRL/go-qrl/test/helper"
@@ -27,6 +28,7 @@ func NewTestMiner() *TestMiner {
 	tempDir, err := ioutil.TempDir("", "")
 
 	conf := config.GetConfig()
+	conf.User.Miner.MiningAddress = "Q01050086390643df86ff4810b62bdb3e4539040046b5e3956eff2476c5c79807e78ecda2994a91"
 	conf.Dev.Genesis.GenesisTimestamp = 1528402558
 	conf.Dev.Genesis.GenesisPrevHeadehash = []byte("Thirst of Quantas")
 	conf.Dev.Genesis.GenesisDifficulty = 5000
@@ -51,7 +53,7 @@ func NewTestMiner() *TestMiner {
 	}
 	ntp.GetNTP() // Initialize NTP
 
-	m := CreateMiner(c)
+	m := CreateMiner(c, make(chan *messages.RegisterMessage, 100))
 
 	return &TestMiner{m:m, s:s}
 }
@@ -342,14 +344,17 @@ func TestMiner_StartMining(t *testing.T) {
 		true,
 	)
 	assert.Nil(t, err)
-
-	assert.False(t, m.m.SolutionAvailable())
-
-	parentMetadata, err := m.m.chain.GetBlockMetaData(parentBlock.HeaderHash())
-	m.m.StartMining(parentBlock, parentMetadata.BlockDifficulty())
-
-	time.Sleep(10 * time.Second)
-	assert.True(t, m.m.SolutionAvailable())
+	notify := make(chan bool)
+	m.m.notify = notify
+	go m.m.StartMining()
+	m.m.mode = 1
+	m.m.mineNextBlockChan <- true
+	select {
+		case <-notify:
+			assert.Equal(t, m.m.chain.GetLastBlock().BlockNumber(), uint64(1))
+		case <-time.After(15 * time.Second):
+			panic("Test Timeout")
+	}
 }
 
 func TestMiner_HandleEvent(t *testing.T) {
