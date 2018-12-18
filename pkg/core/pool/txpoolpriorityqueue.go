@@ -95,3 +95,14 @@ func (pq *PriorityQueue) RemoveTxInBlock(block *block.Block, maxOTSTracking uint
 		}
 	}
 }
+
+func (pq *PriorityQueue) Contains(tx transactions.TransactionInterface) bool {
+	if pq != nil {
+		for _, ti := range *pq {
+			if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
+				return true
+			}
+		}
+	}
+	return false
+}

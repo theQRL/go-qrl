@@ -21,6 +21,10 @@ func (t *TransactionPool) isFull() bool {
 	return t.txPool.Full()
 }
 
+func (t *TransactionPool) Contains(tx transactions.TransactionInterface) bool {
+	return t.txPool.Contains(tx)
+}
+
 func (t *TransactionPool) Add(tx transactions.TransactionInterface, blockNumber uint64, timestamp uint64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
