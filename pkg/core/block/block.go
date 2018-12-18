@@ -96,6 +96,10 @@ func (b *Block) PBData() *generated.Block {
 	return b.block
 }
 
+func (b *Block) BlockHeader() BlockHeader {
+	return *b.blockheader
+}
+
 func (b *Block) IsEqual(b2 *Block) bool {
 	serializedBlock1, err := b.Serialize()
 	if err != nil {
@@ -289,19 +293,14 @@ func (b *Block) ApplyStateChanges(addressesState map[string]*addressstate.Addres
 }
 
 func (b *Block) ValidateMiningNonce(bh *BlockHeader, parentBlock *Block, parentMetadata *metadata.BlockMetaData, measurement uint64, enableLogging bool) bool {
-	// parentMetadata, err := c.state.GetBlockMetadata(bh.HeaderHash())
-
-	// measurement, err := c.state.GetMeasurement(bh.Timestamp(), bh.PrevHeaderHash(), parentMetadata)
 	diff, target := b.dt.Get(measurement, parentMetadata.BlockDifficulty())
 
 	if enableLogging {
-		// parentBlock, err := c.state.GetBlock(bh.PrevHeaderHash())
-
 		b.log.Debug("-----------------START--------------------")
 		b.log.Debug("Validate",
 			"\nMeasurement", measurement,
 			"\nBlockNumber", bh.BlockNumber(),
-			"\nMiningBlob", bh.MiningBlob(),
+			"\nMiningBlob", misc.Bin2HStr(bh.MiningBlob()),
 			"\nblock.timestamp", bh.Timestamp(),
 			"\nparent_block.timestamp", parentBlock.Timestamp(),
 			"\nparent_block.difficulty", parentMetadata.BlockDifficulty(),
@@ -386,8 +385,32 @@ func (b *Block) Validate(blockFromState *Block, parentBlock *Block, parentMetada
 	return true
 }
 
+func (b *Block) VerifyBlob(blob []byte) bool {
+	return b.blockheader.VerifyBlob(blob)
+}
+
 func (b *Block) SetNTP(n ntp.NTPInterface) {
 	b.blockheader.Option(MockNTP(n))
+}
+
+func (b *Block) UpdateMiningAddress(miningAddress []byte) {
+	txs := b.block.Transactions
+	b.block.Transactions = make([]*generated.Transaction, 0)
+
+	coinBaseTX := transactions.ProtoToTransaction(b.Transactions()[0]).(*transactions.CoinBase)
+	coinBaseTX.UpdateMiningAddress(miningAddress)
+
+	var hashes list.List
+	hashes.PushBack(coinBaseTX.Txhash())
+	b.block.Transactions = append(b.block.Transactions, coinBaseTX.PBData())
+
+	for _, tx := range txs {
+		hashes.PushBack(tx.TransactionHash)
+		b.block.Transactions = append(b.block.Transactions, tx)
+	}
+
+	merkleRoot := misc.MerkleTXHash(hashes)
+	b.blockheader.UpdateMerkleRoot(merkleRoot)
 }
 
 func BlockFromPBData(block *generated.Block) *Block {
