@@ -51,11 +51,12 @@ func (tx *MessageTransaction) ValidateExtended(addrFromState *addressstate.Addre
 	balance := addrFromState.Balance()
 
 	if tx.Fee() < 0 {
-		tx.log.Warn("State validation failed for %s because: Negative txn fee", string(tx.Txhash()))
+		tx.log.Warn("State validation failed because of Negative txn fee",
+			"txhash", misc.Bin2HStr(tx.Txhash()))
 	}
 
 	if balance < tx.Fee() {
-		tx.log.Warn("State validation failed for %s because: Insufficient funds",
+		tx.log.Warn("State validation failed because of Insufficient funds",
 			"TxHash", misc.Bin2HStr(tx.Txhash()),
 			"Balance", balance,
 			"Fee", tx.Fee())
