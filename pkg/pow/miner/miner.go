@@ -7,15 +7,18 @@ import (
 	"github.com/theQRL/go-qrl/pkg/core/chain"
 	"github.com/theQRL/go-qrl/pkg/core/pool"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
+	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/go-qrl/pkg/ntp"
+	"github.com/theQRL/go-qrl/pkg/p2p/messages"
 	"github.com/theQRL/go-qrl/pkg/pow"
 	"github.com/theQRL/qryptonight/goqryptonight"
 	"reflect"
 	"runtime"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type Miner struct {
@@ -23,12 +26,19 @@ type Miner struct {
 
 	lock sync.Mutex
 
-	miningBlock *block.Block
-	chain       *chain.Chain
-	ntp         ntp.NTPInterface
-	config      *config.Config
-	log         log.LoggerInterface
-	dt          pow.DifficultyTrackerInterface
+	miningBlock              *block.Block
+	chain                    *chain.Chain
+	ntp                      ntp.NTPInterface
+	config                   *config.Config
+	log                      log.LoggerInterface
+	dt                       pow.DifficultyTrackerInterface
+	registerAndBroadcastChan chan *messages.RegisterMessage
+	mineNextBlockChan        chan bool
+	StopMiningChan           chan bool
+	exit                     chan struct{}
+	notify                   chan bool  // This is only for Unit Test
+	currentSeq               uint64
+	mode                     uint // 0 - Scheduled to start with some delay, 1 - Running
 
 	measurement       uint64
 	currentDifficulty []byte
@@ -151,32 +161,71 @@ func (m *Miner) HandleEvent(event goqryptonight.MinerEvent) byte {
 	// TODO: Deadlock, compare with python version think of some way to do it
 	m.lock.Lock()
 	defer m.lock.Unlock()
+	if event.GetSeq() != m.currentSeq {
+		return 0
+	}
 
 	m.log.Debug("HandleEvent - LOCKED")
 	m.log.Debug("Solution Found", "Nonce", event.GetNonce())
 	m.miningBlock.SetNonces(uint32(event.GetNonce()), 0)
-	clonedBlock := m.miningBlock
-	clonedBlock.SetNonces(uint32(event.GetNonce()), 0)
-	// TODO: Call to PreBlockLogic
+	m.addBlockToChain(*m.miningBlock)
 	return 1
 }
 
-func (m *Miner) StartMining(parentBlock *block.Block, parentDifficulty []byte) {
-	m.log.Info("Start Mining - TRY LOCKING")
-	m.lock.Lock()
-	defer m.lock.Unlock()
+func (m *Miner) StartMining() {
+	for {
+		select {
+		case <-m.mineNextBlockChan:
+			m.log.Info("Start Mining - TRY LOCKING")
 
-	m.log.Debug("Start Mining - LOCKED")
-	m.Cancel()
-	miningBlob := m.miningBlock.MiningBlob()
-	nonceOffset := m.config.Dev.MiningNonceOffset
+			m.lock.Lock()
+			if m.mode != 1 {
+				continue
+			}
+			m.log.Debug("Start Mining - LOCKED")
+			m.Cancel()
 
-	m.log.Debug("Mining",
-		"Block #", m.miningBlock.BlockNumber())
+			err := m.PrepareNextBlockTemplate(
+				misc.Qaddress2Bin(m.config.User.Miner.MiningAddress),
+				m.chain.GetLastBlock(),
+				m.chain.GetTransactionPool(),
+				false)
+			if err != nil {
+				m.log.Info("Failed To Initiate Miner due to error in PrepareNextBlockTemplate",
+					"Err", err.Error())
+				continue
+			}
 
-	workSeqId := m.Start(misc.BytesToUCharVector(miningBlob), nonceOffset, misc.BytesToUCharVector(m.currentTarget), uint(0))
-	m.log.Info("MINING STARTED",
-		"SEQ ID", workSeqId)
+			miningBlob := m.miningBlock.MiningBlob()
+			nonceOffset := m.config.Dev.MiningNonceOffset
+
+			m.log.Debug("Mining",
+				"Block #", m.miningBlock.BlockNumber())
+			m.currentSeq = m.Start(misc.BytesToUCharVector(miningBlob), nonceOffset, misc.BytesToUCharVector(m.currentTarget), uint(0))
+			m.log.Info("MINING STARTED",
+				"SEQ ID", m.currentSeq)
+
+			m.lock.Unlock()
+		case <-m.StopMiningChan:
+			m.lock.Lock()
+			m.Cancel()
+			m.mode = 0
+			m.lock.Unlock()
+		case <-m.exit:
+			m.Cancel()
+			m.log.Info("Miner Exits")
+			return
+		case <-time.After(60 * time.Second):
+			if m.mode != 0 {
+				continue
+			}
+			m.lock.Lock()
+			m.mode = 1
+
+			m.mineNextBlockChan <- true
+			m.lock.Unlock()
+		}
+	}
 }
 
 func (m *Miner) GetBlockToMine(minerQAddress string, lastBlock *block.Block, lastBlockDifficulty []byte, txPool *pool.TransactionPool) (string, uint64, error) {
@@ -242,18 +291,47 @@ func (m *Miner) SubmitMinedBlock(blob []byte) bool {
 	}
 
 	m.miningBlock.SetNonces(blockHeader.MiningNonce(), blockHeader.ExtraNonce())
-	// clonedBlock := *m.miningBlock
-	// TODO: Call PreBlockLogic (clonedBlock)
+	m.addBlockToChain(*m.miningBlock)
+
 	return true
 }
 
-func CreateMiner(chain *chain.Chain) *Miner {
+func (m *Miner) addBlockToChain(b block.Block) {
+	msg := &generated.Message{
+		Msg:&generated.LegacyMessage_Block{
+			Block:b.PBData(),
+		},
+		MessageType:generated.LegacyMessage_BK,
+	}
+	registerMessage := &messages.RegisterMessage{
+		MsgHash: misc.Bin2HStr(b.HeaderHash()),
+		Msg: msg,
+	}
+	select {
+	case m.registerAndBroadcastChan <- registerMessage:
+	case <-time.After(10*time.Second):
+		m.log.Warn("[AddBlockToChain] RegisterAndBroadcastChan Timeout")
+	}
+	m.chain.AddBlock(&b)
+	if m.notify != nil {
+		m.notify <- true
+		return
+	}
+	m.currentSeq = 0
+	m.mineNextBlockChan <- true  // Notifies Miner to Mine Next Block
+}
+
+func CreateMiner(chain *chain.Chain, registerAndBroadcastChan chan *messages.RegisterMessage) *Miner {
 	m := &Miner{
 		chain: chain,
 		ntp: ntp.GetNTP(),
 		config: config.GetConfig(),
 		log: log.GetLogger(),
 		dt: &pow.DifficultyTracker{},
+		registerAndBroadcastChan: registerAndBroadcastChan,
+		mineNextBlockChan: make(chan bool, 1),
+		StopMiningChan: make(chan bool, 100),
+		exit: make(chan struct{}),
 	}
 	m.miningThreadCount = m.config.User.Miner.MiningThreadCount
 	qryptoMiner := goqryptonight.NewDirectorQryptominer(m)
