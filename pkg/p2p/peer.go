@@ -4,6 +4,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/go-qrl/pkg/ntp"
+	"github.com/theQRL/go-qrl/pkg/p2p/messages"
 	"io"
 	"math/big"
 	"net"
@@ -47,6 +48,7 @@ type Peer struct {
 	blockAndPeerChan          chan *BlockAndPeer
 	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
 	mrDataConn                chan *MRDataConn
+	registerAndBroadcastChan  chan *messages.RegisterMessage
 
 	inCounter           uint64
 	outCounter          uint64
@@ -60,7 +62,7 @@ type Peer struct {
 	isDownloadPeer bool // FLag is Peer is in the list of Downloader's Peer List
 }
 
-func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, addPeerToPeerList chan *generated.PLData, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, registerAndBroadcastChan chan *messages.RegisterMessage, addPeerToPeerList chan *generated.PLData, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
 	p := &Peer{
 		conn:                  *conn,
 		inbound:               inbound,
@@ -75,6 +77,7 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 		config:                    config.GetConfig(),
 		ntp:                       ntp.GetNTP(),
 		mrDataConn:                mrDataConn,
+		registerAndBroadcastChan:  registerAndBroadcastChan,
 		addPeerToPeerList:         addPeerToPeerList,
 		blockAndPeerChan:          blockAndPeerChan,
 		nodeHeaderHashAndPeerChan: nodeHeaderHashAndPeerChan,
@@ -512,13 +515,25 @@ func (p *Peer) HandleBlock(pbBlock *generated.Block) {
 		p.log.Warn("Failed To Add Block")
 		return
 	}
+
 	msg := &generated.Message{
 		Msg:&generated.LegacyMessage_Block{
 			Block:b.PBData(),
 		},
 		MessageType:generated.LegacyMessage_BK,
 	}
-	p.mr.Register(misc.Bin2HStr(b.HeaderHash()), msg)
+
+	registerMessage := &messages.RegisterMessage{
+		MsgHash:misc.Bin2HStr(b.HeaderHash()),
+		Msg:msg,
+	}
+
+	select {
+	case p.registerAndBroadcastChan <- registerMessage:
+	case <-time.After(10*time.Second):
+		p.log.Warn("[HandleBlock] RegisterAndBroadcastChan Timeout",
+			"Peer", p.ID())
+	}
 }
 
 func (p *Peer) HandleChainState(nodeChainState *generated.NodeChainState) {
