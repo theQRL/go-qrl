@@ -101,14 +101,16 @@ func (tx *TransferTransaction) ValidateExtended(
 	totalAmount := tx.TotalAmounts()
 
 	if balance < totalAmount+tx.Fee() {
-		tx.log.Warn("State validation failed for %s because: Insufficient funds", misc.Bin2HStr(tx.Txhash()))
-		tx.log.Warn("balance: %s, fee: %s, amount: %s", balance, tx.Fee(), totalAmount)
+		tx.log.Warn("State validation failed because of Insufficient funds",
+			"txhash", misc.Bin2HStr(tx.Txhash()),
+			"balance", balance,
+			"fee", tx.Fee())
 		return false
 	}
 
 	if addrFromPkState.OTSKeyReuse(tx.OtsKey()) {
-		tx.log.Warn("State validation failed for %s because: OTS Public key re-use detected",
-			misc.Bin2HStr(tx.Txhash()))
+		tx.log.Warn("State validation failed because of OTS Public key re-use detected",
+			"txhash", misc.Bin2HStr(tx.Txhash()))
 		return false
 	}
 

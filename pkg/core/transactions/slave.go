@@ -44,7 +44,8 @@ func (tx *SlaveTransaction) GetHashableBytes() []byte {
 
 func (tx *SlaveTransaction) validateCustom() bool {
 	if tx.Fee() < 0 {
-		tx.log.Warn("[SlaveTransaction] State validation failed for %s because: Negative Send", misc.Bin2HStr(tx.Txhash()))
+		tx.log.Warn("[SlaveTransaction] State validation failed because of Negative Send",
+			"txhash", misc.Bin2HStr(tx.Txhash()))
 		return false
 	}
 
@@ -80,13 +81,16 @@ func (tx *SlaveTransaction) ValidateExtended(addrFromState *addressstate.Address
 	balance := addrFromState.Balance()
 
 	if balance < tx.Fee() {
-		tx.log.Warn("[SlaveTransaction] State validation failed for %s because: Insufficient funds", misc.Bin2HStr(tx.Txhash()))
-		tx.log.Warn("Balance: %s, Amount: %s", balance, tx.Fee())
+		tx.log.Warn("[SlaveTransaction] State validation failed because of Insufficient funds",
+			"txhash", misc.Bin2HStr(tx.Txhash()),
+			"balance", balance,
+			"fee", tx.Fee())
 		return false
 	}
 
 	if addrFromPkState.OTSKeyReuse(tx.OtsKey()) {
-		tx.log.Warn("[SlaveTransaction] State validation failed for %s because: OTS Public key re-use detected", misc.Bin2HStr(tx.Txhash()))
+		tx.log.Warn("[SlaveTransaction] State validation failed because of OTS Public key re-use detected",
+			"txhash", misc.Bin2HStr(tx.Txhash()))
 		return false
 	}
 
