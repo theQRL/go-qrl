@@ -114,7 +114,7 @@ func (bh *BlockHeader) MiningNonce() uint32 {
 	return bh.blockHeader.MiningNonce
 }
 
-func (bh *BlockHeader) NonceOffset() uint16 {
+func (bh *BlockHeader) NonceOffset() int64 {
 	return bh.config.Dev.MiningNonceOffset
 }
 
@@ -255,12 +255,16 @@ func (bh *BlockHeader) ValidateParentChildRelation(parentBlock BlockBareInterfac
 
 func (bh *BlockHeader) VerifyBlob(blob []byte) bool {
 	miningNonceOffset := bh.config.Dev.MiningNonceOffset
-	blob = append(blob[:miningNonceOffset], blob[miningNonceOffset+17:]...)
+	blob2 := make([]byte, len(blob) - 17)
+	blob2 = append(blob2, blob[:miningNonceOffset]...)
+	blob2 = append(blob2, blob[miningNonceOffset+17:]...)
 
 	actualBlob := bh.MiningBlob()
-	actualBlob = append(actualBlob[:miningNonceOffset], actualBlob[miningNonceOffset+17:]...)
+	actualBlob2 := make([]byte, len(blob) - 17)
+	actualBlob2 = append(actualBlob2, actualBlob[:miningNonceOffset]...)
+	actualBlob2 = append(actualBlob2, actualBlob[miningNonceOffset+17:]...)
 
-	if !reflect.DeepEqual(blob, actualBlob) {
+	if !reflect.DeepEqual(blob2, actualBlob2) {
 		return false
 	}
 
