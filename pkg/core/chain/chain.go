@@ -58,6 +58,15 @@ func CreateChain(s *state.State) *Chain {
 	return chain
 }
 
+func (c *Chain) SetDifficultyTracker(dt pow.DifficultyTrackerInterface) {
+	// To be used by Unit tests only
+	c.dt = dt
+}
+
+func (c *Chain) GetTransactionPool() *pool.TransactionPool {
+	return c.txPool
+}
+
 func (c *Chain) SetNewBlockNotificationChannel(newBlockNotificationChannel chan []byte) {
 	c.newBlockNotificationChannel = newBlockNotificationChannel
 }
