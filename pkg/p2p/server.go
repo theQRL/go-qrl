@@ -8,10 +8,13 @@ import (
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/go-qrl/pkg/ntp"
+	"github.com/theQRL/go-qrl/pkg/p2p/messages"
+	"github.com/theQRL/go-qrl/pkg/pow/miner"
 	"io/ioutil"
 	"net"
 	"os"
 	"path"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,6 +51,7 @@ type PeersInfo struct {
 type Server struct {
 	config *config.Config
 
+	miner        *miner.Miner
 	chain        *chain.Chain
 	ntp          ntp.NTPInterface
 	peersInfo    *PeersInfo
@@ -70,6 +74,7 @@ type Server struct {
 	addPeerToPeerList         chan *generated.PLData
 	addpeer                   chan *conn
 	delpeer                   chan *peerDrop
+	registerAndBroadcastChan  chan *messages.RegisterMessage
 
 	filter          *bloom.BloomFilter
 	mr              *MessageReceipt
@@ -90,6 +95,7 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	srv.connectPeersExit = make(chan struct{})
 	srv.addpeer = make(chan *conn)
 	srv.delpeer = make(chan *peerDrop)
+	srv.registerAndBroadcastChan = make(chan *messages.RegisterMessage, 100)
 	srv.log = log.GetLogger()
 	srv.chain = chain
 	srv.ntp = ntp.GetNTP()
@@ -133,8 +139,15 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	if err := srv.startListening(); err != nil {
 		return err
 	}
+
+	if srv.config.User.Miner.MiningEnabled {
+		srv.miner = miner.CreateMiner(srv.chain, srv.registerAndBroadcastChan)
+		go srv.miner.StartMining()
+	}
+
 	srv.running = true
 	go srv.run()
+
 	return nil
 }
 
@@ -294,7 +307,7 @@ running:
 			srv.peerInfoLock.Lock()
 
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
-			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter, srv.mr, srv.mrDataConn, srv.addPeerToPeerList, srv.blockAndPeerChan, srv.nodeHeaderHashAndPeerChan, srv.messagePriority)
+			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter, srv.mr, srv.mrDataConn, srv.registerAndBroadcastChan, srv.addPeerToPeerList, srv.blockAndPeerChan, srv.nodeHeaderHashAndPeerChan, srv.messagePriority)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
 
@@ -386,6 +399,23 @@ running:
 			srv.log.Info("Start Downloading Thread")
 		case addPeerToPeerList := <-srv.addPeerToPeerList:
 			srv.UpdatePeerList(addPeerToPeerList)
+		case registerAndBroadcast := <-srv.registerAndBroadcastChan:
+			srv.mr.Register(registerAndBroadcast.MsgHash, registerAndBroadcast.Msg)
+			out := &Msg{
+				msg: &generated.LegacyMessage{
+					FuncName: registerAndBroadcast.Msg.MessageType,
+					Data: registerAndBroadcast.Msg.Msg,
+				},
+			}
+			ignorePeers := make(map[*Peer]bool, 0)
+			if msgRequest, ok := srv.mr.GetRequestedHash(registerAndBroadcast.MsgHash); ok {
+				ignorePeers = msgRequest.peers
+			}
+			for _, p := range peers {
+				if _, ok := ignorePeers[p]; !ok {
+					p.Send(out)
+				}
+			}
 		}
 	}
 	for _, p := range peers {
@@ -540,13 +570,17 @@ func (srv *Server) BlockReceived(peer *Peer, b *block.Block) {
 		"Block Number", b.BlockNumber(),
 		"HeaderHash", headerHash)
 
-	//srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}
 	select {
 		case srv.downloader.blockAndPeerChannel <- &BlockAndPeer{b, peer}:
 		case <-time.After(5 * time.Second):
 			srv.log.Info("Timeout for Received Block",
 				"#", b.BlockNumber(),
 				"HeaderHash", headerHash)
+	}
+	if srv.miner != nil {
+		if reflect.DeepEqual(srv.chain.GetLastBlock().HeaderHash(), b.HeaderHash()) {
+			srv.miner.StopMiningChan <- true
+		}
 	}
 }
 
