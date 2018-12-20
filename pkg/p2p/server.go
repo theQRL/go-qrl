@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/theQRL/go-qrl/api"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/misc"
@@ -143,6 +144,9 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	if srv.config.User.Miner.MiningEnabled {
 		srv.miner = miner.CreateMiner(srv.chain, srv.registerAndBroadcastChan)
 		go srv.miner.StartMining()
+	} else if srv.config.User.API.MiningAPI.Enabled {
+		miningServer := api.NewMiningAPIServer(srv.chain, srv.registerAndBroadcastChan)
+		go miningServer.Start()
 	}
 
 	srv.running = true
