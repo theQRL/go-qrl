@@ -1,7 +1,7 @@
 package pool
 
 import (
-	c "github.com/theQRL/go-qrl/pkg/config"
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
 )
 
@@ -11,7 +11,7 @@ type TransactionInfo struct {
 	timestamp   uint64
 	index       int
 	priority    uint64
-	config      *c.Config
+	config      *config.Config
 }
 
 func (t *TransactionInfo) Transaction() transactions.TransactionInterface {
@@ -50,6 +50,7 @@ func CreateTransactionInfo(tx transactions.TransactionInterface, blockNumber uin
 	t.blockNumber = blockNumber
 	t.timestamp = timestamp
 	t.priority = tx.Fee()
+	t.config = config.GetConfig()
 
 	return t
 }
