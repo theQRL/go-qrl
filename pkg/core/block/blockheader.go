@@ -265,6 +265,9 @@ func (bh *BlockHeader) VerifyBlob(blob []byte) bool {
 	actualBlob2 = append(actualBlob2, actualBlob[miningNonceOffset+17:]...)
 
 	if !reflect.DeepEqual(blob2, actualBlob2) {
+		bh.log.Info("Blob",
+			"Found", misc.Bin2HStr(blob2),
+			"Expected", misc.Bin2HStr(actualBlob2))
 		return false
 	}
 
