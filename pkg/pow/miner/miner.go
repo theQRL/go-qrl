@@ -292,7 +292,7 @@ func (m *Miner) SubmitMinedBlock(blob []byte) bool {
 
 	m.miningBlock.SetNonces(blockHeader.MiningNonce(), blockHeader.ExtraNonce())
 	m.addBlockToChain(*m.miningBlock)
-
+	m.miningBlock = nil
 	return true
 }
 
