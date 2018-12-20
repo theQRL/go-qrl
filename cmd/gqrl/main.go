@@ -56,7 +56,6 @@ func startServer() error {
 		c.SetNewBlockNotificationChannel(newBlockNotificationChannel)
 	}
 
-
 	server = &p2p.Server{}
 
 	err = server.Start(c)
@@ -91,11 +90,32 @@ func run() {
 	logger.Info("Shutting Down Server")
 }
 
+func ConfigCheck() bool {
+	c := config.GetConfig()
+	// Both config cannot be True
+	if c.User.Miner.MiningEnabled && c.User.API.MiningAPI.Enabled {
+		logger.Error("Both MiningEnabled & MiningAPI.Enabled are true")
+		logger.Error("Disable either of them")
+		return false
+	}
+
+	// Some checks only when Mining is Enabled
+	if c.User.Miner.MiningEnabled {
+		// TODO: Check if Valid QRL Address
+		//if c.User.Miner.MiningAddress
+	}
+	return true
+}
+
 func main() {
 	//Enable only for debugging, Used for profiling
 	//go func() {
 	//	http.ListenAndServe("localhost:6060", nil)
 	//}()
+	if !ConfigCheck() {
+		logger.Info("Invalid Config")
+		return
+	}
 	logger.Info("Starting")
 	initialize()
 	run()
