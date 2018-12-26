@@ -558,7 +558,7 @@ func (c *Chain) GetHeaderHashes(blockNumber uint64, count uint64) (*generated.No
 		}
 		headerHashes := blockMetaData.LastNHeaderHashes()
 		nodeHeaderHash.Headerhashes = append(headerHashes, nodeHeaderHash.Headerhashes...)
-		if endBlockNumber >= uint64(len(headerHashes)) {
+		if uint64(len(headerHashes)) >= endBlockNumber {
 			endBlockNumber = 0
 		} else {
 			endBlockNumber -= uint64(len(headerHashes))
