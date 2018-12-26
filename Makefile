@@ -12,6 +12,10 @@ clean:
 	$(GOCLEAN)
 	rm $(GOPATH)/src/github.com/theQRL/go-qrl/gqrl
 deps:
+	@if [ -z "$(GOPATH)" ]; then \
+	  echo "GOPATH Not Set" && \
+	  exit 1; \
+	fi
 	if [ ! -d "$(GOPATH)/src/github.com/theQRL/qrllib" ]; then \
 	  git clone --recurse-submodules https://github.com/cyyber/qrllib $(GOPATH)/src/github.com/theQRL/qrllib && \
 	  cmake -DBUILD_GO=ON $(GOPATH)/src/github.com/theQRL/qrllib -B$(GOPATH)/src/github.com/theQRL/qrllib && \
