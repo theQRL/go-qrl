@@ -7,11 +7,36 @@
 ## Installing
 
 #### Ubuntu
+
+**Dependencies:**
+
 ```
 sudo apt -y install swig3.0 python3-dev build-essential cmake libhwloc-dev libboost-dev ninja-build pkg-config
 
-go get -d https://github.com/theQRL/go-qrl
+```
+
+**Install gcc-5**
+
+```
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install gcc-5 g++-5
+```
+
+
+
+```
+go get -d github.com/theQRL/go-qrl
+```
+
+This will complain. `package github.com/theQRL/go-qrl: no Go files in $GOPATH/src/github.com/theQRL/go-qrl` Ignore this warning and proceed.
+
+Change into the source directory and build the package
+
+```
 cd $GOPATH/src/github.com/theQRL/go-qrl
 make build
-````
+```
 
+
+now run `./gqrl` and the node begins syncing.
