@@ -636,7 +636,7 @@ func CreateMongoProcessor(dbName string, chain *chain.Chain) (*MongoProcessor, e
 	host := m.config.User.MongoProcessorConfig.Host
 	port := m.config.User.MongoProcessorConfig.Port
 
-	m.ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
+	m.ctx, _ = context.WithTimeout(context.Background(), 60*time.Second)
 	client, err := mongo.Connect(m.ctx, fmt.Sprintf("mongodb://%s:%d", host, port))
 	if err != nil {
 		fmt.Println(err)

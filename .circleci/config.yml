@@ -5,8 +5,6 @@ jobs:
       - image: qrledger/qrl-docker:xenial
     steps:
       - checkout
-      - run: curl https://install.meteor.com/ | sh
-      - run: meteor create foo --bare && cd foo && meteor &
       - run: add-apt-repository ppa:ubuntu-toolchain-r/test -y
       - run: apt update
       - run: apt install g++-7 -y
@@ -30,8 +28,15 @@ jobs:
       - run: go get -u github.com/schrej/godacov && cd $GOGITHUB/schrej/godacov && go build
       - run: go get -u github.com/haya14busa/goverage && cd $GOGITHUB/haya14busa/goverage && go build
       - run: cd $GOGITHUB/theQRL/go-qrl && go get -v -t -d ./...
-      - run: cd $GOGITHUB/theQRL/go-qrl && goverage -v -coverprofile=coverage.out ./...
-      - run: if [[ -v CODACY_PROJECT_TOKEN ]]; then cd $GOGITHUB/theQRL/go-qrl && godacov -t $CODACY_PROJECT_TOKEN -r ./coverage.out -c $CIRCLE_SHA1 || echo "failed"; fi
+      - run:
+          command: |
+            curl https://install.meteor.com/ | sh
+            meteor create foo --bare --allow-superuser
+            cd foo
+            meteor --allow-superuser &
+            sleep 30
+            cd $GOGITHUB/theQRL/go-qrl && goverage -v -coverprofile=coverage.out ./...
+            if [[ -v CODACY_PROJECT_TOKEN ]]; then cd $GOGITHUB/theQRL/go-qrl && godacov -t $CODACY_PROJECT_TOKEN -r ./coverage.out -c $CIRCLE_SHA1 || echo "failed"; fi
 
 workflows:
   version: 2
