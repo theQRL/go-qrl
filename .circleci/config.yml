@@ -6,7 +6,7 @@ jobs:
     steps:
       - checkout
       - run: curl https://install.meteor.com/ | sh
-      - run: meteor &
+      - run: meteor create foo --bare && cd foo && meteor &
       - run: add-apt-repository ppa:ubuntu-toolchain-r/test -y
       - run: apt update
       - run: apt install g++-7 -y
