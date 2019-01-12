@@ -13,6 +13,29 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
+type PlainCoinBaseTransaction struct {
+	Fee             uint64 `json:"fee"`
+	PublicKey       string `json:"public_key"`
+	Signature       string `json:"signature"`
+	Nonce           uint64 `json:"nonce"`
+	TransactionHash string `json:"transaction_hash"`
+	TransactionType string `json:"transaction_type"`
+
+	AddressTo string `json:"address_to"`
+	Amount    uint64 `json:"amount"`
+}
+
+func (t *PlainCoinBaseTransaction) TransactionFromPBData(tx *generated.Transaction) {
+	t.Fee = tx.Fee
+	t.PublicKey = misc.Bin2HStr(tx.PublicKey)
+	t.Signature = misc.Bin2HStr(tx.Signature)
+	t.Nonce = tx.Nonce
+	t.TransactionHash = misc.Bin2HStr(tx.TransactionHash)
+	t.TransactionType = "coinbase"
+	t.AddressTo = misc.Bin2Qaddress(tx.GetCoinbase().AddrTo)
+	t.Amount = tx.GetCoinbase().Amount
+}
+
 type CoinBase struct {
 	Transaction
 }
