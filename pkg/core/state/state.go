@@ -2,6 +2,7 @@ package state
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"math"
 	"reflect"
@@ -216,7 +217,7 @@ func (s *State) GetBlockByNumber(blockNumber uint64) (*block.Block, error) {
 
 	if err != nil {
 		s.log.Info("Failed to get for Headerhash",
-			"hh", misc.Bin2HStr(bm.Headerhash))
+			"header hash", hex.EncodeToString(bm.Headerhash))
 		return nil, err
 	}
 
