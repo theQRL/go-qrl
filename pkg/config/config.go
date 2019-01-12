@@ -60,6 +60,13 @@ type API struct {
 	MiningAPI *APIConfig
 }
 
+type MongoProcessorConfig struct {
+	Enabled bool
+	DBName  string
+	Host    string
+	Port    uint16
+}
+
 type UserConfig struct {
 	Node                     *NodeConfig
 	NotificationServerConfig *NotificationServerConfig
@@ -76,7 +83,8 @@ type UserConfig struct {
 	QrlDir             string
 	ChainFileDirectory string
 
-	API *API
+	API                  *API
+	MongoProcessorConfig *MongoProcessorConfig
 }
 
 type APIConfig struct {
@@ -242,7 +250,7 @@ func GetUserConfig() (userConf *UserConfig) {
 	}
 
 	miningAPI := &APIConfig{
-		Enabled:          false,
+		Enabled:          true,
 		Host:             "127.0.0.1",
 		Port:             19007,
 		Threads:          1,
@@ -253,6 +261,12 @@ func GetUserConfig() (userConf *UserConfig) {
 		AdminAPI:  adminAPI,
 		PublicAPI: publicAPI,
 		MiningAPI: miningAPI,
+	}
+	mongoProcessorConfig := &MongoProcessorConfig{
+		Enabled:false,
+		DBName:"qrl",
+		Host:"127.0.0.1",
+		Port:3001,
 	}
 	userCurrentDir, _ := user.Current()  // TODO: Handle error
 	userConf = &UserConfig{
@@ -272,6 +286,7 @@ func GetUserConfig() (userConf *UserConfig) {
 		ChainFileDirectory: "data",
 
 		API: api,
+		MongoProcessorConfig: mongoProcessorConfig,
 	}
 
 	return userConf
@@ -310,7 +325,7 @@ func GetDevConfig() (dev *DevConfig) {
 	dev = &DevConfig{
 		Genesis: genesis,
 
-		Version: "0.0.1 go",
+		Version: "0.1.0 go",
 
 		BlocksPerEpoch:       100,
 		BlockLeadTimestamp:   30,
