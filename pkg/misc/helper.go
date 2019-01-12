@@ -3,6 +3,8 @@ package misc
 import (
 	"bytes"
 	"container/list"
+	"encoding/binary"
+	"fmt"
 	"math"
 	"runtime"
 
@@ -133,6 +135,11 @@ func Bin2HStr(data []byte) string {
 }
 
 func HStr2Bin(data string) []byte {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered in f")
+		}
+	}()
 	return UCharVectorToBytes(goqrllib.Hstr2bin(data))
 }
 
@@ -144,10 +151,34 @@ func Bin2Qaddress(binAddress []byte) string {
 	return "Q" + Bin2HStr(binAddress)
 }
 
+func Bin2QAddresses(binAddresses [][]byte) []string {
+	QAddresses := make([]string, 0)
+	for i := 0 ; i < len(binAddresses); i++ {
+		QAddresses = append(QAddresses, Bin2Qaddress(binAddresses[i]))
+	}
+	return QAddresses
+}
+
+func Bin2Pks(binPks [][]byte) []string {
+	pks := make([]string, 0)
+	for i := 0 ; i < len(binPks); i++ {
+		pks = append(pks, Bin2HStr(binPks[i]))
+	}
+	return pks
+}
+
+func PK2BinAddress(pk []byte) []byte {
+	return misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(pk)))
+}
+
 func PK2Qaddress(pk []byte) string {
-	return Bin2Qaddress(misc.UCharVectorToBytes(goqrllib.QRLHelperGetAddress(misc.BytesToUCharVector(pk))))
+	return Bin2Qaddress(PK2BinAddress(pk))
 }
 
 func ConvertBytesToLong(b []byte) uint32 {
 	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
+}
+
+func OTSKeyFromSig(signature []byte) uint64 {
+	return uint64(binary.BigEndian.Uint32(signature[0:4]))
 }
