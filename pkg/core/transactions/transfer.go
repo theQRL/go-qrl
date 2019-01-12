@@ -13,6 +13,33 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
+type PlainTransferTransaction struct {
+	MasterAddress string  `json:"master_address"`
+	Fee uint64  `json:"fee"`
+	PublicKey string  `json:"public_key"`
+	Signature string  `json:"signature"`
+	Nonce uint64  `json:"nonce"`
+	TransactionHash string  `json:"transaction_hash"`
+	TransactionType string  `json:"transaction_type"`
+
+	AddressesTo []string  `json:"addresses_to"`
+	Amounts []uint64  `json:"amounts"`
+}
+
+func (t *PlainTransferTransaction) TransactionFromPBData(tx *generated.Transaction) {
+	if tx.MasterAddr != nil {
+		t.MasterAddress = misc.Bin2Qaddress(tx.MasterAddr)
+	}
+	t.Fee = tx.Fee
+	t.PublicKey = misc.Bin2HStr(tx.PublicKey)
+	t.Signature = misc.Bin2HStr(tx.Signature)
+	t.Nonce = tx.Nonce
+	t.TransactionHash = misc.Bin2HStr(tx.TransactionHash)
+	t.TransactionType = "transfer"
+	t.AddressesTo = misc.Bin2QAddresses(tx.GetTransfer().AddrsTo)
+	t.Amounts = tx.GetTransfer().Amounts
+}
+
 type TransferTransaction struct {
 	Transaction
 }

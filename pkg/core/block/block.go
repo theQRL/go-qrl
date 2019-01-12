@@ -83,6 +83,44 @@ type BlockBareInterface interface {
 	Timestamp() uint64
 }
 
+type PlainBlockHeader struct {
+	HeaderHash string  `json:"header_hash" bson:"header_hash"`
+	BlockNumber uint64  `json:"block_number" bson:"block_number"`
+	Timestamp uint64  `json:"timestamp" bson:"timestamp"`
+	PrevHeaderHash string  `json:"prev_header_hash" bson:"prev_header_hash"`
+	BlockReward uint64  `json:"block_reward" bson:"block_reward"`
+	FeeReward uint64  `json:"fee_reward" bson:"fee_reward"`
+	MerkleRoot string  `json:"merkle_root" bson:"merkle_root"`
+
+	MiningNonce uint32  `json:"mining_nonce" bson:"mining_nonce"`
+	ExtraNonce uint64  `json:"extra_nonce" bson:"extra_nonce"`
+}
+
+func (bh *PlainBlockHeader) BlockHeaderFromPBData(bh2 *generated.BlockHeader) {
+	bh.HeaderHash = misc.Bin2HStr(bh2.HashHeader)
+	bh.BlockNumber = bh2.BlockNumber
+	bh.Timestamp = bh2.TimestampSeconds
+	bh.PrevHeaderHash = misc.Bin2HStr(bh2.HashHeaderPrev)
+	bh.BlockReward = bh2.RewardBlock
+	bh.FeeReward = bh2.RewardFee
+	bh.MiningNonce = bh2.MiningNonce
+	bh.ExtraNonce = bh2.ExtraNonce
+}
+
+type PlainBlock struct {
+	Header       *PlainBlockHeader                        `json:"header" bson:"header"`
+	Transactions []transactions.PlainTransactionInterface `json:"transactions" bson:"transactions"`
+	//GenesisBalance *GenesisBalance
+}
+
+func (b *PlainBlock) BlockFromPBData(b2 *generated.Block) {
+	b.Header = &PlainBlockHeader{}
+	b.Header.BlockHeaderFromPBData(b2.Header)
+	for _, tx := range b2.Transactions {
+		b.Transactions = append(b.Transactions, transactions.ProtoToPlainTransaction(tx))
+	}
+}
+
 type Block struct {
 	block       *generated.Block
 	blockheader *BlockHeader

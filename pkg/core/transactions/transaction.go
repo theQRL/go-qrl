@@ -17,6 +17,11 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
+type PlainTransactionInterface interface {
+	TransactionFromPBData(tx *generated.Transaction)
+}
+
+
 type TransactionInterface interface {
 	Size() int
 
@@ -308,6 +313,30 @@ func ProtoToTransaction(protoTX *generated.Transaction) TransactionInterface {
 
 	if tx != nil {
 		tx.SetPBData(protoTX)
+	}
+
+	return tx
+}
+
+func ProtoToPlainTransaction(protoTX *generated.Transaction) PlainTransactionInterface {
+	var tx PlainTransactionInterface
+	switch protoTX.TransactionType.(type) {
+	case *generated.Transaction_Transfer_:
+		tx = &PlainTransferTransaction{}
+	case *generated.Transaction_Coinbase:
+		tx = &PlainCoinBaseTransaction{}
+	case *generated.Transaction_Token_:
+		tx = &PlainTokenTransaction{}
+	case *generated.Transaction_TransferToken_:
+		tx = &PlainTransferTokenTransaction{}
+	case *generated.Transaction_Message_:
+		tx = &PlainMessageTransaction{}
+	case *generated.Transaction_Slave_:
+		tx = &PlainSlaveTransaction{}
+	}
+
+	if tx != nil {
+		tx.TransactionFromPBData(protoTX)
 	}
 
 	return tx

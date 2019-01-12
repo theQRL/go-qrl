@@ -1,6 +1,7 @@
 package addressstate
 
 import (
+	"encoding/base64"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"reflect"
 
@@ -62,6 +63,30 @@ type AddressStateInterface interface {
 	IsValidAddress(address []byte) bool
 
 	Serialize() string
+}
+
+type PlainAddressState struct {
+	Address           string     `json:"address" bson:"address"`
+	Balance           uint64   `json:"balance" bson:"balance"`
+	Nonce             uint64   `json:"nonce" bson:"nonce"`
+	OtsBitfield       []string `json:"ots_bit_field" bson:"ots_bit_field"`
+	TransactionHashes []string `json:"transaction_hashes" bson:"transaction_hashes"`
+	OtsCounter        uint64   `json:"ots_counter" bson:"ots_counter"`
+}
+
+func (a *PlainAddressState) AddressStateFromPBData(a2 *generated.AddressState) {
+	a.Address = misc.Bin2Qaddress(a2.Address)
+	a.Balance = a2.Balance
+	a.Nonce = a2.Nonce
+	for i := 0; i < int(c.GetConfig().Dev.OtsBitFieldSize); i++ {
+		a.OtsBitfield = append(a.OtsBitfield, base64.StdEncoding.EncodeToString(a2.OtsBitfield[i]))
+	}
+
+	for _, txHashes := range a2.TransactionHashes {
+		a.TransactionHashes = append(a.TransactionHashes, misc.Bin2HStr(txHashes))
+	}
+
+	a.OtsCounter = a2.OtsCounter
 }
 
 type AddressState struct {

@@ -14,6 +14,42 @@ import (
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 )
 
+type PlainTokenTransaction struct {
+	MasterAddress string  `json:"master_address"`
+	Fee uint64  `json:"fee"`
+	PublicKey string  `json:"public_key"`
+	Signature string  `json:"signature"`
+	Nonce uint64  `json:"nonce"`
+	TransactionHash string  `json:"transaction_hash"`
+	TransactionType string  `json:"transaction_type"`
+
+	Symbol string  `json:"symbol"`
+	Name string  `json:"name"`
+	Owner string  `json:"owner"`
+	Decimals uint64  `json:"decimals"`
+	AddressesTo []string  `json:"addresses_to"`
+	Amounts []uint64  `json:"amounts"`
+}
+
+func (t *PlainTokenTransaction) TransactionFromPBData(tx *generated.Transaction) {
+	t.Fee = tx.Fee
+	t.PublicKey = misc.Bin2HStr(tx.PublicKey)
+	t.Signature = misc.Bin2HStr(tx.Signature)
+	t.Nonce = tx.Nonce
+	t.TransactionHash = misc.Bin2HStr(tx.TransactionHash)
+	t.TransactionType = "token"
+
+	token := tx.GetToken()
+	t.Symbol = string(token.Symbol)
+	t.Name = string(token.Name)
+	t.Owner = string(token.Owner)
+	t.Decimals = token.Decimals
+	for _, initialBalance := range token.InitialBalances {
+		t.AddressesTo = append(t.AddressesTo, misc.Bin2Qaddress(initialBalance.Address))
+		t.Amounts = append(t.Amounts, initialBalance.Amount)
+	}
+}
+
 type TokenTransaction struct {
 	Transaction
 }
