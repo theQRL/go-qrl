@@ -479,6 +479,18 @@ func (c *Chain) forkRecovery(block *block.Block, forkState *generated.ForkState)
 	return true
 }
 
+func (c *Chain) GetTransactionByHash(txHash []byte) (*generated.Transaction, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	txMetaData, err := c.state.GetTxMetadata(txHash)
+	if err != nil {
+		return nil, err
+	}
+	return txMetaData.Transaction, err
+
+}
+
 func (c *Chain) GetBlock(headerhash []byte) (*block.Block, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
