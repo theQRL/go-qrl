@@ -79,6 +79,7 @@ func startServer() error {
 		if err != nil {
 			return err
 		}
+		go mongoProcessor.Run()
 	}
 
 	return nil
@@ -105,7 +106,15 @@ func run() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
 	<-quit
+
 	logger.Info("Shutting Down Server")
+
+	if mongoProcessor != nil {
+		logger.Info("Closing MongoProcessor")
+		close(mongoProcessor.Exit)
+		mongoProcessor.LoopWG.Wait()
+		logger.Info("MongoProcessor Successfully Closed")
+	}
 }
 
 func ConfigCheck() bool {

@@ -14,6 +14,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"reflect"
+	"sync"
 	"time"
 )
 
@@ -27,6 +28,7 @@ type MongoProcessor struct {
 
 	lastBlock *Block
 	Exit      chan struct{}
+	LoopWG    sync.WaitGroup
 
 	bulkBlocks   []mongo.WriteModel
 	bulkAccounts []mongo.WriteModel
@@ -616,6 +618,9 @@ func (m *MongoProcessor) Sync() {
 }
 
 func (m *MongoProcessor) Run() {
+	m.LoopWG.Add(1)
+	defer m.LoopWG.Done()
+
 	for {
 		select {
 		case <- time.After(15 * time.Second):
