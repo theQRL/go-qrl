@@ -38,7 +38,7 @@ type RollbackStateInfo struct {
 
 func CreateState() (*State, error) {
 	c := c.GetConfig()
-	newDB, err := db.NewDB(c.User.DataDir(), c.Dev.DBName, 1*1024, 500)
+	newDB, err := db.NewDB(c.User.DataDir(), c.Dev.DBName, 51, 500)
 
 	if err != nil {
 		return nil, err
