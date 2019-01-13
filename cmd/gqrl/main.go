@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/theQRL/go-qrl/api"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
 	"github.com/theQRL/go-qrl/pkg/core/state"
@@ -8,13 +9,18 @@ import (
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/p2p"
 	"github.com/theQRL/go-qrl/pkg/p2p/notification"
+	"github.com/theQRL/go-qrl/pkg/writers/mongodb"
 	"os"
 	"os/signal"
+	"sync"
 )
 
 var (
 	server *p2p.Server
+	publicAPIServer *api.PublicAPIServer
 	notificationServer *notification.NotificationServer
+	mongoProcessor *mongodb.MongoProcessor
+	loopWG sync.WaitGroup
 	logger = log.GetLogger()
 )
 
@@ -61,6 +67,18 @@ func startServer() error {
 	err = server.Start(c)
 	if err != nil {
 		return err
+	}
+
+	if conf.User.API.PublicAPI.Enabled {
+		publicAPIServer = api.NewPublicAPIServer(c)
+		go publicAPIServer.Start()
+	}
+	mongoProcessorConfig := conf.User.MongoProcessorConfig
+	if mongoProcessorConfig.Enabled {
+		mongoProcessor, err = mongodb.CreateMongoProcessor(mongoProcessorConfig.DBName, c)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
