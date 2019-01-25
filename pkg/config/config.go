@@ -61,10 +61,12 @@ type API struct {
 }
 
 type MongoProcessorConfig struct {
-	Enabled bool
-	DBName  string
-	Host    string
-	Port    uint16
+	Enabled  bool
+	DBName   string
+	Host     string
+	Port     uint16
+	Username string
+	Password string
 }
 
 type UserConfig struct {
@@ -267,6 +269,8 @@ func GetUserConfig() (userConf *UserConfig) {
 		DBName:"qrl",
 		Host:"127.0.0.1",
 		Port:3001,
+		Username:"",
+		Password:"",
 	}
 	userCurrentDir, _ := user.Current()  // TODO: Handle error
 	userConf = &UserConfig{
