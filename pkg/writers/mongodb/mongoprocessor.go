@@ -218,7 +218,27 @@ func (m *MongoProcessor) IsDataBaseExists(dbName string) (bool, error) {
 	return false, nil
 }
 
-func (m *MongoProcessor) CreateIndexes() error {
+func (m *MongoProcessor) IsCollectionExists(collectionName string) (bool, error) {
+	cursor, err := m.database.ListCollections(m.ctx, bsonx.Doc{})
+	if err != nil {
+		return false, err
+	}
+	for cursor.Next(m.ctx) {
+		next := &bsonx.Doc{}
+		err := cursor.Decode(next)
+		if err != nil {
+			return false, err
+		}
+		_, err = next.LookupErr(collectionName)
+		if err == nil {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (m *MongoProcessor) CreateBlocksIndexes() error {
+	m.blocksCollection = m.database.Collection("blocks")
 	_, err := m.blocksCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"block_number": int32(-1)}},
@@ -229,8 +249,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.transactionsCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateTransactionsIndexes() error {
+	m.transactionsCollection = m.database.Collection("txs")
+	_, err := m.transactionsCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"master_address": int32(1)}},
 			{Keys: bson.M{"address_from": int32(1)}},
@@ -244,8 +268,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.coinBaseTxCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateCoinBaseTxsIndexes() error {
+	m.coinBaseTxCollection = m.database.Collection("coin_base_txs")
+	_, err := m.coinBaseTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 			{Keys: bson.M{"address_to": int32(1)}},
@@ -256,8 +284,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.transferTxCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateTransferTxsIndexes() error {
+	m.transferTxCollection = m.database.Collection("transfer_txs")
+	_, err := m.transferTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 			{Keys: bson.M{"addresses_to": int32(1)}},
@@ -268,8 +300,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.tokenTxCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateTokenTxsIndexes() error {
+	m.tokenTxCollection = m.database.Collection("token_txs")
+	_, err := m.tokenTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 			{Keys: bson.M{"symbol": int32(1)}},
@@ -281,8 +317,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.transferTokenTxCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateTransferTokenTxsIndexes() error {
+	m.transferTokenTxCollection = m.database.Collection("transfer_token_txs")
+	_, err := m.transferTokenTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 			{Keys: bson.M{"token_txn_hash": int32(1)}},
@@ -294,8 +334,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.messageTxCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateMessageTxsIndexes() error {
+	m.messageTxCollection = m.database.Collection("message_txs")
+	_, err := m.messageTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 		})
@@ -305,8 +349,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.slaveTxCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateSlaveTxsIndexes() error {
+	m.slaveTxCollection = m.database.Collection("slave_txs")
+	_, err := m.slaveTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 		})
@@ -316,8 +364,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 			"Error", err)
 		return err
 	}
+	return nil
+}
 
-	_, err = m.accountsCollection.Indexes().CreateMany(context.Background(),
+func (m *MongoProcessor) CreateAccountsIndexes() error {
+	m.accountsCollection = m.database.Collection("accounts")
+	_, err := m.accountsCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"address": int32(1)}},
 		})
@@ -329,7 +381,59 @@ func (m *MongoProcessor) CreateIndexes() error {
 	}
 
 	return nil
+}
 
+func (m *MongoProcessor) CreateIndexes() error {
+	collectionsLists := map[string] interface{} {
+		"blocks": m.CreateBlocksIndexes,
+		"txs": m.CreateTransactionsIndexes,
+		"coin_base_txs": m.CreateCoinBaseTxsIndexes,
+		"transfer_txs": m.CreateTransferTxsIndexes,
+		"token_txs": m.CreateTokenTxsIndexes,
+		"transfer_token_txs": m.CreateTransferTokenTxsIndexes,
+		"message_txs": m.CreateMessageTxsIndexes,
+		"slave_txs": m.CreateSlaveTxsIndexes,
+		"accounts": m.CreateAccountsIndexes,
+	}
+	blocksCollectionFound := true
+	for collectionName, indexCreatorFunc := range collectionsLists {
+		found, err := m.IsCollectionExists(collectionName)
+		if err != nil {
+			return err
+		}
+		if !found {
+			if collectionName == "blocks" {
+				blocksCollectionFound = false
+			}
+			err := indexCreatorFunc.(func() error)()
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if !blocksCollectionFound {
+		b, err := m.chain.GetBlockByNumber(0)
+		if err != nil {
+			m.log.Error("[MongoProcessor.Sync]Error while Getting BlockNumber",
+				"BlockNumber", b.BlockNumber(),
+				"Error", err)
+		}
+		coinBaseAddress := m.config.Dev.Genesis.CoinbaseAddress
+		account := CreateAccount(coinBaseAddress, 0)
+		account.AddBalance(m.config.Dev.Genesis.MaxCoinSupply)
+		m.AccountProcessor(map[string]*Account{misc.Bin2Qaddress(coinBaseAddress):account})
+		_ = m.WriteAll()
+		m.BlockProcessor(b)
+		_ = m.WriteAll()
+	} else {
+		b, err := m.GetLastBlockFromDB()
+		if err != nil {
+			return err
+		}
+		m.lastBlock = b
+	}
+	return nil
 }
 
 func (m *MongoProcessor) IsAccountProcessed(blockNumber int64) bool {
@@ -638,58 +742,30 @@ func CreateMongoProcessor(dbName string, chain *chain.Chain) (*MongoProcessor, e
 
 	m.chain = chain
 	m.config = config.GetConfig()
+
 	host := m.config.User.MongoProcessorConfig.Host
 	port := m.config.User.MongoProcessorConfig.Port
+	username := m.config.User.MongoProcessorConfig.Username
+	password := m.config.User.MongoProcessorConfig.Password
 
 	m.ctx, _ = context.WithTimeout(context.Background(), 60*time.Second)
-	client, err := mongo.Connect(m.ctx, fmt.Sprintf("mongodb://%s:%d", host, port))
+	formatStr := fmt.Sprintf("mongodb://%s:%d/%s", host, port, dbName)
+	if len(username) > 0 {
+		formatStr = fmt.Sprintf("mongodb://%s:%s@%s:%d/%s", username, password, host, port, dbName)
+	}
+	client, err := mongo.Connect(m.ctx, formatStr)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	m.ctx = context.TODO()
 	m.client = client
-	found, err := m.IsDataBaseExists(dbName)
+
+	m.database = m.client.Database(dbName)
+	err = m.CreateIndexes()
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
-	m.database = client.Database(dbName)
-	m.blocksCollection = m.database.Collection("blocks")
-	m.accountsCollection = m.database.Collection("accounts")
-	m.transactionsCollection = m.database.Collection("txs")
-	m.coinBaseTxCollection = m.database.Collection("coin_base_txs")
-	m.transferTxCollection = m.database.Collection("transfer_txs")
-	m.tokenTxCollection = m.database.Collection("token_txs")
-	m.transferTokenTxCollection = m.database.Collection("transfer_token_txs")
-	m.messageTxCollection = m.database.Collection("message_txs")
-	m.slaveTxCollection = m.database.Collection("slave_txs")
-	if !found {
-		fmt.Println("Index being created")
-		err := m.CreateIndexes()
-		if err != nil {
-			m.log.Error("Error CreateIndexes", "Error", err)
-		}
 
-		b, err := m.chain.GetBlockByNumber(0)
-		if err != nil {
-			m.log.Error("[MongoProcessor.Sync]Error while Getting BlockNumber",
-				"BlockNumber", b.BlockNumber(),
-				"Error", err)
-		}
-		coinBaseAddress := m.config.Dev.Genesis.CoinbaseAddress
-		account := CreateAccount(coinBaseAddress, 0)
-		account.AddBalance(m.config.Dev.Genesis.MaxCoinSupply)
-		m.AccountProcessor(map[string]*Account{misc.Bin2Qaddress(coinBaseAddress):account})
-		_ = m.WriteAll()
-		m.BlockProcessor(b)
-		_ = m.WriteAll()
-	} else {
-		b, err := m.GetLastBlockFromDB()
-		if err != nil {
-			return nil, err
-		}
-		m.lastBlock = b
-	}
 	return m, nil
 }
