@@ -28,6 +28,7 @@ func CreateTestMongoProcessor() *TestMongoProcessor {
 	tempDir, err := ioutil.TempDir("", "")
 
 	conf := config.GetConfig()
+	conf.User.MongoProcessorConfig.DBName = "EXPLORER_BETA"
 	conf.Dev.Genesis.GenesisTimestamp = 1528402558
 	conf.Dev.Genesis.GenesisPrevHeadehash = []byte("Thirst of Quantas")
 	conf.Dev.Genesis.GenesisDifficulty = 5000
@@ -53,7 +54,7 @@ func CreateTestMongoProcessor() *TestMongoProcessor {
 	ntp.GetNTP() // Initialize NTP
 
 	m := &TestMongoProcessor{}
-	m.m, err = CreateMongoProcessor("test", c)
+	m.m, err = CreateMongoProcessor(conf.User.MongoProcessorConfig.DBName, c)
 	if err != nil {
 		return nil
 	}
@@ -105,6 +106,15 @@ func TestMongoProcessor_TransactionProcessor(t *testing.T) {
 	assert.True(t, mongoTransferTx.(*TransferTransaction).IsEqualPBData(tx1.PBData()))
 	assert.Len(t, m.m.bulkTransactions, 0)
 	assert.Len(t, m.m.bulkTransferTx, 0)
+}
+
+func TestMongoProcessor_IsCollectionExists(t *testing.T) {
+	m := CreateTestMongoProcessor()
+	defer m.Clean()
+
+	found, err := m.m.IsCollectionExists("blocks")
+	assert.Nil(t, err)
+	assert.Equal(t, found, false)
 }
 
 func TestMongoProcessor_Sync(t *testing.T) {
