@@ -2,6 +2,7 @@ package mongodb
 
 import (
 	"fmt"
+	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"reflect"
@@ -27,6 +28,8 @@ func (t *Transaction) TransactionFromPBData(tx *generated.Transaction, blockNumb
 		t.AddressFrom = misc.PK2BinAddress(tx.PublicKey)
 		t.PublicKey = tx.PublicKey
 		t.Signature = tx.Signature
+	} else {
+		t.AddressFrom = config.GetConfig().Dev.Genesis.CoinbaseAddress
 	}
 	t.Nonce = int64(tx.Nonce)
 	t.TransactionHash = tx.TransactionHash
