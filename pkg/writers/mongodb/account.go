@@ -2,10 +2,10 @@ package mongodb
 
 import (
 	"fmt"
-	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Account struct {

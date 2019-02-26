@@ -3,16 +3,16 @@ package mongodb
 import (
 	"context"
 	"fmt"
-	"github.com/mongodb/mongo-go-driver/bson"
-	"github.com/mongodb/mongo-go-driver/mongo"
-	"github.com/mongodb/mongo-go-driver/mongo/options"
-	"github.com/mongodb/mongo-go-driver/x/bsonx"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/x/bsonx"
 	"reflect"
 	"sync"
 	"time"
@@ -57,7 +57,7 @@ func (m *MongoProcessor) BlockProcessor(b *block.Block) {
 	mongoBlock := &Block{}
 	mongoBlock.BlockFromPBData(b.PBData())
 	operation := mongo.NewInsertOneModel()
-	operation.Document(mongoBlock)
+	operation.SetDocument(mongoBlock)
 	m.bulkBlocks = append(m.bulkBlocks, operation)
 	accounts := make(map[string]*Account)
 	for _, tx := range b.Transactions() {
@@ -70,11 +70,11 @@ func (m *MongoProcessor) BlockProcessor(b *block.Block) {
 func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNumber uint64, accounts map[string]*Account) {
 	mongoTx, txDetails := ProtoToTransaction(tx, blockNumber)
 	operation := mongo.NewInsertOneModel()
-	operation.Document(mongoTx)
+	operation.SetDocument(mongoTx)
 	m.bulkTransactions = append(m.bulkTransactions, operation)
 
 	operation = mongo.NewInsertOneModel()
-	operation.Document(txDetails)
+	operation.SetDocument(txDetails)
 	switch tx.TransactionType.(type) {
 	case *generated.Transaction_Coinbase:
 		m.bulkCoinBaseTx = append(m.bulkCoinBaseTx, operation)
@@ -95,10 +95,9 @@ func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNu
 func (m *MongoProcessor) AccountProcessor(accounts map[string]*Account) {
 	for _, account := range accounts {
 		operation := mongo.NewUpdateOneModel()
-
-		operation.Upsert(true)
-		operation.Filter(bsonx.Doc{{"address", bsonx.Binary(0, account.Address)}})
-		operation.Update(account)
+		operation.SetUpsert(true)
+		operation.SetFilter(bsonx.Doc{{"address", bsonx.Binary(0, account.Address)}})
+		operation.SetUpdate(account)
 		m.bulkAccounts = append(m.bulkAccounts, operation)
 	}
 }
@@ -229,16 +228,25 @@ func (m *MongoProcessor) IsCollectionExists(collectionName string) (bool, error)
 		if err != nil {
 			return false, err
 		}
-		_, err = next.LookupErr(collectionName)
-		if err == nil {
+		//_, err = next.LookupErr(collectionName)
+		elem, err := next.LookupErr("name")
+		if err != nil {
+			return false, nil
+		}
+
+		elemName := elem.StringValue()
+		if elemName == collectionName {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
-func (m *MongoProcessor) CreateBlocksIndexes() error {
+func (m *MongoProcessor) CreateBlocksIndexes(found bool) error {
 	m.blocksCollection = m.database.Collection("blocks")
+	if found {
+		return nil
+	}
 	_, err := m.blocksCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"block_number": int32(-1)}},
@@ -252,8 +260,11 @@ func (m *MongoProcessor) CreateBlocksIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateTransactionsIndexes() error {
+func (m *MongoProcessor) CreateTransactionsIndexes(found bool) error {
 	m.transactionsCollection = m.database.Collection("txs")
+	if found {
+		return nil
+	}
 	_, err := m.transactionsCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"master_address": int32(1)}},
@@ -271,8 +282,11 @@ func (m *MongoProcessor) CreateTransactionsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateCoinBaseTxsIndexes() error {
+func (m *MongoProcessor) CreateCoinBaseTxsIndexes(found bool) error {
 	m.coinBaseTxCollection = m.database.Collection("coin_base_txs")
+	if found {
+		return nil
+	}
 	_, err := m.coinBaseTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
@@ -287,8 +301,11 @@ func (m *MongoProcessor) CreateCoinBaseTxsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateTransferTxsIndexes() error {
+func (m *MongoProcessor) CreateTransferTxsIndexes(found bool) error {
 	m.transferTxCollection = m.database.Collection("transfer_txs")
+	if found {
+		return nil
+	}
 	_, err := m.transferTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
@@ -303,8 +320,11 @@ func (m *MongoProcessor) CreateTransferTxsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateTokenTxsIndexes() error {
+func (m *MongoProcessor) CreateTokenTxsIndexes(found bool) error {
 	m.tokenTxCollection = m.database.Collection("token_txs")
+	if found {
+		return nil
+	}
 	_, err := m.tokenTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
@@ -320,8 +340,11 @@ func (m *MongoProcessor) CreateTokenTxsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateTransferTokenTxsIndexes() error {
+func (m *MongoProcessor) CreateTransferTokenTxsIndexes(found bool) error {
 	m.transferTokenTxCollection = m.database.Collection("transfer_token_txs")
+	if found {
+		return nil
+	}
 	_, err := m.transferTokenTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
@@ -337,8 +360,11 @@ func (m *MongoProcessor) CreateTransferTokenTxsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateMessageTxsIndexes() error {
+func (m *MongoProcessor) CreateMessageTxsIndexes(found bool) error {
 	m.messageTxCollection = m.database.Collection("message_txs")
+	if found {
+		return nil
+	}
 	_, err := m.messageTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
@@ -352,8 +378,11 @@ func (m *MongoProcessor) CreateMessageTxsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateSlaveTxsIndexes() error {
+func (m *MongoProcessor) CreateSlaveTxsIndexes(found bool) error {
 	m.slaveTxCollection = m.database.Collection("slave_txs")
+	if found {
+		return nil
+	}
 	_, err := m.slaveTxCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
@@ -367,8 +396,11 @@ func (m *MongoProcessor) CreateSlaveTxsIndexes() error {
 	return nil
 }
 
-func (m *MongoProcessor) CreateAccountsIndexes() error {
+func (m *MongoProcessor) CreateAccountsIndexes(found bool) error {
 	m.accountsCollection = m.database.Collection("accounts")
+	if found {
+		return nil
+	}
 	_, err := m.accountsCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
 			{Keys: bson.M{"address": int32(1)}},
@@ -401,14 +433,12 @@ func (m *MongoProcessor) CreateIndexes() error {
 		if err != nil {
 			return err
 		}
-		if !found {
-			if collectionName == "blocks" {
-				blocksCollectionFound = false
-			}
-			err := indexCreatorFunc.(func() error)()
-			if err != nil {
-				return err
-			}
+		if collectionName == "blocks" {
+			blocksCollectionFound = found
+		}
+		err = indexCreatorFunc.(func(bool) error)(found)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -749,19 +779,25 @@ func CreateMongoProcessor(dbName string, chain *chain.Chain) (*MongoProcessor, e
 	password := m.config.User.MongoProcessorConfig.Password
 
 	m.ctx, _ = context.WithTimeout(context.Background(), 60*time.Second)
-	formatStr := fmt.Sprintf("mongodb://%s:%d/%s", host, port, dbName)
+	mongoURL := fmt.Sprintf("mongodb://%s:%d", host, port)
 	if len(username) > 0 {
-		formatStr = fmt.Sprintf("mongodb://%s:%s@%s:%d/%s", username, password, host, port, dbName)
+		mongoURL = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
 	}
-	client, err := mongo.Connect(m.ctx, formatStr)
+	clientOptions := options.Client().ApplyURI(mongoURL)
+	client, err := mongo.NewClient(clientOptions)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	err = client.Connect(m.ctx)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
 	m.ctx = context.TODO()
 	m.client = client
-
 	m.database = m.client.Database(dbName)
+
 	err = m.CreateIndexes()
 	if err != nil {
 		return nil, err
