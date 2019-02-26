@@ -325,9 +325,9 @@ type TokenTransaction struct {
 	Symbol          []byte   `json:"symbol" bson:"symbol"`
 	Name            []byte   `json:"name" bson:"name"`
 	Owner           []byte   `json:"owner" bson:"owner"`
-	Decimals        int64   `json:"decimals" bson:"decimals"`
+	Decimals        int64    `json:"decimals" bson:"decimals"`
 	AddressesTo     [][]byte `json:"addresses_to" bson:"addresses_to"`
-	Amounts         []int64 `json:"amounts" bson:"amounts"`
+	Amounts         []int64  `json:"amounts" bson:"amounts"`
 }
 
 func (t *TokenTransaction) TransactionFromPBData(tx *generated.Transaction) {
@@ -375,9 +375,33 @@ func (t *TokenTransaction) IsEqual(tx *TokenTransaction) bool {
 }
 
 func (t *TokenTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+	var qAddress string
+	for i := range t.AddressesTo {
+		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
+		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
+		accounts[qAddress].BlockNumber = blockNumber
+	}
+	if masterAddress != nil {
+		qAddress = misc.Bin2Qaddress(masterAddress)
+	} else {
+		qAddress = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[qAddress].BlockNumber = blockNumber
 }
 
 func (t *TokenTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+	var qAddress string
+	for i := range t.AddressesTo {
+		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
+		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
+		accounts[qAddress].BlockNumber = blockNumber - 1
+	}
+	if masterAddress != nil {
+		qAddress = misc.Bin2Qaddress(masterAddress)
+	} else {
+		qAddress = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[qAddress].BlockNumber = blockNumber - 1
 }
 
 type TransferTokenTransaction struct {
@@ -420,9 +444,33 @@ func (t *TransferTokenTransaction) IsEqual(tx *TransferTokenTransaction) bool {
 }
 
 func (t *TransferTokenTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+	var qAddress string
+	for i := range t.AddressesTo {
+		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
+		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
+		accounts[qAddress].BlockNumber = blockNumber
+	}
+	if masterAddress != nil {
+		qAddress = misc.Bin2Qaddress(masterAddress)
+	} else {
+		qAddress = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[qAddress].BlockNumber = blockNumber
 }
 
 func (t *TransferTokenTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+	var qAddress string
+	for i := range t.AddressesTo {
+		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
+		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
+		accounts[qAddress].BlockNumber = blockNumber - 1
+	}
+	if masterAddress != nil {
+		qAddress = misc.Bin2Qaddress(masterAddress)
+	} else {
+		qAddress = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[qAddress].BlockNumber = blockNumber - 1
 }
 
 type TransactionInterface interface {

@@ -1,7 +1,6 @@
 package mongodb
 
 import (
-	"github.com/mongodb/mongo-go-driver/bson"
 	"github.com/stretchr/testify/assert"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/block"
@@ -13,6 +12,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/pow"
 	"github.com/theQRL/go-qrl/test/genesis"
 	"github.com/theQRL/go-qrl/test/helper"
+	"go.mongodb.org/mongo-driver/bson"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -114,7 +114,12 @@ func TestMongoProcessor_IsCollectionExists(t *testing.T) {
 
 	found, err := m.m.IsCollectionExists("blocks")
 	assert.Nil(t, err)
-	assert.Equal(t, found, false)
+	assert.True(t, found)
+	m.Clean()
+
+	found, err = m.m.IsCollectionExists("blocks")
+	assert.Nil(t, err)
+	assert.False(t, found)
 }
 
 func TestMongoProcessor_Sync(t *testing.T) {
@@ -254,6 +259,15 @@ func TestMongoProcessor_BlockProcessor(t *testing.T) {
 	aliceState, err = m.m.chain.GetAddressState(misc.UCharVectorToBytes(aliceXMSS.Address()))
 	assert.Equal(t, len(aliceState.SlavePKSAccessType()), 0)
 	assert.NotContains(t, aliceState.SlavePKSAccessType(), misc.UCharVectorToString(bobXMSS.PK()))
+
+	// Test if IsCollectionExists works
+	found, err := m.m.IsCollectionExists("blocks")
+	assert.True(t, found)
+
+	// Test if CreateIndexes retrieves last block from db, if lastBlock is unknown
+	m.m.lastBlock = nil
+	err = m.m.CreateIndexes()
+	assert.Equal(t, m.m.lastBlock.BlockNumber, int64(2))
 }
 
 func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlock *block.Block, timestamp uint64) *block.Block {
