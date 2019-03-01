@@ -9,6 +9,7 @@ import (
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/writers/mongodb/transactionaction"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -51,6 +52,23 @@ type MongoProcessor struct {
 	transferTokenTxCollection *mongo.Collection
 	messageTxCollection       *mongo.Collection
 	slaveTxCollection         *mongo.Collection
+
+	bulkUnconfirmedTransactions    []mongo.WriteModel
+	bulkUnconfirmedTransferTx      []mongo.WriteModel
+	bulkUnconfirmedTokenTx         []mongo.WriteModel
+	bulkUnconfirmedTransferTokenTx []mongo.WriteModel
+	bulkUnconfirmedMessageTx       []mongo.WriteModel
+	bulkUnconfirmedSlaveTx         []mongo.WriteModel
+
+	unconfirmedTransactionsCollection    *mongo.Collection
+	unconfirmedTransferTxCollection      *mongo.Collection
+	unconfirmedTokenTxCollection         *mongo.Collection
+	unconfirmedTransferTokenTxCollection *mongo.Collection
+	unconfirmedMessageTxCollection       *mongo.Collection
+	unconfirmedSlaveTxCollection         *mongo.Collection
+
+	chanTransactionAction         chan *transactionaction.TransactionAction
+	unconfirmedTransactionsHashes map [string]bool
 }
 
 func (m *MongoProcessor) BlockProcessor(b *block.Block) {
@@ -90,6 +108,65 @@ func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNu
 		m.bulkSlaveTx = append(m.bulkSlaveTx, operation)
 	}
 	mongoTx.Apply(m, accounts, txDetails, int64(blockNumber))
+}
+
+func (m *MongoProcessor) UnconfirmedTransactionProcessor(tx *generated.Transaction, seenTimestamp uint64) {
+	mongoTx, txDetails := ProtoToUnconfirmedTransaction(tx, seenTimestamp)
+	operation := mongo.NewInsertOneModel()
+	operation.SetDocument(mongoTx)
+	m.bulkUnconfirmedTransactions = append(m.bulkUnconfirmedTransactions, operation)
+
+	operation = mongo.NewInsertOneModel()
+	operation.SetDocument(txDetails)
+	switch tx.TransactionType.(type) {
+	case *generated.Transaction_Transfer_:
+		m.bulkUnconfirmedTransferTx = append(m.bulkUnconfirmedTransferTx, operation)
+	case *generated.Transaction_Token_:
+		m.bulkUnconfirmedTokenTx = append(m.bulkUnconfirmedTokenTx, operation)
+	case *generated.Transaction_TransferToken_:
+		m.bulkUnconfirmedTransferTokenTx = append(m.bulkUnconfirmedTransferTokenTx, operation)
+	case *generated.Transaction_Message_:
+		m.bulkUnconfirmedMessageTx = append(m.bulkUnconfirmedMessageTx, operation)
+	case *generated.Transaction_Slave_:
+		m.bulkUnconfirmedSlaveTx = append(m.bulkUnconfirmedSlaveTx, operation)
+	}
+	mongoTx.Apply(m, txDetails)
+}
+
+func (m *MongoProcessor) RemoveUnconfirmedTxn(tx *generated.Transaction) {
+	txHash := tx.TransactionHash
+	switch tx.TransactionType.(type) {
+	case *generated.Transaction_Transfer_:
+		_, err := m.unconfirmedTransferTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, txHash)}})
+		if err != nil {
+			m.log.Error("Error while removing Unconfirmed TransferTxn",
+				"Error", err)
+		}
+	case *generated.Transaction_Token_:
+		_, err := m.unconfirmedTokenTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, txHash)}})
+		if err != nil {
+			m.log.Error("Error while removing Unconfirmed TokenTxn",
+				"Error", err)
+		}
+	case *generated.Transaction_TransferToken_:
+		_, err := m.unconfirmedTransferTokenTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, txHash)}})
+		if err != nil {
+			m.log.Error("Error while removing Unconfirmed TransferTokenTxn",
+				"Error", err)
+		}
+	case *generated.Transaction_Message_:
+		_, err := m.unconfirmedMessageTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, txHash)}})
+		if err != nil {
+			m.log.Error("Error while removing Unconfirmed MessageTxn",
+				"Error", err)
+		}
+	case *generated.Transaction_Slave_:
+		_, err := m.unconfirmedSlaveTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, txHash)}})
+		if err != nil {
+			m.log.Error("Error while removing Unconfirmed SlaveTxn",
+				"Error", err)
+		}
+	}
 }
 
 func (m *MongoProcessor) AccountProcessor(accounts map[string]*Account) {
@@ -195,6 +272,60 @@ func (m *MongoProcessor) WriteTransactions() error {
 	return nil
 }
 
+func (m *MongoProcessor) WriteUnconfirmedTransactions() error {
+	_, err := m.unconfirmedTransactionsCollection.BulkWrite(m.ctx, m.bulkUnconfirmedTransactions)
+	if err != nil {
+		// TODO: Do something
+		return err
+	}
+	if len(m.bulkUnconfirmedTransferTx) > 0 {
+		_, err = m.unconfirmedTransferTxCollection.BulkWrite(m.ctx, m.bulkUnconfirmedTransferTx)
+		if err != nil {
+			// TODO: Do something
+			return err
+		}
+	}
+	if len(m.bulkUnconfirmedTokenTx) > 0 {
+		_, err = m.unconfirmedTokenTxCollection.BulkWrite(m.ctx, m.bulkUnconfirmedTokenTx)
+		if err != nil {
+			// TODO: Do something
+			return err
+		}
+	}
+	if len(m.bulkUnconfirmedTransferTokenTx) > 0 {
+		_, err = m.unconfirmedTransferTokenTxCollection.BulkWrite(m.ctx, m.bulkUnconfirmedTransferTokenTx)
+		if err != nil {
+			// TODO: Do something
+			return err
+		}
+	}
+	if len(m.bulkUnconfirmedMessageTx) > 0 {
+		_, err = m.unconfirmedMessageTxCollection.BulkWrite(m.ctx, m.bulkUnconfirmedMessageTx)
+		if err != nil {
+			// TODO: Do something
+			return err
+		}
+	}
+	if len(m.bulkUnconfirmedSlaveTx) > 0 {
+		_, err = m.unconfirmedSlaveTxCollection.BulkWrite(m.ctx, m.bulkUnconfirmedSlaveTx)
+		if err != nil {
+			// TODO: Do something
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (m *MongoProcessor) EmptyUnconfirmedTxBulks() {
+	m.bulkUnconfirmedTransactions = m.bulkUnconfirmedTransactions[:0]
+	m.bulkUnconfirmedTransferTx = m.bulkUnconfirmedTransferTx[:0]
+	m.bulkUnconfirmedTokenTx = m.bulkUnconfirmedTokenTx[:0]
+	m.bulkUnconfirmedTransferTokenTx = m.bulkUnconfirmedTransferTokenTx[:0]
+	m.bulkUnconfirmedMessageTx = m.bulkUnconfirmedMessageTx[:0]
+	m.bulkUnconfirmedSlaveTx = m.bulkUnconfirmedSlaveTx[:0]
+}
+
 func (m *MongoProcessor) WriteAccounts() error {
 	_, err := m.accountsCollection.BulkWrite(m.ctx, m.bulkAccounts)
 	if err != nil {
@@ -282,6 +413,26 @@ func (m *MongoProcessor) CreateTransactionsIndexes(found bool) error {
 	return nil
 }
 
+func (m *MongoProcessor) CreateUnconfirmedTransactionsIndexes() error {
+	m.unconfirmedTransactionsCollection = m.database.Collection("txs")
+
+	_, err := m.unconfirmedTransactionsCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"master_address": int32(1)}},
+			{Keys: bson.M{"address_from": int32(1)}},
+			{Keys: bson.M{"transaction_hash": int32(1)}},
+			{Keys: bson.M{"transaction_type": int32(1)}},
+			{Keys: bson.M{"seen_timestamp": int32(-1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for unconfirmedTransactions",
+			"Error", err)
+		return err
+	}
+	return nil
+}
+
 func (m *MongoProcessor) CreateCoinBaseTxsIndexes(found bool) error {
 	m.coinBaseTxCollection = m.database.Collection("coin_base_txs")
 	if found {
@@ -320,6 +471,23 @@ func (m *MongoProcessor) CreateTransferTxsIndexes(found bool) error {
 	return nil
 }
 
+func (m *MongoProcessor) CreateUnconfirmedTransferTxsIndexes() error {
+	m.unconfirmedTransferTxCollection = m.database.Collection("unconfirmed_transfer_txs")
+
+	_, err := m.unconfirmedTransferTxCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"transaction_hash": int32(1)}},
+			{Keys: bson.M{"addresses_to": int32(1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for unconfirmedTransferTx",
+			"Error", err)
+		return err
+	}
+	return nil
+}
+
 func (m *MongoProcessor) CreateTokenTxsIndexes(found bool) error {
 	m.tokenTxCollection = m.database.Collection("token_txs")
 	if found {
@@ -329,11 +497,35 @@ func (m *MongoProcessor) CreateTokenTxsIndexes(found bool) error {
 		[]mongo.IndexModel{
 			{Keys: bson.M{"transaction_hash": int32(1)}},
 			{Keys: bson.M{"symbol": int32(1)}},
+			{Keys: bson.M{"symbol_str": int32(1)}},
+			{Keys: bson.M{"name": int32(1)}},
+			{Keys: bson.M{"name_str": int32(1)}},
 			{Keys: bson.M{"addresses_to": int32(1)}},
 		})
 
 	if err != nil {
 		m.log.Error("Error while modeling index for tokenTx",
+			"Error", err)
+		return err
+	}
+	return nil
+}
+
+func (m *MongoProcessor) CreateUnconfirmedTokenTxsIndexes() error {
+	m.unconfirmedTokenTxCollection = m.database.Collection("unconfirmed_token_txs")
+
+	_, err := m.unconfirmedTokenTxCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"transaction_hash": int32(1)}},
+			{Keys: bson.M{"symbol": int32(1)}},
+			{Keys: bson.M{"symbol_str": int32(1)}},
+			{Keys: bson.M{"name": int32(1)}},
+			{Keys: bson.M{"name_str": int32(1)}},
+			{Keys: bson.M{"addresses_to": int32(1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for unconfirmedTokenTx",
 			"Error", err)
 		return err
 	}
@@ -360,6 +552,24 @@ func (m *MongoProcessor) CreateTransferTokenTxsIndexes(found bool) error {
 	return nil
 }
 
+func (m *MongoProcessor) CreateUnconfirmedTransferTokenTxsIndexes() error {
+	m.unconfirmedTransferTokenTxCollection = m.database.Collection("unconfirmed_transfer_token_txs")
+
+	_, err := m.unconfirmedTransferTokenTxCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"transaction_hash": int32(1)}},
+			{Keys: bson.M{"token_txn_hash": int32(1)}},
+			{Keys: bson.M{"addresses_to": int32(1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for unconfirmedTransferTokenTx",
+			"Error", err)
+		return err
+	}
+	return nil
+}
+
 func (m *MongoProcessor) CreateMessageTxsIndexes(found bool) error {
 	m.messageTxCollection = m.database.Collection("message_txs")
 	if found {
@@ -372,6 +582,22 @@ func (m *MongoProcessor) CreateMessageTxsIndexes(found bool) error {
 
 	if err != nil {
 		m.log.Error("Error while modeling index for messageTx",
+			"Error", err)
+		return err
+	}
+	return nil
+}
+
+func (m *MongoProcessor) CreateUnconfirmedMessageTxsIndexes() error {
+	m.unconfirmedMessageTxCollection = m.database.Collection("unconfirmed_message_txs")
+
+	_, err := m.unconfirmedMessageTxCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"transaction_hash": int32(1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for unconfirmedMessageTx",
 			"Error", err)
 		return err
 	}
@@ -396,6 +622,22 @@ func (m *MongoProcessor) CreateSlaveTxsIndexes(found bool) error {
 	return nil
 }
 
+func (m *MongoProcessor) CreateUnconfirmedSlaveTxsIndexes() error {
+	m.unconfirmedSlaveTxCollection = m.database.Collection("unconfirmed_slave_txs")
+
+	_, err := m.unconfirmedSlaveTxCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"transaction_hash": int32(1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for UnconfirmedSlaveTx",
+			"Error", err)
+		return err
+	}
+	return nil
+}
+
 func (m *MongoProcessor) CreateAccountsIndexes(found bool) error {
 	m.accountsCollection = m.database.Collection("accounts")
 	if found {
@@ -412,6 +654,38 @@ func (m *MongoProcessor) CreateAccountsIndexes(found bool) error {
 		return err
 	}
 
+	return nil
+}
+
+func (m *MongoProcessor) CreateCleanUnconfirmedTransactionCollections() error {
+	collectionsLists := map[string] interface{} {
+		"unconfirmed_txs": m.CreateUnconfirmedTransactionsIndexes,
+		"unconfirmed_transfer_txs": m.CreateUnconfirmedTransferTxsIndexes,
+		"unconfirmed_token_txs": m.CreateUnconfirmedTokenTxsIndexes,
+		"unconfirmed_transfer_token_txs": m.CreateUnconfirmedTransferTokenTxsIndexes,
+		"unconfirmed_message_txs": m.CreateUnconfirmedMessageTxsIndexes,
+		"unconfirmed_slave_txs": m.CreateUnconfirmedSlaveTxsIndexes,
+	}
+	for collectionName, indexCreatorFunc := range collectionsLists {
+		found, err := m.IsCollectionExists(collectionName)
+		if err != nil {
+			return err
+		}
+		if found {
+			collection := m.database.Collection(collectionName)
+			err := collection.Drop(m.ctx)
+			if err != nil {
+				m.log.Error("Error while removing collection",
+					"Collection Name", collectionName,
+					"Error", err)
+				return err
+			}
+		}
+		err = indexCreatorFunc.(func(bool) error)(found)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -463,7 +737,7 @@ func (m *MongoProcessor) CreateIndexes() error {
 		}
 		m.lastBlock = b
 	}
-	return nil
+	return m.CreateCleanUnconfirmedTransactionCollections()
 }
 
 func (m *MongoProcessor) IsAccountProcessed(blockNumber int64) bool {
@@ -718,6 +992,39 @@ func (m *MongoProcessor) ForkRecovery() {
 	}
 }
 
+func (m *MongoProcessor) UpdateUnconfirmedTransactions() {
+	m.LoopWG.Add(1)
+	defer m.LoopWG.Done()
+
+	for {
+		select {
+		case ta := <- m.chanTransactionAction:
+			txHash := misc.Bin2HStr(ta.Transaction.TransactionHash)
+			switch ta.IsAdd {
+			case true:
+				m.UnconfirmedTransactionProcessor(ta.Transaction, ta.Timestamp)
+				err := m.WriteUnconfirmedTransactions()
+				if err != nil {
+					m.log.Error("Error while writing Unconfirmed Transactions",
+						"Txhash", txHash,
+						"Error", err)
+					continue
+				}
+				m.EmptyUnconfirmedTxBulks()
+				m.unconfirmedTransactionsHashes[txHash] = true
+			case false:
+				if _, ok := m.unconfirmedTransactionsHashes[txHash]; !ok {
+					continue
+				}
+				m.RemoveUnconfirmedTxn(ta.Transaction)
+				delete(m.unconfirmedTransactionsHashes, txHash)
+			}
+		case <- m.Exit:
+			return
+		}
+	}
+}
+
 func (m *MongoProcessor) Sync() {
 	for {
 		lastBlock := m.chain.GetLastBlock()
@@ -755,6 +1062,8 @@ func (m *MongoProcessor) Run() {
 	m.LoopWG.Add(1)
 	defer m.LoopWG.Done()
 
+	go m.UpdateUnconfirmedTransactions()  // Listen for unconfirmed transactions
+
 	for {
 		select {
 		case <- time.After(15 * time.Second):
@@ -768,8 +1077,9 @@ func (m *MongoProcessor) Run() {
 func CreateMongoProcessor(dbName string, chain *chain.Chain) (*MongoProcessor, error) {
 	m := &MongoProcessor{}
 	m.log = log.GetLogger()
-	m.Exit = make(chan struct{})
-
+	m.Exit = make(chan struct{}, 2)
+	m.chanTransactionAction = make(chan *transactionaction.TransactionAction, 100)
+	m.unconfirmedTransactionsHashes = make(map [string]bool)
 	m.chain = chain
 	m.config = config.GetConfig()
 
@@ -802,6 +1112,8 @@ func CreateMongoProcessor(dbName string, chain *chain.Chain) (*MongoProcessor, e
 	if err != nil {
 		return nil, err
 	}
+
+	chain.GetTransactionPool().SetChanTransactionAction(m.chanTransactionAction)
 
 	return m, nil
 }
