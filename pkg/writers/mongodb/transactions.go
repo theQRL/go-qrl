@@ -17,7 +17,7 @@ type Transaction struct {
 	Nonce           int64  `json:"nonce" bson:"nonce"`
 	TransactionHash []byte `json:"transaction_hash" bson:"transaction_hash"`
 	TransactionType int8   `json:"transaction_type" bson:"transaction_type"`
-	BlockNumber     int64  `json:"transaction_type" bson:"block_number"`
+	BlockNumber     int64  `json:"block_number" bson:"block_number"`
 }
 
 func (t *Transaction) TransactionFromPBData(tx *generated.Transaction, blockNumber uint64, txType int8) {
@@ -122,7 +122,7 @@ func (t *Transaction) IsEqual(tx *Transaction) bool {
 type TransferTransaction struct {
 	TransactionHash []byte   `json:"transaction_hash" bson:"transaction_hash"`
 	AddressesTo     [][]byte `json:"addresses_to" bson:"addresses_to"`
-	Amounts         []int64 `json:"amounts" bson:"amounts"`
+	Amounts         []int64  `json:"amounts" bson:"amounts"`
 }
 
 func (t *TransferTransaction) TransactionFromPBData(tx *generated.Transaction) {
@@ -323,7 +323,9 @@ func (t *SlaveTransaction) Revert(m *MongoProcessor, accounts map[string]*Accoun
 type TokenTransaction struct {
 	TransactionHash []byte   `json:"transaction_hash" bson:"transaction_hash"`
 	Symbol          []byte   `json:"symbol" bson:"symbol"`
+	SymbolStr		string	 `json:"symbol" bson:"symbol_str"`
 	Name            []byte   `json:"name" bson:"name"`
+	NameStr			string	 `json:"symbol" bson:"name_str"`
 	Owner           []byte   `json:"owner" bson:"owner"`
 	Decimals        int64    `json:"decimals" bson:"decimals"`
 	AddressesTo     [][]byte `json:"addresses_to" bson:"addresses_to"`
@@ -334,7 +336,11 @@ func (t *TokenTransaction) TransactionFromPBData(tx *generated.Transaction) {
 	token := tx.GetToken()
 	t.TransactionHash = tx.TransactionHash
 	t.Symbol = token.Symbol
+	t.SymbolStr = misc.BytesToString(token.Symbol)
+
 	t.Name = token.Name
+	t.NameStr = misc.BytesToString(token.Name)
+
 	t.Owner = token.Owner
 	t.Decimals = int64(token.Decimals)
 	for _, initialBalance := range token.InitialBalances {
