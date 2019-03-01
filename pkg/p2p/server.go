@@ -137,6 +137,7 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	srv.messagePriority[generated.LegacyMessage_P2P_ACK] = 0
 
 	srv.filter = bloom.New(200000, 5)
+	chain.GetTransactionPool().SetRegisterAndBroadcastChan(srv.registerAndBroadcastChan)
 	if err := srv.startListening(); err != nil {
 		return err
 	}
@@ -311,7 +312,18 @@ running:
 			srv.peerInfoLock.Lock()
 
 			srv.log.Debug("Adding peer", "addr", c.fd.RemoteAddr())
-			p := newPeer(&c.fd, c.inbound, srv.chain, srv.filter, srv.mr, srv.mrDataConn, srv.registerAndBroadcastChan, srv.addPeerToPeerList, srv.blockAndPeerChan, srv.nodeHeaderHashAndPeerChan, srv.messagePriority)
+			p := newPeer(
+				&c.fd,
+				c.inbound,
+				srv.chain,
+				srv.filter,
+				srv.mr,
+				srv.mrDataConn,
+				srv.registerAndBroadcastChan,
+				srv.addPeerToPeerList,
+				srv.blockAndPeerChan,
+				srv.nodeHeaderHashAndPeerChan,
+				srv.messagePriority)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
 
@@ -378,12 +390,15 @@ running:
 				// Request for full message
 				// Check if its already being feeded by any other peer
 			case generated.LegacyMessage_TX:
-				// Check transactions pool Size,
-				// if full then ignore
+				srv.HandleTransaction(mrData)
 			case generated.LegacyMessage_MT:
+				srv.HandleTransaction(mrData)
 			case generated.LegacyMessage_TK:
+				srv.HandleTransaction(mrData)
 			case generated.LegacyMessage_TT:
+				srv.HandleTransaction(mrData)
 			case generated.LegacyMessage_SL:
+				srv.HandleTransaction(mrData)
 			default:
 				srv.log.Warn("Unknown Message Receipt Type",
 					"Type", mrData.Type)
@@ -425,6 +440,16 @@ running:
 	for _, p := range peers {
 		p.Disconnect(DiscQuitting)
 	}
+}
+
+func (srv *Server) HandleTransaction(mrData *generated.MRData) {
+	if srv.downloader.isSyncing {
+		return
+	}
+	if srv.chain.GetTransactionPool().IsFull() {
+		return
+	}
+	go srv.RequestFullMessage(mrData)
 }
 
 func (srv *Server) LoadPeerList() {
