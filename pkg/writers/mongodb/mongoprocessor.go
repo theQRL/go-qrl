@@ -414,7 +414,7 @@ func (m *MongoProcessor) CreateTransactionsIndexes(found bool) error {
 }
 
 func (m *MongoProcessor) CreateUnconfirmedTransactionsIndexes() error {
-	m.unconfirmedTransactionsCollection = m.database.Collection("txs")
+	m.unconfirmedTransactionsCollection = m.database.Collection("unconfirmed_txs")
 
 	_, err := m.unconfirmedTransactionsCollection.Indexes().CreateMany(context.Background(),
 		[]mongo.IndexModel{
