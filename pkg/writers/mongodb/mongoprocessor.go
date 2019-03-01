@@ -1091,7 +1091,9 @@ func CreateMongoProcessor(dbName string, chain *chain.Chain) (*MongoProcessor, e
 	m.ctx, _ = context.WithTimeout(context.Background(), 60*time.Second)
 	mongoURL := fmt.Sprintf("mongodb://%s:%d", host, port)
 	if len(username) > 0 {
-		mongoURL = fmt.Sprintf("mongodb://%s:%s@%s:%d", username, password, host, port)
+		mongoURL = fmt.Sprintf(
+			"mongodb://%s:%s@%s:%d/%s",
+			username, password, host, port, dbName)
 	}
 	clientOptions := options.Client().ApplyURI(mongoURL)
 	client, err := mongo.NewClient(clientOptions)
