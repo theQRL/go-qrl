@@ -207,15 +207,11 @@ func (t *UnconfirmedTokenTransaction) TransactionFromPBData(tx *generated.Transa
 	token := tx.GetToken()
 	t.TransactionHash = tx.TransactionHash
 	t.Symbol = token.Symbol
-	symbolStr, err := misc.BytesToString(token.Symbol)
-	if err != nil {
-		t.SymbolStr = symbolStr
-	}
+	t.SymbolStr = misc.BytesToString(token.Symbol)
+
 	t.Name = token.Name
-	nameStr, err := misc.BytesToString(token.Name)
-	if err != nil {
-		t.NameStr = nameStr
-	}
+	t.NameStr = misc.BytesToString(token.Name)
+
 	t.Owner = token.Owner
 	t.Decimals = int64(token.Decimals)
 	for _, initialBalance := range token.InitialBalances {
