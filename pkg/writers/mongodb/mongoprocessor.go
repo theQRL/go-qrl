@@ -681,7 +681,7 @@ func (m *MongoProcessor) CreateCleanUnconfirmedTransactionCollections() error {
 				return err
 			}
 		}
-		err = indexCreatorFunc.(func(bool) error)(found)
+		err = indexCreatorFunc.(func() error)()
 		if err != nil {
 			return err
 		}
