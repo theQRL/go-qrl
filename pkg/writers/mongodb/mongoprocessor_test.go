@@ -93,7 +93,7 @@ func TestMongoProcessor_TransactionProcessor(t *testing.T) {
 	cursor, err := m.m.transactionsCollection.Find(m.m.ctx, bson.D{{"transaction_hash", tx1.Txhash()}})
 	assert.Nil(t, err)
 	//
-	//// TODO: REcheck this part
+	// TODO: REcheck this part
 	mongoTransaction, mongoTransferTx := ProtoToTransaction(tx1.PBData(), 1)
 	for cursor.Next(m.m.ctx) {
 		err := cursor.Decode(mongoTransaction)
