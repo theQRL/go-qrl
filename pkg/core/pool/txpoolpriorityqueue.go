@@ -61,15 +61,16 @@ func (pq *PriorityQueue) Pop() *TransactionInfo {
 	return transactionInfo
 }
 
-func (pq *PriorityQueue) Remove(tx transactions.TransactionInterface) {
+func (pq *PriorityQueue) Remove(tx transactions.TransactionInterface) bool {
 	if pq != nil {
 		for index, ti := range *pq {
 			if reflect.DeepEqual(ti.tx.Txhash(), tx.Txhash()) {
 				pq.removeByIndex(index)
-				return
+				return true
 			}
 		}
 	}
+	return false
 }
 
 func (pq *PriorityQueue) removeByIndex(index int) {
