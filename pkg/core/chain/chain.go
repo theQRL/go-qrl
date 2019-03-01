@@ -211,7 +211,7 @@ func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) 
 			c.newBlockNotificationChannel <- block.HeaderHash()
 		}
 		c.updateChainState(block, batch)
-		c.txPool.CheckStale(block.BlockNumber())
+		c.txPool.CheckStale(block.BlockNumber(), c.state)
 		c.triggerMiner = true
 	}
 	return true, false
@@ -542,7 +542,7 @@ func (c *Chain) GetHeaderHashes(blockNumber uint64, count uint64) (*generated.No
 		startBlockNumber = blockNumber
 	}
 
-	endBlockNumber := startBlockNumber + 2 * count //c.config.Dev.ReorgLimit
+	endBlockNumber := startBlockNumber + 2 * count
 	if endBlockNumber > c.lastBlock.BlockNumber() {
 		endBlockNumber = c.lastBlock.BlockNumber()
 	}
