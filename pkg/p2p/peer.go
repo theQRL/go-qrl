@@ -2,6 +2,8 @@ package p2p
 
 import (
 	"github.com/theQRL/go-qrl/pkg/core/block"
+	"github.com/theQRL/go-qrl/pkg/core/pool"
+	"github.com/theQRL/go-qrl/pkg/core/transactions"
 	"github.com/theQRL/go-qrl/pkg/misc"
 	"github.com/theQRL/go-qrl/pkg/ntp"
 	"github.com/theQRL/go-qrl/pkg/p2p/messages"
@@ -39,6 +41,7 @@ type Peer struct {
 	disconnected              bool
 	exitMonitorChainState     chan struct{}
 	log                       log.LoggerInterface
+	txPool 					  *pool.TransactionPool
 	filter                    *bloom.BloomFilter
 	mr                        *MessageReceipt
 	config                    *config.Config
@@ -72,6 +75,7 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 		disconnected:          false,
 		exitMonitorChainState: make(chan struct{}),
 		log:                       log.GetLogger(),
+		txPool:					   chain.GetTransactionPool(),
 		filter:                    filter,
 		mr:                        mr,
 		config:                    config.GetConfig(),
@@ -432,13 +436,18 @@ func (p *Peer) handle(msg *Msg) error {
 
 	case generated.LegacyMessage_BH:
 		p.log.Warn("BH has not been Implemented <<<< --- ")
-	case generated.LegacyMessage_TX:
+	case generated.LegacyMessage_TX:  // Transfer Transaction
+		return p.HandleTransaction(msg)
 	case generated.LegacyMessage_LT:
 	case generated.LegacyMessage_EPH:
-	case generated.LegacyMessage_MT:
-	case generated.LegacyMessage_TK:
-	case generated.LegacyMessage_TT:
-	case generated.LegacyMessage_SL:
+	case generated.LegacyMessage_MT:  // Message Transaction
+		return p.HandleTransaction(msg)
+	case generated.LegacyMessage_TK:  // Token Transaction
+		return p.HandleTransaction(msg)
+	case generated.LegacyMessage_TT:  // Transfer Token Transaction
+		return p.HandleTransaction(msg)
+	case generated.LegacyMessage_SL:  // Slave Transaction
+		return p.HandleTransaction(msg)
 	case generated.LegacyMessage_SYNC:
 		p.log.Warn("SYNC has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_CHAINSTATE:
@@ -534,6 +543,67 @@ func (p *Peer) HandleBlock(pbBlock *generated.Block) {
 		p.log.Warn("[HandleBlock] RegisterAndBroadcastChan Timeout",
 			"Peer", p.ID())
 	}
+}
+
+func (p *Peer) HandleTransaction(msg *Msg) error {
+	txHash := msg.msg.GetTxData().TransactionHash
+	if !p.mr.IsRequested(txHash, p, nil) {
+		p.log.Warn("Received Unrequested txn",
+			"Peer", p.ID(),
+			"Tx Hash", misc.Bin2HStr(txHash))
+		return nil
+	}
+	txData := msg.msg.GetTxData()
+	tx := transactions.ProtoToTransaction(txData)
+
+	if !tx.Validate(true) {
+		return nil
+	}
+	addrFromState, err := p.chain.GetAddressState(tx.AddrFrom())
+	if err != nil {
+		p.log.Error("Error while getting AddressState",
+			"Txhash", tx.Txhash(),
+			"Address", misc.Bin2Qaddress(tx.AddrFrom()),
+			"Error", err.Error())
+		return err
+	}
+	addrFromPKState := addrFromState
+	addrFromPK := tx.GetSlave()
+	if addrFromPK != nil {
+		addrFromPKState, err = p.chain.GetAddressState(addrFromPK)
+		if err != nil {
+			p.log.Error("Error while getting AddressState",
+				"Txhash", tx.Txhash(),
+				"Address", misc.Bin2Qaddress(tx.GetSlave()),
+				"Error", err.Error())
+			return err
+		}
+	}
+	if !tx.ValidateExtended(addrFromState, addrFromPKState) {
+		return nil
+	}
+	err = p.txPool.Add(tx, p.chain.GetLastBlock().BlockNumber(), p.ntp.Time())
+	if err != nil {
+		p.log.Error("Error while adding TransferTxn into TxPool",
+			"Txhash", tx.Txhash(),
+			"Error", err.Error())
+		return err
+	}
+	msg2 := &generated.Message{
+		Msg:msg.msg.Data,
+		MessageType:msg.msg.FuncName,
+	}
+	registerMessage := &messages.RegisterMessage{
+		MsgHash:misc.Bin2HStr(tx.Txhash()),
+		Msg:msg2,
+	}
+	select {
+	case p.registerAndBroadcastChan <- registerMessage:
+	case <-time.After(10*time.Second):
+		p.log.Warn("[TX] RegisterAndBroadcastChan Timeout",
+			"Peer", p.ID())
+	}
+	return nil
 }
 
 func (p *Peer) HandleChainState(nodeChainState *generated.NodeChainState) {
