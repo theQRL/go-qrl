@@ -182,3 +182,10 @@ func ConvertBytesToLong(b []byte) uint32 {
 func OTSKeyFromSig(signature []byte) uint64 {
 	return uint64(binary.BigEndian.Uint32(signature[0:4]))
 }
+
+func BytesToString(data []byte) (string, error) {
+	buff := bytes.NewBuffer(data)
+	var result string
+	_, err := buff.WriteString(result)
+	return result, err
+}
