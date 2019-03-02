@@ -437,17 +437,17 @@ func (p *Peer) handle(msg *Msg) error {
 	case generated.LegacyMessage_BH:
 		p.log.Warn("BH has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_TX:  // Transfer Transaction
-		return p.HandleTransaction(msg)
+		return p.HandleTransaction(msg, msg.msg.GetTxData())
 	case generated.LegacyMessage_LT:
 	case generated.LegacyMessage_EPH:
 	case generated.LegacyMessage_MT:  // Message Transaction
-		return p.HandleTransaction(msg)
+		return p.HandleTransaction(msg, msg.msg.GetMtData())
 	case generated.LegacyMessage_TK:  // Token Transaction
-		return p.HandleTransaction(msg)
+		return p.HandleTransaction(msg, msg.msg.GetTkData())
 	case generated.LegacyMessage_TT:  // Transfer Token Transaction
-		return p.HandleTransaction(msg)
+		return p.HandleTransaction(msg, msg.msg.GetTtData())
 	case generated.LegacyMessage_SL:  // Slave Transaction
-		return p.HandleTransaction(msg)
+		return p.HandleTransaction(msg, msg.msg.GetSlData())
 	case generated.LegacyMessage_SYNC:
 		p.log.Warn("SYNC has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_CHAINSTATE:
@@ -545,15 +545,14 @@ func (p *Peer) HandleBlock(pbBlock *generated.Block) {
 	}
 }
 
-func (p *Peer) HandleTransaction(msg *Msg) error {
-	txHash := msg.msg.GetTxData().TransactionHash
+func (p *Peer) HandleTransaction(msg *Msg, txData *generated.Transaction) error {
+	txHash := txData.TransactionHash
 	if !p.mr.IsRequested(txHash, p, nil) {
 		p.log.Warn("Received Unrequested txn",
 			"Peer", p.ID(),
 			"Tx Hash", misc.Bin2HStr(txHash))
 		return nil
 	}
-	txData := msg.msg.GetTxData()
 	tx := transactions.ProtoToTransaction(txData)
 
 	if !tx.Validate(true) {
