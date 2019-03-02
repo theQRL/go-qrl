@@ -390,15 +390,15 @@ running:
 				// Request for full message
 				// Check if its already being feeded by any other peer
 			case generated.LegacyMessage_TX:
-				srv.HandleTransaction(mrData)
+				srv.HandleTransaction(mrDataConn)
 			case generated.LegacyMessage_MT:
-				srv.HandleTransaction(mrData)
+				srv.HandleTransaction(mrDataConn)
 			case generated.LegacyMessage_TK:
-				srv.HandleTransaction(mrData)
+				srv.HandleTransaction(mrDataConn)
 			case generated.LegacyMessage_TT:
-				srv.HandleTransaction(mrData)
+				srv.HandleTransaction(mrDataConn)
 			case generated.LegacyMessage_SL:
-				srv.HandleTransaction(mrData)
+				srv.HandleTransaction(mrDataConn)
 			default:
 				srv.log.Warn("Unknown Message Receipt Type",
 					"Type", mrData.Type)
@@ -442,7 +442,10 @@ running:
 	}
 }
 
-func (srv *Server) HandleTransaction(mrData *generated.MRData) {
+func (srv *Server) HandleTransaction(mrDataConn *MRDataConn) {
+	mrData := mrDataConn.mrData
+	srv.mr.addPeer(mrData, mrDataConn.peer)
+
 	if srv.downloader.isSyncing {
 		return
 	}
