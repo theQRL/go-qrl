@@ -335,6 +335,14 @@ func (p *Peer) monitorChainState() error {
 }
 
 func (p *Peer) handle(msg *Msg) error {
+	/*
+	Error returned by handle, result into disconnection.
+	In some cases, like when peer receives txn hash which already
+	present with node will result into failure while adding txn
+	and thus may result into disconnection.
+
+	Error should not be returned until the above cases, has been handled.
+	 */
 	switch msg.msg.FuncName {
 
 	case generated.LegacyMessage_VE:
@@ -437,17 +445,17 @@ func (p *Peer) handle(msg *Msg) error {
 	case generated.LegacyMessage_BH:
 		p.log.Warn("BH has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_TX:  // Transfer Transaction
-		return p.HandleTransaction(msg, msg.msg.GetTxData())
+		p.HandleTransaction(msg, msg.msg.GetTxData())
 	case generated.LegacyMessage_LT:
 	case generated.LegacyMessage_EPH:
 	case generated.LegacyMessage_MT:  // Message Transaction
-		return p.HandleTransaction(msg, msg.msg.GetMtData())
+		p.HandleTransaction(msg, msg.msg.GetMtData())
 	case generated.LegacyMessage_TK:  // Token Transaction
-		return p.HandleTransaction(msg, msg.msg.GetTkData())
+		p.HandleTransaction(msg, msg.msg.GetTkData())
 	case generated.LegacyMessage_TT:  // Transfer Token Transaction
-		return p.HandleTransaction(msg, msg.msg.GetTtData())
+		p.HandleTransaction(msg, msg.msg.GetTtData())
 	case generated.LegacyMessage_SL:  // Slave Transaction
-		return p.HandleTransaction(msg, msg.msg.GetSlData())
+		p.HandleTransaction(msg, msg.msg.GetSlData())
 	case generated.LegacyMessage_SYNC:
 		p.log.Warn("SYNC has not been Implemented <<<< --- ")
 	case generated.LegacyMessage_CHAINSTATE:

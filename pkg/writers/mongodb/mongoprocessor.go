@@ -140,7 +140,7 @@ func (m *MongoProcessor) RemoveUnconfirmedTxn(tx *generated.Transaction) {
 		m.log.Error("Error while removing Unconfirmed Transaction",
 			"Error", err)
 	}
-	
+
 	switch tx.TransactionType.(type) {
 	case *generated.Transaction_Transfer_:
 		_, err := m.unconfirmedTransferTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, txHash)}})
