@@ -187,3 +187,7 @@ func BytesToString(data []byte) string {
 	buff := bytes.NewBuffer(data)
 	return buff.String()
 }
+
+func Sha256(message string, length int64) []byte {
+	return misc.UCharVectorToBytes(goqrllib.Sha2_256_n(misc.BytesToUCharVector([]byte(message)), length))
+}
