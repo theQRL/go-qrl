@@ -547,7 +547,7 @@ func (c *Chain) GetHeaderHashes(blockNumber uint64, count uint64) (*generated.No
 		endBlockNumber = c.lastBlock.BlockNumber()
 	}
 
-	totalExpectedHeaderHash := endBlockNumber - startBlockNumber + 1
+	totalExpectedHeaderHash := int(endBlockNumber - startBlockNumber + 1)
 
 	nodeHeaderHash := &generated.NodeHeaderHash{}
 	nodeHeaderHash.BlockNumber = startBlockNumber
@@ -580,6 +580,10 @@ func (c *Chain) GetHeaderHashes(blockNumber uint64, count uint64) (*generated.No
 		}
 		blockHeaderHash = headerHashes[0]
 	}
-	nodeHeaderHash.Headerhashes = nodeHeaderHash.Headerhashes[:totalExpectedHeaderHash]
+	startFrom := 0
+	if len(nodeHeaderHash.Headerhashes) > totalExpectedHeaderHash {
+		startFrom = len(nodeHeaderHash.Headerhashes) - totalExpectedHeaderHash
+	}
+	nodeHeaderHash.Headerhashes = nodeHeaderHash.Headerhashes[startFrom:]
 	return nodeHeaderHash, nil
 }
