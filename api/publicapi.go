@@ -22,9 +22,10 @@ type GetHeightResponse struct {
 }
 
 type PublicAPIServer struct {
-	chain  *chain.Chain
-	config *config.Config
-	log    log.LoggerInterface
+	chain    *chain.Chain
+	config   *config.Config
+	log      log.LoggerInterface
+	visitors *visitors
 }
 
 func (p *PublicAPIServer) Start() error {
@@ -45,11 +46,16 @@ func (p *PublicAPIServer) Start() error {
 	if err != nil {
 
 	}
-
+	p.visitors = newVisitors()
 	return nil
 }
 
 func (p *PublicAPIServer) GetBlockByNumber(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 	param, found := r.URL.Query()["blocknumber"]
 	if !found {
 		json.NewEncoder(w).Encode(nil)
@@ -67,6 +73,11 @@ func (p *PublicAPIServer) GetBlockByNumber(w http.ResponseWriter, r *http.Reques
 }
 
 func (p *PublicAPIServer) GetBlockByHash(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 	param, found := r.URL.Query()["headerhash"]
 	if !found {
 		json.NewEncoder(w).Encode(nil)
@@ -88,6 +99,11 @@ func (p *PublicAPIServer) GetBlockByHash(w http.ResponseWriter, r *http.Request)
 }
 
 func (p *PublicAPIServer) GetLastBlock(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 	b := p.chain.GetLastBlock()
 
 	response := &block.PlainBlock{}
@@ -96,6 +112,11 @@ func (p *PublicAPIServer) GetLastBlock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *PublicAPIServer) GetTxByHash(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 	param, found := r.URL.Query()["txhash"]
 	if !found {
 		json.NewEncoder(w).Encode(nil)
@@ -116,6 +137,11 @@ func (p *PublicAPIServer) GetTxByHash(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *PublicAPIServer) GetAddressState(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 	param, found := r.URL.Query()["address"]
 	if !found {
 		json.NewEncoder(w).Encode(nil)
@@ -132,16 +158,29 @@ func (p *PublicAPIServer) GetAddressState(w http.ResponseWriter, r *http.Request
 }
 
 func (p *PublicAPIServer) GetHeight(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 	resp := &GetHeightResponse{Height:p.chain.Height()}
 	json.NewEncoder(w).Encode(resp)
 }
 
 func (p *PublicAPIServer) GetNetworkStats(w http.ResponseWriter, r *http.Request) {
-
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 }
 
 func (p *PublicAPIServer) PushRawTxn(w http.ResponseWriter, r *http.Request) {
-
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
 }
 
 func NewPublicAPIServer(c *chain.Chain) *PublicAPIServer {
