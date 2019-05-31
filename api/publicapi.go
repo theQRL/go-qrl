@@ -46,7 +46,6 @@ func (p *PublicAPIServer) Start() error {
 	if err != nil {
 
 	}
-	p.visitors = newVisitors()
 	return nil
 }
 
@@ -188,5 +187,6 @@ func NewPublicAPIServer(c *chain.Chain) *PublicAPIServer {
 		chain: c,
 		config: config.GetConfig(),
 		log: log.GetLogger(),
+		visitors: newVisitors(),
 	}
 }
