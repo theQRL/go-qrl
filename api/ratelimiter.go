@@ -2,6 +2,7 @@ package api
 
 import (
 	"golang.org/x/time/rate"
+	"net"
 	"sync"
 	"time"
 )
@@ -50,7 +51,11 @@ func (v *visitors) cleanupVisitors() {
 	}
 }
 
-func (v *visitors) isAllowed(ip string) bool {
+func (v *visitors) isAllowed(hostPort string) bool {
+	ip, _, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		return false
+	}
 	limiter := v.getVisitor(ip)
 	return limiter.Allow()
 }
