@@ -17,7 +17,7 @@ type TestTransferTransaction struct {
 }
 
 func NewTestTransferTransaction(addrsTo []string, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TestTransferTransaction {
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	tx := CreateTransferTransaction(bytesAddrsTo, amounts, fee, xmssPK, masterAddr)
 
 	return &TestTransferTransaction{tx: tx}
@@ -29,7 +29,7 @@ func TestCreateTransferTransaction(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -68,7 +68,7 @@ func TestTransferTransaction_AddrsTo(t *testing.T) {
 	transferTx := NewTestTransferTransaction(addrsTo, amounts, fee, xmssPK, nil)
 
 	assert.NotNil(t, transferTx.tx)
-	assert.Equal(t, transferTx.tx.AddrsTo(), helper.StringAddressToBytesArray(addrsTo))
+	assert.Equal(t, transferTx.tx.AddrsTo(), misc.StringAddressToBytesArray(addrsTo))
 }
 
 func TestTransferTransaction_Amounts(t *testing.T) {
@@ -145,7 +145,7 @@ func TestTransferTransaction_Validate(t *testing.T) {
 	assert.True(t, transferTx.tx.Validate(true))
 
 	// Changed Transaction Hash to some different address, validation must fail
-	transferTx.tx.PBData().GetTransfer().AddrsTo = helper.StringAddressToBytesArray([]string{bobXMSS.QAddress()})
+	transferTx.tx.PBData().GetTransfer().AddrsTo = misc.StringAddressToBytesArray([]string{bobXMSS.QAddress()})
 	transferTx.tx.PBData().GetTransfer().Amounts = []uint64{100}
 	assert.False(t, transferTx.tx.Validate(true))
 }

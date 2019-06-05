@@ -26,16 +26,6 @@ func GetBobXMSS(height uint64) *crypto.XMSS {
 	return crypto.NewXMSS(goqrllib.NewXmssFast__SWIG_2(misc.BytesToUCharVector(seed), byte(height)))
 }
 
-func StringAddressToBytesArray(addrs []string) [][]byte {
-	bytesAddrs := make([][]byte, len(addrs))
-
-	for i := 0; i < len(addrs); i++ {
-		bytesAddrs[i] = misc.Qaddress2Bin(addrs[i])
-	}
-
-	return bytesAddrs
-}
-
 func StringArrayToBytesArray(data []string) [][]byte {
 	bytesData := make([][]byte, len(data))
 

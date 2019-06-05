@@ -3,6 +3,7 @@ package transactions
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/pkg/errors"
 	"reflect"
 
 	"github.com/theQRL/go-qrl/pkg/config"
@@ -14,16 +15,16 @@ import (
 )
 
 type PlainTransferTransaction struct {
-	MasterAddress string  `json:"master_address"`
-	Fee uint64  `json:"fee"`
-	PublicKey string  `json:"public_key"`
-	Signature string  `json:"signature"`
-	Nonce uint64  `json:"nonce"`
-	TransactionHash string  `json:"transaction_hash"`
-	TransactionType string  `json:"transaction_type"`
+	MasterAddress   string `json:"master_address"`
+	Fee             uint64 `json:"fee"`
+	PublicKey       string `json:"public_key"`
+	Signature       string `json:"signature"`
+	Nonce           uint64 `json:"nonce"`
+	TransactionHash string `json:"transaction_hash"`
+	TransactionType string `json:"transaction_type"`
 
-	AddressesTo []string  `json:"addresses_to"`
-	Amounts []uint64  `json:"amounts"`
+	AddressesTo []string `json:"addresses_to"`
+	Amounts     []uint64 `json:"amounts"`
 }
 
 func (t *PlainTransferTransaction) TransactionFromPBData(tx *generated.Transaction) {
@@ -38,6 +39,26 @@ func (t *PlainTransferTransaction) TransactionFromPBData(tx *generated.Transacti
 	t.TransactionType = "transfer"
 	t.AddressesTo = misc.Bin2QAddresses(tx.GetTransfer().AddrsTo)
 	t.Amounts = tx.GetTransfer().Amounts
+}
+
+func (t *PlainTransferTransaction) ToTransferTransactionObject() (*TransferTransaction, error) {
+	addrsTo := misc.StringAddressToBytesArray(t.AddressesTo)
+	xmssPK := misc.HStr2Bin(t.PublicKey)
+	masterAddr := misc.HStr2Bin(t.MasterAddress)
+
+	transferTx := CreateTransferTransaction(
+		addrsTo,
+		t.Amounts,
+		t.Fee,
+		xmssPK,
+		masterAddr)
+	if transferTx == nil {
+		return nil, errors.New("Error Parsing Transfer Transaction")
+	}
+	transferTx.PBData().Signature = misc.HStr2Bin(t.Signature)
+	transferTx.PBData().TransactionHash = misc.HStr2Bin(t.TransactionHash)
+
+	return transferTx, nil
 }
 
 type TransferTransaction struct {
