@@ -39,6 +39,7 @@ func (p *PublicAPIServer) Start() error {
 	c := config.GetConfig()
 
 	router := mux.NewRouter()
+	router.HandleFunc("/api/GetVersion", p.GetVersion).Methods("GET")
 	router.HandleFunc("/api/GetBlockByNumber", p.GetBlockByNumber).Methods("GET")
 	router.HandleFunc("/api/GetBlockByHash", p.GetBlockByHash).Methods("GET")
 	router.HandleFunc("/api/GetLastBlock", p.GetLastBlock).Methods("GET")
@@ -58,6 +59,15 @@ func (p *PublicAPIServer) Start() error {
 
 	}
 	return nil
+}
+
+func (p *PublicAPIServer) GetVersion(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
+	json.NewEncoder(w).Encode(p.config.Dev.Version)
 }
 
 func (p *PublicAPIServer) GetBlockByNumber(w http.ResponseWriter, r *http.Request) {
