@@ -18,7 +18,7 @@ type TestTransferTokenTransaction struct {
 
 func NewTestTransferTokenTransaction(tokenTxHash string, addrsTo []string, amounts []uint64, fee uint64, xmssPK []byte, masterAddr []byte) *TestTransferTokenTransaction {
 
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	tx := CreateTransferTokenTransaction(misc.HStr2Bin(tokenTxHash), bytesAddrsTo, amounts, fee, xmssPK, masterAddr)
 
 	return &TestTransferTokenTransaction{tx: tx}
@@ -31,7 +31,7 @@ func TestCreateTransferTokenTransaction(t *testing.T) {
 
 	tokenTxHash := "0a0fff"
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -89,7 +89,7 @@ func TestTransferTokenTransaction_AddrsTo(t *testing.T) {
 	transferTokenTx := NewTestTransferTokenTransaction(tokenTxHash, addrsTo, amounts, fee, xmssPK, nil)
 
 	assert.NotNil(t, transferTokenTx.tx)
-	assert.Equal(t, transferTokenTx.tx.AddrsTo(), helper.StringAddressToBytesArray(addrsTo))
+	assert.Equal(t, transferTokenTx.tx.AddrsTo(), misc.StringAddressToBytesArray(addrsTo))
 }
 
 func TestTransferTokenTransaction_Amounts(t *testing.T) {
@@ -170,7 +170,7 @@ func TestTransferTokenTransaction_Validate(t *testing.T) {
 	assert.True(t, transferTokenTx.tx.Validate(true))
 
 	// Changed AddressTo And Amounts, validation must fail
-	transferTokenTx.tx.PBData().GetTransferToken().AddrsTo = helper.StringAddressToBytesArray([]string{bobXMSS.QAddress()})
+	transferTokenTx.tx.PBData().GetTransferToken().AddrsTo = misc.StringAddressToBytesArray([]string{bobXMSS.QAddress()})
 	transferTokenTx.tx.PBData().GetTransferToken().Amounts = []uint64{100}
 	assert.False(t, transferTokenTx.tx.Validate(true))
 }

@@ -66,12 +66,25 @@ type AddressStateInterface interface {
 }
 
 type PlainAddressState struct {
-	Address           string     `json:"address" bson:"address"`
+	Address           string   `json:"address" bson:"address"`
 	Balance           uint64   `json:"balance" bson:"balance"`
 	Nonce             uint64   `json:"nonce" bson:"nonce"`
 	OtsBitfield       []string `json:"ots_bit_field" bson:"ots_bit_field"`
 	TransactionHashes []string `json:"transaction_hashes" bson:"transaction_hashes"`
 	OtsCounter        uint64   `json:"ots_counter" bson:"ots_counter"`
+}
+
+type PlainBalance struct {
+	Balance uint64 `json:"balance" bson:"balance"`
+}
+
+type NextUnusedOTS struct {
+	UnusedOTSIndex uint64 `json:"unused_ots_index" bson:"unused_ots_index"`
+	Found          bool   `json:"found" bson:"found"`
+}
+
+type IsUnusedOTSIndex struct {
+	IsUnusedOTSIndex bool `json:"is_unused_ots_index" bson:"is_unused_ots_index"`
 }
 
 func (a *PlainAddressState) AddressStateFromPBData(a2 *generated.AddressState) {
@@ -99,6 +112,10 @@ func (a *AddressState) PBData() *generated.AddressState {
 
 func (a *AddressState) Address() []byte {
 	return a.data.Address
+}
+
+func (a *AddressState) Height() uint64 {
+	return uint64(a.data.Address[1] << 1)
 }
 
 func (a *AddressState) Nonce() uint64 {
@@ -206,6 +223,16 @@ func (a *AddressState) DecreaseNonce() {
 func (a *AddressState) GetSlavePermission(slavePK []byte) (uint32, bool) {
 	value, ok := a.data.SlavePksAccessType[string(slavePK)]
 	return value, ok
+}
+
+func (a *AddressState) GetUnusedOTSIndex(startFrom uint64) (uint64, bool) {
+	maxOTSIndex := a.Height()
+	for ; startFrom < maxOTSIndex; startFrom++ {
+		if !a.OTSKeyReuse(startFrom) {
+			return startFrom, true
+		}
+	}
+	return 0, false
 }
 
 func (a *AddressState) OTSKeyReuse(otsKeyIndex uint64) bool {

@@ -108,7 +108,7 @@ func TestMiner_CreateBlock2(t *testing.T) {
 	miningNonce := uint32(0)
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 			bytesAddrsTo,
 			[]uint64{10},
@@ -152,7 +152,7 @@ func TestMiner_CreateBlock3(t *testing.T) {
 	miningNonce := uint32(0)
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{10},
@@ -199,7 +199,7 @@ func TestMiner_CreateBlock4(t *testing.T) {
 	miningNonce := uint32(0)
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{100},
@@ -258,7 +258,7 @@ func TestMiner_PrepareNextBlockTemplate(t *testing.T) {
 	parentBlock := m.m.chain.GetLastBlock()
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{100},
@@ -312,7 +312,7 @@ func TestMiner_StartMining(t *testing.T) {
 	parentBlock := m.m.chain.GetLastBlock()
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{100},
@@ -370,7 +370,7 @@ func TestMiner_HandleEvent(t *testing.T) {
 	parentBlock := m.m.chain.GetLastBlock()
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{100},
@@ -428,7 +428,7 @@ func TestMiner_GetBlockToMine(t *testing.T) {
 	parentBlock := m.m.chain.GetLastBlock()
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{100},
@@ -485,7 +485,7 @@ func TestMiner_SubmitMinedBlock(t *testing.T) {
 	parentBlock := m.m.chain.GetLastBlock()
 	txPool := m.m.chain.GetTransactionPool()
 
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,
 		[]uint64{100},

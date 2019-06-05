@@ -5,11 +5,10 @@ import (
 	"container/list"
 	"encoding/binary"
 	"fmt"
-	"math"
-	"runtime"
-
 	"github.com/theQRL/qrllib/goqrllib/goqrllib"
 	"github.com/theQRL/qrllib/tests/golang/misc"
+	"math"
+	"runtime"
 )
 
 type UcharVector struct {
@@ -190,4 +189,14 @@ func BytesToString(data []byte) string {
 
 func Sha256(message string, length int64) []byte {
 	return misc.UCharVectorToBytes(goqrllib.Sha2_256_n(misc.BytesToUCharVector([]byte(message)), length))
+}
+
+func StringAddressToBytesArray(addrs []string) [][]byte {
+	bytesAddrs := make([][]byte, len(addrs))
+
+	for i := 0; i < len(addrs); i++ {
+		bytesAddrs[i] = Qaddress2Bin(addrs[i])
+	}
+
+	return bytesAddrs
 }

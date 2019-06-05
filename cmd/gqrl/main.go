@@ -70,7 +70,7 @@ func startServer() error {
 	}
 
 	if conf.User.API.PublicAPI.Enabled {
-		publicAPIServer = api.NewPublicAPIServer(c)
+		publicAPIServer = api.NewPublicAPIServer(c, server.GetRegisterAndBroadcastChan())
 		go publicAPIServer.Start()
 	}
 	mongoProcessorConfig := conf.User.MongoProcessorConfig

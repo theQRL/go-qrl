@@ -76,7 +76,7 @@ func TestMongoProcessor_TransactionProcessor(t *testing.T) {
 	defer m.Clean()
 	aliceXMSS := helper.GetAliceXMSS(4)
 	bobXMSS := helper.GetBobXMSS(4)
-	bytesAddrsTo := helper.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
+	bytesAddrsTo := misc.StringAddressToBytesArray([]string{aliceXMSS.QAddress()})
 
 	tx1 := transactions.CreateTransferTransaction(
 		bytesAddrsTo,

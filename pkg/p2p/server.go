@@ -156,6 +156,10 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	return nil
 }
 
+func (srv *Server) GetRegisterAndBroadcastChan() chan *messages.RegisterMessage {
+	return srv.registerAndBroadcastChan
+}
+
 func (srv *Server) listenLoop(listener net.Listener) {
 	srv.loopWG.Add(1)
 	defer srv.loopWG.Done()

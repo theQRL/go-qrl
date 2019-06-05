@@ -6,15 +6,20 @@ import (
 	"fmt"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
+	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
+	"github.com/theQRL/go-qrl/pkg/p2p/messages"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 type GetHeightResponse struct {
@@ -22,10 +27,12 @@ type GetHeightResponse struct {
 }
 
 type PublicAPIServer struct {
-	chain    *chain.Chain
-	config   *config.Config
-	log      log.LoggerInterface
-	visitors *visitors
+	chain                    *chain.Chain
+	ntp                      ntp.NTPInterface
+	config                   *config.Config
+	log                      log.LoggerInterface
+	visitors                 *visitors
+	registerAndBroadcastChan chan *messages.RegisterMessage
 }
 
 func (p *PublicAPIServer) Start() error {
@@ -37,6 +44,10 @@ func (p *PublicAPIServer) Start() error {
 	router.HandleFunc("/api/GetLastBlock", p.GetLastBlock).Methods("GET")
 	router.HandleFunc("/api/GetTxByHash", p.GetTxByHash).Methods("GET")
 	router.HandleFunc("/api/GetAddressState", p.GetAddressState).Methods("GET")
+	router.HandleFunc("/api/GetBalance", p.GetBalance).Methods("GET")
+	router.HandleFunc("/api/GetUnusedOTS", p.GetUnusedOTSIndex).Methods("GET")
+	//router.HandleFunc("/api/GetEstimatedTxFee", p.GetEstimatedTxFee).Methods("GET")
+	router.HandleFunc("/api/BroadcastTransferTx", p.BroadcastTransferTx).Methods("POST")
 	router.HandleFunc("/api/GetHeight", p.GetHeight).Methods("GET")
 
 	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
@@ -156,6 +167,55 @@ func (p *PublicAPIServer) GetAddressState(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(response)
 }
 
+func (p *PublicAPIServer) GetBalance(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
+	param, found := r.URL.Query()["address"]
+	if !found {
+		json.NewEncoder(w).Encode(nil)
+		return
+	}
+	addressState, err := p.chain.GetAddressState(misc.Qaddress2Bin(param[0]))
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	response := addressstate.PlainBalance{}
+	response.Balance = addressState.Balance()
+	json.NewEncoder(w).Encode(response)
+}
+
+func (p *PublicAPIServer) GetUnusedOTSIndex(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
+	var err error
+	startFrom := uint64(0)
+	param, found := r.URL.Query()["start_from"]
+	if found {
+		startFrom, err = strconv.ParseUint(param[0], 10, 64)
+		if err != nil {
+			json.NewEncoder(w).Encode(err.Error())
+			return
+		}
+	}
+	addressState, err := p.chain.GetAddressState(misc.Qaddress2Bin(param[0]))
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	unusedOTSIndex, found := addressState.GetUnusedOTSIndex(uint64(startFrom))
+	response := addressstate.NextUnusedOTS{}
+	response.UnusedOTSIndex = unusedOTSIndex
+	response.Found = found
+	json.NewEncoder(w).Encode(response)
+}
+
 func (p *PublicAPIServer) GetHeight(w http.ResponseWriter, r *http.Request) {
 	// Check Rate Limit
 	if !p.visitors.isAllowed(r.RemoteAddr) {
@@ -174,19 +234,81 @@ func (p *PublicAPIServer) GetNetworkStats(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (p *PublicAPIServer) PushRawTxn(w http.ResponseWriter, r *http.Request) {
+func (p *PublicAPIServer) BroadcastTransferTx(w http.ResponseWriter, r *http.Request) {
 	// Check Rate Limit
 	if !p.visitors.isAllowed(r.RemoteAddr) {
 		w.WriteHeader(429)
 		return
 	}
+	decoder := json.NewDecoder(r.Body)
+	var plainTransferTransaction transactions.PlainTransferTransaction
+	err := decoder.Decode(&plainTransferTransaction)
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	tx, err := plainTransferTransaction.ToTransferTransactionObject()
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	if !tx.Validate(true) {
+		json.NewEncoder(w).Encode(errors.New("Transfer Transaction Validation Failed").Error())
+		return
+	}
+	addrFromState, err := p.chain.GetAddressState(tx.AddrFrom())
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	addrFromPKState := addrFromState
+	addrFromPK := tx.GetSlave()
+	if addrFromPK != nil {
+		addrFromPKState, err = p.chain.GetAddressState(addrFromPK)
+		if err != nil {
+			json.NewEncoder(w).Encode(err.Error())
+			return
+		}
+	}
+
+	if !tx.ValidateExtended(addrFromState, addrFromPKState) {
+		json.NewEncoder(w).Encode(errors.New("Transfer Transaction ValidateExtended Failed").Error())
+		return
+	}
+
+	err = p.chain.GetTxPool().Add(
+		tx,
+		p.chain.GetLastBlock().BlockNumber(),
+		p.ntp.Time())
+	if err != nil {
+		json.NewEncoder(w).Encode(err.Error())
+		return
+	}
+	msg2 := &generated.Message{
+		Msg:&generated.LegacyMessage_TtData{
+			TtData:tx.PBData(),
+		},
+		MessageType:generated.LegacyMessage_TT,
+	}
+	registerMessage := &messages.RegisterMessage{
+		MsgHash:misc.Bin2HStr(tx.Txhash()),
+		Msg:msg2,
+	}
+	select {
+	case p.registerAndBroadcastChan <- registerMessage:
+	case <-time.After(10*time.Second):
+		json.NewEncoder(w).Encode(errors.New("Transaction Broadcast Timeout").Error())
+	}
+	json.NewEncoder(w).Encode("Successful")
 }
 
-func NewPublicAPIServer(c *chain.Chain) *PublicAPIServer {
+func NewPublicAPIServer(c *chain.Chain, registerAndBroadcastChan chan *messages.RegisterMessage) *PublicAPIServer {
 	return &PublicAPIServer{
-		chain: c,
-		config: config.GetConfig(),
-		log: log.GetLogger(),
-		visitors: newVisitors(),
+		chain:                    c,
+		ntp:                      ntp.GetNTP(),
+		config:                   config.GetConfig(),
+		log:                      log.GetLogger(),
+		visitors:                 newVisitors(),
+		registerAndBroadcastChan: registerAndBroadcastChan,
 	}
 }

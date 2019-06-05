@@ -35,7 +35,7 @@ func TestTransactionPool_Add(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -53,7 +53,7 @@ func TestTransactionPool_AddTxFromBlock(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -82,7 +82,7 @@ func TestTransactionPool_CheckStale(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -117,7 +117,7 @@ func TestTransactionPool_Contains(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -139,7 +139,7 @@ func TestTransactionPool_Pop(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -164,7 +164,7 @@ func TestTransactionPool_Remove(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
@@ -187,7 +187,7 @@ func TestTransactionPool_RemoveTxInBlock(t *testing.T) {
 	randomXMSS := crypto.FromHeight(6, goqrllib.SHAKE_128)
 
 	addrsTo := []string{bobXMSS.QAddress(), aliceXMSS.QAddress()}
-	bytesAddrsTo := helper.StringAddressToBytesArray(addrsTo)
+	bytesAddrsTo := misc.StringAddressToBytesArray(addrsTo)
 	amounts := []uint64{100, 200}
 	fee := uint64(1)
 	xmssPK := misc.UCharVectorToBytes(randomXMSS.PK())
