@@ -15,13 +15,13 @@ import (
 
 type PlainCoinBaseTransaction struct {
 	Fee             uint64 `json:"fee"`
-	PublicKey       string `json:"public_key"`
+	PublicKey       string `json:"publicKey"`
 	Signature       string `json:"signature"`
 	Nonce           uint64 `json:"nonce"`
-	TransactionHash string `json:"transaction_hash"`
-	TransactionType string `json:"transaction_type"`
+	TransactionHash string `json:"transactionHash"`
+	TransactionType string `json:"transactionType"`
 
-	AddressTo string `json:"address_to"`
+	AddressTo string `json:"addressTo"`
 	Amount    uint64 `json:"amount"`
 }
 

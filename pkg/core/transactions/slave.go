@@ -14,16 +14,16 @@ import (
 )
 
 type PlainSlaveTransaction struct {
-	MasterAddress string  `json:"master_address"`
-	Fee uint64  `json:"fee"`
-	PublicKey string  `json:"public_key"`
-	Signature string  `json:"signature"`
-	Nonce uint64  `json:"nonce"`
-	TransactionHash string  `json:"transaction_hash"`
-	TransactionType string  `json:"transaction_type"`
+	MasterAddress   string `json:"masterAddress"`
+	Fee             uint64 `json:"fee"`
+	PublicKey       string `json:"publicKey"`
+	Signature       string `json:"signature"`
+	Nonce           uint64 `json:"nonce"`
+	TransactionHash string `json:"transactionHash"`
+	TransactionType string `json:"transactionType"`
 
-	SlavePKs []string  `json:"slave_public_keys"`
-	AccessTypes []uint32  `json:"access_types"`
+	SlavePKs    []string `json:"slavePublicKeys"`
+	AccessTypes []uint32 `json:"accessTypes"`
 }
 
 func (t *PlainSlaveTransaction) TransactionFromPBData(tx *generated.Transaction) {
