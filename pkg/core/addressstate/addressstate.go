@@ -69,9 +69,9 @@ type PlainAddressState struct {
 	Address           string   `json:"address" bson:"address"`
 	Balance           uint64   `json:"balance" bson:"balance"`
 	Nonce             uint64   `json:"nonce" bson:"nonce"`
-	OtsBitfield       []string `json:"ots_bit_field" bson:"ots_bit_field"`
-	TransactionHashes []string `json:"transaction_hashes" bson:"transaction_hashes"`
-	OtsCounter        uint64   `json:"ots_counter" bson:"ots_counter"`
+	OtsBitfield       []string `json:"otsBitField" bson:"otsBitField"`
+	TransactionHashes []string `json:"transactionHashes" bson:"transactionHashes"`
+	OtsCounter        uint64   `json:"otsCounter" bson:"otsCounter"`
 }
 
 type PlainBalance struct {
@@ -79,12 +79,12 @@ type PlainBalance struct {
 }
 
 type NextUnusedOTS struct {
-	UnusedOTSIndex uint64 `json:"unused_ots_index" bson:"unused_ots_index"`
+	UnusedOTSIndex uint64 `json:"unusedOtsIndex" bson:"unusedOtsIndex"`
 	Found          bool   `json:"found" bson:"found"`
 }
 
 type IsUnusedOTSIndex struct {
-	IsUnusedOTSIndex bool `json:"is_unused_ots_index" bson:"is_unused_ots_index"`
+	IsUnusedOTSIndex bool `json:"isUnusedOtsIndex" bson:"isUnusedOtsIndex"`
 }
 
 func (a *PlainAddressState) AddressStateFromPBData(a2 *generated.AddressState) {

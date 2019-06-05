@@ -14,17 +14,17 @@ import (
 )
 
 type PlainTransferTokenTransaction struct {
-	MasterAddress string  `json:"master_address"`
-	Fee uint64  `json:"fee"`
-	PublicKey string  `json:"public_key"`
-	Signature string  `json:"signature"`
-	Nonce uint64  `json:"nonce"`
-	TransactionHash string  `json:"transaction_hash"`
-	TransactionType string  `json:"transaction_type"`
+	MasterAddress   string `json:"masterAddress"`
+	Fee             uint64 `json:"fee"`
+	PublicKey       string `json:"publicKey"`
+	Signature       string `json:"signature"`
+	Nonce           uint64 `json:"nonce"`
+	TransactionHash string `json:"transactionHash"`
+	TransactionType string `json:"transactionType"`
 
-	TokenTxnHash string  `json:"token_txn_hash"`
-	AddressesTo []string  `json:"addresses_to"`
-	Amounts []uint64  `json:"amounts"`
+	TokenTxnHash string   `json:"tokenTxnHash"`
+	AddressesTo  []string `json:"addressesTo"`
+	Amounts      []uint64 `json:"amounts"`
 }
 
 func (t *PlainTransferTokenTransaction) TransactionFromPBData(tx *generated.Transaction) {
