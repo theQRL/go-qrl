@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"github.com/pkg/errors"
 	"reflect"
+	"strconv"
 
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
@@ -27,6 +28,19 @@ type PlainTransferTransaction struct {
 	Amounts     []uint64 `json:"amounts"`
 }
 
+type JSONTransferTransactionRequest struct {
+	MasterAddress   string `json:"masterAddress"`
+	Fee             string `json:"fee"`
+	PublicKey       string `json:"publicKey"`
+	Signature       string `json:"signature"`
+	Nonce           string `json:"nonce"`
+	TransactionHash string `json:"transactionHash"`
+	TransactionType string `json:"transactionType"`
+
+	AddressesTo []string `json:"addressesTo"`
+	Amounts     []string `json:"amounts"`
+}
+
 func (t *PlainTransferTransaction) TransactionFromPBData(tx *generated.Transaction) {
 	if tx.MasterAddr != nil {
 		t.MasterAddress = misc.Bin2Qaddress(tx.MasterAddr)
@@ -44,8 +58,10 @@ func (t *PlainTransferTransaction) TransactionFromPBData(tx *generated.Transacti
 func (t *PlainTransferTransaction) ToTransferTransactionObject() (*TransferTransaction, error) {
 	addrsTo := misc.StringAddressToBytesArray(t.AddressesTo)
 	xmssPK := misc.HStr2Bin(t.PublicKey)
-	masterAddr := misc.HStr2Bin(t.MasterAddress)
-
+	var masterAddr []byte
+	if len(t.MasterAddress) > 0 {
+		masterAddr = misc.HStr2Bin(t.MasterAddress)
+	}
 	transferTx := CreateTransferTransaction(
 		addrsTo,
 		t.Amounts,
@@ -56,9 +72,37 @@ func (t *PlainTransferTransaction) ToTransferTransactionObject() (*TransferTrans
 		return nil, errors.New("Error Parsing Transfer Transaction")
 	}
 	transferTx.PBData().Signature = misc.HStr2Bin(t.Signature)
-	transferTx.PBData().TransactionHash = misc.HStr2Bin(t.TransactionHash)
+	transferTx.PBData().TransactionHash = transferTx.GenerateTxHash(transferTx.GetHashableBytes())
 
 	return transferTx, nil
+}
+
+func (j *JSONTransferTransactionRequest) ToPlainTransferTransaction() (*PlainTransferTransaction, error) {
+	p := &PlainTransferTransaction{
+		MasterAddress: j.MasterAddress,
+		PublicKey: j.PublicKey,
+		Signature: j.Signature,
+		TransactionHash: j.TransactionHash,
+		TransactionType: j.TransactionType,
+		AddressesTo: j.AddressesTo,
+		Amounts: make([]uint64, len(j.Amounts)),
+	}
+	var err error
+	p.Fee, err = strconv.ParseUint(j.Fee, 10, 64)
+	if err != nil {
+		return nil, err
+	}
+	p.Nonce, err = strconv.ParseUint(j.Nonce, 10, 64)
+	if err != nil {
+		p.Nonce = 0
+	}
+	for i := range j.Amounts {
+		p.Amounts[i], err = strconv.ParseUint(j.Amounts[i], 10, 64)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return p, nil
 }
 
 type TransferTransaction struct {
@@ -202,8 +246,8 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.SubtractBalance(total)
-		// Disabled Tracking of Transaction Hash into AddressState
-		//addrState.AppendTransactionHash(tx.Txhash())
+		// TODO: Disabled Tracking of Transaction Hash into AddressState
+		addrState.AppendTransactionHash(tx.Txhash())
 	}
 
 	addrsTo := tx.AddrsTo()
@@ -214,10 +258,10 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.AddBalance(amount)
-			// Disabled Tracking of Transaction Hash into AddressState
-			//if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
-			//	addrState.AppendTransactionHash(tx.Txhash())
-			//}
+			// TODO: Disabled Tracking of Transaction Hash into AddressState
+			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
+				addrState.AppendTransactionHash(tx.Txhash())
+			}
 		}
 	}
 }
@@ -230,7 +274,7 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.AddBalance(total)
 		// Disabled Tracking of Transaction Hash into AddressState
-		//addrState.RemoveTransactionHash(tx.Txhash())
+		addrState.RemoveTransactionHash(tx.Txhash())
 	}
 
 	addrsTo := tx.AddrsTo()
@@ -242,9 +286,9 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.SubtractBalance(amount)
 			// Disabled Tracking of Transaction Hash into AddressState
-			//if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
-			//	addrState.RemoveTransactionHash(tx.Txhash())
-			//}
+			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
+				addrState.RemoveTransactionHash(tx.Txhash())
+			}
 		}
 	}
 }
