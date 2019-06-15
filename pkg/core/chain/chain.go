@@ -492,7 +492,17 @@ func (c *Chain) GetTransactionByHash(txHash []byte) (*generated.Transaction, err
 		return nil, err
 	}
 	return txMetaData.Transaction, err
+}
 
+func (c *Chain) GetTransactionMetaDataByHash(txHash []byte) (*generated.TransactionMetadata, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	txMetaData, err := c.state.GetTxMetadata(txHash)
+	if err != nil {
+		return nil, err
+	}
+	return txMetaData, err
 }
 
 func (c *Chain) GetBlock(headerhash []byte) (*block.Block, error) {
