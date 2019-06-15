@@ -9,6 +9,7 @@ import (
 	"github.com/theQRL/qrllib/tests/golang/misc"
 	"math"
 	"runtime"
+	"strconv"
 )
 
 type UcharVector struct {
@@ -199,4 +200,25 @@ func StringAddressToBytesArray(addrs []string) [][]byte {
 	}
 
 	return bytesAddrs
+}
+
+func UInt64ToString(data []uint64) []string {
+	convertedData := make([]string, len(data))
+	for i := range data {
+		convertedData[i] = strconv.FormatUint(data[i], 10)
+	}
+	return convertedData
+}
+
+func ShorToQuanta(data uint64) string {
+	convertedData := float64(data) / 1000000000  // TODO: Replace with config.dev.ShorPerQuanta
+	return strconv.FormatFloat(convertedData, 'f', 9, 64)
+}
+
+func ShorsToQuantas(data []uint64) []string {
+	convertedData := make([]string, len(data))
+	for i := range data {
+		convertedData[i] = ShorToQuanta(data[i])
+	}
+	return convertedData
 }
