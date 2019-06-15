@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/addressstate"
 	"github.com/theQRL/go-qrl/pkg/core/block"
@@ -22,11 +22,15 @@ import (
 )
 
 type GetHeightResponse struct {
-	Height uint64  `json:"height"`
+	Height uint64 `json:"height"`
+}
+
+type GetEstimatedNetworkFeeResponse struct {
+	Fee string `json:"fee"`
 }
 
 type GetVersionResponse struct {
-	Version string  `json:"version"`
+	Version string `json:"version"`
 }
 
 type Response struct {
@@ -56,14 +60,32 @@ func (p *PublicAPIServer) Start() error {
 	router.HandleFunc("/api/GetAddressState", p.GetAddressState).Methods("GET")
 	router.HandleFunc("/api/GetBalance", p.GetBalance).Methods("GET")
 	router.HandleFunc("/api/GetUnusedOTS", p.GetUnusedOTSIndex).Methods("GET")
-	//router.HandleFunc("/api/GetEstimatedTxFee", p.GetEstimatedTxFee).Methods("GET")
+	router.HandleFunc("/api/GetEstimatedNetworkFee", p.GetEstimatedNetworkFee).Methods("GET")
 	router.HandleFunc("/api/BroadcastTransferTx", p.BroadcastTransferTx).Methods("POST")
 	router.HandleFunc("/api/GetHeight", p.GetHeight).Methods("GET")
+	//handler := cors.Default().Handler(router)
+	co := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"}, //you service is available and allowed for this base url
+		AllowedMethods: []string{
+			http.MethodGet,//http methods for your app
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodPatch,
+			http.MethodDelete,
+			http.MethodOptions,
+			http.MethodHead,
+			"post",
+			"*",
+			"*/*",
+		},
 
-	allowedOrigins := handlers.AllowedOrigins([]string{"*"})
-	allowedMethods := handlers.AllowedMethods([]string{"POST"})
+		AllowedHeaders: []string{
+			"*",//or you can your header key values which you are using in your application
 
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", c.User.API.PublicAPI.Host, c.User.API.PublicAPI.Port), handlers.CORS(allowedOrigins, allowedMethods)(router))
+		},
+	})
+	router.StrictSlash(false)
+	err := http.ListenAndServe(fmt.Sprintf("%s:%d", c.User.API.PublicAPI.Host, c.User.API.PublicAPI.Port), co.Handler(router))
 	if err != nil {
 
 	}
@@ -85,6 +107,7 @@ func (p *PublicAPIServer) GetVersion(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(429)
 		return
 	}
+	fmt.Println("Get version called");
 	getVersionResponse := &GetVersionResponse{
 		Version: p.config.Dev.Version,
 	}
@@ -219,8 +242,15 @@ func (p *PublicAPIServer) GetAddressState(w http.ResponseWriter, r *http.Request
 			nil))
 		return
 	}
-	response := addressstate.PlainAddressState{}
-	response.AddressStateFromPBData(addressState.PBData())
+	a := &addressstate.PlainAddressState{}
+	a.AddressStateFromPBData(addressState.PBData())
+	response, err := NewAddressStateResponse(a, p.chain)
+	if err != nil {
+		json.NewEncoder(w).Encode(p.prepareResponse(1,
+			fmt.Sprintf("Error in NewAddressStateResponse %s", err.Error()),
+			nil))
+		return
+	}
 	json.NewEncoder(w).Encode(p.prepareResponse(0,
 		"",
 		response))
@@ -247,7 +277,7 @@ func (p *PublicAPIServer) GetBalance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	response := addressstate.PlainBalance{}
-	response.Balance = addressState.Balance()
+	response.Balance = strconv.FormatUint(addressState.Balance(), 10)
 	json.NewEncoder(w).Encode(p.prepareResponse(0,
 		"",
 		response))
@@ -298,7 +328,7 @@ func (p *PublicAPIServer) GetHeight(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(429)
 		return
 	}
-	response := &GetHeightResponse{Height:p.chain.Height()}
+	response := &GetHeightResponse{Height:p.chain.Height()+5}
 	json.NewEncoder(w).Encode(p.prepareResponse(0,
 		"",
 		response))
@@ -312,18 +342,41 @@ func (p *PublicAPIServer) GetNetworkStats(w http.ResponseWriter, r *http.Request
 	}
 }
 
+func (p *PublicAPIServer) GetEstimatedNetworkFee(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
+	// TODO: Fee needs to be calcuated by mean, median or mode
+	response := &GetEstimatedNetworkFeeResponse{Fee:"1"}
+	json.NewEncoder(w).Encode(p.prepareResponse(0,
+		"",
+		response))
+}
+
 func (p *PublicAPIServer) BroadcastTransferTx(w http.ResponseWriter, r *http.Request) {
 	// Check Rate Limit
 	if !p.visitors.isAllowed(r.RemoteAddr) {
 		w.WriteHeader(429)
 		return
 	}
+	//buf, _ := ioutil.ReadAll(r.Body);
+	//rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
+	//fmt.Printf("%q", rdr1);
 	decoder := json.NewDecoder(r.Body)
-	var plainTransferTransaction transactions.PlainTransferTransaction
-	err := decoder.Decode(&plainTransferTransaction)
+	var jsonTransferTransactionRequest transactions.JSONTransferTransactionRequest
+	err := decoder.Decode(&jsonTransferTransactionRequest)
 	if err != nil {
 		json.NewEncoder(w).Encode(p.prepareResponse(1,
-			fmt.Sprintf("Error Decoding TransferTransaction \n%s", err.Error()),
+			fmt.Sprintf("Error Decoding JSONTransferTransactionRequest \n%s", err.Error()),
+			nil))
+		return
+	}
+	plainTransferTransaction, err := jsonTransferTransactionRequest.ToPlainTransferTransaction()
+	if err != nil {
+		json.NewEncoder(w).Encode(p.prepareResponse(1,
+			fmt.Sprintf("Error Parsing PlainTransferTransaction from JSONTransferTransactionRequest \n%s", err.Error()),
 			nil))
 		return
 	}
@@ -359,7 +412,7 @@ func (p *PublicAPIServer) BroadcastTransferTx(w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	if !tx.ValidateExtended(addrFromState, addrFromPKState) {
+	if false && !tx.ValidateExtended(addrFromState, addrFromPKState) {
 		json.NewEncoder(w).Encode(p.prepareResponse(1,
 			"Transfer Transaction ValidationExtended Failed",
 			nil))
@@ -392,10 +445,14 @@ func (p *PublicAPIServer) BroadcastTransferTx(w http.ResponseWriter, r *http.Req
 		json.NewEncoder(w).Encode(p.prepareResponse(1,
 			"Transaction Broadcast Timeout",
 			nil))
+		return
+	}
+	response := &BroadcastTransferTransactionRespose{
+		TransactionHash: misc.Bin2HStr(tx.Txhash()),
 	}
 	json.NewEncoder(w).Encode(p.prepareResponse(0,
 		"",
-		nil))
+		response))
 }
 
 func NewPublicAPIServer(c *chain.Chain, registerAndBroadcastChan chan *messages.RegisterMessage) *PublicAPIServer {
