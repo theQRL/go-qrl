@@ -84,16 +84,16 @@ type BlockBareInterface interface {
 }
 
 type PlainBlockHeader struct {
-	HeaderHash string  `json:"headerHash" bson:"headerHash"`
-	BlockNumber uint64  `json:"blockNumber" bson:"blockNumber"`
-	Timestamp uint64  `json:"timestamp" bson:"timestamp"`
-	PrevHeaderHash string  `json:"prevHeaderHash" bson:"prevHeaderHash"`
-	BlockReward uint64  `json:"blockReward" bson:"blockReward"`
-	FeeReward uint64  `json:"feeReward" bson:"feeReward"`
-	MerkleRoot string  `json:"merkleRoot" bson:"merkleRoot"`
+	HeaderHash     string `json:"headerHash" bson:"headerHash"`
+	BlockNumber    uint64 `json:"blockNumber" bson:"blockNumber"`
+	Timestamp      uint64 `json:"timestamp" bson:"timestamp"`
+	PrevHeaderHash string `json:"prevHeaderHash" bson:"prevHeaderHash"`
+	BlockReward    uint64 `json:"blockReward" bson:"blockReward"`
+	FeeReward      uint64 `json:"feeReward" bson:"feeReward"`
+	MerkleRoot     string `json:"merkleRoot" bson:"merkleRoot"`
 
-	MiningNonce uint32  `json:"miningNonce" bson:"miningNonce"`
-	ExtraNonce uint64  `json:"extraNonce" bson:"extraNonce"`
+	MiningNonce uint32 `json:"miningNonce" bson:"miningNonce"`
+	ExtraNonce  uint64 `json:"extraNonce" bson:"extraNonce"`
 }
 
 func (bh *PlainBlockHeader) BlockHeaderFromPBData(bh2 *generated.BlockHeader) {
