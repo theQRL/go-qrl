@@ -18,7 +18,7 @@ type visitors struct {
 }
 
 func (v *visitors) addVisitor(ip string) *rate.Limiter {
-	limiter := rate.NewLimiter(2, 5)
+	limiter := rate.NewLimiter(5, 10)
 	v.lock.Lock()
 	v.visitors[ip] = &visitor{limiter, time.Now()}
 	v.lock.Unlock()
