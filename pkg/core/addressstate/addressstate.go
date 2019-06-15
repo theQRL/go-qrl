@@ -75,7 +75,7 @@ type PlainAddressState struct {
 }
 
 type PlainBalance struct {
-	Balance uint64 `json:"balance" bson:"balance"`
+	Balance string `json:"balance" bson:"balance"`
 }
 
 type NextUnusedOTS struct {
