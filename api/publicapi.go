@@ -328,7 +328,7 @@ func (p *PublicAPIServer) GetHeight(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(429)
 		return
 	}
-	response := &GetHeightResponse{Height:p.chain.Height()+5}
+	response := &GetHeightResponse{Height:p.chain.Height()}
 	json.NewEncoder(w).Encode(p.prepareResponse(0,
 		"",
 		response))
