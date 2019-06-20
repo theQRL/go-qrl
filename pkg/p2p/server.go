@@ -425,9 +425,14 @@ running:
 		case registerAndBroadcast := <-srv.registerAndBroadcastChan:
 			srv.mr.Register(registerAndBroadcast.MsgHash, registerAndBroadcast.Msg)
 			out := &Msg{
-				msg: &generated.LegacyMessage{
-					FuncName: registerAndBroadcast.Msg.MessageType,
-					Data: registerAndBroadcast.Msg.Msg,
+				msg: &generated.LegacyMessage {
+					FuncName: generated.LegacyMessage_MR,
+					Data: &generated.LegacyMessage_MrData {
+						MrData: &generated.MRData {
+							Hash:misc.HStr2Bin(registerAndBroadcast.MsgHash),
+							Type:registerAndBroadcast.Msg.MessageType,
+						},
+					},
 				},
 			}
 			ignorePeers := make(map[*Peer]bool, 0)

@@ -18,9 +18,9 @@ type OutgoingMessage struct {
 	index        int
 }
 
-func (o *OutgoingMessage) IsExpired() uint64 {
-	currTimestamp := ntp.GetNTP().Time()
-	return o.timestamp - currTimestamp
+func (o *OutgoingMessage) IsExpired() bool {
+	currTimestamp := o.ntp.Time()
+	return currTimestamp - o.timestamp > 90
 }
 
 func CreateOutgoingMessage(priority uint64, msg *generated.LegacyMessage) *OutgoingMessage {
@@ -46,7 +46,19 @@ func CreateOutgoingMessage(priority uint64, msg *generated.LegacyMessage) *Outgo
 
 type PriorityQueue []*OutgoingMessage
 
+func (pq *PriorityQueue) RemoveExpiredMessages() {
+	old := *pq
+	for i, o := range *pq {
+		if o.IsExpired() {
+			*pq = append(old[:i], old[i+1:]...)
+		}
+	}
+}
+
 func (pq PriorityQueue) Full() bool {
+	if pq.Len() > 2000 {
+		pq.RemoveExpiredMessages()
+	}
 	return pq.Len() > 2000
 }
 
