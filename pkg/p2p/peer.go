@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/core/pool"
 	"github.com/theQRL/go-qrl/pkg/core/transactions"
@@ -36,9 +37,9 @@ type Peer struct {
 	chain *chain.Chain
 
 	wg                        sync.WaitGroup
-	disc                      chan DiscReason
-	writeErr                  chan error
+	disconnectLock			  sync.Mutex
 	disconnected              bool
+	disconnectReason          chan DiscReason
 	exitMonitorChainState     chan struct{}
 	log                       log.LoggerInterface
 	txPool 					  *pool.TransactionPool
@@ -70,12 +71,11 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 		conn:                  *conn,
 		inbound:               inbound,
 		chain:                 chain,
-		disc:                  make(chan DiscReason),
-		writeErr:              make(chan error, 1),
 		disconnected:          false,
+		disconnectReason:      make(chan DiscReason),
 		exitMonitorChainState: make(chan struct{}),
 		log:                       log.GetLogger(),
-		txPool:					   chain.GetTransactionPool(),
+		txPool:                    chain.GetTransactionPool(),
 		filter:                    filter,
 		mr:                        mr,
 		config:                    config.GetConfig(),
@@ -174,9 +174,12 @@ func (p *Peer) SendNext() error {
 
 		if err != nil {
 			p.log.Error("Error while writing message on socket", "error", err)
-			p.writeErr <- err
-			return err
+			p.Disconnect(DiscProtocolError)
+			return nil
 		}
+	}
+	if p.bytesSent >= p.config.Dev.MaxBytesOut {
+		return errors.New("BytesSent >= MaxBytesOut")
 	}
 
 	return nil
@@ -200,22 +203,22 @@ func (p *Peer) ReadMsg() (msg *Msg, size uint32, err error) {
 	return msg, size+4, err  // 4 Byte Added for MetaData that includes the size of actual data
 }
 
-func (p *Peer) readLoop(errc chan<- error) {
+func (p *Peer) readLoop() {
 	p.wg.Add(1)
 	defer p.wg.Done()
-	p.log.Debug("initiating readloop")
 
 	for {
 		p.updateCounters()
 		totalBytesRead := uint32(0)
 		msg, size, err := p.ReadMsg()
 		if err != nil {
-			errc <- err
+			p.Disconnect(DiscProtocolError)
 			return
 		}
 		msg.ReceivedAt = time.Now()
 		if err = p.handle(msg); err != nil {
-			errc <- err
+			p.log.Info("Error at handle message")
+			p.Disconnect(DiscProtocolError)
 			return
 		}
 		p.inCounter += 1
@@ -238,13 +241,17 @@ func (p *Peer) readLoop(errc chan<- error) {
 				},
 			}
 			err = p.Send(out)
+			if err != nil {
+				p.Disconnect(DiscProtocolError)
+			}
 		}
 	}
 }
 
-func (p *Peer) monitorChainState() error {
+func (p *Peer) monitorChainState() {
 	p.wg.Add(1)
 	defer p.wg.Done()
+
 	for {
 		select {
 		case <-time.After(30 * time.Second):
@@ -261,7 +268,7 @@ func (p *Peer) monitorChainState() error {
 					"currentTime", currentTime,
 					"peer", p.ID())
 				p.Disconnect(DiscProtocolError)
-				return nil
+				return
 			}
 
 			lastBlock := p.chain.GetLastBlock()
@@ -269,8 +276,8 @@ func (p *Peer) monitorChainState() error {
 			if err != nil {
 				p.log.Warn("Ping Failed Disconnecting",
 					"Peer", p.conn.RemoteAddr().String())
-				p.Disconnect(DiscNetworkError)
-				return err
+				p.Disconnect(DiscProtocolError)
+				return
 			}
 			chainStateData := &generated.NodeChainState{
 				BlockNumber:          lastBlock.BlockNumber(),
@@ -291,7 +298,8 @@ func (p *Peer) monitorChainState() error {
 			if err != nil {
 				p.log.Info("Error while sending ChainState",
 					"peer", p.conn.RemoteAddr().String())
-				return err
+				p.Disconnect(DiscProtocolError)
+				return
 			}
 
 			if p.chainState == nil {
@@ -329,7 +337,7 @@ func (p *Peer) monitorChainState() error {
 				p.Send(out)
 			}
 		case <-p.exitMonitorChainState:
-			return nil
+			return
 		}
 	}
 }
@@ -412,13 +420,13 @@ func (p *Peer) handle(msg *Msg) error {
 			p.log.Info("Disconnecting Peer, as peer requested for block more than current block height",
 				"Requested Block Number", blockNumber,
 				"Current Chain Height", h)
-			p.Disconnect(DiscProtocolError)
+			return DiscProtocolError
 		}
 
 		b, err := p.chain.GetBlockByNumber(blockNumber)
 		if err == nil {
 			p.log.Info("Disconnecting Peer, as GetBlockByNumber returned nil")
-			p.Disconnect(DiscProtocolError)
+			return DiscProtocolError
 		}
 		pbData := &generated.PBData{
 			Block: b.PBData(),
@@ -436,7 +444,7 @@ func (p *Peer) handle(msg *Msg) error {
 		pbData := msg.msg.GetPbData()
 		if pbData.Block == nil {
 			p.log.Info("Disconnecting Peer, as no block sent for Push Block")
-			p.Disconnect(DiscProtocolError)
+			return DiscProtocolError
 		}
 
 		b := block.BlockFromPBData(pbData.Block)
@@ -479,7 +487,7 @@ func (p *Peer) handle(msg *Msg) error {
 					NodeHeaderHash: outNodeHeaderHash,
 				},
 			}
-			p.Send(out)
+			return p.Send(out)
 		} else {
 			p.log.Info(">>>>>Triggering Download")
 			nodeHeaderHashAndPeer := &NodeHeaderHashAndPeer {
@@ -495,10 +503,9 @@ func (p *Peer) handle(msg *Msg) error {
 			p.log.Warn("Disconnecting Peer due to negative bytes sent",
 				"bytesSent", p.bytesSent,
 				"BytesProcessed", p2pAckData.BytesProcessed)
-			p.Disconnect(DiscProtocolError)
 			return DiscProtocolError
 		}
-		p.SendNext()
+		return p.SendNext()
 	}
 	return nil
 }
@@ -690,51 +697,48 @@ func (p *Peer) handshake() {
 
 func (p *Peer) run() (remoteRequested bool, err error) {
 	var (
-		writeStart = make(chan struct{}, 1)
-		readErr    = make(chan error, 1)
-		reason     DiscReason
+		reason DiscReason
 	)
 	p.handshake()
-	go p.readLoop(readErr)
+	go p.readLoop()
 	go p.monitorChainState()
+
 loop:
 	for {
 		select {
-		case err = <-p.writeErr:
-			if err != nil {
-				break loop
-			}
-			writeStart <- struct{}{}
-		case err = <-readErr:
-			if r, ok := err.(DiscReason); ok {
-				break loop
-				reason = r
-			} else {
-				reason = DiscNetworkError
-			}
+		case r := <- p.disconnectReason:
+			reason = r
+			break loop
 		}
 	}
 	p.close(reason)
 	p.wg.Wait()
-	return remoteRequested, err
+
+	p.log.Info("Peer routine closed for ",
+		"Peer", p.conn.RemoteAddr().String())
+	return remoteRequested, reason
 }
 
 func (p *Peer) close(err error) {
 	p.lock.Lock()
 	defer p.lock.Unlock()
-	if p.disconnected {
-		p.log.Info("Disconnected ",
-			"Peer", p.conn.RemoteAddr().String())
-		return
-	}
-	p.disconnected = true
+
+	p.log.Info("Disconnected ",
+		"Peer", p.conn.RemoteAddr().String())
+	return
+
 	close(p.exitMonitorChainState)
 	p.conn.Close()
 }
 
 func (p *Peer) Disconnect(reason DiscReason) {
-	p.log.Info("Disconnecting ",
-		"Peer", p.conn.RemoteAddr().String())
-	p.close(reason)
-	p.wg.Wait()
+	p.disconnectLock.Lock()
+	defer p.disconnectLock.Unlock()
+
+	if !p.disconnected {
+		p.disconnected = true
+		p.log.Info("Disconnecting ",
+			"Peer", p.conn.RemoteAddr().String())
+		p.disconnectReason <- reason
+	}
 }
