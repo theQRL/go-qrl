@@ -320,6 +320,7 @@ func (c *Chain) updateChainState(block *block.Block, batch *leveldb.Batch) error
 		c.log.Info("Error while updating tx metadata", "error", err.Error())
 		return err
 	}
+	return nil
 }
 
 func (c *Chain) updateBlockNumberMapping(block *block.Block, batch *leveldb.Batch) error {
