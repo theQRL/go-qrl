@@ -303,14 +303,16 @@ func (p *Peer) monitorChainState() {
 			}
 
 			if p.chainState == nil {
+				p.log.Info("Ignoring MonitorState check as peer chain state is nil")
 				continue
 			}
 			// If Peer is already in download peer list then skip further processing
 			if p.isDownloadPeer {
+				p.log.Info("Ignoring Trigger Download as block downloading already running")
 				continue
 			}
 			// Ignore syncing if difference between blockheight is 3
-			if lastBlock.BlockNumber() - p.chainState.BlockNumber < 3 {
+			if int(p.chainState.BlockNumber - lastBlock.BlockNumber()) < 3 {
 				continue
 			}
 			peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
