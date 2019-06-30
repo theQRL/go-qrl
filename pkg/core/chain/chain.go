@@ -214,8 +214,14 @@ func (c *Chain) addBlock(block *block.Block, batch *leveldb.Batch) (bool, bool) 
 		if c.newBlockNotificationChannel != nil {
 			c.newBlockNotificationChannel <- block.HeaderHash()
 		}
-		c.updateChainState(block, batch)
-		c.txPool.CheckStale(block.BlockNumber(), c.state)
+		err := c.updateChainState(block, batch)
+		if err != nil {
+			return false, false
+		}
+		err = c.txPool.CheckStale(block.BlockNumber(), c.state)
+		if err != nil {
+			return false, false
+		}
 		c.triggerMiner = true
 	}
 	return true, false
@@ -280,29 +286,50 @@ func (c *Chain) AddBlock(block *block.Block) bool {
 
 func (c *Chain) applyBlock(block *block.Block, batch *leveldb.Batch) bool {
 	addressesState := block.PrepareAddressesList()
-	c.state.GetAddressesState(addressesState)
+	err := c.state.GetAddressesState(addressesState)
+	if err != nil {
+		c.log.Warn("Failed to GetAddressesState in applyBlock", "error", err)
+		return false
+	}
 	if !block.ApplyStateChanges(addressesState) {
 		return false
 	}
-	err := c.state.PutAddressesState(addressesState, batch)
+	err = c.state.PutAddressesState(addressesState, batch)
 	if err != nil {
-		c.log.Warn("Failed to apply Block %s", err.Error())
+		c.log.Warn("Failed to apply Block", "err", err.Error())
 		return false
 	}
 	return true
 }
 
-func (c *Chain) updateChainState(block *block.Block, batch *leveldb.Batch) {
+func (c *Chain) updateChainState(block *block.Block, batch *leveldb.Batch) error {
 	c.lastBlock = block
-	c.updateBlockNumberMapping(block, batch)
+	err := c.updateBlockNumberMapping(block, batch)
+	if err != nil {
+		c.log.Info("Error while updating blockNumber mapping", "error", err.Error())
+		return err
+	}
 	c.txPool.RemoveTxInBlock(block)
-	c.state.PutChainHeight(block.BlockNumber(), batch)
-	c.state.UpdateTxMetadata(block, batch)
+	err = c.state.PutChainHeight(block.BlockNumber(), batch)
+	if err != nil {
+		c.log.Info("Error while updating chain height", "error", err.Error())
+		return err
+	}
+	err = c.state.UpdateTxMetadata(block, batch)
+	if err != nil {
+		c.log.Info("Error while updating tx metadata", "error", err.Error())
+		return err
+	}
 }
 
-func (c *Chain) updateBlockNumberMapping(block *block.Block, batch *leveldb.Batch) {
+func (c *Chain) updateBlockNumberMapping(block *block.Block, batch *leveldb.Batch) error {
 	blockNumberMapping := &generated.BlockNumberMapping{Headerhash: block.HeaderHash(), PrevHeaderhash: block.PrevHeaderHash()}
-	c.state.PutBlockNumberMapping(block.BlockNumber(), blockNumberMapping, batch)
+	err := c.state.PutBlockNumberMapping(block.BlockNumber(), blockNumberMapping, batch)
+	if err != nil {
+		c.log.Info("Error while updating blockNumber mapping", "error", err.Error())
+		return err
+	}
+	return nil
 }
 
 func (c *Chain) RemoveBlockFromMainchain(block *block.Block, blockNumber uint64, batch *leveldb.Batch) {
@@ -419,7 +446,11 @@ func (c *Chain) AddChain(hashPath [][]byte, forkState *generated.ForkState) bool
 			return false
 		}
 
-		c.updateChainState(b, batch)
+		err = c.updateChainState(b, batch)
+		if err != nil {
+			c.log.Info("Failed to UpdateChainState")
+			return false
+		}
 
 		c.log.Debug("Apply block",
 			"#", b.BlockNumber(),

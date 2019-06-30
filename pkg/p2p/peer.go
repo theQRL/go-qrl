@@ -251,8 +251,8 @@ func (p *Peer) readLoop() {
 func (p *Peer) monitorChainState() {
 	p.wg.Add(1)
 	defer p.wg.Done()
-	p.log.Info("Monitor Chain State running for ", "Peer", p.ID())
 	for {
+		p.log.Info("Monitor Chain State running for ", "Peer", p.ID())
 		select {
 		case <-time.After(30 * time.Second):
 			currentTime := p.ntp.Time()
@@ -313,6 +313,7 @@ func (p *Peer) monitorChainState() {
 			}
 			// Ignore syncing if difference between blockheight is 3
 			if int(p.chainState.BlockNumber - lastBlock.BlockNumber()) < 3 {
+				p.log.Info("Ignoring Trigger Download due to difference of 3 lead blocks")
 				continue
 			}
 			peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
@@ -336,6 +337,7 @@ func (p *Peer) monitorChainState() {
 						NodeHeaderHash: nodeHeaderHash,
 					},
 				}
+				p.log.Info("monitorChainState Requested for HeaderHashes")
 				p.Send(out)
 			}
 		case <-p.exitMonitorChainState:
