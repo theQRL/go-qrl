@@ -251,7 +251,7 @@ func (p *Peer) readLoop() {
 func (p *Peer) monitorChainState() {
 	p.wg.Add(1)
 	defer p.wg.Done()
-
+	p.log.Info("Monitor Chain State running for ", "Peer", p.ID())
 	for {
 		select {
 		case <-time.After(30 * time.Second):
