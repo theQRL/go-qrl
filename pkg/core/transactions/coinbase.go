@@ -128,8 +128,10 @@ func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*addressstate.Ad
 	strAddrTo := misc.Bin2Qaddress(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
 		addrState.AddBalance(tx.Amount())
-		// Disabled Tracking of Transaction Hash into AddressState
-		addrState.AppendTransactionHash(tx.Txhash())
+		if tx.config.Dev.RecordTransactionHashes {
+			// Disabled Tracking of Transaction Hash into AddressState
+			addrState.AppendTransactionHash(tx.Txhash())
+		}
 	}
 
 	strAddrFrom := misc.Bin2Qaddress(tx.config.Dev.Genesis.CoinbaseAddress)
@@ -137,8 +139,10 @@ func (tx *CoinBase) ApplyStateChanges(addressesState map[string]*addressstate.Ad
 	if addrState, ok := addressesState[strAddrFrom]; ok {
 		masterQAddr := misc.Bin2Qaddress(tx.MasterAddr())
 		addressesState[masterQAddr].SubtractBalance(tx.Amount())
-		// Disabled Tracking of Transaction Hash into AddressState
-		addressesState[masterQAddr].AppendTransactionHash(tx.Txhash())
+		if tx.config.Dev.RecordTransactionHashes {
+			// Disabled Tracking of Transaction Hash into AddressState
+			addressesState[masterQAddr].AppendTransactionHash(tx.Txhash())
+		}
 		addrState.IncreaseNonce()
 	}
 }
@@ -147,8 +151,10 @@ func (tx *CoinBase) RevertStateChanges(addressesState map[string]*addressstate.A
 	strAddrTo := misc.Bin2Qaddress(tx.AddrTo())
 	if addrState, ok := addressesState[strAddrTo]; ok {
 		addrState.SubtractBalance(tx.Amount())
-		// Disabled Tracking of Transaction Hash into AddressState
-		addrState.RemoveTransactionHash(tx.Txhash())
+		if tx.config.Dev.RecordTransactionHashes {
+			// Disabled Tracking of Transaction Hash into AddressState
+			addrState.RemoveTransactionHash(tx.Txhash())
+		}
 	}
 
 	strAddrFrom := misc.Bin2Qaddress(tx.config.Dev.Genesis.CoinbaseAddress)
@@ -156,8 +162,10 @@ func (tx *CoinBase) RevertStateChanges(addressesState map[string]*addressstate.A
 	if addrState, ok := addressesState[strAddrFrom]; ok {
 		masterQAddr := misc.Bin2Qaddress(tx.MasterAddr())
 		addressesState[masterQAddr].AddBalance(tx.Amount())
-		// Disabled Tracking of Transaction Hash into AddressState
-		addressesState[masterQAddr].RemoveTransactionHash(tx.Txhash())
+		if tx.config.Dev.RecordTransactionHashes {
+			// Disabled Tracking of Transaction Hash into AddressState
+			addressesState[masterQAddr].RemoveTransactionHash(tx.Txhash())
+		}
 		addrState.DecreaseNonce()
 	}
 }
