@@ -246,8 +246,10 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.SubtractBalance(total)
-		// TODO: Disabled Tracking of Transaction Hash into AddressState
-		addrState.AppendTransactionHash(tx.Txhash())
+		if tx.config.Dev.RecordTransactionHashes {
+			// TODO: Disabled Tracking of Transaction Hash into AddressState
+			addrState.AppendTransactionHash(tx.Txhash())
+		}
 	}
 
 	addrsTo := tx.AddrsTo()
@@ -258,9 +260,11 @@ func (tx *TransferTransaction) ApplyStateChanges(addressesState map[string]*addr
 
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.AddBalance(amount)
-			// TODO: Disabled Tracking of Transaction Hash into AddressState
-			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
-				addrState.AppendTransactionHash(tx.Txhash())
+			if tx.config.Dev.RecordTransactionHashes {
+				// TODO: Disabled Tracking of Transaction Hash into AddressState
+				if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
+					addrState.AppendTransactionHash(tx.Txhash())
+				}
 			}
 		}
 	}
@@ -273,8 +277,10 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 	if addrState, ok := addressesState[misc.Bin2Qaddress(tx.AddrFrom())]; ok {
 		total := tx.TotalAmounts() + tx.Fee()
 		addrState.AddBalance(total)
-		// Disabled Tracking of Transaction Hash into AddressState
-		addrState.RemoveTransactionHash(tx.Txhash())
+		if tx.config.Dev.RecordTransactionHashes {
+			// Disabled Tracking of Transaction Hash into AddressState
+			addrState.RemoveTransactionHash(tx.Txhash())
+		}
 	}
 
 	addrsTo := tx.AddrsTo()
@@ -285,9 +291,11 @@ func (tx *TransferTransaction) RevertStateChanges(addressesState map[string]*add
 
 		if addrState, ok := addressesState[misc.Bin2Qaddress(addrTo)]; ok {
 			addrState.SubtractBalance(amount)
-			// Disabled Tracking of Transaction Hash into AddressState
-			if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
-				addrState.RemoveTransactionHash(tx.Txhash())
+			if tx.config.Dev.RecordTransactionHashes {
+				// Disabled Tracking of Transaction Hash into AddressState
+				if !reflect.DeepEqual(addrTo, tx.AddrFrom()) {
+					addrState.RemoveTransactionHash(tx.Txhash())
+				}
 			}
 		}
 	}

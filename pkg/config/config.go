@@ -111,7 +111,7 @@ type DevConfig struct {
 
 	ReorgLimit uint64
 
-	MessageQSize		  uint32
+	MessageQSize          uint32
 	MessageReceiptTimeout uint32
 	MessageBufferSize     uint32
 
@@ -141,16 +141,18 @@ type DevConfig struct {
 	NumberOfBlockAnalyze uint8
 	SizeMultiplier       float64
 	BlockMinSizeLimit    int
-	TxExtraOverhead		 int
+	TxExtraOverhead      int
 
 	ShorPerQuanta uint64
 
 	MaxReceivableBytes uint64
-	ReservedQuota	   uint64
-	MaxBytesOut		   uint64
+	ReservedQuota      uint64
+	MaxBytesOut        uint64
 	SyncDelayMining    uint8
 
 	BlockTimeSeriesSize uint32
+
+	RecordTransactionHashes bool  // True will enable recording of transaction hashes into address state
 }
 
 type TransactionConfig struct {
@@ -379,6 +381,7 @@ func GetDevConfig() (dev *DevConfig) {
 		SyncDelayMining:    60,
 
 		BlockTimeSeriesSize: 1440,
+		RecordTransactionHashes: false,
 	}
 	dev.MaxBytesOut = dev.MaxReceivableBytes - dev.ReservedQuota
 	return dev
