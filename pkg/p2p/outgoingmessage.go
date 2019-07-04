@@ -56,9 +56,6 @@ func (pq *PriorityQueue) RemoveExpiredMessages() {
 }
 
 func (pq PriorityQueue) Full() bool {
-	if pq.Len() > 2000 {
-		pq.RemoveExpiredMessages()
-	}
 	return pq.Len() > 2000
 }
 

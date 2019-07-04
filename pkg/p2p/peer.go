@@ -135,7 +135,7 @@ func (p *Peer) Send(msg *Msg) error {
 	outgoingMsg := CreateOutgoingMessage(priority, msg.msg)
 	if p.outgoingQueue.Full() {
 		p.log.Info("Outgoing Queue Full: Skipping Message")
-		return nil
+		return errors.New("Disconnecting: Outgoing Queue Full")
 	}
 	p.outgoingQueue.Push(outgoingMsg)
 	return p.SendNext()
@@ -313,7 +313,9 @@ func (p *Peer) monitorChainState() {
 			}
 			// Ignore syncing if difference between blockheight is 3
 			if int(p.chainState.BlockNumber - lastBlock.BlockNumber()) < 3 {
-				p.log.Info("Ignoring Trigger Download due to difference of 3 lead blocks")
+				if int(p.chainState.BlockNumber - lastBlock.BlockNumber()) > 0 {
+					p.log.Info("Ignoring Trigger Download due to difference of 3 lead blocks")
+				}
 				continue
 			}
 			peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
