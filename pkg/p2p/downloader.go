@@ -294,29 +294,10 @@ func (d *Downloader) BlockDownloader() {
 		case blockNumber := <-d.retryBlockNumber:
 			requestedBlockNumbers[blockNumber] = false
 		case <-time.After(10*time.Second):
-			d.log.Info("Producer Timeout",
+			d.log.Info("Finishing downloading due to Producer Timeout",
 				"len of requestedBlockNumbers", len(requestedBlockNumbers))
-			if len(requestedBlockNumbers) == 0 {
-				d.blockNumberReceived <- 0
-			} else if len(requestedBlockNumbers) >= SIZE - 10 {
-				consumeableBlockNumber := d.nextConsumableBlockNumber
-				for key := range requestedBlockNumbers {
-					if key < consumeableBlockNumber {
-						delete(requestedBlockNumbers, key)
-					}
-				}
-			}
-
-			for blockNumber, value := range requestedBlockNumbers {
-				if !value {
-					err := d.RequestForBlock(blockNumber)
-					if err != nil {
-						d.log.Error("Error while Requesting for block",
-							"Block #", blockNumber,
-							"Error", err.Error())
-					}
-				}
-			}
+			d.isSyncingFinished(true)
+			return
 		case <-d.done:
 			d.isSyncing = false
 			d.log.Info("Producer Exitted")
