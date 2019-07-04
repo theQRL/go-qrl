@@ -52,6 +52,7 @@ func (p *PublicAPIServer) Start() error {
 	c := config.GetConfig()
 
 	router := mux.NewRouter()
+	router.HandleFunc("/api/", p.RedirectToAPIDoc).Methods("GET")
 	router.HandleFunc("/api/GetVersion", p.GetVersion).Methods("GET")
 	router.HandleFunc("/api/GetBlockByNumber", p.GetBlockByNumber).Methods("GET")
 	router.HandleFunc("/api/GetBlockByHash", p.GetBlockByHash).Methods("GET")
@@ -99,6 +100,15 @@ func (p *PublicAPIServer) prepareResponse(errorCode uint, errorMessage string, d
 		Data: data,
 	}
 	return r
+}
+
+func (p *PublicAPIServer) RedirectToAPIDoc(w http.ResponseWriter, r *http.Request) {
+	// Check Rate Limit
+	if !p.visitors.isAllowed(r.RemoteAddr) {
+		w.WriteHeader(429)
+		return
+	}
+	http.Redirect(w, r, "https://api.theqrl.org/", 301)
 }
 
 func (p *PublicAPIServer) GetVersion(w http.ResponseWriter, r *http.Request) {
