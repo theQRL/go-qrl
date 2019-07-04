@@ -323,7 +323,7 @@ func (d *Downloader) isSyncingFinished(forceFinish bool) bool {
 		return true
 	}
 	lastBlockNumber := d.targetNode.blockNumber + uint64(len(d.targetNode.headerHashes) - 1)
-	if d.nextConsumableBlockNumber >= lastBlockNumber || forceFinish {
+	if d.nextConsumableBlockNumber > lastBlockNumber || forceFinish {
 		d.isSyncing = false
 		d.targetNode = nil
 		oldTargetPeers := d.targetPeers
