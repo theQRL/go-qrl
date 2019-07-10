@@ -15,6 +15,7 @@ type Account struct {
 	OTSBitfield [][]byte `json:"ots_bit_field" bson:"ots_bit_field"`
 	OTSCounter  int64    `json:"ots_counter" bson:"ots_counter"`
 	BlockNumber int64    `json:"block_number" bson:"block_number"`
+	Pages       int64    `json:"pages" bson:"pages"`
 }
 
 func (a *Account) AccountFromPBData(pbData *generated.AddressState) {
