@@ -67,6 +67,8 @@ type MongoProcessorConfig struct {
 	Port     uint16
 	Username string
 	Password string
+
+	ItemsPerPage uint64
 }
 
 type UserConfig struct {
@@ -267,12 +269,13 @@ func GetUserConfig() (userConf *UserConfig) {
 		MiningAPI: miningAPI,
 	}
 	mongoProcessorConfig := &MongoProcessorConfig{
-		Enabled:false,
-		DBName:"qrl",
-		Host:"127.0.0.1",
-		Port:3001,
-		Username:"",
-		Password:"",
+		Enabled:      false,
+		DBName:       "qrl",
+		Host:         "127.0.0.1",
+		Port:         3001,
+		Username:     "",
+		Password:     "",
+		ItemsPerPage: 1000,
 	}
 	userCurrentDir, _ := user.Current()  // TODO: Handle error
 	userConf = &UserConfig{

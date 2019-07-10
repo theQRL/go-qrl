@@ -29,6 +29,7 @@ func CreateTestMongoProcessor() *TestMongoProcessor {
 
 	conf := config.GetConfig()
 	conf.User.MongoProcessorConfig.DBName = "EXPLORER_BETA"
+	conf.User.MongoProcessorConfig.ItemsPerPage = 2
 	conf.Dev.Genesis.GenesisTimestamp = 1528402558
 	conf.Dev.Genesis.GenesisPrevHeadehash = []byte("Thirst of Quantas")
 	conf.Dev.Genesis.GenesisDifficulty = 5000
@@ -87,25 +88,33 @@ func TestMongoProcessor_TransactionProcessor(t *testing.T) {
 	)
 	tx1.Sign(bobXMSS, misc.BytesToUCharVector(tx1.GetHashableBytes()))
 	accounts := make(map[string]*Account)
-	m.m.TransactionProcessor(tx1.PBData(), 1, accounts)
+	accountTxHashes := make(map[string][]*TransactionHashType)
+	m.m.TransactionProcessor(tx1.PBData(), 1, accounts, accountTxHashes)
 	assert.Nil(t, m.m.WriteAll())
+	mongoTransaction := &Transaction{}
+	mongoTransferTx := &TransferTransaction{}
 
-	cursor, err := m.m.transactionsCollection.Find(m.m.ctx, bson.D{{"transaction_hash", tx1.Txhash()}})
+	singleResult := m.m.transactionsCollection.FindOne(m.m.ctx, bson.D{{"transaction_hash", tx1.Txhash()}})
+	err := singleResult.Decode(mongoTransaction)
 	assert.Nil(t, err)
-	//
-	// TODO: REcheck this part
-	mongoTransaction, mongoTransferTx := ProtoToTransaction(tx1.PBData(), 1)
-	for cursor.Next(m.m.ctx) {
-		err := cursor.Decode(mongoTransaction)
-		assert.Nil(t, err)
-		err = cursor.Decode(mongoTransferTx)
-		assert.Nil(t, err)
-		break
-	}
+
+	singleResult = m.m.transferTxCollection.FindOne(m.m.ctx, bson.D{{"transaction_hash", tx1.Txhash()}})
+	err = singleResult.Decode(mongoTransferTx)
+	assert.Nil(t, err)
+
+	paginatedAccountTxs := &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(m.m.config.Dev.Genesis.CoinbaseAddress, 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 1)
+
 	assert.True(t, mongoTransaction.IsEqualPBData(tx1.PBData(), 1, 1))
-	assert.True(t, mongoTransferTx.(*TransferTransaction).IsEqualPBData(tx1.PBData()))
+	assert.True(t, mongoTransferTx.IsEqualPBData(tx1.PBData()))
 	assert.Len(t, m.m.bulkTransactions, 0)
 	assert.Len(t, m.m.bulkTransferTx, 0)
+	assert.Len(t, accountTxHashes, 2)
 }
 
 func TestMongoProcessor_IsCollectionExists(t *testing.T) {
@@ -149,7 +158,8 @@ func TestMongoProcessor_Sync(t *testing.T) {
 func TestMongoProcessor_BlockProcessor(t *testing.T) {
 	m := CreateTestMongoProcessor()
 	defer m.Clean()
-	m.m.Sync()
+	err := m.m.Sync()
+	assert.Nil(t, err)
 	genesisBlock := m.m.chain.GetLastBlock()
 
 	bobXMSS := helper.GetBobXMSS(6)
@@ -186,7 +196,36 @@ func TestMongoProcessor_BlockProcessor(t *testing.T) {
 	assert.Contains(t, aliceState.SlavePKSAccessType(), misc.UCharVectorToString(bobXMSS.PK()))
 
 	// Check MongoDB
-	m.m.Sync()
+	err = m.m.Sync()
+	assert.Nil(t, err)
+
+	// Test for Paginated Account Txs of Coinbase address
+	paginatedAccountTxs := &PaginatedAccountTxs{}
+	singleResult := m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(m.m.config.Dev.Genesis.CoinbaseAddress, 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 2)
+
+
+	// Test for Paginated Account Txs of Alice Address
+	paginatedAccountTxs = &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(misc.UCharVectorToBytes(aliceXMSS.Address()), 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 2)
+	assert.Equal(t, paginatedAccountTxs.TransactionHashes[0], block1.Transactions()[0].TransactionHash)
+	assert.Equal(t, paginatedAccountTxs.TransactionHashes[1], slaveTx.Txhash())
+
+	// Test for Paginated Account Txs of Bob Address
+	paginatedAccountTxs = &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(misc.UCharVectorToBytes(bobXMSS.Address()), 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.NotNil(t, err)
+
 	assert.Equal(t, m.m.lastBlock.HeaderHash, block1.HeaderHash())
 	result := m.m.accountsCollection.FindOne(m.m.ctx, bson.D{{"address", m.m.config.Dev.Genesis.CoinbaseAddress}})
 	account := &Account{}
@@ -217,7 +256,8 @@ func TestMongoProcessor_BlockProcessor(t *testing.T) {
 	assert.True(t, forkBlock.IsEqual(forkBlockFromState))
 
 	// Check MongoDB
-	m.m.Sync()
+	err = m.m.Sync()
+	assert.Nil(t, err)
 	assert.Equal(t, m.m.lastBlock.HeaderHash, block1.HeaderHash())
 	result = m.m.accountsCollection.FindOne(m.m.ctx, bson.D{{"address", m.m.config.Dev.Genesis.CoinbaseAddress}})
 	account = &Account{}
@@ -248,7 +288,8 @@ func TestMongoProcessor_BlockProcessor(t *testing.T) {
 	assert.True(t, forkBlock2FromState.IsEqual(forkBlock2))
 
 	// Check MongoDB
-	m.m.Sync()
+	err = m.m.Sync()
+	assert.Nil(t, err)
 	assert.Equal(t, m.m.lastBlock.HeaderHash, forkBlock2.HeaderHash())
 	result = m.m.accountsCollection.FindOne(m.m.ctx, bson.D{{"address", m.m.config.Dev.Genesis.CoinbaseAddress}})
 	account = &Account{}
@@ -268,6 +309,46 @@ func TestMongoProcessor_BlockProcessor(t *testing.T) {
 	m.m.lastBlock = nil
 	err = m.m.CreateIndexes()
 	assert.Equal(t, m.m.lastBlock.BlockNumber, int64(2))
+
+	// Test for Paginated Account Txs of Coinbase address
+	// Page 0
+	paginatedAccountTxs = &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(m.m.config.Dev.Genesis.CoinbaseAddress, 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 2)
+	assert.Equal(t, paginatedAccountTxs.TransactionHashes[0], genesisBlock.Transactions()[0].TransactionHash)
+	assert.Equal(t, paginatedAccountTxs.TransactionHashes[1], forkBlock.Transactions()[0].TransactionHash)
+
+	// Page 1
+	paginatedAccountTxs = &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(m.m.config.Dev.Genesis.CoinbaseAddress, 1)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 1)
+	assert.Equal(t, paginatedAccountTxs.TransactionHashes[0], forkBlock2.Transactions()[0].TransactionHash)
+
+	// Test for Paginated Account Txs of Alice Address
+	paginatedAccountTxs = &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(misc.UCharVectorToBytes(aliceXMSS.Address()), 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 0)
+
+	// Test for Paginated Account Txs of Bob Address
+	paginatedAccountTxs = &PaginatedAccountTxs{}
+	singleResult = m.m.paginatedAccountTxsCollection.FindOne(m.m.ctx, bson.D{{"key", GetPaginatedAccountTxsKey(misc.UCharVectorToBytes(bobXMSS.Address()), 0)}})
+	err = singleResult.Decode(paginatedAccountTxs)
+	assert.Nil(t, err)
+
+	assert.Equal(t, len(paginatedAccountTxs.TransactionHashes), len(paginatedAccountTxs.TransactionTypes))
+	assert.Len(t, paginatedAccountTxs.TransactionHashes, 2)
 }
 
 func CreateBlock(minerAddress []byte, blockNumber uint64, prevBlock *block.Block, timestamp uint64) *block.Block {

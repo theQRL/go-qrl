@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"github.com/theQRL/go-qrl/pkg/config"
 	"github.com/theQRL/go-qrl/pkg/core/block"
 	"github.com/theQRL/go-qrl/pkg/core/chain"
@@ -31,8 +32,9 @@ type MongoProcessor struct {
 	Exit      chan struct{}
 	LoopWG    sync.WaitGroup
 
-	bulkBlocks   []mongo.WriteModel
-	bulkAccounts []mongo.WriteModel
+	bulkBlocks              []mongo.WriteModel
+	bulkAccounts            []mongo.WriteModel
+	bulkPaginatedAccountTxs []mongo.WriteModel
 
 	bulkTransactions    []mongo.WriteModel
 	bulkCoinBaseTx      []mongo.WriteModel
@@ -42,8 +44,9 @@ type MongoProcessor struct {
 	bulkMessageTx       []mongo.WriteModel
 	bulkSlaveTx         []mongo.WriteModel
 
-	blocksCollection   *mongo.Collection
-	accountsCollection *mongo.Collection
+	blocksCollection              *mongo.Collection
+	accountsCollection            *mongo.Collection
+	paginatedAccountTxsCollection *mongo.Collection
 
 	transactionsCollection    *mongo.Collection
 	coinBaseTxCollection      *mongo.Collection
@@ -68,24 +71,61 @@ type MongoProcessor struct {
 	unconfirmedSlaveTxCollection         *mongo.Collection
 
 	chanTransactionAction         chan *transactionaction.TransactionAction
-	unconfirmedTransactionsHashes map [string]bool
+	unconfirmedTransactionsHashes map[string]bool
 }
 
-func (m *MongoProcessor) BlockProcessor(b *block.Block) {
+func (m *MongoProcessor) BlockProcessor(b *block.Block) error {
+	session, err := m.client.StartSession(options.Session())
+	if err != nil {
+		m.log.Info("[BlockProcessor] Failed to Create Session", "err", err.Error())
+		return err
+	}
+	err = session.StartTransaction(options.Transaction())
+	if err != nil {
+		m.log.Info("[BlockProcessor] Failed to Start Transaction", "err", err.Error())
+		return err
+	}
 	mongoBlock := &Block{}
 	mongoBlock.BlockFromPBData(b.PBData())
 	operation := mongo.NewInsertOneModel()
 	operation.SetDocument(mongoBlock)
 	m.bulkBlocks = append(m.bulkBlocks, operation)
 	accounts := make(map[string]*Account)
+	accountTxHashes := make(map[string][]*TransactionHashType)
 	for _, tx := range b.Transactions() {
-		m.TransactionProcessor(tx, b.BlockNumber(), accounts)
+		m.TransactionProcessor(tx, b.BlockNumber(), accounts, accountTxHashes)
+	}
+	err = m.PaginatedAccountTxsProcessor(accounts, accountTxHashes)
+	if err != nil {
+		m.log.Info("Error in BlockProcessor", "Error", err.Error())
+		return err
 	}
 	m.AccountProcessor(accounts)
+
+	err = m.WriteAll()
+	if err != nil {
+		m.log.Error("[BlockProcessor] Error while WriteAll",
+			"Error", err)
+		err2 := session.AbortTransaction(m.ctx)
+		if err2 != nil {
+			m.log.Info("[BlockProcessor] Failed to Abort Transaction",
+				"Error", err2.Error())
+			return err2
+		}
+		return err
+	}
+	err = session.CommitTransaction(m.ctx)
+	if err != nil {
+		m.log.Info("[BlockProcessor] Failed to Commit Transaction",
+			"Error", err.Error())
+		return err
+	}
 	m.lastBlock = mongoBlock
+
+	return nil
 }
 
-func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNumber uint64, accounts map[string]*Account) {
+func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNumber uint64, accounts map[string]*Account, paginatedAccountTxs map[string][]*TransactionHashType) {
 	mongoTx, txDetails := ProtoToTransaction(tx, blockNumber)
 	operation := mongo.NewInsertOneModel()
 	operation.SetDocument(mongoTx)
@@ -93,6 +133,7 @@ func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNu
 
 	operation = mongo.NewInsertOneModel()
 	operation.SetDocument(txDetails)
+
 	switch tx.TransactionType.(type) {
 	case *generated.Transaction_Coinbase:
 		m.bulkCoinBaseTx = append(m.bulkCoinBaseTx, operation)
@@ -107,7 +148,49 @@ func (m *MongoProcessor) TransactionProcessor(tx *generated.Transaction, blockNu
 	case *generated.Transaction_Slave_:
 		m.bulkSlaveTx = append(m.bulkSlaveTx, operation)
 	}
-	mongoTx.Apply(m, accounts, txDetails, int64(blockNumber))
+	mongoTx.Apply(m, accounts, txDetails, int64(blockNumber), paginatedAccountTxs)
+
+}
+
+func (m *MongoProcessor) PaginatedAccountTxsProcessor(accounts map[string]*Account, accountTxHashes map[string][]*TransactionHashType) error {
+	var arrayPaginatedAccountTxs []*PaginatedAccountTxs
+	for qAddress, arrayTransactionHashType := range accountTxHashes {
+		address := misc.Qaddress2Bin(qAddress)
+
+		currentPage := accounts[qAddress].Pages
+
+		key := GetPaginatedAccountTxsKey(address, currentPage)
+		paginatedAccountTxs := &PaginatedAccountTxs{}
+		paginatedAccountTxs.Key = key
+
+		singleResult := m.paginatedAccountTxsCollection.FindOne(m.ctx, bson.D{{"key", key}})
+		_ = singleResult.Decode(paginatedAccountTxs)
+
+		for _, transactionHashType := range arrayTransactionHashType {
+			if uint64(len(paginatedAccountTxs.TransactionHashes)) == m.config.User.MongoProcessorConfig.ItemsPerPage {
+				arrayPaginatedAccountTxs = append(arrayPaginatedAccountTxs, paginatedAccountTxs)
+				accounts[qAddress].Pages++
+				currentPage = accounts[qAddress].Pages
+				paginatedAccountTxs = &PaginatedAccountTxs{}
+				paginatedAccountTxs.Key = GetPaginatedAccountTxsKey(address, currentPage)
+			}
+			paginatedAccountTxs.TransactionHashes = append(paginatedAccountTxs.TransactionHashes, transactionHashType.TransactionHash)
+			paginatedAccountTxs.TransactionTypes = append(paginatedAccountTxs.TransactionTypes, transactionHashType.Type)
+		}
+		if len(paginatedAccountTxs.TransactionHashes) > 0 {
+			arrayPaginatedAccountTxs = append(arrayPaginatedAccountTxs, paginatedAccountTxs)
+		}
+	}
+
+	for _, paginatedAccountTxs := range arrayPaginatedAccountTxs {
+		operation := mongo.NewUpdateOneModel()
+		operation.SetUpsert(true)
+		operation.SetFilter(bsonx.Doc{{"key", bsonx.Binary(0, paginatedAccountTxs.Key)}})
+		operation.SetUpdate(paginatedAccountTxs)
+		m.bulkPaginatedAccountTxs = append(m.bulkPaginatedAccountTxs, operation)
+	}
+
+	return nil
 }
 
 func (m *MongoProcessor) UnconfirmedTransactionProcessor(tx *generated.Transaction, seenTimestamp uint64) {
@@ -196,6 +279,11 @@ func (m *MongoProcessor) WriteAll() error {
 			return err
 		}
 	}
+	if len(m.bulkPaginatedAccountTxs) > 0 {
+		if err := m.WritePaginatedAccountTxs(); err != nil {
+			return err
+		}
+	}
 	if len(m.bulkAccounts) > 0 {
 		if err := m.WriteAccounts(); err != nil {
 			return err
@@ -216,6 +304,7 @@ func (m *MongoProcessor) EmptyBulks() {
 	m.bulkTransferTokenTx = m.bulkTransferTokenTx[:0]
 	m.bulkMessageTx = m.bulkMessageTx[:0]
 	m.bulkSlaveTx = m.bulkSlaveTx[:0]
+	m.bulkPaginatedAccountTxs = m.bulkPaginatedAccountTxs[:0]
 }
 
 func (m *MongoProcessor) WriteBlocks() error {
@@ -274,6 +363,15 @@ func (m *MongoProcessor) WriteTransactions() error {
 			// TODO: Do something
 			return err
 		}
+	}
+	return nil
+}
+
+func (m *MongoProcessor) WritePaginatedAccountTxs() error {
+	_, err := m.paginatedAccountTxsCollection.BulkWrite(m.ctx, m.bulkPaginatedAccountTxs)
+	if err != nil {
+		// TODO: Do something
+		return err
 	}
 	return nil
 }
@@ -655,7 +753,26 @@ func (m *MongoProcessor) CreateAccountsIndexes(found bool) error {
 		})
 
 	if err != nil {
-		m.log.Error("Error while modeling index for slaveTx",
+		m.log.Error("Error while modeling index for accounts",
+			"Error", err)
+		return err
+	}
+
+	return nil
+}
+
+func (m *MongoProcessor) CreatePaginatedAccountTxs(found bool) error {
+	m.paginatedAccountTxsCollection = m.database.Collection("paginated_account_txs")
+	if found {
+		return nil
+	}
+	_, err := m.paginatedAccountTxsCollection.Indexes().CreateMany(context.Background(),
+		[]mongo.IndexModel{
+			{Keys: bson.M{"key": int32(1)}},
+		})
+
+	if err != nil {
+		m.log.Error("Error while modeling index for paginated_account_txs",
 			"Error", err)
 		return err
 	}
@@ -706,6 +823,7 @@ func (m *MongoProcessor) CreateIndexes() error {
 		"message_txs": m.CreateMessageTxsIndexes,
 		"slave_txs": m.CreateSlaveTxsIndexes,
 		"accounts": m.CreateAccountsIndexes,
+		"paginated_account_txs": m.CreatePaginatedAccountTxs,
 	}
 	blocksCollectionFound := true
 	for collectionName, indexCreatorFunc := range collectionsLists {
@@ -726,7 +844,7 @@ func (m *MongoProcessor) CreateIndexes() error {
 		b, err := m.chain.GetBlockByNumber(0)
 		if err != nil {
 			m.log.Error("[MongoProcessor.Sync]Error while Getting BlockNumber",
-				"BlockNumber", b.BlockNumber(),
+				"BlockNumber", 0,
 				"Error", err)
 		}
 		coinBaseAddress := m.config.Dev.Genesis.CoinbaseAddress
@@ -734,8 +852,11 @@ func (m *MongoProcessor) CreateIndexes() error {
 		account.AddBalance(m.config.Dev.Genesis.MaxCoinSupply)
 		m.AccountProcessor(map[string]*Account{misc.Bin2Qaddress(coinBaseAddress):account})
 		_ = m.WriteAll()
-		m.BlockProcessor(b)
-		_ = m.WriteAll()
+		err = m.BlockProcessor(b)
+		if err != nil {
+			m.log.Info("Error while CreatingIndexes")
+			return nil
+		}
 	} else {
 		b, err := m.GetLastBlockFromDB()
 		if err != nil {
@@ -752,220 +873,252 @@ func (m *MongoProcessor) IsAccountProcessed(blockNumber int64) bool {
 	return accounts[misc.Bin2Qaddress(config.GetConfig().Dev.Genesis.CoinbaseAddress)].BlockNumber != blockNumber
 }
 
-func (m *MongoProcessor) RemoveBlock(b *Block) {
+func (m *MongoProcessor) RemoveBlock(b *block.Block) error {
 	accounts := make(map[string]*Account)
-	txHashes := make(map[string]int8)
-	m.RevertTransaction(b.BlockNumber, accounts, txHashes)
+	txHashes := make(map[string]*Transaction)
+	accountTxHashes := make(map[string][]*TransactionHashType)
 
-	if !m.IsAccountProcessed(b.BlockNumber) {
-		m.AccountProcessor(accounts)
+	for i := len(b.Transactions()) - 1; i >= 0 ; i-- {
+		m.RevertTransaction(b.Transactions()[i], b.BlockNumber(), accounts, accountTxHashes)
 	}
-	err := m.WriteAll()
+
+	err := m.RevertPaginatedAccountTxs(accounts, accountTxHashes)
+	if err != nil {
+		m.log.Error("[RemoveBlock] Error while Reverting PaginatedAccountTxs",
+			"Error", err)
+		return err
+	}
+	m.AccountProcessor(accounts)
+	err = m.WriteAll()
 	if err != nil {
 		m.log.Error("[RemoveBlock] Error while Updating Accounts",
 			"Error", err)
+		return err
 	}
 
-	for txHash, txType := range txHashes {
-		switch txType {
+	for txHash, tx := range txHashes {
+		switch tx.TransactionType {
 		case 0:
 			_, err := m.coinBaseTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, misc.HStr2Bin(txHash))}})
 			if err != nil {
 				m.log.Error("Error while removing CoinBaseTxn",
 					"Error", err)
+				return err
 			}
 		case 1:
 			_, err := m.transferTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, misc.HStr2Bin(txHash))}})
 			if err != nil {
 				m.log.Error("Error while removing TransferTxn",
 					"Error", err)
+				return err
 			}
 		case 2:
 			_, err := m.tokenTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, misc.HStr2Bin(txHash))}})
 			if err != nil {
 				m.log.Error("Error while removing TokenTxn",
 					"Error", err)
+				return err
 			}
 		case 3:
 			_, err := m.transferTokenTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, misc.HStr2Bin(txHash))}})
 			if err != nil {
 				m.log.Error("Error while removing TransferTokenTxn",
 					"Error", err)
+				return err
 			}
 		case 4:
 			_, err := m.messageTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, misc.HStr2Bin(txHash))}})
 			if err != nil {
 				m.log.Error("Error while removing MessageTxn",
 					"Error", err)
+				return err
 			}
 		case 5:
 			_, err := m.slaveTxCollection.DeleteOne(m.ctx, bsonx.Doc{{"transaction_hash", bsonx.Binary(0, misc.HStr2Bin(txHash))}})
 			if err != nil {
 				m.log.Error("Error while removing SlaveTxn",
 					"Error", err)
+				return err
 			}
 		}
 	}
-	_, err = m.transactionsCollection.DeleteMany(m.ctx, bsonx.Doc{{"block_number", bsonx.Int64(b.BlockNumber)}})
+	_, err = m.transactionsCollection.DeleteMany(m.ctx, bsonx.Doc{{"block_number", bsonx.Int64(int64(b.BlockNumber()))}})
 	if err != nil {
 		m.log.Error("Error while removing transaction",
 			"Error", err)
+		return err
 	}
 
-	_, err = m.blocksCollection.DeleteOne(m.ctx, bsonx.Doc{{"block_number", bsonx.Int64(b.BlockNumber)}})
+	_, err = m.blocksCollection.DeleteOne(m.ctx, bsonx.Doc{{"block_number", bsonx.Int64(int64(b.BlockNumber()))}})
 	if err != nil {
 		m.log.Error("Error while removing block",
 			"Error", err)
+		return err
 	}
+	return nil
 }
 
-func (m *MongoProcessor) RevertTransaction(blockNumber int64, accounts map[string]*Account, txHashes map[string]int8) {
-	cursor, err := m.transactionsCollection.Find(m.ctx, bson.D{{"block_number", blockNumber}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding Transaction",
-			"Error", err)
+func (m *MongoProcessor) RevertTransaction(tx *generated.Transaction, blockNumber uint64, accounts map[string]*Account, paginatedAccountTxs map[string][]*TransactionHashType) {
+	mongoTx, txDetails := ProtoToTransaction(tx, blockNumber)
+	operation := mongo.NewDeleteOneModel()
+	operation.SetFilter(mongoTx) // TODO: Confirm if this works
+	m.bulkTransactions = append(m.bulkTransactions, operation)
+
+	operation = mongo.NewDeleteOneModel()
+	operation.SetFilter(txDetails)
+
+	switch tx.TransactionType.(type) {
+	case *generated.Transaction_Coinbase:
+		m.bulkCoinBaseTx = append(m.bulkCoinBaseTx, operation)
+	case *generated.Transaction_Transfer_:
+		m.bulkTransferTx = append(m.bulkTransferTx, operation)
+	case *generated.Transaction_Token_:
+		m.bulkTokenTx = append(m.bulkTokenTx, operation)
+	case *generated.Transaction_TransferToken_:
+		m.bulkTransferTokenTx = append(m.bulkTransferTokenTx, operation)
+	case *generated.Transaction_Message_:
+		m.bulkMessageTx = append(m.bulkMessageTx, operation)
+	case *generated.Transaction_Slave_:
+		m.bulkSlaveTx = append(m.bulkSlaveTx, operation)
 	}
-	tx := &Transaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(tx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding Transaction",
-				"Error", err)
-		}
-		txHashes[misc.Bin2HStr(tx.TransactionHash)] = tx.TransactionType
-		switch tx.TransactionType {
-		case 0:
-			m.RevertCoinBaseTransaction(tx, accounts, blockNumber)
-		case 1:
-			m.RevertTransferTransaction(tx, accounts, blockNumber)
-		case 2:
-			m.RevertTokenTransaction(tx, accounts, blockNumber)
-		case 3:
-			m.RevertTransferTokenTransaction(tx, accounts, blockNumber)
-		case 4:
-			m.RevertMessageTransaction(tx, accounts, blockNumber)
-		case 5:
-			m.RevertSlaveTransaction(tx, accounts, blockNumber)
-		default:
-			fmt.Println("Error no type found")
-		}
-	}
+	mongoTx.Revert(m, accounts, txDetails, int64(blockNumber), paginatedAccountTxs)
 }
 
-func (m *MongoProcessor) RevertCoinBaseTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64) {
-	cursor, err := m.coinBaseTxCollection.Find(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding CoinBase Transaction",
-			"Error", err)
-	}
+func (m *MongoProcessor) RevertCoinBaseTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) error {
+	singleResult := m.coinBaseTxCollection.FindOne(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
 	coinBaseTx := &CoinBaseTransaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(coinBaseTx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding CoinBase Transaction",
-				"Error", err)
-		}
-		tx.Revert(m, accounts, coinBaseTx, blockNumber)
+	err := singleResult.Decode(coinBaseTx)
+	if err != nil {
+		m.log.Error("Error while Decoding CoinBase Transaction",
+			"Error", err)
+		return err
 	}
+	tx.Revert(m, accounts, coinBaseTx, blockNumber, paginatedAccountTxs)
+	return nil
 }
 
-func (m *MongoProcessor) RevertTransferTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64) {
-	cursor, err := m.coinBaseTxCollection.Find(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding Transfer Transaction",
-			"Error", err)
-	}
+func (m *MongoProcessor) RevertTransferTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) error {
+	singleResult := m.transferTxCollection.FindOne(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
 	transferTx := &TransferTransaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(transferTx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding Transfer Transaction",
-				"Error", err)
-		}
-		tx.Revert(m, accounts, transferTx, blockNumber)
+	err := singleResult.Decode(transferTx)
+	if err != nil {
+		m.log.Error("Error while Decoding Transfer Transaction",
+			"Error", err)
+		return err
 	}
+	tx.Revert(m, accounts, transferTx, blockNumber, paginatedAccountTxs)
+	return nil
 }
 
-func (m *MongoProcessor) RevertTokenTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64) {
-	cursor, err := m.tokenTxCollection.Find(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding Token Transaction",
-			"Error", err)
-	}
+func (m *MongoProcessor) RevertTokenTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) error {
+	singleResult := m.tokenTxCollection.FindOne(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
 	tokenTx := &TokenTransaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(tokenTx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding Token Transaction",
-				"Error", err)
-		}
-		tx.Revert(m, accounts, tokenTx, blockNumber)
+	err := singleResult.Decode(tokenTx)
+	if err != nil {
+		m.log.Error("Error while Decoding Token Transaction",
+			"Error", err)
+		return err
 	}
+	tx.Revert(m, accounts, tokenTx, blockNumber, paginatedAccountTxs)
+	return nil
 }
 
-func (m *MongoProcessor) RevertTransferTokenTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64) {
-	cursor, err := m.transferTokenTxCollection.Find(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding Transfer Token Transaction",
-			"Error", err)
-	}
+func (m *MongoProcessor) RevertTransferTokenTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) error {
+	singleResult := m.transferTokenTxCollection.FindOne(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
 	transferTokenTx := &TransferTokenTransaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(transferTokenTx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding Transfer Token Transaction",
-				"Error", err)
-		}
-		tx.Revert(m, accounts, transferTokenTx, blockNumber)
+	err := singleResult.Decode(transferTokenTx)
+	if err != nil {
+		m.log.Error("Error while Decoding Transfer Token Transaction",
+			"Error", err)
+		return err
 	}
+	tx.Revert(m, accounts, transferTokenTx, blockNumber, paginatedAccountTxs)
+	return nil
 }
 
-func (m *MongoProcessor) RevertMessageTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64) {
-	cursor, err := m.messageTxCollection.Find(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding Message Transaction",
-			"Error", err)
-	}
+func (m *MongoProcessor) RevertMessageTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) error {
+	singleResult := m.messageTxCollection.FindOne(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
 	messageTx := &MessageTransaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(messageTx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding Message Transaction",
-				"Error", err)
-		}
-		tx.Revert(m, accounts, messageTx, blockNumber)
+	err := singleResult.Decode(messageTx)
+	if err != nil {
+		m.log.Error("Error while Decoding Message Transaction",
+			"Error", err)
+		return err
 	}
+	tx.Revert(m, accounts, messageTx, blockNumber, paginatedAccountTxs)
+	return nil
 }
 
-func (m *MongoProcessor) RevertSlaveTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64) {
-	cursor, err := m.messageTxCollection.Find(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
-	if err != nil {
-		//TODO: Do Something
-		m.log.Error("Error while Finding Slave Transaction",
-			"Error", err)
-	}
+func (m *MongoProcessor) RevertSlaveTransaction(tx *Transaction, accounts map[string]*Account, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) error {
+	singleResult := m.slaveTxCollection.FindOne(m.ctx, bson.D{{"transaction_hash", tx.TransactionHash}})
 	slaveTx := &SlaveTransaction{}
-	for cursor.Next(m.ctx) {
-		err := cursor.Decode(slaveTx)
-		if err != nil {
-			//TODO: Do Something
-			m.log.Error("Error while Decoding Slave Transaction",
-				"Error", err)
-		}
-		tx.Revert(m, accounts, slaveTx, blockNumber)
+	err := singleResult.Decode(slaveTx)
+	if err != nil {
+		m.log.Error("Error while Decoding Slave Transaction",
+			"Error", err)
+		return err
 	}
+	tx.Revert(m, accounts, slaveTx, blockNumber, paginatedAccountTxs)
+	return nil
+}
+
+func (m *MongoProcessor) RevertPaginatedAccountTxs(accounts map[string]*Account, accountTxHashes map[string][]*TransactionHashType) error {
+	var arrayPaginatedAccountTxs []*PaginatedAccountTxs
+	for qAddress, arrayTransactionHashType := range accountTxHashes {
+		address := misc.Qaddress2Bin(qAddress)
+
+		currentPage := accounts[qAddress].Pages
+
+		paginatedAccountTxs := &PaginatedAccountTxs{}
+		paginatedAccountTxs.Key = GetPaginatedAccountTxsKey(address, currentPage)
+
+		singleResult := m.paginatedAccountTxsCollection.FindOne(m.ctx, bson.D{{"key", paginatedAccountTxs.Key}})
+
+		err := singleResult.Decode(paginatedAccountTxs)
+		if err != nil {
+			fmt.Println("Error while Decoding Paginated", err)
+			return err
+		}
+
+		for _, transactionHashType := range arrayTransactionHashType {
+			lenTransactionHashes := len(paginatedAccountTxs.TransactionHashes)
+			if !reflect.DeepEqual(transactionHashType.TransactionHash, paginatedAccountTxs.TransactionHashes[lenTransactionHashes - 1]) {
+				fmt.Println("Expected Hash", misc.Bin2HStr(transactionHashType.TransactionHash))
+				fmt.Println("Found Hash", misc.Bin2HStr(paginatedAccountTxs.TransactionHashes[lenTransactionHashes - 1]))
+				return errors.New("Transaction Hash mismatch during fork recovery")
+			}
+			paginatedAccountTxs.TransactionHashes = paginatedAccountTxs.TransactionHashes[:lenTransactionHashes - 1]
+			paginatedAccountTxs.TransactionTypes = paginatedAccountTxs.TransactionTypes[:lenTransactionHashes - 1]
+			if len(paginatedAccountTxs.TransactionHashes) == 0 {
+				arrayPaginatedAccountTxs = append(arrayPaginatedAccountTxs, paginatedAccountTxs)
+				if accounts[qAddress].Pages > 0 {
+					accounts[qAddress].Pages--
+					currentPage = accounts[qAddress].Pages
+					paginatedAccountTxs = &PaginatedAccountTxs{}
+					paginatedAccountTxs.Key = GetPaginatedAccountTxsKey(address, currentPage)
+					singleResult = m.paginatedAccountTxsCollection.FindOne(m.ctx, bson.D{{"key", paginatedAccountTxs.Key}})
+					err := singleResult.Decode(paginatedAccountTxs)
+					if err != nil {
+						fmt.Println("Error while Decoding PaginatedAccountTxs", err)
+						return err
+					}
+				}
+			}
+		}
+		if len(paginatedAccountTxs.TransactionHashes) > 0 {
+			arrayPaginatedAccountTxs = append(arrayPaginatedAccountTxs, paginatedAccountTxs)
+		}
+	}
+
+	for _, paginatedAccountTxs := range arrayPaginatedAccountTxs {
+		operation := mongo.NewUpdateOneModel()
+		operation.SetUpsert(true)
+		operation.SetFilter(bsonx.Doc{{"key", bsonx.Binary(0, paginatedAccountTxs.Key)}})
+		operation.SetUpdate(paginatedAccountTxs)
+		m.bulkPaginatedAccountTxs = append(m.bulkPaginatedAccountTxs, operation)
+	}
+
+	return nil
 }
 
 func (m *MongoProcessor) GetLastBlockFromDB() (*Block, error) {
@@ -980,21 +1133,52 @@ func (m *MongoProcessor) GetLastBlockFromDB() (*Block, error) {
 	return b, nil
 }
 
-func (m *MongoProcessor) ForkRecovery() {
+func (m *MongoProcessor) ForkRecovery() error {
 	for {
 		b, err := m.GetLastBlockFromDB()
 		if err != nil {
 			m.log.Error("[ForkRecovery] Error while Retrieving last block",
 				"Error", err)
+			return err
 		}
 		b2, err := m.chain.GetBlockByNumber(uint64(b.BlockNumber))
 		if err == nil {
 			if reflect.DeepEqual(b2.HeaderHash(), b.HeaderHash) {
 				m.lastBlock = b
-				return // Fork Recovery Finished
+				return nil // Fork Recovery Finished
 			}
 		}
-		m.RemoveBlock(b)
+		session, err := m.client.StartSession(options.Session())
+		if err != nil {
+			m.log.Info("[ForkRecovery] Failed to Create Session", "err", err.Error())
+			return err
+		}
+		err = session.StartTransaction(options.Transaction())
+		if err != nil {
+			m.log.Info("[ForkRecovery] Failed to Start Transaction", "err", err.Error())
+			return err
+		}
+		oldBlock, err := m.chain.GetBlock(b.HeaderHash)
+		if err != nil {
+			m.log.Info("[ForkRecovery] Failed to GetBlock",
+				"headerhash", misc.Bin2HStr(b.HeaderHash),
+				"err", err.Error())
+			return err
+		}
+		err = m.RemoveBlock(oldBlock)
+		if err != nil {
+			err2 := session.AbortTransaction(m.ctx)
+			if err2 != nil {
+				m.log.Info("[ForkRecovery] Failed to Abort Transaction", "err", err2.Error())
+				return err2
+			}
+			return err
+		}
+		err = session.CommitTransaction(m.ctx)
+		if err != nil {
+			m.log.Info("[ForkRecovery] Failed to Commit Transaction", "err", err.Error())
+			return err
+		}
 	}
 }
 
@@ -1031,35 +1215,41 @@ func (m *MongoProcessor) UpdateUnconfirmedTransactions() {
 	}
 }
 
-func (m *MongoProcessor) Sync() {
+func (m *MongoProcessor) Sync() error {
 	for {
 		lastBlock := m.chain.GetLastBlock()
 		lastBlockNumber := int64(lastBlock.BlockNumber())
 		if lastBlockNumber == m.lastBlock.BlockNumber {
-			return
+			return nil
 		} else if lastBlockNumber > m.lastBlock.BlockNumber {
 			b, _ := m.chain.GetBlockByNumber(uint64(m.lastBlock.BlockNumber))
 			if !reflect.DeepEqual(b.HeaderHash(), m.lastBlock.HeaderHash) {
-				m.ForkRecovery()
+				err := m.ForkRecovery()
+				if err != nil {
+					return err
+				}
 			}
 			blockNumber := uint64(m.lastBlock.BlockNumber) + 1
 			b, err := m.chain.GetBlockByNumber(blockNumber)
 			if err != nil {
-				m.log.Error("[MongoProcessor.Sync]Error while Getting BlockNumber",
+				m.log.Error("[Sync] Error while Getting BlockNumber",
 					"BlockNumber", blockNumber,
 					"Error", err)
 			}
 			if !reflect.DeepEqual(b.PrevHeaderHash(), m.lastBlock.HeaderHash) {
-				m.ForkRecovery()
+				err := m.ForkRecovery()
+				if err != nil {
+					return err
+				}
 			}
-			m.BlockProcessor(b)
-			err = m.WriteAll()
+			err = m.BlockProcessor(b)
 			if err != nil {
-				m.log.Error("[Sync] Error while WriteAll",
-					"Error", err)
+				m.log.Error("[Sync] Error in BlockProcessor")
+				return err
 			}
+
 		} else {
-			m.ForkRecovery()
+			return m.ForkRecovery()
 		}
 	}
 }

@@ -8,6 +8,11 @@ import (
 	"reflect"
 )
 
+type TransactionHashType struct {
+	TransactionHash []byte
+	Type            int8
+}
+
 type Transaction struct {
 	MasterAddress   []byte `json:"master_address" bson:"master_address"`
 	Fee             int64  `json:"fee" bson:"fee"`
@@ -36,7 +41,7 @@ func (t *Transaction) TransactionFromPBData(tx *generated.Transaction, blockNumb
 	t.BlockNumber = int64(blockNumber)
 }
 
-func (t *Transaction) Apply(m *MongoProcessor, accounts map[string]*Account, txDetails TransactionInterface, blockNumber int64) {
+func (t *Transaction) Apply(m *MongoProcessor, accounts map[string]*Account, txDetails TransactionInterface, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
 	if t.MasterAddress != nil {
 		LoadAccount(m, t.MasterAddress, accounts, blockNumber)
@@ -47,7 +52,11 @@ func (t *Transaction) Apply(m *MongoProcessor, accounts map[string]*Account, txD
 	}
 	accounts[qAddress].SubBalance(uint64(t.Fee))
 	accounts[qAddress].BlockNumber = blockNumber
-
+	// Adding txn hash to the AddressFrom or MasterAddress
+	paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], &TransactionHashType {
+		t.TransactionHash,
+		t.TransactionType,
+	})
 	LoadAccount(m, t.AddressFrom, accounts, blockNumber)
 	if t.TransactionType > 0 {
 		qAddress = misc.Bin2Qaddress(t.AddressFrom)
@@ -55,10 +64,10 @@ func (t *Transaction) Apply(m *MongoProcessor, accounts map[string]*Account, txD
 	}
 	accounts[qAddress].Nonce = t.Nonce
 	accounts[qAddress].BlockNumber = blockNumber
-	txDetails.Apply(m, accounts, t.MasterAddress, t.AddressFrom, blockNumber)
+	txDetails.Apply(m, accounts, t.MasterAddress, t.AddressFrom, blockNumber, paginatedAccountTxs)
 }
 
-func (t *Transaction) Revert(m *MongoProcessor, accounts map[string]*Account, txDetails TransactionInterface, blockNumber int64) {
+func (t *Transaction) Revert(m *MongoProcessor, accounts map[string]*Account, txDetails TransactionInterface, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
 	if t.MasterAddress != nil {
 		//TODO: Load Account
@@ -70,7 +79,11 @@ func (t *Transaction) Revert(m *MongoProcessor, accounts map[string]*Account, tx
 	}
 	accounts[qAddress].AddBalance(uint64(t.Fee))
 	accounts[qAddress].BlockNumber = blockNumber - 1
-
+	// Adding txn hash to the AddressFrom or MasterAddress
+	paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], &TransactionHashType {
+		t.TransactionHash,
+		t.TransactionType,
+	})
 	LoadAccount(m, t.AddressFrom, accounts, blockNumber)
 	if t.TransactionType > 0 {
 		qAddress = misc.Bin2Qaddress(t.AddressFrom)
@@ -78,7 +91,7 @@ func (t *Transaction) Revert(m *MongoProcessor, accounts map[string]*Account, tx
 	}
 	accounts[qAddress].Nonce = t.Nonce - 1
 	accounts[qAddress].BlockNumber = blockNumber - 1
-	txDetails.Revert(m, accounts, t.MasterAddress, t.AddressFrom, blockNumber)
+	txDetails.Revert(m, accounts, t.MasterAddress, t.AddressFrom, blockNumber, paginatedAccountTxs)
 }
 
 func (t *Transaction) IsEqualPBData(tx *generated.Transaction, blockNumber uint64, txType int8) bool {
@@ -152,42 +165,48 @@ func (t *TransferTransaction) IsEqual(tx *TransferTransaction) bool {
 	return true
 }
 
-func (t *TransferTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *TransferTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
+	var addrFrom string
 	var total int64
+	if masterAddress != nil {
+		addrFrom = misc.Bin2Qaddress(masterAddress)
+	} else {
+		addrFrom = misc.Bin2Qaddress(addressFrom)
+	}
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
 		accounts[qAddress].AddBalance(uint64(t.Amounts[i]))
 		accounts[qAddress].BlockNumber = blockNumber
+		paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 		total += t.Amounts[i]
 	}
-	if masterAddress != nil {
-		qAddress = misc.Bin2Qaddress(masterAddress)
-	} else {
-		qAddress = misc.Bin2Qaddress(addressFrom)
-	}
-	accounts[qAddress].SubBalance(uint64(total))
-	accounts[qAddress].BlockNumber = blockNumber
+
+	accounts[addrFrom].SubBalance(uint64(total))
+	accounts[addrFrom].BlockNumber = blockNumber
 }
 
-func (t *TransferTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *TransferTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
+	var addrFrom string
 	var total int64
+	if masterAddress != nil {
+		addrFrom = misc.Bin2Qaddress(masterAddress)
+	} else {
+		addrFrom = misc.Bin2Qaddress(addressFrom)
+	}
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
 		accounts[qAddress].SubBalance(uint64(t.Amounts[i]))
 		accounts[qAddress].BlockNumber = blockNumber - 1
+		paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 		total += t.Amounts[i]
 	}
-	if masterAddress != nil {
-		qAddress = misc.Bin2Qaddress(masterAddress)
-	} else {
-		qAddress = misc.Bin2Qaddress(addressFrom)
-	}
-	accounts[qAddress].AddBalance(uint64(total))
-	accounts[qAddress].BlockNumber = blockNumber - 1
+
+	accounts[addrFrom].AddBalance(uint64(total))
+	accounts[addrFrom].BlockNumber = blockNumber - 1
 }
 
 
@@ -222,30 +241,32 @@ func (t *CoinBaseTransaction) IsEqual(tx *CoinBaseTransaction) bool {
 	return true
 }
 
-func (t *CoinBaseTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *CoinBaseTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
 
-	qAddress = misc.Bin2Qaddress(masterAddress)
-	accounts[qAddress].SubBalance(uint64(t.Amount))
-	accounts[qAddress].BlockNumber = blockNumber
+	addrFrom := misc.Bin2Qaddress(masterAddress)
+	accounts[addrFrom].SubBalance(uint64(t.Amount))
+	accounts[addrFrom].BlockNumber = blockNumber
 
 	LoadAccount(m, t.AddressTo, accounts, blockNumber)
 	qAddress = misc.Bin2Qaddress(t.AddressTo)
 	accounts[qAddress].AddBalance(uint64(t.Amount))
 	accounts[qAddress].BlockNumber = blockNumber
+	paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 }
 
-func (t *CoinBaseTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *CoinBaseTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
 
-	qAddress = misc.Bin2Qaddress(masterAddress)
-	accounts[qAddress].AddBalance(uint64(t.Amount))
-	accounts[qAddress].BlockNumber = blockNumber - 1
+	addrFrom := misc.Bin2Qaddress(masterAddress)
+	accounts[addrFrom].AddBalance(uint64(t.Amount))
+	accounts[addrFrom].BlockNumber = blockNumber - 1
 
 	LoadAccount(m, t.AddressTo, accounts, blockNumber)
 	qAddress = misc.Bin2Qaddress(t.AddressTo)
 	accounts[qAddress].SubBalance(uint64(t.Amount))
 	accounts[qAddress].BlockNumber = blockNumber - 1
+	paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 }
 
 type MessageTransaction struct {
@@ -274,10 +295,10 @@ func (t *MessageTransaction) IsEqual(tx *MessageTransaction) bool {
 	return true
 }
 
-func (t *MessageTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *MessageTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 }
 
-func (t *MessageTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *MessageTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 }
 
 type SlaveTransaction struct {
@@ -314,10 +335,10 @@ func (t *SlaveTransaction) IsEqual(tx *SlaveTransaction) bool {
 	return true
 }
 
-func (t *SlaveTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *SlaveTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 }
 
-func (t *SlaveTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *SlaveTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 }
 
 type TokenTransaction struct {
@@ -380,34 +401,40 @@ func (t *TokenTransaction) IsEqual(tx *TokenTransaction) bool {
 	return true
 }
 
-func (t *TokenTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *TokenTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
+	var addrFrom string
+	if masterAddress != nil {
+		addrFrom = misc.Bin2Qaddress(masterAddress)
+	} else {
+		addrFrom = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[addrFrom].BlockNumber = blockNumber
+
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
 		accounts[qAddress].BlockNumber = blockNumber
+		paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 	}
-	if masterAddress != nil {
-		qAddress = misc.Bin2Qaddress(masterAddress)
-	} else {
-		qAddress = misc.Bin2Qaddress(addressFrom)
-	}
-	accounts[qAddress].BlockNumber = blockNumber
 }
 
-func (t *TokenTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *TokenTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
+	var addrFrom string
+	if masterAddress != nil {
+		addrFrom = misc.Bin2Qaddress(masterAddress)
+	} else {
+		addrFrom = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[addrFrom].BlockNumber = blockNumber - 1
+
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
 		accounts[qAddress].BlockNumber = blockNumber - 1
+		paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 	}
-	if masterAddress != nil {
-		qAddress = misc.Bin2Qaddress(masterAddress)
-	} else {
-		qAddress = misc.Bin2Qaddress(addressFrom)
-	}
-	accounts[qAddress].BlockNumber = blockNumber - 1
 }
 
 type TransferTokenTransaction struct {
@@ -449,40 +476,44 @@ func (t *TransferTokenTransaction) IsEqual(tx *TransferTokenTransaction) bool {
 	return true
 }
 
-func (t *TransferTokenTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *TransferTokenTransaction) Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
+	var addrFrom string
+	if masterAddress != nil {
+		addrFrom = misc.Bin2Qaddress(masterAddress)
+	} else {
+		addrFrom = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[qAddress].BlockNumber = blockNumber
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
 		accounts[qAddress].BlockNumber = blockNumber
+		paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 	}
-	if masterAddress != nil {
-		qAddress = misc.Bin2Qaddress(masterAddress)
-	} else {
-		qAddress = misc.Bin2Qaddress(addressFrom)
-	}
-	accounts[qAddress].BlockNumber = blockNumber
 }
 
-func (t *TransferTokenTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64) {
+func (t *TransferTokenTransaction) Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType) {
 	var qAddress string
+	var addrFrom string
+	if masterAddress != nil {
+		addrFrom = misc.Bin2Qaddress(masterAddress)
+	} else {
+		addrFrom = misc.Bin2Qaddress(addressFrom)
+	}
+	accounts[addrFrom].BlockNumber = blockNumber - 1
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
 		accounts[qAddress].BlockNumber = blockNumber - 1
+		paginatedAccountTxs[qAddress] = append(paginatedAccountTxs[qAddress], paginatedAccountTxs[addrFrom][len(paginatedAccountTxs[addrFrom]) - 1])
 	}
-	if masterAddress != nil {
-		qAddress = misc.Bin2Qaddress(masterAddress)
-	} else {
-		qAddress = misc.Bin2Qaddress(addressFrom)
-	}
-	accounts[qAddress].BlockNumber = blockNumber - 1
 }
 
 type TransactionInterface interface {
 	TransactionFromPBData(tx *generated.Transaction)
-	Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64)
-	Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64)
+	Apply(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType)
+	Revert(m *MongoProcessor, accounts map[string]*Account, masterAddress []byte, addressFrom []byte, blockNumber int64, paginatedAccountTxs map[string][]*TransactionHashType)
 }
 
 func ProtoToTransaction(tx *generated.Transaction, blockNumber uint64) (*Transaction, TransactionInterface){
