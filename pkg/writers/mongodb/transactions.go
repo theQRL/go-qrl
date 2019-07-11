@@ -484,7 +484,7 @@ func (t *TransferTokenTransaction) Apply(m *MongoProcessor, accounts map[string]
 	} else {
 		addrFrom = misc.Bin2Qaddress(addressFrom)
 	}
-	accounts[qAddress].BlockNumber = blockNumber
+	accounts[addrFrom].BlockNumber = blockNumber
 	for i := range t.AddressesTo {
 		LoadAccount(m, t.AddressesTo[i], accounts, blockNumber)
 		qAddress = misc.Bin2Qaddress(t.AddressesTo[i])
