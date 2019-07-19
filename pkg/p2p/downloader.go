@@ -96,9 +96,11 @@ func (d *Downloader) AddPeer(p *Peer) {
 	p.SetDownloaderPeerList(true)
 }
 
-func (d *Downloader) resetDownloaderPeerList() {
-	d.lock.Lock()
-	defer d.lock.Unlock()
+func (d *Downloader) resetDownloaderPeerList(isAlreadyLocked bool) {
+	if !isAlreadyLocked {
+		d.lock.Lock()
+		defer d.lock.Unlock()
+	}
 
 	// Set Flag of all peers that they are no more in downloader peer list
 	for _, targetPeer := range d.targetPeers {
@@ -207,7 +209,7 @@ func (d *Downloader) Consumer() {
 				d.nextConsumableBlockNumber++
 			}
 
-			if d.isSyncingFinished(false) {
+			if d.isSyncingFinished(false, false) {
 				d.log.Info("Block Download Syncing Finished")
 				return
 			}
@@ -266,7 +268,7 @@ func (d *Downloader) RequestForBlock(blockNumber uint64) error {
 		break
 	}
 	if len(d.targetPeerList) == 0 {
-		d.isSyncingFinished(true)
+		d.isSyncingFinished(true, true)
 	}
 	return nil
 }
@@ -306,7 +308,7 @@ func (d *Downloader) BlockDownloader() {
 		case <-time.After(10*time.Second):
 			d.log.Info("Finishing downloading due to Producer Timeout",
 				"len of requestedBlockNumbers", len(requestedBlockNumbers))
-			d.isSyncingFinished(true)
+			d.isSyncingFinished(true, false)
 			return
 		case <-d.done:
 			d.isSyncing = false
@@ -328,7 +330,7 @@ func (d *Downloader) NewTargetNode(nodeHeaderHash *generated.NodeHeaderHash, pee
 	}
 }
 
-func (d *Downloader) isSyncingFinished(forceFinish bool) bool {
+func (d *Downloader) isSyncingFinished(forceFinish bool, isAlreadyLocked bool) bool {
 	if !d.isSyncing {
 		return true
 	}
@@ -336,7 +338,7 @@ func (d *Downloader) isSyncingFinished(forceFinish bool) bool {
 	if d.nextConsumableBlockNumber > lastBlockNumber || forceFinish {
 		d.isSyncing = false
 		d.targetNode = nil
-		d.resetDownloaderPeerList()
+		d.resetDownloaderPeerList(isAlreadyLocked)
 		d.targetPeers = make(map[string]*TargetNode)
 		d.targetPeerList = make([]string, 0)
 		close(d.done)
