@@ -96,6 +96,16 @@ func (d *Downloader) AddPeer(p *Peer) {
 	p.SetDownloaderPeerList(true)
 }
 
+func (d *Downloader) resetDownloaderPeerList() {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	// Set Flag of all peers that they are no more in downloader peer list
+	for _, targetPeer := range d.targetPeers {
+		targetPeer.peer.SetDownloaderPeerList(false)
+	}
+}
+
 func (d *Downloader) removePeer(p *Peer) bool {
 	if !d.isSyncing {
 		return false
@@ -326,14 +336,10 @@ func (d *Downloader) isSyncingFinished(forceFinish bool) bool {
 	if d.nextConsumableBlockNumber > lastBlockNumber || forceFinish {
 		d.isSyncing = false
 		d.targetNode = nil
-		oldTargetPeers := d.targetPeers
+		d.resetDownloaderPeerList()
 		d.targetPeers = make(map[string]*TargetNode)
 		d.targetPeerList = make([]string, 0)
 		close(d.done)
-		// Set Flag of all peers that they are no more in downloader peer list
-		for _, targetPeer := range oldTargetPeers {
-			targetPeer.peer.SetDownloaderPeerList(false)
-		}
 		d.log.Info("Syncing FINISHED")
 		return true
 	}
