@@ -59,9 +59,10 @@ type Server struct {
 	ipCount      map[string]int
 	inboundCount uint16
 
-	listener     net.Listener
-	lock         sync.Mutex
-	peerInfoLock sync.Mutex
+	listener       net.Listener
+	lock           sync.Mutex
+	peerInfoLock   sync.Mutex
+	downloaderLock sync.Mutex
 
 	running bool
 	loopWG  sync.WaitGroup
@@ -411,15 +412,7 @@ running:
 		case blockAndPeer := <-srv.blockAndPeerChan:
 			srv.BlockReceived(blockAndPeer.peer, blockAndPeer.block)
 		case startSyncing := <-srv.nodeHeaderHashAndPeerChan:
-			if srv.downloader.isSyncing {
-				srv.downloader.AddPeer(startSyncing.peer) // Added new Peer
-				srv.log.Info("Node Already Syncing")
-				break
-			}
-			srv.downloader.NewTargetNode(startSyncing.nodeHeaderHash, startSyncing.peer)
-			//go srv.downloader.BlockDownloader()
-			srv.downloader.Initialize(startSyncing.peer)
-			srv.log.Info("Start Downloading Thread")
+			srv.initializeDownloader(startSyncing)
 		case addPeerToPeerList := <-srv.addPeerToPeerList:
 			srv.UpdatePeerList(addPeerToPeerList)
 		case registerAndBroadcast := <-srv.registerAndBroadcastChan:
@@ -629,4 +622,18 @@ func (srv *Server) runPeer(p *Peer) {
 	remoteRequested, err := p.run()
 
 	srv.delpeer <- &peerDrop{p, err, remoteRequested}
+}
+
+func (srv *Server) initializeDownloader(startSyncing *NodeHeaderHashAndPeer) {
+	srv.downloaderLock.Lock()
+	defer srv.downloaderLock.Unlock()
+	if srv.downloader.isSyncing {
+		srv.downloader.AddPeer(startSyncing.peer) // Added new Peer
+		srv.log.Info("Node Already Syncing")
+		return
+	}
+	srv.downloader.NewTargetNode(startSyncing.nodeHeaderHash, startSyncing.peer)
+	//go srv.downloader.BlockDownloader()
+	srv.downloader.Initialize(startSyncing.peer)
+	srv.log.Info("Start Downloading Thread")
 }
