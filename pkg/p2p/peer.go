@@ -28,6 +28,11 @@ type MRDataConn struct {
 	peer   *Peer
 }
 
+type NodeHeaderHashWithTimestamp struct {
+	nodeHeaderHash *generated.NodeHeaderHash
+	timestamp      uint64
+}
+
 type Peer struct {
 	conn    net.Conn
 	inbound bool
@@ -36,23 +41,23 @@ type Peer struct {
 
 	chain *chain.Chain
 
-	wg                        sync.WaitGroup
-	disconnectLock			  sync.Mutex
-	disconnected              bool
-	disconnectReason          chan DiscReason
-	exitMonitorChainState     chan struct{}
-	log                       log.LoggerInterface
-	txPool 					  *pool.TransactionPool
-	filter                    *bloom.BloomFilter
-	mr                        *MessageReceipt
-	config                    *config.Config
-	ntp                       ntp.NTPInterface
-	chainState                *generated.NodeChainState
-	addPeerToPeerList         chan *generated.PLData
-	blockAndPeerChan          chan *BlockAndPeer
-	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
-	mrDataConn                chan *MRDataConn
-	registerAndBroadcastChan  chan *messages.RegisterMessage
+	wg                          sync.WaitGroup
+	disconnectLock              sync.Mutex
+	disconnected                bool
+	disconnectReason            chan DiscReason
+	exitMonitorChainState       chan struct{}
+	log                         log.LoggerInterface
+	txPool                      *pool.TransactionPool
+	filter                      *bloom.BloomFilter
+	mr                          *MessageReceipt
+	config                      *config.Config
+	ntp                         ntp.NTPInterface
+	chainState                  *generated.NodeChainState
+	nodeHeaderHashWithTimestamp *NodeHeaderHashWithTimestamp
+	addPeerToPeerList           chan *generated.PLData
+	blockAndPeerChan            chan *BlockAndPeer
+	mrDataConn                  chan *MRDataConn
+	registerAndBroadcastChan    chan *messages.RegisterMessage
 
 	inCounter           uint64
 	outCounter          uint64
@@ -63,10 +68,9 @@ type Peer struct {
 	outgoingQueue       *PriorityQueue
 
 	isPLShared     bool // Flag to mark once peer list has been received by the peer
-	isDownloadPeer bool // FLag is Peer is in the list of Downloader's Peer List
 }
 
-func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, registerAndBroadcastChan chan *messages.RegisterMessage, addPeerToPeerList chan *generated.PLData, blockAndPeerChan chan *BlockAndPeer, nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
+func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.BloomFilter, mr *MessageReceipt, mrDataConn chan *MRDataConn, registerAndBroadcastChan chan *messages.RegisterMessage, addPeerToPeerList chan *generated.PLData, blockAndPeerChan chan *BlockAndPeer, messagePriority map[generated.LegacyMessage_FuncName]uint64) *Peer {
 	p := &Peer{
 		conn:                  *conn,
 		inbound:               inbound,
@@ -84,7 +88,6 @@ func newPeer(conn *net.Conn, inbound bool, chain *chain.Chain, filter *bloom.Blo
 		registerAndBroadcastChan:  registerAndBroadcastChan,
 		addPeerToPeerList:         addPeerToPeerList,
 		blockAndPeerChan:          blockAndPeerChan,
-		nodeHeaderHashAndPeerChan: nodeHeaderHashAndPeerChan,
 		connectionTime:            ntp.GetNTP().Time(),
 		messagePriority:           messagePriority,
 		outgoingQueue:             &PriorityQueue{},
@@ -99,12 +102,6 @@ func (p *Peer) ID() string {
 	return p.conn.RemoteAddr().String()
 }
 
-func (p *Peer) SetDownloaderPeerList(value bool) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-	p.isDownloadPeer = value
-}
-
 func (p *Peer) GetCumulativeDifficulty() []byte {
 	p.lock.Lock()
 	defer p.lock.Unlock()
@@ -114,6 +111,10 @@ func (p *Peer) GetCumulativeDifficulty() []byte {
 	}
 
 	return p.chainState.CumulativeDifficulty
+}
+
+func (p *Peer) GetNodeHeaderHashWithTimestamp() *NodeHeaderHashWithTimestamp {
+	return p.nodeHeaderHashWithTimestamp
 }
 
 func (p *Peer) updateCounters() {
@@ -306,46 +307,60 @@ func (p *Peer) monitorChainState() {
 				p.log.Info("Ignoring MonitorState check as peer chain state is nil")
 				continue
 			}
-			// If Peer is already in download peer list then skip further processing
-			if p.isDownloadPeer {
-				p.log.Info("Ignoring Trigger Download as block downloading already running")
-				continue
-			}
-			// Ignore syncing if difference between blockheight is 3
-			if int(p.chainState.BlockNumber - lastBlock.BlockNumber()) < 3 {
-				if int(p.chainState.BlockNumber - lastBlock.BlockNumber()) > 0 {
-					p.log.Info("Ignoring Trigger Download due to difference of 3 lead blocks")
-				}
-				continue
-			}
-			peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
-			localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
-			if peerCumulativeDifficulty.Cmp(localCumulativeDifficulty) > 0 {
-				startBlockNumber := uint64(0)
-				maxStartBlockNumber := uint64(0)
-				if lastBlock.BlockNumber() > p.config.Dev.ReorgLimit {
-					maxStartBlockNumber = lastBlock.BlockNumber() - p.config.Dev.ReorgLimit
-				}
-				if maxStartBlockNumber > startBlockNumber {
-					startBlockNumber = maxStartBlockNumber
-				}
-				nodeHeaderHash := &generated.NodeHeaderHash{
-					BlockNumber: startBlockNumber,
-				}
-				out := &Msg{}
-				out.msg = &generated.LegacyMessage{
-					FuncName: generated.LegacyMessage_HEADERHASHES,
-					Data: &generated.LegacyMessage_NodeHeaderHash{
-						NodeHeaderHash: nodeHeaderHash,
-					},
-				}
-				p.log.Info("monitorChainState Requested for HeaderHashes")
-				p.Send(out)
-			}
 		case <-p.exitMonitorChainState:
 			return
 		}
 	}
+}
+
+func (p *Peer) IsPeerAhead() bool {
+	p.lock.Lock()
+	defer p.lock.Unlock()
+	if p.chainState == nil {
+		return false
+	}
+	lastBlock := p.chain.GetLastBlock()
+	blockMetaData, err := p.chain.GetBlockMetaData(lastBlock.HeaderHash())
+	if err != nil {
+		p.log.Warn("Ping Failed Disconnecting",
+			"Peer", p.conn.RemoteAddr().String())
+		p.Disconnect(DiscProtocolError)
+		return false
+	}
+	// If Peer is already in download peer list then skip further processing
+	// Ignore syncing if difference between blockheight is 3
+	heightDiff := int(p.chainState.BlockNumber - lastBlock.BlockNumber())
+	if heightDiff < 3 {
+		if heightDiff > 0 {
+			p.log.Info("Ignoring Trigger Download due to difference of 3 lead blocks")
+		}
+		return false
+	}
+	peerCumulativeDifficulty := big.NewInt(0).SetBytes(p.chainState.CumulativeDifficulty)
+	localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
+	if peerCumulativeDifficulty.Cmp(localCumulativeDifficulty) > 0 {
+		startBlockNumber := uint64(0)
+		maxStartBlockNumber := uint64(0)
+		if lastBlock.BlockNumber() > p.config.Dev.ReorgLimit {
+			maxStartBlockNumber = lastBlock.BlockNumber() - p.config.Dev.ReorgLimit
+		}
+		if maxStartBlockNumber > startBlockNumber {
+			startBlockNumber = maxStartBlockNumber
+		}
+		nodeHeaderHash := &generated.NodeHeaderHash{
+			BlockNumber: startBlockNumber,
+		}
+		out := &Msg{}
+		out.msg = &generated.LegacyMessage{
+			FuncName: generated.LegacyMessage_HEADERHASHES,
+			Data: &generated.LegacyMessage_NodeHeaderHash{
+				NodeHeaderHash: nodeHeaderHash,
+			},
+		}
+		p.log.Info("monitorChainState Requested for HeaderHashes")
+		go p.Send(out)
+	}
+	return true
 }
 
 func (p *Peer) handle(msg *Msg) error {
@@ -495,12 +510,10 @@ func (p *Peer) handle(msg *Msg) error {
 			}
 			return p.Send(out)
 		} else {
-			p.log.Info(">>>>>Triggering Download")
-			nodeHeaderHashAndPeer := &NodeHeaderHashAndPeer {
+			p.nodeHeaderHashWithTimestamp = &NodeHeaderHashWithTimestamp{
 				nodeHeaderHash,
-				p,
+				p.ntp.Time(),
 			}
-			p.nodeHeaderHashAndPeerChan <- nodeHeaderHashAndPeer
 		}
 	case generated.LegacyMessage_P2P_ACK:
 		p2pAckData := msg.msg.GetP2PAckData()
@@ -731,7 +744,6 @@ func (p *Peer) close(err error) {
 
 	p.log.Info("Disconnected ",
 		"Peer", p.conn.RemoteAddr().String())
-	return
 
 	close(p.exitMonitorChainState)
 	p.conn.Close()

@@ -6,7 +6,9 @@ import (
 	"github.com/theQRL/go-qrl/pkg/generated"
 	"github.com/theQRL/go-qrl/pkg/log"
 	"github.com/theQRL/go-qrl/pkg/misc"
+	"github.com/theQRL/go-qrl/pkg/ntp"
 	"math/big"
+	"math/rand"
 	"reflect"
 	"sync"
 	"time"
@@ -29,20 +31,17 @@ type TargetNode struct {
 
 	blockNumber              uint64
 	nodeHeaderHash			 *generated.NodeHeaderHash
-	targetHeaderHash		 []byte
 	headerHashes             [][]byte
 	lastRequestedBlockNumber uint64
-	retry                    uint16
 
-
-	requestedBlockNumbers    map[uint64] bool // TODO: make map Memory Initialization
+	requestedBlockNumbers    map[uint64] bool
 }
 
 func (t *TargetNode) AddRequestedBlockNumbers(blockNumber uint64) {
 	t.requestedBlockNumbers[blockNumber] = false
 }
 
-func (t *TargetNode) RemoveRequestedBlockNumbers(blockNumber uint64) bool {
+func (t *TargetNode) RemoveRequestedBlockNumber(blockNumber uint64) bool {
 	if _, ok := t.requestedBlockNumbers[blockNumber]; !ok {
 		return false
 	}
@@ -62,56 +61,104 @@ type Downloader struct {
 	isSyncing  bool
 	chain      *chain.Chain
 	log        *log.Logger
+	ntp        ntp.NTPInterface
 
 	blockAndPeerChannel chan *BlockAndPeer
 
+	wg                        sync.WaitGroup
+	exitDownloadMonitor       chan struct{}
+	peersList                 map[string]*Peer
 	targetPeers               map[string]*TargetNode
 	targetPeerList            []string
 	peerSelectionCount        int
 	nextConsumableBlockNumber uint64 // Next Block Number that could be consumed by consumer and added into chain
-	blockNumberReceived       chan uint64
 	blockNumberProcessed      chan uint64
-	retryBlockNumber          chan uint64
 	done                      chan struct{}
+	consumerRunning           bool
+	blockDownloaderRunning    bool
 }
 
 func (d *Downloader) AddPeer(p *Peer) {
 	d.lock.Lock()
 	defer d.lock.Unlock()
 
-	if !d.isSyncing {
+	if _, ok := d.peersList[p.ID()]; ok {
 		return
 	}
 
+	d.peersList[p.ID()] = p
+}
+
+func (d *Downloader) RemovePeer(p *Peer) bool {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	if _, ok := d.peersList[p.ID()]; !ok {
+		return false
+	}
+
+	delete(d.peersList, p.ID())
+	return true
+}
+
+func (d *Downloader) GetTargetPeerCount() int {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	return len(d.targetPeers)
+}
+
+func (d *Downloader) GetTargetPeerByID(id string) (*TargetNode, bool) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	data, ok := d.targetPeers[id]
+	return data, ok
+}
+
+func (d *Downloader) GetRandomTargetPeer() *TargetNode {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	length := len(d.targetPeers)
+	if length == 0 {
+		return nil
+	}
+
+	randIndex := rand.Intn(length)
+
+	for _, targetPeer := range d.targetPeers {
+		if randIndex == 0 {
+			return targetPeer
+		}
+		randIndex--
+	}
+
+	return nil
+}
+
+func (d *Downloader) isDownloaderRunning() bool {
+	return d.consumerRunning || d.blockDownloaderRunning
+}
+
+func (d *Downloader) AddPeerToTargetPeers(p *Peer) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
 	if _, ok := d.targetPeers[p.ID()]; ok {
-		p.SetDownloaderPeerList(true)
 		return
 	}
 
 	d.targetPeers[p.ID()] = &TargetNode{
-		peer:p,
+		peer: p,
 		requestedBlockNumbers: make(map[uint64]bool),
 	}
 	d.targetPeerList = append(d.targetPeerList, p.ID())
-	p.SetDownloaderPeerList(true)
 }
 
-func (d *Downloader) resetDownloaderPeerList(isAlreadyLocked bool) {
-	if !isAlreadyLocked {
-		d.lock.Lock()
-		defer d.lock.Unlock()
-	}
-
-	// Set Flag of all peers that they are no more in downloader peer list
-	for _, targetPeer := range d.targetPeers {
-		targetPeer.peer.SetDownloaderPeerList(false)
-	}
-}
-
-func (d *Downloader) removePeer(p *Peer) bool {
-	if !d.isSyncing {
-		return false
-	}
+func (d *Downloader) RemovePeerFromTargetPeers(p *Peer) bool {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 
 	if _, ok := d.targetPeers[p.ID()]; !ok {
 		return false
@@ -124,36 +171,28 @@ func (d *Downloader) removePeer(p *Peer) bool {
 			return true
 		}
 	}
-	p.SetDownloaderPeerList(false)
 	return false
 }
 
 func (d *Downloader) Consumer() {
+	d.consumerRunning = true
+	defer func () {
+		d.consumerRunning = false
+	}()
 	pendingBlocks := make(map[uint64]*block.Block)
 	for {
 		select {
 		case blockAndPeer := <-d.blockAndPeerChannel:
 			b := blockAndPeer.block
-			d.lock.Lock()
-
 			// Ensure if the block received is from the same Peer from which it was requested
-			if targetPeer, ok := d.targetPeers[blockAndPeer.peer.ID()]; ok {
-				if !targetPeer.IsRequestedBlockNumber(b.BlockNumber()) {
-					d.lock.Unlock()
-					continue
-				}
-			} else {
-				d.lock.Unlock()
+			targetPeer, ok := d.GetTargetPeerByID(blockAndPeer.peer.ID())
+			if !ok || !targetPeer.IsRequestedBlockNumber(b.BlockNumber()) {
 				continue
 			}
 			// Remove Block Number from Requested list, as it has been received
-			d.targetPeers[blockAndPeer.peer.ID()].RemoveRequestedBlockNumbers(b.BlockNumber())
-			d.lock.Unlock()
-
-			d.blockNumberReceived <- b.BlockNumber()  // Notify Downloader about the received BlockNumber
+			targetPeer.RemoveRequestedBlockNumber(b.BlockNumber())
 
 			if b.BlockNumber() < d.nextConsumableBlockNumber {
-				d.blockNumberProcessed <- b.BlockNumber()  // Block Received which has already been processed
 				continue
 			}
 			pendingBlocks[b.BlockNumber()] = b
@@ -171,14 +210,12 @@ func (d *Downloader) Consumer() {
 				if err != nil {
 					// TODO: Think of how to handle such cases
 					d.log.Warn("Parent Block Not Found")
-					d.retryBlockNumber <- b.BlockNumber()
 					break
 				}
 
 				parentMetaData, err := d.chain.GetBlockMetaData(b.PrevHeaderHash())
 				if err != nil {
 					d.log.Warn("Impossible Error : ParentMetaData Not Found")
-					d.retryBlockNumber <- b.BlockNumber()
 					break
 				}
 
@@ -188,13 +225,11 @@ func (d *Downloader) Consumer() {
 					d.log.Warn("Syncing Failed: Block Validation Failed",
 						"BlockNumber", b.BlockNumber(),
 						"Headerhash", misc.Bin2HStr(b.HeaderHash()))
-					d.retryBlockNumber <- b.BlockNumber()
 					break
 				}
 
 				if !d.chain.AddBlock(b) {
 					d.log.Warn("Failed To Add Block")
-					d.retryBlockNumber <- b.BlockNumber()
 					break
 				}
 
@@ -209,10 +244,14 @@ func (d *Downloader) Consumer() {
 				d.nextConsumableBlockNumber++
 			}
 
-			if d.isSyncingFinished(false, false) {
+			if d.isSyncingFinished(false) {
 				d.log.Info("Block Download Syncing Finished")
 				return
 			}
+		case <-time.After(30*time.Second):
+			d.log.Info("[Consumer Timeout] Finishing downloading")
+			d.isSyncingFinished(true)
+			return
 		case <-d.done:
 			d.isSyncing = false
 			return
@@ -221,10 +260,7 @@ func (d *Downloader) Consumer() {
 }
 
 func (d *Downloader) RequestForBlock(blockNumber uint64) error {
-	d.lock.Lock()
-	defer d.lock.Unlock()
-	d.log.Info("Requesting For Blocks",
-		"peers", len(d.targetPeerList))
+	d.log.Info("Requesting For Block")
 	lastBlock := d.chain.GetLastBlock()
 	blockMetaData, err := d.chain.GetBlockMetaData(lastBlock.HeaderHash())
 	if err != nil {
@@ -245,7 +281,7 @@ func (d *Downloader) RequestForBlock(blockNumber uint64) error {
 			d.log.Info("Removing as peerCumulativeDifficultyBytes is nil",
 				"peer", targetNode.peer.ID(),
 				"Peer count", len(d.targetPeerList))
-			d.removePeer(targetNode.peer)
+			d.RemovePeerFromTargetPeers(targetNode.peer)
 			continue
 		}
 		peerCumulativeDifficulty := big.NewInt(0).SetBytes(peerCumulativeDifficultyBytes)
@@ -253,7 +289,7 @@ func (d *Downloader) RequestForBlock(blockNumber uint64) error {
 			d.log.Info("Removing as peerCumulativeDifficulty is less than local difficulty",
 				"peer", targetNode.peer.ID(),
 				"Peer count", len(d.targetPeerList))
-			d.removePeer(targetNode.peer)
+			d.RemovePeerFromTargetPeers(targetNode.peer)
 			continue
 		}
 		err := targetNode.peer.SendFetchBlock(blockNumber)
@@ -261,23 +297,31 @@ func (d *Downloader) RequestForBlock(blockNumber uint64) error {
 			d.log.Info("Removing due to Block fetch error",
 				"peer", targetNode.peer.ID(),
 				"Peer count", len(d.targetPeerList))
-			d.removePeer(targetNode.peer)
+			d.RemovePeerFromTargetPeers(targetNode.peer)
 			continue
 		}
 		targetNode.AddRequestedBlockNumbers(blockNumber)
 		break
 	}
 	if len(d.targetPeerList) == 0 {
-		d.isSyncingFinished(true, true)
+		d.isSyncingFinished(true)
 	}
 	return nil
 }
 
 func (d *Downloader) BlockDownloader() {
-	requestedBlockNumbers :=  make(map[uint64]bool)
+	d.blockDownloaderRunning = true
+	defer func () {
+		d.blockDownloaderRunning = false
+	}()
+
 	d.log.Info("Block Downloader Started")
+
+	requestedBlockNumbers :=  make(map[uint64]bool)
+
 	maxRequestedBlockNumber := d.targetNode.lastRequestedBlockNumber
-	requestedBlockNumbers[d.targetNode.lastRequestedBlockNumber] = false
+	requestedBlockNumbers[maxRequestedBlockNumber] = false
+
 	err := d.RequestForBlock(maxRequestedBlockNumber)
 	if err != nil {
 		d.log.Error("Error while Requesting for block",
@@ -287,8 +331,6 @@ func (d *Downloader) BlockDownloader() {
 
 	for {
 		select {
-		case blockNumber := <-d.blockNumberReceived:
-			requestedBlockNumbers[blockNumber] = true
 		case blockNumber := <-d.blockNumberProcessed:
 			delete(requestedBlockNumbers, blockNumber)
 			for len(requestedBlockNumbers) < SIZE - 10 {
@@ -303,23 +345,16 @@ func (d *Downloader) BlockDownloader() {
 				maxRequestedBlockNumber = blockNumber
 				requestedBlockNumbers[maxRequestedBlockNumber] = false
 			}
-		case blockNumber := <-d.retryBlockNumber:
-			requestedBlockNumbers[blockNumber] = false
-		case <-time.After(10*time.Second):
-			d.log.Info("Finishing downloading due to Producer Timeout",
-				"len of requestedBlockNumbers", len(requestedBlockNumbers))
-			d.isSyncingFinished(true, false)
-			return
 		case <-d.done:
 			d.isSyncing = false
-			d.log.Info("Producer Exitted")
+			d.log.Info("Producer Exits")
 			return
 		}
 	}
 }
 
 func (d *Downloader) NewTargetNode(nodeHeaderHash *generated.NodeHeaderHash, peer *Peer) {
-	d.targetNode = &TargetNode {
+		d.targetNode = &TargetNode {
 		peer: peer,
 		blockNumber: nodeHeaderHash.BlockNumber,
 		headerHashes: nodeHeaderHash.Headerhashes,
@@ -330,7 +365,10 @@ func (d *Downloader) NewTargetNode(nodeHeaderHash *generated.NodeHeaderHash, pee
 	}
 }
 
-func (d *Downloader) isSyncingFinished(forceFinish bool, isAlreadyLocked bool) bool {
+func (d *Downloader) isSyncingFinished(forceFinish bool) bool {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
 	if !d.isSyncing {
 		return true
 	}
@@ -338,10 +376,10 @@ func (d *Downloader) isSyncingFinished(forceFinish bool, isAlreadyLocked bool) b
 	if d.nextConsumableBlockNumber > lastBlockNumber || forceFinish {
 		d.isSyncing = false
 		d.targetNode = nil
-		d.resetDownloaderPeerList(isAlreadyLocked)
 		d.targetPeers = make(map[string]*TargetNode)
 		d.targetPeerList = make([]string, 0)
 		close(d.done)
+
 		d.log.Info("Syncing FINISHED")
 		return true
 	}
@@ -354,31 +392,87 @@ func CreateDownloader(c *chain.Chain) (d *Downloader) {
 		isSyncing: false,
 		chain: c,
 		log: log.GetLogger(),
+		ntp: ntp.GetNTP(),
 
+		peersList: make(map[string]*Peer),
 		targetPeers: make(map[string]*TargetNode),
 		targetPeerList: make([]string, 0),
 		peerSelectionCount: 0,
-		blockNumberReceived: make(chan uint64, SIZE),
 		blockNumberProcessed: make(chan uint64, SIZE),
-		retryBlockNumber: make(chan uint64, 1),
 		blockAndPeerChannel: make(chan *BlockAndPeer, SIZE*2),
 		done: make(chan struct{}),
 	}
 	return
 }
 
+func (d *Downloader) Exit() {
+	d.log.Debug("Shutting Down Downloader")
+	close(d.exitDownloadMonitor)
+	d.wg.Wait()
+}
+
+func (d *Downloader) DownloadMonitor() {
+	d.log.Info(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Running download monitor")
+	d.exitDownloadMonitor = make(chan struct{})
+	d.wg.Add(1)
+	defer d.wg.Done()
+	for {
+		select {
+		case <-time.After(30 * time.Second):
+			for _, p := range d.peersList {
+				// check if peer is already exists in targetPeersList
+				if _, ok := d.GetTargetPeerByID(p.ID()); ok {
+					continue
+				}
+				if p.IsPeerAhead() {
+					nodeHeaderHashWithTimestamp := p.GetNodeHeaderHashWithTimestamp()
+					if nodeHeaderHashWithTimestamp == nil {
+						continue
+					}
+					// Add Peer to targetPeers, if NodeHeaderHash received in last 60 seconds
+					if d.ntp.Time() - nodeHeaderHashWithTimestamp.timestamp < 60 {
+						d.AddPeerToTargetPeers(p)
+					}
+				}
+			}
+			if d.GetTargetPeerCount() == 0 {
+				continue
+			}
+			// Ignore if Consumer or BlockDownloader already running.
+			if d.isDownloaderRunning() {
+				continue
+			}
+			if d.isSyncing {
+				continue
+			}
+			// Randomly selects a peer from target peer
+			targetNode := d.GetRandomTargetPeer()
+			if targetNode == nil {
+				d.log.Info("Impossible error: RandomTargetPeer Found Nil")
+				continue
+			}
+			d.log.Info("===================== downloading ====================")
+			d.NewTargetNode(targetNode.peer.GetNodeHeaderHashWithTimestamp().nodeHeaderHash, targetNode.peer)
+			d.Initialize(targetNode.peer)
+		case <-d.exitDownloadMonitor:
+			return
+		}
+	}
+}
+
 func (d *Downloader) Initialize(p *Peer) {
 	d.log.Info("Initializing Downloader")
 	d.isSyncing = true
 	d.done = make(chan struct{})
-	d.AddPeer(p)
+	//d.AddPeer(p)
 
 	nodeHeaderHash := d.targetNode.nodeHeaderHash
 	currIndex := d.targetNode.lastRequestedBlockNumber - nodeHeaderHash.BlockNumber
 
 	blockHeaderHash := d.targetNode.nodeHeaderHash.Headerhashes[currIndex]
 	_, err := d.chain.GetBlock(blockHeaderHash)
-
+	// Check HeaderHashes that already exists in our blockchain.
+	// So that downloading starts from the missing block headerhash.
 	for ; err == nil && int(currIndex+1) < len(d.targetNode.nodeHeaderHash.Headerhashes); {
 		d.targetNode.lastRequestedBlockNumber += 1
 		currIndex = d.targetNode.lastRequestedBlockNumber - nodeHeaderHash.BlockNumber

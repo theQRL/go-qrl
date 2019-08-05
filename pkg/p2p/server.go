@@ -62,7 +62,6 @@ type Server struct {
 	listener       net.Listener
 	lock           sync.Mutex
 	peerInfoLock   sync.Mutex
-	downloaderLock sync.Mutex
 
 	running bool
 	loopWG  sync.WaitGroup
@@ -72,7 +71,6 @@ type Server struct {
 	connectPeersExit          chan struct{}
 	mrDataConn                chan *MRDataConn
 	blockAndPeerChan          chan *BlockAndPeer
-	nodeHeaderHashAndPeerChan chan *NodeHeaderHashAndPeer
 	addPeerToPeerList         chan *generated.PLData
 	addpeer                   chan *conn
 	delpeer                   chan *peerDrop
@@ -107,7 +105,6 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 	srv.futureBlocks = make(map[string]*block.Block)
 	srv.mrDataConn = make(chan *MRDataConn)
 	srv.blockAndPeerChan = make(chan *BlockAndPeer)
-	srv.nodeHeaderHashAndPeerChan = make(chan *NodeHeaderHashAndPeer)
 	srv.addPeerToPeerList = make(chan *generated.PLData)
 
 	srv.messagePriority = make(map[generated.LegacyMessage_FuncName]uint64)
@@ -153,6 +150,7 @@ func (srv *Server) Start(chain *chain.Chain) (err error) {
 
 	srv.running = true
 	go srv.run()
+	go srv.downloader.DownloadMonitor()
 
 	return nil
 }
@@ -311,6 +309,7 @@ running:
 	for {
 		select {
 		case <-srv.exit:
+			srv.downloader.Exit()
 			srv.log.Debug("Shutting Down Server")
 			break running
 		case c := <-srv.addpeer:
@@ -327,7 +326,6 @@ running:
 				srv.registerAndBroadcastChan,
 				srv.addPeerToPeerList,
 				srv.blockAndPeerChan,
-				srv.nodeHeaderHashAndPeerChan,
 				srv.messagePriority)
 			go srv.runPeer(p)
 			peers[c.fd.RemoteAddr().String()] = p
@@ -343,18 +341,22 @@ running:
 			}
 
 			srv.peerInfoLock.Unlock()
+
+			srv.downloader.AddPeer(p)
 		case pd := <-srv.delpeer:
 			srv.peerInfoLock.Lock()
 
 			pd.log.Debug("Removing Peer", "err", pd.err)
+			peer := peers[pd.conn.RemoteAddr().String()]
 			delete(peers, pd.conn.RemoteAddr().String())
 			if pd.inbound {
 				srv.inboundCount--
 			}
 			ip, _, _ := net.SplitHostPort(pd.conn.RemoteAddr().String())
 			srv.ipCount[ip] -= 1
-
 			srv.peerInfoLock.Unlock()
+
+			srv.downloader.RemovePeer(peer)
 		case mrDataConn := <-srv.mrDataConn:
 			// TODO: Process Message Recpt
 			// Need to get connection too
@@ -411,8 +413,6 @@ running:
 			}
 		case blockAndPeer := <-srv.blockAndPeerChan:
 			srv.BlockReceived(blockAndPeer.peer, blockAndPeer.block)
-		case startSyncing := <-srv.nodeHeaderHashAndPeerChan:
-			srv.initializeDownloader(startSyncing)
 		case addPeerToPeerList := <-srv.addPeerToPeerList:
 			srv.UpdatePeerList(addPeerToPeerList)
 		case registerAndBroadcast := <-srv.registerAndBroadcastChan:
@@ -622,18 +622,4 @@ func (srv *Server) runPeer(p *Peer) {
 	remoteRequested, err := p.run()
 
 	srv.delpeer <- &peerDrop{p, err, remoteRequested}
-}
-
-func (srv *Server) initializeDownloader(startSyncing *NodeHeaderHashAndPeer) {
-	srv.downloaderLock.Lock()
-	defer srv.downloaderLock.Unlock()
-	if srv.downloader.isSyncing {
-		srv.downloader.AddPeer(startSyncing.peer) // Added new Peer
-		srv.log.Info("Node Already Syncing")
-		return
-	}
-	srv.downloader.NewTargetNode(startSyncing.nodeHeaderHash, startSyncing.peer)
-	//go srv.downloader.BlockDownloader()
-	srv.downloader.Initialize(startSyncing.peer)
-	srv.log.Info("Start Downloading Thread")
 }
