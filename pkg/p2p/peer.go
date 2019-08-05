@@ -445,7 +445,7 @@ func (p *Peer) handle(msg *Msg) error {
 		}
 
 		b, err := p.chain.GetBlockByNumber(blockNumber)
-		if err == nil {
+		if err != nil {
 			p.log.Info("Disconnecting Peer, as GetBlockByNumber returned nil")
 			return DiscProtocolError
 		}
