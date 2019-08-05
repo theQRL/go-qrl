@@ -334,7 +334,7 @@ func GetDevConfig() (dev *DevConfig) {
 	dev = &DevConfig{
 		Genesis: genesis,
 
-		Version: "0.1.2 go",
+		Version: "0.1.3 go",
 
 		BlocksPerEpoch:       100,
 		BlockLeadTimestamp:   30,
