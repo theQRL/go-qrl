@@ -116,6 +116,13 @@ func (d *Downloader) GetTargetPeerByID(id string) (*TargetNode, bool) {
 	return data, ok
 }
 
+func (d *Downloader) GetTargetPeerLength() int {
+	d.lock.Lock()
+	defer d.lock.Unlock()
+
+	return len(d.targetPeers)
+}
+
 func (d *Downloader) GetRandomTargetPeer() *TargetNode {
 	d.lock.Lock()
 	defer d.lock.Unlock()
@@ -273,9 +280,12 @@ func (d *Downloader) RequestForBlock(blockNumber uint64) error {
 	localCumulativeDifficulty := big.NewInt(0).SetBytes(blockMetaData.TotalDifficulty())
 	for len(d.targetPeerList) > 0 {
 		// TODO: Replace sequential selection by number of pending requests
-		d.peerSelectionCount = (d.peerSelectionCount + 1) % len(d.targetPeers)
+		d.peerSelectionCount = (d.peerSelectionCount + 1) % d.GetTargetPeerLength()
 		key := d.targetPeerList[d.peerSelectionCount]
-		targetNode := d.targetPeers[key]
+		targetNode, ok := d.GetTargetPeerByID(key)
+		if !ok {
+			continue
+		}
 		peerCumulativeDifficultyBytes := targetNode.peer.GetCumulativeDifficulty()
 		if peerCumulativeDifficultyBytes == nil {
 			d.log.Info("Removing as peerCumulativeDifficultyBytes is nil",
