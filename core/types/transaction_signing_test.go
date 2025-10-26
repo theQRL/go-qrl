@@ -21,29 +21,11 @@ import (
 	"math/big"
 	"testing"
 
+	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-zond/crypto/pqcrypto"
 )
-
-func TestShaghaiSigning(t *testing.T) {
-	key, _ := crypto.GenerateMLDSA87Key()
-	addr := common.Address(key.GetAddress())
-
-	signer := NewShanghaiSigner(big.NewInt(18))
-	tx, err := SignTx(NewTx(&DynamicFeeTx{Nonce: 0, To: &addr, Value: new(big.Int), Gas: 0, GasFeeCap: new(big.Int), Data: nil}), signer, key)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	from, err := Sender(signer, tx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if from != addr {
-		t.Errorf("exected from and address to be equal. Got %x want %x", from, addr)
-	}
-}
 
 func TestEIP155ChainId(t *testing.T) {
 	key, _ := crypto.GenerateMLDSA87Key()
@@ -60,54 +42,135 @@ func TestEIP155ChainId(t *testing.T) {
 	}
 }
 
-func TestShaghaiSigningVitalik(t *testing.T) {
-	// NOTE(rgeraldes24): url not working; original test vectors are not of much use
-	// Test vectors come from http://vitalik.ca/files/eip155_testvec.txt
-	for i, test := range []struct {
-		txRlp, addr string
-	}{
-		{"b91c4a02f91c460101808080808080c0b90a2031d4de725e386b02ad4105026992d8e697d48c4e34cfd2714e40b54a78e64083a3b92669f57348b00366428f6fd371a7b1bc3917771ca6f63648361ba8c24414620aca6e7802d8ac2541319c774a45c4f5bf2c3055e4cd84dcb86065112c5bc82cfa2df82fd962ac3f0047dc8bd1c99963f531b24d04a17e4511a8874167dd7f95e8545a6c52b3e974a12e317d64843e0758eeea447cebc6228da491f62f6539e8336483f2aa889776ec0c5b6203a9d875b3bb59e7da8eda2112dcef973d97ff74abf73cf1909c7d6032afa6c4bafc246f182f66dda0b48642fd41342dd04321f25317ad919ec96b718eb86ea69b12b3c3fdd77bc65f2a6a199dfb151d1d960309621b5734bfd1c8317b2c45f2ee32154aaee2b53e0f5cdde2505175f235c262ff5e4ebd24e103b8112881b7c9874d93bb8eab0a554b723bdc6cdbf307cdbd72047e37827ee75bf86058bcbf166c615519ab1ba5b21960123d54ed4da2c653a350ed0c34c5cfd1431a72ef735738ce1094eec1cd3f0981b7b7f131625c5402df132149ab8b7870516e7c82acfb86753c6035b442f4e24a3734020840c6072cdcf2ea8fffe0d9d1e88d288bcda24394db4e58eae19ae9d07ad867427ab584f28f6c54439cf94efd5547542686a9b36e717ca473d84d870aa0e194b1ddffb3bf2ca096332caec2e9a8ef5a97127e9ffa815e942c9fde30aadd9cd5f039fe2a9c53a140bb0d1cf2de06875b4075da03cf9f11bbac51c1d8336a2bd1a11344f4510e15849ca81903f7f959ff0e79f5b5dbb6b8b5bf4d7a49d9338ad300456789555f20b0b2efadfada94a8666381fdc6134575918756a611ca1505b88231bcca718f4755ddc6f5bcc4e84f8a311089e56dff8eee6f8193c4dd4dded830e4379ec10bae48b450b3e3273efb8769d30812b1999ee150c50d3fd7afc0edb7456c315b0b3c314c2811dc0e9a90e6eacb3af98727bc6fdea24c3f1f4dd130ca43fd5be53fc755be499fe6ac2ec7410afc226d0baf91e0dc0d02847320ca8cf75a4602cdda54a4a88f600f75e67195fcafcbc6cbc8004b910206af5b2c152bfc56bb0d4de83319697e9fa1b3f92b721ca79b2e8220629f408ad61f2e4fc83e3841d180993ab5dd97888f029c31b65ac3d2155431bab666cfc72cdd6c2f3ab29636ed1334db8613fda6c5a21d17a0f82478994812ea2ee8e477d7329ac1c9092b8551ac28f9525714f92e37c9189b10183cd064ac502b254eb5ce69f764d2a3b20de792891521bf3f8bf71e3762715b3463194fa9068d3ef29909872a7dc8fd4c27eb2d6a01fe71edafe6279b42d9405677509bcbe1f989c35097b9098fe42864ee233818b117ac200acbb36b0a95beb5d4a543e846731b6a598b0ae52db9909f79b739e253e94d49f2d02dff1892e9c01f571a50681ca9bb45bbeaf8ab9c33efd68b3ab992e75fcfbe3100159f736b79b4b9ee157a5946bee0ac728ec160951f6a128cd10f18aba9b9cfdad6fd77e6f4d08a6f6ac827549b8ae3469275e76cf61b56fb20b6dc4cc436880e1c0d5a27f09586d3a9a580742d7d7854ac2ec73b4088ae97c33f5697af9a023faae2a5e43fbc86aaeac0e619dadaa4868b77d344515cdad4f2d7bc301db8af95d15a9b707ad3f7c40523c8d63f7ce506edf769ac5f30835241473693bba390faa9bdfeac9218df6276c9ade5a2d0c356e0378933d26497f57ef19711eadae220850439bd0cbeb3d3e8c3365ed37529298f42207dfe4e0479f669b88d71c5e2c9b28666f497fd8eec0fb8851a5df27eac5b8e91466c99928ba4c3722f69a74e11742bf6b65e5b3465fc5d3986185fed147a7113e24173de7a04c5fa18e870ddbbc2e9ada504ad4ce628ce01a70c208da09de0879d4eaa95f0973159f60320279eb3fc1af1a1bd01936996134fa2c380a66ad5249fb13926ca220ddc5f3bd899082e090e127682acb6b98ea0c4e1c6b35d6911278d4fc6508b1d831acdbbebe4b5842bf7589ffb4ba1b9f3910e39ee047df1d817b8f044204d165ccffb88f68f75fb701df943915d87e74862dda275f5f123448b89e0407d6c20a0c9025f5a89a213b14ad6d138468b91f66fb5b81b7445f860f05b62768f08b67f55b64f9d1866d27845bfed410659122fd164b2bfd5528bead5df8e67a6a8ea48bfe1b7ace45bc84b9d3d358b4e481a9fa4377c18eab0e6257d679d9ddaaff042bb70f0b929a82d9d85ce5a708b459f8d7ec8e0a7cac4c089b23aa5b5359820892711a2ae9b428308e5429b4491ff502d814ffc997dca80b07066c0408ac391f006a3488901408d778389854009b2777379732f153555345659248add6407dedf0032c28ddf4ce908ce6b9c40b092cc979c492b016dac31c4236638501e0cf401b534d494cb3c880c3e38d967b793cac634123ede7a79e6206b407ed834d31cdae8d77a71d4310cb33ec710ae99eab607e885eced16f46f7c3c7c1ecac24721c41169c65ad546adf8b2482cd086a1ae42acc5dad92995d9ae1bf6be391fdae707749b1d4cfc1420413aea263c24f59fe7f6d02451e84440d64eb10c0554ceb89bc3555d7ef89d5744c74c296bb9730978570cf6e679d3fbd80adb194696cf9ae310e61794aa209e3415ede422ff693a6dc190c4c433fb3de34b087dd116b2a7e9a8dc7b7953cf71718bb9c6c96f25ebd896604c141180e7612bb813ad71b0b9c4c0b4ccd5113e568d5523444b9e58c97c7a3f04db12b04abd75ea0e463a589b0151a0a02ca03315eec52ccb91200941442bfed7269b5984f0f3e9684bc1d6d7d5bf936900a110e3ec3e39ec565647ae2c00b49c35d430f39cf23bb5c7d52cd5d86b322ee847619715beacd4761f6c5b151da37693cb60dbecdbaed4d9aeae529e6de9d6011933ce70547b42aad6093b308d7abbc7147e35145d303cd1c3c7d6bff0093c2e15d7c90a73a01a5a9033bc983bb1ca27480a81ab1b2441eb291e784ed46b3b2f8eeec249ba153a735cebd56ab3c1f4f62838fc6c7b0ed2695f2633d0db85f11fda8115dde80c43eda1bd175541dfaffb094ccb31aa82303d2c9d5f1d86186b4e2e4174bb19852c5a0b883f5ae74867ffa41fe7b1633a693f05e394eab004c8753b527f586ac894cd8fdda7c6a35c00ad5f958a6fd1dccd1aae0c019b2f514537c4818308d849f876893c6ae39ed08fa7253b6aa8bde79a1e5838c5688b672f07d9cd8def75539e84208861a1ca3a5e68b242080e16dcc9798708fd3a1dd60fa61f07319fa9bed0443bc23620302b3fea85d362612dd1cab4cd8ecbe9c36533c9796686fb0ddb2dfa33b56bcf7d0fe98c00057a3f3c122e5001dd11953f02f805336399bfb3ac2e8f8cc7813983f9599e659a57c55be4ba2eacf7054e9e80643259b06c2d72907bba12d31627162dbebd81b1ccf6654f2a972738835042bdf06c14d4376be206b3378e665274ef2d370e3c73d4726df643b4eb3e4c593ada64d0fc32be267eaf74057fdb872d2d62f517940a10eeea1974252e1137c920f19bf54f548ce3071e5c799d0dfa794ec7cc632f60606a393a3e2426a83e3dc878a093df7c33a89e5bffe4ac749ecd411c031e3e47bfe5436a2e57cb7a9d9a8d282b49af7f0504c963f0e61058ceb203a2cec57220189381f47ced85a21a2cb91213c45afb435ac6a26ceec0ebe7bca0fe73525b7552b70cb2f143b1e88f834582e110a1b768c5d52af7807298cdc1b90f437bf6a491105cdc62ccb9a2e1b4de649b9a12b1b98218ae33d5a68be6cea6ebd7ff988ce5c9e14f624187648b234181671e16eba245571f35e90735b432569a0d229133a4075013dfc2a2f18b010c91f0fd6e5242c7ed578b5c2167c911d37352729f79d7fbf0d73b1d7834436a5199c8e25064820c24b7ad7b29a02056b9553dfbe3d887239b56a8eab30ff880bef34ff031033a568da758c3b060f6f42e18128ea4d0ad659c4a7a868f5037c4f492ec8de6684b52fa9964325ae274dd3038183368238d3a48f61d607fcf2dc65b9ce58617a6d9b96b9123c0d4bcf58df35630dc5dee8b7d802134854d138ef136153b6632c66ce08d05871ea7f823207b9a1a20b9b7431c995bab2a402be37746df05c25bb82c2b1ef9a96320a2387955618342768e2ccbc88593edf696f6630c0f2883b7039e60d03c4aa56480f15e412e0adfb46f13b0236fbb0afce17808fb4ccb2d4e754990f35e46ed41065db41cf3dd8604f3b07ad43c61b4297c20f6fb4ffefdd22b85fb20399de517dd7a53bec1bb1092df7260ed1250e62f56f384a45434fdd9e9043137449d2580eb4d4abd3c126cf3250a6766338d805c9a8db50f132b7348abd1b64dfb214c8b6b8363f081b150c2af40f5c5c07c1bc399276e3bbfea485b48a7470633cd0852a31237f2c8bbded4b161e543ca421c7bb30187ef814fb0b6aa2ef4e8199cc3177d2acfba991a74e7fb18907dc5d5fd6909e8a0596144fa4afcbccf9295571932c03afff37800801861a87c0d82a763ccfd2f435581e5455a44b083ec9b2e81a3b66cda77d001f50416875b427ea7928be82e5bad95e31ee6b60d96cfd2bdb8f8d2087f0ba042d8d9a07ada34ef26b14d24bb2e0e7f647b71d5983d123f0ce197dac9e73146db9b58616b2d76e08278ba2b434224f49cfb2af85ae717b081dd90b2acf9ebe2050c356a0a02c96e4bb293fbb5a15e6519ca6b5791fbfdf89fe2849c7fcdc28df3ed409f86b1aa5225c19462765f482a726f5f6defa2f056d02a10b970e0719a012b4ff055dfce23620db4ed1ada040a6e1cdd6bdea4a0de3a3de586a8a393f00fc54faf085e8be821690a455d345f7794682b2f480cd5f6366c121e446b6a8cf54061c5764f72254c51a44995a9ee7952f2f238af36e7b256ddf5155618defca5bdb8e010ab25b3482e284f5f5ab2a8d6958e0acbc8c9f3b3cbde9d7bcba0701dda1c077c9f6a0441db51d8394a7a5919fbaa107adfca206c97f977853d519252e81268ba4ea7863b4d654f1eaf8d979a03c1f4244aa643c5292c9aabf1d42a8d1cc9b0b4f61ecc131f7b0d2d3275071a2d7393c436963e0ed6b9c54947457ff7ba98ea9c22120f505a15d76b3c2a7fe7fea0214b9d344c0c0f6b173fd1a610762ba9186a7dbdce2014ab08728beddf50f351ddb7dcc5903779e1cfa4b8b916f69e871d25d3b1fad48b61ea3b82f9efccc2ece4fe8f38e786b258d87634099bc0a9b465f20ebb82c239812941ef2b8b5486efa0ddf2179f028f8ea160c0515c1a3a726eff73a2d36a93a6d9fc40d11cc7758f0b88f335d0045578c84c45dad96c5d515eddf303404c1b8edf4adac63a7daf925fa556772cb6b5dd800607b88fd1a00203ad4df8fb180fa80d416128f05b497429c04129665afc81cd8ce3cbef2598086e6affb4ef8722489e402c713c6ad7952804f9301694d1e7af6f01cd7dd8a549d44c9e6ad04dcb49b5735a51f613c67190cf257edf6f011683862a8af02db8325509b52f398a2d9053a834f3e790ff5d8ac5259fcd9f18d3e3823a11aadb9e4a766d597027cd9d45f4954f593b21dac7c78c64616e50aa006335556e19e2ea0d542f4faa1728cfc896f83e2ac63fed8da5b75f6bccd242e372913feec22dd6987d016d0d7ae81d550b8e2a739f8a81fb080948f34d17426c674397a005c9b23b70ae2ec7bc4643bd8903e7d250ec494d9fc3a4bd97935b527fda7e35782733521f33c41d07c33f760f4ba0b0b3f1c811708386c390307b0d00b82e8a7b4d8ba3d09aa5ca574c49858accaa7e71f28678f1881fa28b844c147f54d31faf1206a4ce052fe72471d3c5f2634d60bcadc7d17cb163d5ed6957e61d0413c40cbb20d96c2cdefafe70942a3c993ba69e6fd72d0ea830d26414fcde8630feba21dca40f2a6a64e585fba5ea85d13f9ba5b1c26c0dca91bcdfae21ffc01c4988c84021ae367b5cdee05c447def4cbca26419b8544c362ef0ffe9ced2688180e62f93c63e41cc653a84fa6a902b29e226d6add26b2184f07a79df99510f7e97555a2434299c915742b90fd8d3af6aaf351f60814a8e67910c56fca4c9b8bfe49f87f4b4c0e619e7aee30f76d73e945b56fdc26763ef392883ab8901a69c190e0174f2e984aadb09d13c519ee96f3b011401e844aa3bf55745121b468818fc191ac4b419c30393b3b7082a7e8cad589945748ad00f879b0359ed872723ea5d06b2673791e01afe087c0724f4119e30cda1d96252246de1f879d69008436f3666f7cb6f0daea0a008c4e991b9b31612536513e7aca7ba1bf52553423b69d7702823aaea6319814e50e723c007dea7abce0d8741150080862100323ebd88c4e775c581d796aab61ed855546fbec200558b109afb4b14893283a9bfb3ee425a0c945db45eb62cbe1c0b87d27658c34234aeb4fc002a56e687c09488bec956fc4b99fffbca5460de22cc47f2c9a9b2b5c9a9a538913f5f38780417db5719badf31fcd5cec5c408d25b9067bedc3ddf1c78a54ab7b26ceb27797c3f37812b701c160a5f41eb7c6ce619ad50a8b2bbdcd5b7a66c70363510fd68deec18c73146614c2b0e3468e366acf4ee48dac41cbbe2a1ef3ee48c6dcf45e19b6dbd23b34fc16e374b7fef017ca999e0742171aa156d18d4c1e71fcee01c13b09d07b156364e843015cbff1f7072bc2bb8cd05ea721c0e720ab7bc1d078ec667f8787e3df1cb7628067ce4f3c173ec604dca4f2eef6429dc958b21ac551f56538dfcd31ce047179da85a109b4cb8115b878a46fcc676d848b9cd4d96372a432df941704dceeaede2f2f35098fc1c67c21c1ed343910ea2c86104309f5a9bbf0a477c5ed8af0abc3d28ad4645ce31b7a5b85611d208e34fd3e04aad5fbf8f6d0c53ea474337f4506b11c5f7678a1e14e8091efe9a3cfb56be02c09338a21b31a615ccf2a39deab387286e32313ece8fd8343ccaa52002e9592efe227ddbc7b490572c3373a10989664e0a6d46a2ef397e2f4e1cc3dd5ff58efe3ebf7ef755d73beb632fbbd778bc4c673e4612c5f3b0de582ab4b4d25c919643d90acfb21f71875c64111d389c2351775c30b26cc2a3168edd05f78c8dc57b75011a68befd44a0fa2efef5aac9dedd134de9e8d0048e30538b552416edd30211a75026f32e79ec40636cdaa79f548448027cc61375b6ff7a3c70f280fa0080da780f283347fef4494fd3732d8af903191a5fe2b8e6729a2354c9582298866c5a20f51b7f46e760618dc83cda77516ec165e63173e9ff779ab57e4da19202ef61199daae52532ade7d101852c6a60d5e0e4632c6d368a4e47270c133486e8d85e26f6acb0aab238e1b16d1fa7f2344b2cf46320067db50895308ba5cb496d0b8b447556d9d6d66800b59f4e3cb02cb91102f4ac214d794a759bb8a1ced87aa382aaae20468d4db4554617c05abdff95b06733b03bb44c96d5eac2d11f201bc530c864d036636494a9b518154aff3fe4cef088bf3efe53c5140b6c28f5482af22cd420f2d06ad98793882fa84518ceff2d400008e6aa34850f3ee23e4f426c4deb98e9c9bcde93e64eb67af460aa16c96f8f9b1742d5c7290d89b83031c202a52f474e7a356b7345ead121a2dbc118e92e3f3469bd70a30dbb39bfc67e1541fba51dde5b0b855bb34b874b055569172ba5688832df27f7013c5304c860f7538a4c69bd712b17620e1c3287a844a1331fc82af9eedad8566f04613c52e9f81d4a4c647df0dc14b9f20cd21cf9ee30298f24b9c1cb7a766f206725b735dc17e03b65f02a214d7661cc2145b1be1a06b793b1566c7d4e862fde25a42b2260e09ced440f460488d871dffdb97aa6f178b15c29a4559edb498867428d25fa411e1e1448057e80f76f04e387fa0d2f0efda0651f0b3109228d3c27c42d0214e0e6cbefa7d3cb5dc75e070003861dd0c41ae34c2be8883eaa68ff3a346dbb4047cb512ee2253d42791a894e457ebea113144f279f4f3456bd279c88d9519ed9809256106d6fa1d4e2413ffaee6202e7fa640ec17d8a6790e9a8a16742c1b5a6c588942e52d7e28bc440aa713f9090b23fe01eaa377231cf34525b748e95041ff391b947dea9650224f48b6236149ec9ed8420de3e51dfc8f40525345c9b16a22106de2aacc8bbe89b9128829e3d6fb47b1932108e9b32977458bb12026bddf285344bb3d2fee6fbae2b7e53255557be84a4a517381c8cc4b005dd5be4c572ef102ef542185dfcdb7016458baef120ef3eaa87426800dc7c97a93c23e2babfe5d09fa4ed61eb02f21a92baf738feb81d4980dccfb683a13f3870624c7660bcdbcafe3a26c25bef76708dc0d9028a90e5ab0643b5eb4c364f3b47ef6a2041769fa54b615f9b002f87aa84fb6dce8e264f8b2f8f0fc78cfe10c48e3ce4b0a7cacec8498ce82307d63392e859c6405a572f43435decbca68f6a98b0b90dd85a97241e3c0397ef568ce601e7bf243fb17ce6ff528df3c2611aacde144267b6f010b812ae9c03871b55fbf62dc6cab2e9a21b559cf199f1dec7a6631e44501f1aa2b41ac9faa6e287e1f9edb8c5aeaebdae56da51ff94cc56d061db482afde1852d18b7332234f36755c33edb98a01bc8534636a1afe41d6c57b51ed9747a9d0e1b7d04c617283ab59ca2a15fcd784878f5686e6e3aa43deaaa7268ca71e4c84295986709fad64200996203960e452553b512c5b2b111176ed4a4d332dabfad874435be92b75da924220ef5397cc751137f0cdd53b29017e7bb8bee1d31745b39409bda7ac52fc0eebe15ad1c177d408c3e1e28fa8759caa4e9a1c7b792cc53e4d5000fe579c3a0f6466d5a4b86d58478c131754186b867e3b2306e9d5f9de81cc5acfcbad4efce79810711f76aa1addd8cac1c38356e174a467e2e975f0c6a1483e72ef3d395046f0e19842bcbc1550228d98f06b603a50a16dc32e3e949aaaed43e3825ad8dd737859e1260b538710baecaf9bedd93483f601fdbd2c2cfc84b36c44cc0620f1bf6d31635e00c084cb40efeb06e8fac6b997a40dca7f2eef7574c5e895c81d2986b71769c1c84fd47119a6effc59e4c97316c6d7f7f8d93a9f3701c24aa900f0250186323da87a46e9497ac9e79d3f21722ea595c6a4ff1618ecddeedfdbe8230188d307fe991ed584351b4a1487ea84652a762e2dcb558267ee2967000c2303d8c2449c36ad87e58594748a395e2e56e0b93306ed062167964874e299f4dfca1cd7531c22237fb22cf3c47d9f1dd2b77750db95d0b1fec16ef216b8f7e05ed121cdb75696b24bf75904129144a5cc453dc138a721725b6afed15c6b79a0c10033fa92329d992592c59b53ca2380958ab3a1ae020bcec5aabe077fc28ab54f009c16d3d7a57c37631f3d5d6205f395feb876c4c43fa910a1a7679db519cd70b9bd100fd66b09b5e34485fff961bc60ae2ef5034e54fa30b77ab55dffdd4dadd0cc3c282651add7f9bcc3c2a33e1ab9352f3b4da14bcaccb0634cccdd641d166cc1efbaa2dee377dcc1a6b02835771f04aca6b9b525c00f044725cc914715ff4e07de05707d6c5c638a07c3554e3d8fc386b34db6e530506cf708fbcbf72daad76d7f923d20fb503c425f3c97d9a8f7bec9ec0ca666a96dcb394e604c7342ff487638eee010be7e1b06010ba515fed877d26ec64f06de2ea38dbc6e9885b000d6c2ec85d5babb091478ecb68a99a2a32c41e9c163363cf7e67ecb35b61fe8aaaa28b99fb6dc81a2a703fdd74c72f7db6931f5a3b195f4e21654a8afe44eb157e89b7693155c24c677334cbf3b91b845db42370f3c195282123b2bebbf06563cad43beacdb8903ed44d580acc2af367f0851d92d4af21ba4c65428c75aa69c459db195a9dca8b0f328d1acc459743f9d6851d9b4736630208adf821bbe068bfd60ba04e72e73914e5a4431bff300560170f14a2e6a77e35a2a37990285fe18cc187972acc09c01795e6c4f67edb27a7ea4096082bb0ccc64fb4f766d45f0684264f317521086e6f7ee08e6e50766d5c619aed9b9d9dae97a34bb057c09c7d88053c5b6a76cbef81f680d57e18855fa4b987d9a7f5bd1ebb005853258b08828366ceffee448086d5091b9e072d3b80cfe53092e4f0054c567cafccf70f3f6381c7d24758a0c3ef6ed8000000000000000000000000000000000000000000000000000000000000000000000000000004070d11181e232583010000", "Q693fbdd1dec9ecd656ce0ca141b30bac0e2b1832"},
-	} {
-		signer := NewShanghaiSigner(big.NewInt(1))
+func TestShanghaiSigner_Sender(t *testing.T) {
+	mkTx := func(chainID *big.Int) *Transaction {
+		return NewTx(&DynamicFeeTx{
+			ChainID:    new(big.Int).Set(chainID),
+			Nonce:      0,
+			GasTipCap:  common.Big1,
+			GasFeeCap:  common.Big1,
+			Gas:        21000,
+			To:         nil,
+			Value:      common.Big0,
+			Data:       nil,
+			AccessList: nil,
+		})
+	}
 
-		var tx *Transaction
-		err := rlp.DecodeBytes(common.Hex2Bytes(test.txRlp), &tx)
+	signTx := func(t *testing.T, signer Signer, tx *Transaction, wallet *walletmldsa87.Wallet) (*Transaction, []byte, []byte, []byte) {
+		t.Helper()
+
+		desc := wallet.GetDescriptor().ToDescriptor().ToBytes()
+		h := signer.Hash(tx, desc)
+		sigArr, err := wallet.Sign(h.Bytes())
 		if err != nil {
-			t.Errorf("%d: %v", i, err)
-			continue
+			t.Fatalf("sign: %v", err)
 		}
 
-		from, err := Sender(signer, tx)
+		pkArr := wallet.GetPK()
+
+		signed, err := tx.WithSignaturePublicKeyAndDescriptor(signer, sigArr[:], pkArr[:], desc)
 		if err != nil {
-			t.Errorf("%d: %v", i, err)
-			continue
+			t.Fatalf("WithSignaturePublicKeyAndDescriptor: %v", err)
 		}
 
-		addr, _ := common.NewAddressFromString(test.addr)
-		if from != addr {
-			t.Errorf("%d: expected %x got %x", i, addr, from)
+		return signed, sigArr[:], pkArr[:], desc
+	}
+
+	wantAddr := func(t *testing.T, w *walletmldsa87.Wallet) common.Address {
+		t.Helper()
+
+		addrBytes, err := walletmldsa87.GetMLDSA87Address(w.GetPK(), w.GetDescriptor())
+		if err != nil {
+			t.Fatalf("GetMLDSA87Address: %v", err)
 		}
-	}
-}
 
-func TestChainId(t *testing.T) {
-	key, _ := defaultTestKey()
-
-	tx := NewTx(&DynamicFeeTx{Nonce: 0, To: &common.Address{}, Value: new(big.Int), Gas: 0, GasFeeCap: new(big.Int), Data: nil})
-
-	var err error
-	tx, err = SignTx(tx, NewShanghaiSigner(big.NewInt(1)), key)
-	if err != nil {
-		t.Fatal(err)
+		return common.Address(addrBytes)
 	}
 
-	_, err = Sender(NewShanghaiSigner(big.NewInt(2)), tx)
-	if !errors.Is(err, ErrInvalidChainId) {
-		t.Error("expected error:", ErrInvalidChainId, err)
-	}
+	t.Run("ok/recovers-sender", func(t *testing.T) {
+		t.Parallel()
 
-	_, err = Sender(NewShanghaiSigner(big.NewInt(1)), tx)
-	if err != nil {
-		t.Error("expected no error")
-	}
+		wallet, err := walletmldsa87.NewWallet()
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		chainID := big.NewInt(31337)
+		signer := NewShanghaiSigner(chainID)
+
+		tx := mkTx(chainID)
+		signed, _, _, _ := signTx(t, signer, tx, wallet)
+
+		got, err := signer.Sender(signed)
+		if err != nil {
+			t.Fatalf("Sender error: %v", err)
+		}
+		if got != wantAddr(t, wallet) {
+			t.Fatalf("sender mismatch: got %x want %x", got.Bytes(), wantAddr(t, wallet).Bytes())
+		}
+	})
+	t.Run("error/invalid-chain-id", func(t *testing.T) {
+		t.Parallel()
+
+		wallet, err := walletmldsa87.NewWallet()
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		s1 := NewShanghaiSigner(common.Big1)
+		tx := mkTx(common.Big1)
+		signed, _, _, _ := signTx(t, s1, tx, wallet)
+
+		s2 := NewShanghaiSigner(common.Big2)
+		_, err = s2.Sender(signed)
+		if !errors.Is(err, ErrInvalidChainId) && err == nil {
+			t.Fatalf("expected chain id error; got %v", err)
+		}
+	})
+
+	t.Run("error/descriptor-mismatch", func(t *testing.T) {
+		t.Parallel()
+
+		wallet, err := walletmldsa87.NewWallet()
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		signer := NewShanghaiSigner(big.NewInt(7))
+		tx := mkTx(big.NewInt(7))
+		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
+
+		// Flip one bit in the descriptor and re-wrap.
+		desc[len(desc)-1] ^= 0x01
+		tampered, err := signed.WithSignaturePublicKeyAndDescriptor(signer, sig, pk, desc)
+		if err != nil {
+			t.Fatalf("re-wrap with bad descriptor: %v", err)
+		}
+		_, err = signer.Sender(tampered)
+		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
+			t.Fatalf("expected bad signature error; got %v", err)
+		}
+
+	})
+	t.Run("error/mutated-signature", func(t *testing.T) {
+		t.Parallel()
+
+		wallet, err := walletmldsa87.NewWallet()
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		signer := NewShanghaiSigner(big.NewInt(7))
+		tx := mkTx(big.NewInt(7))
+		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
+
+		// Tweak the signature bytes and re-wrap.
+		sig[len(sig)-1] ^= 0x80
+		tampered, err := signed.WithSignaturePublicKeyAndDescriptor(signer, sig, pk, desc)
+		if err != nil {
+			t.Fatalf("re-wrap with bad signature: %v", err)
+		}
+		_, err = signer.Sender(tampered)
+		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
+			t.Fatalf("expected bad signature error; got %v", err)
+		}
+
+	})
 }

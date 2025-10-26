@@ -701,7 +701,7 @@ func (w *Wallet) signHash(account accounts.Account, hash []byte) ([]byte, error)
 // the account in a keystore).
 func (w *Wallet) SignTx(account accounts.Account, tx *types.Transaction, chainID *big.Int) (*types.Transaction, error) {
 	signer := types.LatestSignerForChainID(chainID)
-	hash := signer.Hash(tx)
+	hash := signer.Hash(tx, []byte{})
 	sig, err := w.signHash(account, hash[:])
 	if err != nil {
 		return nil, err

@@ -16,14 +16,16 @@ import (
 	"github.com/theQRL/go-zond/common"
 )
 
-const MLDSA87SignatureLength = cryptomldsa87.CryptoBytes
+const (
+	MLDSA87SignatureLength = cryptomldsa87.CryptoBytes
+	MLDSA87PublicKeyLength = cryptomldsa87.CryptoPublicKeyBytes
+	DescriptorSize         = descriptor.DescriptorSize
 
-const MLDSA87PublicKeyLength = cryptomldsa87.CryptoPublicKeyBytes
+	// DigestLength sets the signature digest exact length
+	DigestLength = 32
+)
 
-const DescriptorSize = descriptor.DescriptorSize
-
-// DigestLength sets the signature digest exact length
-const DigestLength = 32
+var ErrBadSignature = errors.New("invalid ML-DSA-87 signature")
 
 // LoadWallet loads ML-DSA-87 or SPHINCS+-256s Wallet from the given file having hex seed (not extended hex seed).
 func LoadWallet(file string) (*walletmldsa87.Wallet, error) {
@@ -114,4 +116,18 @@ func HexToWallet(hexSeedStr string) (*walletmldsa87.Wallet, error) {
 
 func PKToAddress(pk []byte, d descriptor.Descriptor) (common.Address, error) {
 	return wallet.GetAddressFromPKAndDescriptor(pk, d)
+}
+
+func Verify(msg []byte, sig []byte, pk []byte, desc [3]byte) (bool, error) {
+	// walletmldsa87.Verify would panic on bad length
+	if l := len(sig); l != cryptomldsa87.CryptoBytes {
+		return false, fmt.Errorf("%w: bad length", ErrBadSignature)
+	}
+
+	pk87, err := walletmldsa87.BytesToPK(pk)
+	if err != nil {
+		return false, err
+	}
+
+	return walletmldsa87.Verify(msg, sig, &pk87, desc), nil
 }

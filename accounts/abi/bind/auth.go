@@ -64,15 +64,15 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 			if address != account.Address {
 				return nil, ErrNotAuthorized
 			}
-			signature, err := keystore.SignHash(account, signer.Hash(tx).Bytes())
+			desc, err := keystore.GetDescriptor(account)
+			if err != nil {
+				return nil, err
+			}
+			signature, err := keystore.SignHash(account, signer.Hash(tx, desc).Bytes())
 			if err != nil {
 				return nil, err
 			}
 			pk, err := keystore.GetPublicKey(account)
-			if err != nil {
-				return nil, err
-			}
-			desc, err := keystore.GetDescriptor(account)
 			if err != nil {
 				return nil, err
 			}
@@ -96,12 +96,12 @@ func NewKeyedTransactorWithChainID(w *walletmldsa87.Wallet, chainID *big.Int) (*
 			if address != keyAddr {
 				return nil, ErrNotAuthorized
 			}
-			signature, err := pqcrypto.Sign(signer.Hash(tx).Bytes(), w)
+			desc := w.GetDescriptor().ToDescriptor().ToBytes()
+			signature, err := pqcrypto.Sign(signer.Hash(tx, desc).Bytes(), w)
 			if err != nil {
 				return nil, err
 			}
 			pk := w.GetPK()
-			desc := w.GetDescriptor().ToDescriptor().ToBytes()
 			return tx.WithSignaturePublicKeyAndDescriptor(signer, signature, pk[:], desc)
 		},
 		Context: context.Background(),
