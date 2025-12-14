@@ -62,8 +62,6 @@ var (
 		utils.ExternalSignerFlag,
 		// TODO(now.youtrack.cloud/issue/TGZ-4)
 		// utils.USBFlag,
-		// TODO(now.youtrack.cloud/issue/TGZ-1)
-		// utils.SmartCardDaemonPathFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
 		utils.TxPoolJournalFlag,

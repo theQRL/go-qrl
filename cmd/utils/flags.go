@@ -33,7 +33,6 @@ import (
 	"strings"
 	"time"
 
-	pcsclite "github.com/gballet/go-libpcsclite"
 	gopsutil "github.com/shirou/gopsutil/mem"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/accounts/keystore"
@@ -119,12 +118,6 @@ var (
 	USBFlag = &cli.BoolFlag{
 		Name:     "usb",
 		Usage:    "Enable monitoring and management of USB hardware wallets",
-		Category: flags.AccountCategory,
-	}
-	SmartCardDaemonPathFlag = &cli.StringFlag{
-		Name:     "pcscdpath",
-		Usage:    "Path to the smartcard daemon (pcscd) socket file",
-		Value:    pcsclite.PCSCDSockName,
 		Category: flags.AccountCategory,
 	}
 	NetworkIdFlag = &cli.Uint64Flag{
@@ -1245,7 +1238,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	setWS(ctx, cfg)
 	setNodeUserIdent(ctx, cfg)
 	SetDataDir(ctx, cfg)
-	setSmartCard(ctx, cfg)
 
 	if ctx.IsSet(JWTSecretFlag.Name) {
 		cfg.JWTSecret = ctx.String(JWTSecretFlag.Name)
@@ -1278,26 +1270,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		log.Info(fmt.Sprintf("Using %s as db engine", dbEngine))
 		cfg.DBEngine = dbEngine
 	}
-}
-
-func setSmartCard(ctx *cli.Context, cfg *node.Config) {
-	// Skip enabling smartcards if no path is set
-	path := ctx.String(SmartCardDaemonPathFlag.Name)
-	if path == "" {
-		return
-	}
-	// Sanity check that the smartcard path is valid
-	fi, err := os.Stat(path)
-	if err != nil {
-		log.Info("Smartcard socket not found, disabling", "err", err)
-		return
-	}
-	if fi.Mode()&os.ModeType != os.ModeSocket {
-		log.Error("Invalid smartcard daemon path", "path", path, "type", fi.Mode().String())
-		return
-	}
-	// Smartcard daemon path exists and is a socket, enable it
-	cfg.SmartCardDaemonPath = path
 }
 
 func SetDataDir(ctx *cli.Context, cfg *node.Config) {

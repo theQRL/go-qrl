@@ -270,7 +270,6 @@ func init() {
 		chainIdFlag,
 		utils.LightKDFFlag,
 		utils.USBFlag,
-		utils.SmartCardDaemonPathFlag,
 		utils.HTTPListenAddrFlag,
 		utils.HTTPVirtualHostsFlag,
 		utils.IPCDisabledFlag,
@@ -710,7 +709,6 @@ func signer(c *cli.Context) error {
 		lightKdf = c.Bool(utils.LightKDFFlag.Name)
 		advanced = c.Bool(advancedMode.Name)
 		// usbEnabled = c.Bool(utils.USBFlag.Name)
-		// scpath = c.String(utils.SmartCardDaemonPathFlag.Name)
 	)
 	log.Info("Starting signer", "chainid", chainId, "keystore", ksLoc,
 		"light-kdf", lightKdf, "advanced", advanced)

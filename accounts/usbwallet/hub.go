@@ -33,9 +33,6 @@ import (
 // LedgerScheme is the protocol scheme prefixing account and wallet URLs.
 const LedgerScheme = "ledger"
 
-// TrezorScheme is the protocol scheme prefixing account and wallet URLs.
-const TrezorScheme = "trezor"
-
 // refreshCycle is the maximum time between wallet refreshes (if USB hotplug
 // notifications don't work).
 const refreshCycle = time.Second
@@ -96,17 +93,6 @@ type Hub struct {
 // 		0x5011, /* HID + WebUSB Ledger Nano S Plus */
 // 		0x6011, /* HID + WebUSB Ledger Nano FTS */
 // 	}, 0xffa0, 0, newLedgerDriver)
-// }
-
-// NewTrezorHubWithHID creates a new hardware wallet manager for Trezor devices.
-// func NewTrezorHubWithHID() (*Hub, error) {
-// 	return newHub(TrezorScheme, 0x534c, []uint16{0x0001 /* Trezor HID */}, 0xff00, 0, newTrezorDriver)
-// }
-
-// NewTrezorHubWithWebUSB creates a new hardware wallet manager for Trezor devices with
-// firmware version > 1.8.0
-// func NewTrezorHubWithWebUSB() (*Hub, error) {
-// 	return newHub(TrezorScheme, 0x1209, []uint16{0x53c1 /* Trezor WebUSB */}, 0xffff /* No usage id on webusb, don't match unset (0) */, 0, newTrezorDriver)
 // }
 
 /*
