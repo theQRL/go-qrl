@@ -1939,7 +1939,7 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 // will be returned.
 //
 //   - none: use the scheme consistent with persistent state, or fallback
-//     to hash-based scheme if state is empty.
+//     to path-based scheme if state is empty.
 //   - hash: use hash-based scheme or error out if not compatible with
 //     persistent state scheme.
 //   - path: use path-based scheme or error out if not compatible with
@@ -1951,10 +1951,8 @@ func ParseStateScheme(ctx *cli.Context, disk qrldb.Database) (string, error) {
 	stored := rawdb.ReadStateScheme(disk)
 	if !ctx.IsSet(StateSchemeFlag.Name) {
 		if stored == "" {
-			// use default scheme for empty database, flip it when
-			// path mode is chosen as default
-			log.Info("State schema set to default", "scheme", "hash")
-			return rawdb.HashScheme, nil
+			log.Info("State schema set to default", "scheme", "path")
+			return rawdb.PathScheme, nil
 		}
 		log.Info("State scheme set to already existing", "scheme", stored)
 		return stored, nil // reuse scheme of persistent scheme
