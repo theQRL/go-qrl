@@ -72,15 +72,9 @@ type tmplStruct struct {
 	Fields []*tmplField // Struct fields definition depends on the binding language.
 }
 
-// tmplSource is language to template mapping containing all the supported
-// programming languages the package can generate to.
-var tmplSource = map[Lang]string{
-	LangGo: tmplSourceGo,
-}
-
 // tmplSourceGo is the Go source template that the generated Go contract binding
 // is based on.
-const tmplSourceGo = `
+const tmplSource = `
 // Code generated - DO NOT EDIT.
 // This file is a generated binding and any manual changes will be lost.
 
@@ -279,7 +273,7 @@ var (
 	// sets the output to result. The result type might be a single field for simple
 	// returns, a slice of interfaces for anonymous returns and a struct for named
 	// returns.
-	func (_{{$contract.Type}} *{{$contract.Type}}Raw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	func (_{{$contract.Type}} *{{$contract.Type}}Raw) Call(opts *bind.CallOpts, result *[]any, method string, params ...any) error {
 		return _{{$contract.Type}}.Contract.{{$contract.Type}}Caller.contract.Call(opts, result, method, params...)
 	}
 
@@ -290,7 +284,7 @@ var (
 	}
 
 	// Transact invokes the (paid) contract method with params as input values.
-	func (_{{$contract.Type}} *{{$contract.Type}}Raw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	func (_{{$contract.Type}} *{{$contract.Type}}Raw) Transact(opts *bind.TransactOpts, method string, params ...any) (*types.Transaction, error) {
 		return _{{$contract.Type}}.Contract.{{$contract.Type}}Transactor.contract.Transact(opts, method, params...)
 	}
 
@@ -298,7 +292,7 @@ var (
 	// sets the output to result. The result type might be a single field for simple
 	// returns, a slice of interfaces for anonymous returns and a struct for named
 	// returns.
-	func (_{{$contract.Type}} *{{$contract.Type}}CallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	func (_{{$contract.Type}} *{{$contract.Type}}CallerRaw) Call(opts *bind.CallOpts, result *[]any, method string, params ...any) error {
 		return _{{$contract.Type}}.Contract.contract.Call(opts, result, method, params...)
 	}
 
@@ -309,7 +303,7 @@ var (
 	}
 
 	// Transact invokes the (paid) contract method with params as input values.
-	func (_{{$contract.Type}} *{{$contract.Type}}TransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	func (_{{$contract.Type}} *{{$contract.Type}}TransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...any) (*types.Transaction, error) {
 		return _{{$contract.Type}}.Contract.contract.Transact(opts, method, params...)
 	}
 
@@ -318,7 +312,7 @@ var (
 		//
 		// Hyperion: {{.Original.String}}
 		func (_{{$contract.Type}} *{{$contract.Type}}Caller) {{.Normalized.Name}}(opts *bind.CallOpts {{range .Normalized.Inputs}}, {{.Name}} {{bindtype .Type $structs}} {{end}}) ({{if .Structured}}struct{ {{range .Normalized.Outputs}}{{.Name}} {{bindtype .Type $structs}};{{end}} },{{else}}{{range .Normalized.Outputs}}{{bindtype .Type $structs}},{{end}}{{end}} error) {
-			var out []interface{}
+			var out []any
 			err := _{{$contract.Type}}.contract.Call(opts, &out, "{{.Original.Name}}" {{range .Normalized.Inputs}}, {{.Name}}{{end}})
 			{{if .Structured}}
 			outstruct := new(struct{ {{range .Normalized.Outputs}} {{.Name}} {{bindtype .Type $structs}}; {{end}} })
@@ -500,7 +494,7 @@ var (
 		// Hyperion: {{.Original.String}}
  		func (_{{$contract.Type}} *{{$contract.Type}}Filterer) Filter{{.Normalized.Name}}(opts *bind.FilterOpts{{range .Normalized.Inputs}}{{if .Indexed}}, {{.Name}} []{{bindtype .Type $structs}}{{end}}{{end}}) (*{{$contract.Type}}{{.Normalized.Name}}Iterator, error) {
 			{{range .Normalized.Inputs}}
-			{{if .Indexed}}var {{.Name}}Rule []interface{}
+			{{if .Indexed}}var {{.Name}}Rule []any
 			for _, {{.Name}}Item := range {{.Name}} {
 				{{.Name}}Rule = append({{.Name}}Rule, {{.Name}}Item)
 			}{{end}}{{end}}
@@ -517,7 +511,7 @@ var (
 		// Hyperion: {{.Original.String}}
 		func (_{{$contract.Type}} *{{$contract.Type}}Filterer) Watch{{.Normalized.Name}}(opts *bind.WatchOpts, sink chan<- *{{$contract.Type}}{{.Normalized.Name}}{{range .Normalized.Inputs}}{{if .Indexed}}, {{.Name}} []{{bindtype .Type $structs}}{{end}}{{end}}) (event.Subscription, error) {
 			{{range .Normalized.Inputs}}
-			{{if .Indexed}}var {{.Name}}Rule []interface{}
+			{{if .Indexed}}var {{.Name}}Rule []any
 			for _, {{.Name}}Item := range {{.Name}} {
 				{{.Name}}Rule = append({{.Name}}Rule, {{.Name}}Item)
 			}{{end}}{{end}}

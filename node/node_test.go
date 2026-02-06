@@ -23,6 +23,7 @@ import (
 	"net"
 	"net/http"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -53,7 +54,7 @@ func TestNodeCloseMultipleTimes(t *testing.T) {
 	stack.Close()
 
 	// Ensure that a stopped node can be stopped again
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if err := stack.Close(); err != ErrNodeStopped {
 			t.Fatalf("iter %d: stop failure mismatch: have %v, want %v", i, err, ErrNodeStopped)
 		}
@@ -115,7 +116,7 @@ func TestLifecycleRegistry_Successful(t *testing.T) {
 	noop := NewNoop()
 	stack.RegisterLifecycle(noop)
 
-	if !containsLifecycle(stack.lifecycles, noop) {
+	if !slices.Contains(stack.lifecycles, Lifecycle(noop)) {
 		t.Fatalf("lifecycle was not properly registered on the node, %v", err)
 	}
 }
@@ -362,7 +363,7 @@ func TestLifecycleTerminationGuarantee(t *testing.T) {
 	if err, ok := err.(*StopError); !ok {
 		t.Fatalf("termination failure mismatch: have %v, want StopError", err)
 	} else {
-		failer := reflect.TypeOf(&InstrumentedService{})
+		failer := reflect.TypeFor[*InstrumentedService]()
 		if err.Services[failer] != failure {
 			t.Fatalf("failer termination failure mismatch: have %v, want %v", err.Services[failer], failure)
 		}
@@ -412,21 +413,6 @@ func TestRegisterHandler_Successful(t *testing.T) {
 		t.Fatalf("could not read response: %v", err)
 	}
 	assert.Equal(t, "success", string(buf))
-}
-
-// Tests that the given handler will not be successfully mounted since no HTTP server
-// is enabled for RPC
-func TestRegisterHandler_Unsuccessful(t *testing.T) {
-	node, err := New(&DefaultConfig)
-	if err != nil {
-		t.Fatalf("could not create new node: %v", err)
-	}
-
-	// create and mount handler
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("success"))
-	})
-	node.RegisterHandler("test", "/test", handler)
 }
 
 // Tests whether websocket requests can be handled on the same port as a regular http server.
@@ -526,7 +512,6 @@ func TestNodeRPCPrefix(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		name := fmt.Sprintf("http=%s ws=%s", test.httpPrefix, test.wsPrefix)
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{

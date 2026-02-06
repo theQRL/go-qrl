@@ -40,18 +40,18 @@ type lazyItem struct {
 	index   int
 }
 
-func testPriority(a interface{}) int64 {
+func testPriority(a any) int64 {
 	return a.(*lazyItem).p
 }
 
-func testMaxPriority(a interface{}, until mclock.AbsTime) int64 {
+func testMaxPriority(a any, until mclock.AbsTime) int64 {
 	i := a.(*lazyItem)
 	dt := until - i.last
 	i.maxp = i.p + int64(float64(dt)*testAvgRate)
 	return i.maxp
 }
 
-func testSetIndex(a interface{}, i int) {
+func testSetIndex(a any, i int) {
 	a.(*lazyItem).index = i
 }
 
@@ -79,9 +79,7 @@ func TestLazyQueue(t *testing.T) {
 		stopCh = make(chan chan struct{})
 	)
 	defer wg.Wait()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-clock.After(testQueueRefresh):
@@ -92,9 +90,9 @@ func TestLazyQueue(t *testing.T) {
 				return
 			}
 		}
-	}()
+	})
 
-	for c := 0; c < testSteps; c++ {
+	for range testSteps {
 		i := rand.Intn(testItems)
 		lock.Lock()
 		items[i].p += rand.Int63n(testPriorityStep*2-1) + 1

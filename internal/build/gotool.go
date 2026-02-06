@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/theQRL/go-zond/internal/download"
 )
 
 type GoToolchain struct {
@@ -69,8 +71,8 @@ func (g *GoToolchain) goTool(command string, args ...string) *exec.Cmd {
 	// TODO: what about GOARM?
 	skip := map[string]struct{}{"GOROOT": {}, "GOARCH": {}, "GOOS": {}, "GOBIN": {}, "CC": {}}
 	for _, e := range os.Environ() {
-		if i := strings.IndexByte(e, '='); i >= 0 {
-			if _, ok := skip[e[:i]]; ok {
+		if before, _, ok := strings.Cut(e, "="); ok {
+			if _, ok := skip[before]; ok {
 				continue
 			}
 		}
@@ -81,7 +83,11 @@ func (g *GoToolchain) goTool(command string, args ...string) *exec.Cmd {
 
 // DownloadGo downloads the Go binary distribution and unpacks it into a temporary
 // directory. It returns the GOROOT of the unpacked toolchain.
-func DownloadGo(csdb *ChecksumDB, version string) string {
+func DownloadGo(csdb *download.ChecksumDB) string {
+	version, err := csdb.FindVersion("golang")
+	if err != nil {
+		log.Fatal(err)
+	}
 	// Shortcut: if the Go version that runs this script matches the
 	// requested version exactly, there is no need to download anything.
 	activeGo := strings.TrimPrefix(runtime.Version(), "go")

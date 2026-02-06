@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	contextType      = reflect.TypeOf((*context.Context)(nil)).Elem()
-	errorType        = reflect.TypeOf((*error)(nil)).Elem()
-	subscriptionType = reflect.TypeOf(Subscription{})
-	stringType       = reflect.TypeOf("")
+	contextType      = reflect.TypeFor[context.Context]()
+	errorType        = reflect.TypeFor[error]()
+	subscriptionType = reflect.TypeFor[Subscription]()
+	stringType       = reflect.TypeFor[string]()
 )
 
 type serviceRegistry struct {
@@ -57,7 +57,7 @@ type callback struct {
 	isSubscribe bool           // true if this is a subscription callback
 }
 
-func (r *serviceRegistry) registerName(name string, rcvr interface{}) error {
+func (r *serviceRegistry) registerName(name string, rcvr any) error {
 	rcvrVal := reflect.ValueOf(rcvr)
 	if name == "" {
 		return fmt.Errorf("no service name for type %s", rcvrVal.Type().String())
@@ -93,13 +93,13 @@ func (r *serviceRegistry) registerName(name string, rcvr interface{}) error {
 
 // callback returns the callback corresponding to the given RPC method name.
 func (r *serviceRegistry) callback(method string) *callback {
-	elem := strings.SplitN(method, serviceMethodSeparator, 2)
-	if len(elem) != 2 {
+	before, after, found := strings.Cut(method, serviceMethodSeparator)
+	if !found {
 		return nil
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	return r.services[elem[0]].callbacks[elem[1]]
+	return r.services[before].callbacks[after]
 }
 
 // subscription returns a subscription callback in the given service.
@@ -180,7 +180,7 @@ func (c *callback) makeArgTypes() {
 }
 
 // call invokes the callback.
-func (c *callback) call(ctx context.Context, method string, args []reflect.Value) (res interface{}, errRes error) {
+func (c *callback) call(ctx context.Context, method string, args []reflect.Value) (res any, errRes error) {
 	// Create the argument slice.
 	fullargs := make([]reflect.Value, 0, 2+len(args))
 	if c.rcvr.IsValid() {
@@ -227,7 +227,7 @@ func isSubscriptionType(t reflect.Type) bool {
 	return t == subscriptionType
 }
 
-// isPubSub tests whether the given method has as as first argument a context.Context and
+// isPubSub tests whether the given method's first argument is a context.Context and
 // returns the pair (Subscription, error).
 func isPubSub(methodType reflect.Type) bool {
 	// numIn(0) is the receiver type

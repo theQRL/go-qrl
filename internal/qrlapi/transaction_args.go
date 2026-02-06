@@ -21,6 +21,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gomath "math"
 	"math/big"
 
 	"github.com/theQRL/go-zond/common"
@@ -189,7 +190,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*
 	// Set default gas & gas price if none were set
 	gas := globalGasCap
 	if gas == 0 {
-		gas = uint64(math.MaxUint64 / 2)
+		gas = uint64(gomath.MaxUint64 / 2)
 	}
 	if args.Gas != nil {
 		gas = uint64(*args.Gas)

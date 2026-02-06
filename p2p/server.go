@@ -431,10 +431,7 @@ func (s *sharedUDPConn) ReadFromUDP(b []byte) (n int, addr *net.UDPAddr, err err
 	if !ok {
 		return 0, nil, errors.New("connection was closed")
 	}
-	l := len(packet.Data)
-	if l > len(b) {
-		l = len(b)
-	}
+	l := min(len(packet.Data), len(b))
 	copy(b[:l], packet.Data[:l])
 	return l, packet.Addr, nil
 }
@@ -850,7 +847,7 @@ func (srv *Server) listenLoop() {
 		tokens = srv.MaxPendingPeers
 	}
 	slots := make(chan struct{}, tokens)
-	for i := 0; i < tokens; i++ {
+	for range tokens {
 		slots <- struct{}{}
 	}
 
@@ -1080,8 +1077,8 @@ type NodeInfo struct {
 		Discovery int `json:"discovery"` // UDP listening port for discovery protocol
 		Listener  int `json:"listener"`  // TCP listening port for RLPx
 	} `json:"ports"`
-	ListenAddr string                 `json:"listenAddr"`
-	Protocols  map[string]interface{} `json:"protocols"`
+	ListenAddr string         `json:"listenAddr"`
+	Protocols  map[string]any `json:"protocols"`
 }
 
 // NodeInfo gathers and returns a collection of metadata known about the host.
@@ -1094,7 +1091,7 @@ func (srv *Server) NodeInfo() *NodeInfo {
 		ID:         node.ID().String(),
 		IP:         node.IP().String(),
 		ListenAddr: srv.ListenAddr,
-		Protocols:  make(map[string]interface{}),
+		Protocols:  make(map[string]any),
 	}
 	info.Ports.Discovery = node.UDP()
 	info.Ports.Listener = node.TCP()
@@ -1103,7 +1100,7 @@ func (srv *Server) NodeInfo() *NodeInfo {
 	// Gather all the running protocol infos (only once per protocol type)
 	for _, proto := range srv.Protocols {
 		if _, ok := info.Protocols[proto.Name]; !ok {
-			nodeInfo := interface{}("unknown")
+			nodeInfo := any("unknown")
 			if query := proto.NodeInfo; query != nil {
 				nodeInfo = proto.NodeInfo()
 			}

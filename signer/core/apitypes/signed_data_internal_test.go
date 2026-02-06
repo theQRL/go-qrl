@@ -27,6 +27,7 @@ import (
 )
 
 func TestBytesPadding(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		Type   string
 		Input  []byte
@@ -87,8 +88,9 @@ func TestBytesPadding(t *testing.T) {
 }
 
 func TestParseAddress(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
-		Input  interface{}
+		Input  any
 		Output []byte // nil => error
 	}{
 		{
@@ -136,8 +138,9 @@ func TestParseAddress(t *testing.T) {
 }
 
 func TestParseBytes(t *testing.T) {
+	t.Parallel()
 	for i, tt := range []struct {
-		v   interface{}
+		v   any
 		exp []byte
 	}{
 		{"0x", []byte{}},
@@ -170,9 +173,10 @@ func TestParseBytes(t *testing.T) {
 }
 
 func TestParseInteger(t *testing.T) {
+	t.Parallel()
 	for i, tt := range []struct {
 		t   string
-		v   interface{}
+		v   any
 		exp *big.Int
 	}{
 		{"uint32", "-123", nil},
@@ -200,8 +204,9 @@ func TestParseInteger(t *testing.T) {
 }
 
 func TestConvertStringDataToSlice(t *testing.T) {
+	t.Parallel()
 	slice := []string{"a", "b", "c"}
-	var it interface{} = slice
+	var it any = slice
 	_, err := convertDataToSlice(it)
 	if err != nil {
 		t.Fatal(err)
@@ -209,12 +214,13 @@ func TestConvertStringDataToSlice(t *testing.T) {
 }
 
 func TestConvertUint256DataToSlice(t *testing.T) {
+	t.Parallel()
 	slice := []*math.HexOrDecimal256{
 		math.NewHexOrDecimal256(1),
 		math.NewHexOrDecimal256(2),
 		math.NewHexOrDecimal256(3),
 	}
-	var it interface{} = slice
+	var it any = slice
 	_, err := convertDataToSlice(it)
 	if err != nil {
 		t.Fatal(err)
@@ -222,12 +228,13 @@ func TestConvertUint256DataToSlice(t *testing.T) {
 }
 
 func TestConvertAddressDataToSlice(t *testing.T) {
+	t.Parallel()
 	addr1, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000001")
 	addr2, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000002")
 	addr3, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000003")
 
 	slice := []common.Address{addr1, addr2, addr3}
-	var it interface{} = slice
+	var it any = slice
 	_, err := convertDataToSlice(it)
 	if err != nil {
 		t.Fatal(err)

@@ -31,8 +31,7 @@ import (
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rpc"
 	"github.com/theQRL/go-zond/trie"
@@ -54,14 +53,14 @@ func makeReceipt(addr common.Address) *types.Receipt {
 
 func BenchmarkFilters(b *testing.B) {
 	var (
-		db, _   = rawdb.NewLevelDBDatabase(b.TempDir(), 0, 0, "", false)
-		_, sys  = newTestFilterSystem(b, db, Config{})
-		key1, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr1   = crypto.PubkeyToAddress(key1.PublicKey)
-		addr2   = common.BytesToAddress([]byte("jeff"))
-		addr3   = common.BytesToAddress([]byte("ethereum"))
-		addr4   = common.BytesToAddress([]byte("random addresses please"))
-		to, _   = common.NewAddressFromString("Q0000000000000000000000000000000000000999")
+		db, _      = rawdb.NewLevelDBDatabase(b.TempDir(), 0, 0, "", false)
+		_, sys     = newTestFilterSystem(b, db, Config{})
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		addr1      = wallet1.GetAddress()
+		addr2      = common.BytesToAddress([]byte("jeff"))
+		addr3      = common.BytesToAddress([]byte("ethereum"))
+		addr4      = common.BytesToAddress([]byte("random addresses please"))
+		to, _      = common.NewAddressFromString("Q0000000000000000000000000000000000000999")
 
 		gspec = &core.Genesis{
 			Alloc:   core.GenesisAlloc{addr1: {Balance: big.NewInt(1000000)}},
@@ -101,12 +100,11 @@ func BenchmarkFilters(b *testing.B) {
 		rawdb.WriteHeadBlockHash(db, block.Hash())
 		rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), receipts[i])
 	}
-	b.ResetTimer()
 
 	filter := sys.NewRangeFilter(0, -1, []common.Address{addr1, addr2, addr3, addr4}, nil)
 
-	for i := 0; i < b.N; i++ {
-		logs, _ := filter.Logs(context.Background())
+	for b.Loop() {
+		logs, _ := filter.Logs(b.Context())
 		if len(logs) != 4 {
 			b.Fatal("expected 4 logs, got", len(logs))
 		}
@@ -118,9 +116,9 @@ func TestFilters(t *testing.T) {
 		db           = rawdb.NewMemoryDatabase()
 		backend, sys = newTestFilterSystem(t, db, Config{})
 		// Sender account
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr    = key1.GetAddress()
-		signer  = types.NewShanghaiSigner(big.NewInt(1))
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		addr       = wallet1.GetAddress()
+		signer     = types.NewShanghaiSigner(big.NewInt(1))
 		// Logging contract
 		contract  = common.Address{0xfe}
 		contract2 = common.Address{0xff}
@@ -207,7 +205,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 			tx2, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{
 				Nonce:     1,
@@ -215,7 +213,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract2,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx2)
 		case 2:
 			data, err := contractABI.Pack("log2", hash2.Big(), hash1.Big())
@@ -228,7 +226,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 		case 998:
 			data, err := contractABI.Pack("log1", hash3.Big())
@@ -241,7 +239,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract2,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 		case 999:
 			data, err := contractABI.Pack("log1", hash4.Big())
@@ -254,7 +252,7 @@ func TestFilters(t *testing.T) {
 				Gas:       30000,
 				To:        &contract,
 				Data:      data,
-			}), signer, key1)
+			}), signer, wallet1)
 			gen.AddTx(tx)
 		}
 	})
@@ -283,7 +281,7 @@ func TestFilters(t *testing.T) {
 			Gas:       30000,
 			To:        &contract,
 			Data:      data,
-		}), signer, key1)
+		}), signer, wallet1)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -298,22 +296,22 @@ func TestFilters(t *testing.T) {
 	}{
 		{
 			f:    sys.NewBlockFilter(chain[2].Hash(), []common.Address{contract}, nil),
-			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696332","0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x3","transactionHash":"0xc4d1735d3a4149fc5f615012cc966ebf6fc5b6e7b079d6047e14c46c36c11836","transactionIndex":"0x0","blockHash":"0x4e30937a40fe124377aa7756098586355b914163654c7acb85be66f2f7a0a5f7","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696332","0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x3","transactionHash":"0x0da87fefab92b6580390709d07d170b5a5efa3cad3d6628142c5c8d6e6533279","transactionIndex":"0x0","blockHash":"0x130442bd6f558c8e816bc3d1c5bc506b4c31efc18355eb7f3b6cd9393a272c7e","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f:    sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{contract}, [][]common.Hash{{hash1, hash2, hash3, hash4}}),
-			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x2","transactionHash":"0xafb88fed023010c661085bc971651eab3460b0db4e2ac3fb058a3139fa6742ba","transactionIndex":"0x0","blockHash":"0xff94a66174114a59e52d203fc0236d2162d6ab59403729af3d131efce6bde50f","logIndex":"0x0","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696332","0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x3","transactionHash":"0xc4d1735d3a4149fc5f615012cc966ebf6fc5b6e7b079d6047e14c46c36c11836","transactionIndex":"0x0","blockHash":"0x4e30937a40fe124377aa7756098586355b914163654c7acb85be66f2f7a0a5f7","logIndex":"0x0","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696334"],"data":"0x","blockNumber":"0x3e8","transactionHash":"0x5e908cc3e841eb830d35c6a6b74599f9f33d8891eb020ac3d3f1bbf544230927","transactionIndex":"0x0","blockHash":"0xa7e745c578ae34c008986aa52991c3e8c315c3a57a4e7478314176e1e93f1214","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x2","transactionHash":"0xd3facb859daa48326c0e4612feb94115c7b7128ebf614cbec2c34b2280455597","transactionIndex":"0x0","blockHash":"0xcd6b79eabf98c16bf545cb7189b233274f2699d25fcc089dac507cb88f703253","logIndex":"0x0","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696332","0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x3","transactionHash":"0x0da87fefab92b6580390709d07d170b5a5efa3cad3d6628142c5c8d6e6533279","transactionIndex":"0x0","blockHash":"0x130442bd6f558c8e816bc3d1c5bc506b4c31efc18355eb7f3b6cd9393a272c7e","logIndex":"0x0","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696334"],"data":"0x","blockNumber":"0x3e8","transactionHash":"0xdd1b17bb23012b0f8b3e9fe465f93452069c72aff647ce3a7a997d3710f06d75","transactionIndex":"0x0","blockHash":"0x267d8959e1950881c67a0a4b95d0aa0d3f5961be5800034add8bb9db103da61f","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f: sys.NewRangeFilter(900, 999, []common.Address{contract}, [][]common.Hash{{hash3}}),
 		},
 		{
 			f:    sys.NewRangeFilter(990, int64(rpc.LatestBlockNumber), []common.Address{contract2}, [][]common.Hash{{hash3}}),
-			want: `[{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696333"],"data":"0x","blockNumber":"0x3e7","transactionHash":"0x99b27063861e82850c872ce36ff3b465e621e4208377f82490853afdee30ea22","transactionIndex":"0x0","blockHash":"0xdfd8faf1621e23023e61fad8d0ed0a97db624762041ad0bc571205bee2c8630c","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696333"],"data":"0x","blockNumber":"0x3e7","transactionHash":"0xcef6909852c7317a800a13bc8ede04622a0aa15d62807b12122bf8fad6ac0b5f","transactionIndex":"0x0","blockHash":"0xd9886933bb0d1f514f5bdca8e08a73ef3c6014d40474d063e8e8e3aa5a5c7265","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f:    sys.NewRangeFilter(1, 10, nil, [][]common.Hash{{hash1, hash2}}),
-			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x2","transactionHash":"0xafb88fed023010c661085bc971651eab3460b0db4e2ac3fb058a3139fa6742ba","transactionIndex":"0x0","blockHash":"0xff94a66174114a59e52d203fc0236d2162d6ab59403729af3d131efce6bde50f","logIndex":"0x0","removed":false},{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x2","transactionHash":"0x17f3393e6824f188b2e6c2d0ab12830413caa081dae7b5073f6c81f304615432","transactionIndex":"0x1","blockHash":"0xff94a66174114a59e52d203fc0236d2162d6ab59403729af3d131efce6bde50f","logIndex":"0x1","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696332","0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x3","transactionHash":"0xc4d1735d3a4149fc5f615012cc966ebf6fc5b6e7b079d6047e14c46c36c11836","transactionIndex":"0x0","blockHash":"0x4e30937a40fe124377aa7756098586355b914163654c7acb85be66f2f7a0a5f7","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x2","transactionHash":"0xd3facb859daa48326c0e4612feb94115c7b7128ebf614cbec2c34b2280455597","transactionIndex":"0x0","blockHash":"0xcd6b79eabf98c16bf545cb7189b233274f2699d25fcc089dac507cb88f703253","logIndex":"0x0","removed":false},{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x2","transactionHash":"0x3ff357685cbd2c0aadc1d614a4315d050115cd2d25e88329654a2108052ae976","transactionIndex":"0x1","blockHash":"0xcd6b79eabf98c16bf545cb7189b233274f2699d25fcc089dac507cb88f703253","logIndex":"0x1","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696332","0x0000000000000000000000000000000000000000000000000000746f70696331"],"data":"0x","blockNumber":"0x3","transactionHash":"0x0da87fefab92b6580390709d07d170b5a5efa3cad3d6628142c5c8d6e6533279","transactionIndex":"0x0","blockHash":"0x130442bd6f558c8e816bc3d1c5bc506b4c31efc18355eb7f3b6cd9393a272c7e","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.Hash{{common.BytesToHash([]byte("fail"))}}),
@@ -326,15 +324,15 @@ func TestFilters(t *testing.T) {
 		},
 		{
 			f:    sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),
-			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696334"],"data":"0x","blockNumber":"0x3e8","transactionHash":"0x5e908cc3e841eb830d35c6a6b74599f9f33d8891eb020ac3d3f1bbf544230927","transactionIndex":"0x0","blockHash":"0xa7e745c578ae34c008986aa52991c3e8c315c3a57a4e7478314176e1e93f1214","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696334"],"data":"0x","blockNumber":"0x3e8","transactionHash":"0xdd1b17bb23012b0f8b3e9fe465f93452069c72aff647ce3a7a997d3710f06d75","transactionIndex":"0x0","blockHash":"0x267d8959e1950881c67a0a4b95d0aa0d3f5961be5800034add8bb9db103da61f","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f:    sys.NewRangeFilter(int64(rpc.FinalizedBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),
-			want: `[{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696333"],"data":"0x","blockNumber":"0x3e7","transactionHash":"0x99b27063861e82850c872ce36ff3b465e621e4208377f82490853afdee30ea22","transactionIndex":"0x0","blockHash":"0xdfd8faf1621e23023e61fad8d0ed0a97db624762041ad0bc571205bee2c8630c","logIndex":"0x0","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696334"],"data":"0x","blockNumber":"0x3e8","transactionHash":"0x5e908cc3e841eb830d35c6a6b74599f9f33d8891eb020ac3d3f1bbf544230927","transactionIndex":"0x0","blockHash":"0xa7e745c578ae34c008986aa52991c3e8c315c3a57a4e7478314176e1e93f1214","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696333"],"data":"0x","blockNumber":"0x3e7","transactionHash":"0xcef6909852c7317a800a13bc8ede04622a0aa15d62807b12122bf8fad6ac0b5f","transactionIndex":"0x0","blockHash":"0xd9886933bb0d1f514f5bdca8e08a73ef3c6014d40474d063e8e8e3aa5a5c7265","logIndex":"0x0","removed":false},{"address":"Qfe00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696334"],"data":"0x","blockNumber":"0x3e8","transactionHash":"0xdd1b17bb23012b0f8b3e9fe465f93452069c72aff647ce3a7a997d3710f06d75","transactionIndex":"0x0","blockHash":"0x267d8959e1950881c67a0a4b95d0aa0d3f5961be5800034add8bb9db103da61f","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f:    sys.NewRangeFilter(int64(rpc.FinalizedBlockNumber), int64(rpc.FinalizedBlockNumber), nil, nil),
-			want: `[{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696333"],"data":"0x","blockNumber":"0x3e7","transactionHash":"0x99b27063861e82850c872ce36ff3b465e621e4208377f82490853afdee30ea22","transactionIndex":"0x0","blockHash":"0xdfd8faf1621e23023e61fad8d0ed0a97db624762041ad0bc571205bee2c8630c","logIndex":"0x0","removed":false}]`,
+			want: `[{"address":"Qff00000000000000000000000000000000000000","topics":["0x0000000000000000000000000000000000000000000000000000746f70696333"],"data":"0x","blockNumber":"0x3e7","transactionHash":"0xcef6909852c7317a800a13bc8ede04622a0aa15d62807b12122bf8fad6ac0b5f","transactionIndex":"0x0","blockHash":"0xd9886933bb0d1f514f5bdca8e08a73ef3c6014d40474d063e8e8e3aa5a5c7265","logIndex":"0x0","removed":false}]`,
 		},
 		{
 			f: sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.FinalizedBlockNumber), nil, nil),
@@ -364,7 +362,7 @@ func TestFilters(t *testing.T) {
 			err: errPendingLogsUnsupported.Error(),
 		},
 	} {
-		logs, err := tc.f.Logs(context.Background())
+		logs, err := tc.f.Logs(t.Context())
 		if err == nil && tc.err != "" {
 			t.Fatalf("test %d, expected error %q, got nil", i, tc.err)
 		} else if err != nil && err.Error() != tc.err {
@@ -384,7 +382,7 @@ func TestFilters(t *testing.T) {
 
 	t.Run("timeout", func(t *testing.T) {
 		f := sys.NewRangeFilter(0, rpc.LatestBlockNumber.Int64(), nil, nil)
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Hour))
+		ctx, cancel := context.WithDeadline(t.Context(), time.Now().Add(-time.Hour))
 		defer cancel()
 		_, err := f.Logs(ctx)
 		if err == nil {

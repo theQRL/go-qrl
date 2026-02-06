@@ -69,7 +69,7 @@ func (h *Header) Hash() common.Hash {
 	return rlpHash(h)
 }
 
-var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())
+var headerSize = common.StorageSize(reflect.TypeFor[Header]().Size())
 
 // Size returns the approximate memory used by all internal contents. It is used
 // to approximate and limit the memory consumption of various caches.
@@ -103,10 +103,10 @@ func (h *Header) SanityCheck() error {
 // EmptyBody returns true if there is no additional 'body' to complete the header
 // that is: no transactions and no withdrawals.
 func (h *Header) EmptyBody() bool {
-	if h.WithdrawalsHash != nil {
-		return h.TxHash == EmptyTxsHash && *h.WithdrawalsHash == EmptyWithdrawalsHash
-	}
-	return h.TxHash == EmptyTxsHash
+	var (
+		emptyWithdrawals = h.WithdrawalsHash == nil || *h.WithdrawalsHash == EmptyWithdrawalsHash
+	)
+	return h.TxHash == EmptyTxsHash && emptyWithdrawals
 }
 
 // EmptyReceipts returns true if there are no receipts for this header/block.
@@ -144,13 +144,13 @@ type Block struct {
 	withdrawals  Withdrawals
 
 	// caches
-	hash atomic.Value
-	size atomic.Value
+	hash atomic.Pointer[common.Hash]
+	size atomic.Uint64
 
 	// These fields are used by package qrl to track
 	// inter-peer block relay.
 	ReceivedAt   time.Time
-	ReceivedFrom interface{}
+	ReceivedFrom any
 }
 
 // "external" block encoding. used for qrl protocol, etc.
@@ -299,8 +299,8 @@ func (b *Block) BaseFee() *big.Int {
 // Size returns the true RLP encoded storage size of the block, either by encoding
 // and returning it, or returning a previously cached value.
 func (b *Block) Size() uint64 {
-	if size := b.size.Load(); size != nil {
-		return size.(uint64)
+	if size := b.size.Load(); size > 0 {
+		return size
 	}
 	c := writeCounter(0)
 	rlp.Encode(&c, b)
@@ -353,11 +353,11 @@ func (b *Block) WithBody(body Body) *Block {
 // The hash is computed on the first call and cached thereafter.
 func (b *Block) Hash() common.Hash {
 	if hash := b.hash.Load(); hash != nil {
-		return hash.(common.Hash)
+		return *hash
 	}
-	v := b.header.Hash()
-	b.hash.Store(v)
-	return v
+	h := b.header.Hash()
+	b.hash.Store(&h)
+	return h
 }
 
 type Blocks []*Block

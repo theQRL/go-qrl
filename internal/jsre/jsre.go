@@ -67,7 +67,19 @@ type evalReq struct {
 	done chan bool
 }
 
-// runtime must be stopped with Stop() after use and cannot be used after stopping
+// New creates and initializes a new JavaScript runtime environment (JSRE).
+// The runtime is configured with the provided assetPath for loading scripts and
+// an output writer for logging or printing results.
+//
+// The returned JSRE must be stopped by calling Stop() after use to release resources.
+// Attempting to use the JSRE after stopping it will result in undefined behavior.
+//
+// Parameters:
+//   - assetPath: The path to the directory containing script assets.
+//   - output: The writer used for logging or printing runtime output.
+//
+// Returns:
+//   - A pointer to the newly created JSRE instance.
 func New(assetPath string, output io.Writer) *JSRE {
 	re := &JSRE{
 		assetPath:     assetPath,
@@ -174,22 +186,22 @@ loop:
 		select {
 		case timer := <-ready:
 			// execute callback, remove/reschedule the timer
-			var arguments []interface{}
+			var arguments []any
 			if len(timer.call.Arguments) > 2 {
 				tmp := timer.call.Arguments[2:]
-				arguments = make([]interface{}, 2+len(tmp))
+				arguments = make([]any, 2+len(tmp))
 				for i, value := range tmp {
 					arguments[i+2] = value
 				}
 			} else {
-				arguments = make([]interface{}, 1)
+				arguments = make([]any, 1)
 			}
 			arguments[0] = timer.call.Arguments[0]
 			call, isFunc := goja.AssertFunction(timer.call.Arguments[0])
 			if !isFunc {
 				panic(re.vm.ToValue("js error: timer/timeout callback is not a function"))
 			}
-			call(goja.Null(), timer.call.Arguments...)
+			call(goja.Null(), timer.call.Arguments[2:]...)
 
 			_, inreg := registry[timer] // when clearInterval is called from within the callback don't reset it
 			if timer.interval && inreg {
@@ -251,8 +263,15 @@ func (re *JSRE) Stop(waitForCallbacks bool) {
 	}
 }
 
-// Exec(file) loads and runs the contents of a file
-// if a relative path is given, the jsre's assetPath is used
+// Exec loads and executes the contents of a JavaScript file.
+// If a relative path is provided, the file is resolved relative to the JSRE's assetPath.
+// The file is read, compiled, and executed in the JSRE's runtime environment.
+//
+// Parameters:
+//   - file: The path to the JavaScript file to execute. Can be an absolute path or relative to assetPath.
+//
+// Returns:
+//   - error: An error if the file cannot be read, compiled, or executed.
 func (re *JSRE) Exec(file string) error {
 	code, err := os.ReadFile(common.AbsolutePath(re.assetPath, file))
 	if err != nil {
@@ -268,7 +287,7 @@ func (re *JSRE) Run(code string) (v goja.Value, err error) {
 }
 
 // Set assigns value v to a variable in the JS environment.
-func (re *JSRE) Set(ns string, v interface{}) (err error) {
+func (re *JSRE) Set(ns string, v any) (err error) {
 	re.Do(func(vm *goja.Runtime) { vm.Set(ns, v) })
 	return err
 }
@@ -298,7 +317,7 @@ func (re *JSRE) Evaluate(code string, w io.Writer) {
 }
 
 // Interrupt stops the current JS evaluation.
-func (re *JSRE) Interrupt(v interface{}) {
+func (re *JSRE) Interrupt(v any) {
 	done := make(chan bool)
 	noop := func(*goja.Runtime) {}
 

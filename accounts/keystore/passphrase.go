@@ -38,7 +38,7 @@ import (
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/crypto/cipher"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -160,7 +160,7 @@ func EncryptDataV1(data, auth []byte, argon2idT, argon2idM uint32, argon2idP uin
 		return CryptoJSON{}, err
 	}
 
-	argon2idParamsJSON := make(map[string]interface{}, 5)
+	argon2idParamsJSON := make(map[string]any, 5)
 	argon2idParamsJSON["t"] = argon2idT
 	argon2idParamsJSON["m"] = argon2idM
 	argon2idParamsJSON["p"] = argon2idP
@@ -184,7 +184,7 @@ func EncryptDataV1(data, auth []byte, argon2idT, argon2idM uint32, argon2idP uin
 // blob that can be decrypted later on.
 func EncryptKey(key *Key, auth string, argon2idT, argo2idM uint32, argo2idP uint8) ([]byte, error) {
 	seed := key.Wallet.GetSeed()
-	cryptoStruct, err := EncryptDataV1(seed[:], []byte(auth), argon2idT, argo2idM, argo2idP)
+	cryptoStruct, err := EncryptDataV1(seed.ToBytes(), []byte(auth), argon2idT, argo2idM, argo2idP)
 	if err != nil {
 		return nil, err
 	}
@@ -200,27 +200,32 @@ func EncryptKey(key *Key, auth string, argon2idT, argo2idM uint32, argo2idP uint
 // DecryptKey decrypts a key from a json blob, returning the private key itself.
 func DecryptKey(keyjson []byte, auth string) (*Key, error) {
 	// Parse the json into a simple map to fetch the key version
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	if err := json.Unmarshal(keyjson, &m); err != nil {
 		return nil, err
 	}
 	// Depending on the version try to parse one way or another
 	var (
-		keyBytes, keyId []byte
-		err             error
+		seedBytes, keyId []byte
+		err              error
 	)
 
 	k := new(encryptedKeyJSONV1)
 	if err := json.Unmarshal(keyjson, k); err != nil {
 		return nil, err
 	}
-	keyBytes, keyId, err = decryptKeyV1(k, auth)
+	seedBytes, keyId, err = decryptKeyV1(k, auth)
 
 	// Handle any decryption errors and return the key
 	if err != nil {
 		return nil, err
 	}
-	w := pqcrypto.ToWalletUnsafe(keyBytes)
+
+	w, err := wallet.RestoreFromSeedBytes(seedBytes)
+	if err != nil {
+		return nil, err
+	}
+
 	id, err := uuid.FromBytes(keyId)
 	if err != nil {
 		return nil, err
@@ -259,7 +264,7 @@ func DecryptDataV1(cryptoJson CryptoJSON, auth string) ([]byte, error) {
 	return plainText, err
 }
 
-func decryptKeyV1(keyProtected *encryptedKeyJSONV1, auth string) (keyBytes []byte, keyId []byte, err error) {
+func decryptKeyV1(keyProtected *encryptedKeyJSONV1, auth string) (seedBytes []byte, keyId []byte, err error) {
 	if keyProtected.Version != version {
 		return nil, nil, fmt.Errorf("version not supported: %v", keyProtected.Version)
 	}
@@ -296,7 +301,7 @@ func getKDFKey(cryptoJSON CryptoJSON, auth string) ([]byte, error) {
 // TODO: can we do without this when unmarshalling dynamic JSON?
 // why do integers in KDF params end up as float64 and not int after
 // unmarshal?
-func ensureInt(x interface{}) int {
+func ensureInt(x any) int {
 	res, ok := x.(int)
 	if !ok {
 		res = int(x.(float64))

@@ -48,7 +48,7 @@ func (h *testQRLHandler) Chain() *core.BlockChain              { panic("no backi
 func (h *testQRLHandler) TxPool() qrl.TxPool                   { panic("no backing tx pool") }
 func (h *testQRLHandler) AcceptTxs() bool                      { return true }
 func (h *testQRLHandler) RunPeer(*qrl.Peer, qrl.Handler) error { panic("not used in tests") }
-func (h *testQRLHandler) PeerInfo(qnode.ID) interface{}        { panic("not used in tests") }
+func (h *testQRLHandler) PeerInfo(qnode.ID) any                { panic("not used in tests") }
 
 func (h *testQRLHandler) Handle(peer *qrl.Peer, packet qrl.Packet) error {
 	switch packet := packet.(type) {
@@ -138,7 +138,7 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		errc <- qrlProFork.runQRLPeer(peerNoFork, func(peer *qrl.Peer) error { return nil })
 	}(errc)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case err := <-errc:
 			if err != nil {
@@ -169,7 +169,7 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		errc <- qrlProFork.runQRLPeer(peerNoFork, func(peer *qrl.Peer) error { return nil })
 	}(errc)
 
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case err := <-errc:
 			if err != nil {
@@ -203,7 +203,7 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		}(errc)
 
 		var successes int
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			select {
 			case err := <-errc:
 				if err == nil {
@@ -265,7 +265,7 @@ func testRecvTransactions(t *testing.T, protocol uint) {
 		GasFeeCap: big.NewInt(0),
 		Data:      nil,
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testKey)
+	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
 
 	if err := src.SendTransactions([]*types.Transaction{tx}); err != nil {
 		t.Fatalf("failed to send transaction: %v", err)
@@ -302,7 +302,7 @@ func testSendTransactions(t *testing.T, protocol uint) {
 			GasFeeCap: big.NewInt(0),
 			Data:      make([]byte, 10240),
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testKey)
+		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
 		insert[nonce] = tx
 	}
 	go handler.txpool.Add(insert, false, false) // Need goroutine to not block on feed
@@ -386,7 +386,7 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 	defer source.close()
 
 	sinks := make([]*testHandler, 10)
-	for i := 0; i < len(sinks); i++ {
+	for i := range sinks {
 		sinks[i] = newTestHandler()
 		defer sinks[i].close()
 
@@ -394,8 +394,6 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 	}
 	// Interconnect all the sink handlers with the source handler
 	for i, sink := range sinks {
-		sink := sink // Closure for goroutine below
-
 		sourcePipe, sinkPipe := p2p.MsgPipe()
 		defer sourcePipe.Close()
 		defer sinkPipe.Close()
@@ -414,7 +412,7 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 	}
 	// Subscribe to all the transaction pools
 	txChs := make([]chan core.NewTxsEvent, len(sinks))
-	for i := 0; i < len(sinks); i++ {
+	for i := range sinks {
 		txChs[i] = make(chan core.NewTxsEvent, 1024)
 
 		sub := sinks[i].txpool.SubscribeTransactions(txChs[i])
@@ -431,7 +429,7 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 			GasFeeCap: big.NewInt(0),
 			Data:      nil,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testKey)
+		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
 
 		txs[nonce] = tx
 	}

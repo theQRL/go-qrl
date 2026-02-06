@@ -79,10 +79,11 @@ type TxData interface {
 	nonce() uint64
 	to() *common.Address
 
-	rawSignatureValue() (signature []byte)
-	rawPublicKeyValue() (publicKey []byte)
-	rawDescriptorValue() (descriptor []byte)
-	setSignaturePublicKeyAndDescriptorValues(chainID *big.Int, signature, publicKey, descriptor []byte)
+	descriptor() []byte
+	extraParams() []byte
+	rawSignatureValue() []byte
+	rawPublicKeyValue() []byte
+	setAuthValues(chainID *big.Int, sig, pk, desc, extraParams []byte)
 
 	// effectiveGasPrice computes the gas price paid by the transaction, given
 	// the inclusion block baseFee.
@@ -275,20 +276,26 @@ func (tx *Transaction) Cost() *big.Int {
 
 // RawSignatureValue returns the signature value of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawSignatureValue() (signature []byte) {
+func (tx *Transaction) RawSignatureValue() []byte {
 	return tx.inner.rawSignatureValue()
 }
 
 // RawPublicKeyValue returns the public key value of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawPublicKeyValue() (publicKey []byte) {
+func (tx *Transaction) RawPublicKeyValue() []byte {
 	return tx.inner.rawPublicKeyValue()
 }
 
-// RawDescriptorValue returns the descriptor value of the transaction.
+// Descriptor returns the descriptor value of the transaction.
 // The return values should not be modified by the caller.
-func (tx *Transaction) RawDescriptorValue() (descriptor []byte) {
-	return tx.inner.rawDescriptorValue()
+func (tx *Transaction) Descriptor() []byte {
+	return tx.inner.descriptor()
+}
+
+// ExtraParams returns the scheme params value of the transaction.
+// The return values should not be modified by the caller.
+func (tx *Transaction) ExtraParams() []byte {
+	return tx.inner.extraParams()
 }
 
 // GasFeeCapCmp compares the fee cap of two transactions.
@@ -389,14 +396,14 @@ func (tx *Transaction) Size() uint64 {
 	return size
 }
 
-// WithSignaturePublicKeyAndDescriptor returns a new transaction with the given signature.
-func (tx *Transaction) WithSignaturePublicKeyAndDescriptor(signer Signer, sig, pk, desc []byte) (*Transaction, error) {
-	signature, publicKey, descriptor, err := signer.SignaturePublicKeyAndDescriptorValues(tx, sig, pk, desc)
+// WithAuthValues returns a new transaction with the given signature.
+func (tx *Transaction) WithAuthValues(signer Signer, sig, pk, desc, extraParams []byte) (*Transaction, error) {
+	signature, publicKey, descriptor, extraParams, err := signer.AuthValues(tx, sig, pk, desc, extraParams)
 	if err != nil {
 		return nil, err
 	}
 	cpy := tx.inner.copy()
-	cpy.setSignaturePublicKeyAndDescriptorValues(signer.ChainID(), signature, publicKey, descriptor)
+	cpy.setAuthValues(signer.ChainID(), signature, publicKey, descriptor, extraParams)
 	return &Transaction{inner: cpy, time: tx.time}, nil
 }
 

@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-zond/internal/version"
 )
 
 const (
@@ -56,7 +56,7 @@ func TestConsoleWelcome(t *testing.T) {
 	gzond.SetTemplateFunc("goos", func() string { return runtime.GOOS })
 	gzond.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
 	gzond.SetTemplateFunc("gover", runtime.Version)
-	gzond.SetTemplateFunc("gzondver", func() string { return params.VersionWithCommit("", "") })
+	gzond.SetTemplateFunc("gzondver", func() string { return version.WithCommit("", "") })
 	gzond.SetTemplateFunc("niltime", func() string {
 		// TODO(now.youtrack.cloud/issue/TGZ-16): we need to change the time based on the chain config selected
 		// return time.Unix(1548854791, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
@@ -127,7 +127,7 @@ func testAttachWelcome(t *testing.T, gzond *testgzond, endpoint, apis string) {
 	attach.SetTemplateFunc("goos", func() string { return runtime.GOOS })
 	attach.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
 	attach.SetTemplateFunc("gover", runtime.Version)
-	attach.SetTemplateFunc("gzondver", func() string { return params.VersionWithCommit("", "") })
+	attach.SetTemplateFunc("gzondver", func() string { return version.WithCommit("", "") })
 	attach.SetTemplateFunc("niltime", func() string {
 		// TODO(now.youtrack.cloud/issue/TGZ-16): we need to change the time based on the chain config selected
 		// return time.Unix(1548854791, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")

@@ -84,7 +84,7 @@ var (
 )
 
 type encTest struct {
-	val           interface{}
+	val           any
 	output, error string
 }
 
@@ -232,7 +232,7 @@ var encTests = []encTest{
 	{val: []uint{1, 2, 3}, output: "C3010203"},
 	{
 		// [ [], [[]], [ [], [[]] ] ]
-		val:    []interface{}{[]interface{}{}, [][]interface{}{{}}, []interface{}{[]interface{}{}, [][]interface{}{{}}}},
+		val:    []any{[]any{}, [][]any{{}}, []any{[]any{}, [][]any{{}}}},
 		output: "C7C0C1C0C3C0C1C0",
 	},
 	{
@@ -240,7 +240,7 @@ var encTests = []encTest{
 		output: "F83C836161618362626283636363836464648365656583666666836767678368686883696969836A6A6A836B6B6B836C6C6C836D6D6D836E6E6E836F6F6F",
 	},
 	{
-		val:    []interface{}{uint(1), uint(0xFFFFFF), []interface{}{[]uint{4, 5, 5}}, "abc"},
+		val:    []any{uint(1), uint(0xFFFFFF), []any{[]uint{4, 5, 5}}, "abc"},
 		output: "CE0183FFFFFFC4C304050583616263",
 	},
 	{
@@ -317,7 +317,6 @@ var encTests = []encTest{
 	{val: &optionalAndTailField{A: 1}, output: "C101"},
 	{val: &optionalAndTailField{A: 1, B: 2}, output: "C20102"},
 	{val: &optionalAndTailField{A: 1, Tail: []uint{5, 6}}, output: "C401800506"},
-	{val: &optionalAndTailField{A: 1, Tail: []uint{5, 6}}, output: "C401800506"},
 	{val: &optionalBigIntField{A: 1}, output: "C101"},
 	{val: &optionalPtrField{A: 1}, output: "C101"},
 	{val: &optionalPtrFieldNil{A: 1}, output: "C101"},
@@ -335,9 +334,9 @@ var encTests = []encTest{
 	{val: (*uint256.Int)(nil), output: "80"},
 	{val: (*[]string)(nil), output: "C0"},
 	{val: (*[10]string)(nil), output: "C0"},
-	{val: (*[]interface{})(nil), output: "C0"},
+	{val: (*[]any)(nil), output: "C0"},
 	{val: (*[]struct{ uint })(nil), output: "C0"},
-	{val: (*interface{})(nil), output: "C0"},
+	{val: (*any)(nil), output: "C0"},
 
 	// nil struct fields
 	{
@@ -402,7 +401,7 @@ var encTests = []encTest{
 	{val: []byteEncoder{0, 1, 2, 3, 4}, output: "C5C0C0C0C0C0"},
 }
 
-func runEncTests(t *testing.T, f func(val interface{}) ([]byte, error)) {
+func runEncTests(t *testing.T, f func(val any) ([]byte, error)) {
 	for i, test := range encTests {
 		output, err := f(test.val)
 		if err != nil && test.error == "" {
@@ -423,7 +422,7 @@ func runEncTests(t *testing.T, f func(val interface{}) ([]byte, error)) {
 }
 
 func TestEncode(t *testing.T) {
-	runEncTests(t, func(val interface{}) ([]byte, error) {
+	runEncTests(t, func(val any) ([]byte, error) {
 		b := new(bytes.Buffer)
 		err := Encode(b, val)
 		return b.Bytes(), err
@@ -436,7 +435,7 @@ func TestEncodeToBytes(t *testing.T) {
 
 func TestEncodeAppendToBytes(t *testing.T) {
 	buffer := make([]byte, 20)
-	runEncTests(t, func(val interface{}) ([]byte, error) {
+	runEncTests(t, func(val any) ([]byte, error) {
 		w := NewEncoderBuffer(nil)
 		defer w.Flush()
 
@@ -450,7 +449,7 @@ func TestEncodeAppendToBytes(t *testing.T) {
 }
 
 func TestEncodeToReader(t *testing.T) {
-	runEncTests(t, func(val interface{}) ([]byte, error) {
+	runEncTests(t, func(val any) ([]byte, error) {
 		_, r, err := EncodeToReader(val)
 		if err != nil {
 			return nil, err
@@ -460,7 +459,7 @@ func TestEncodeToReader(t *testing.T) {
 }
 
 func TestEncodeToReaderPiecewise(t *testing.T) {
-	runEncTests(t, func(val interface{}) ([]byte, error) {
+	runEncTests(t, func(val any) ([]byte, error) {
 		size, r, err := EncodeToReader(val)
 		if err != nil {
 			return nil, err
@@ -491,10 +490,9 @@ func TestEncodeToReaderPiecewise(t *testing.T) {
 func TestEncodeToReaderReturnToPool(t *testing.T) {
 	buf := make([]byte, 50)
 	wg := new(sync.WaitGroup)
-	for i := 0; i < 5; i++ {
-		wg.Add(1)
-		go func() {
-			for i := 0; i < 1000; i++ {
+	for range 5 {
+		wg.Go(func() {
+			for range 1000 {
 				_, r, _ := EncodeToReader("foo")
 				io.ReadAll(r)
 				r.Read(buf)
@@ -502,23 +500,22 @@ func TestEncodeToReaderReturnToPool(t *testing.T) {
 				r.Read(buf)
 				r.Read(buf)
 			}
-			wg.Done()
-		}()
+		})
 	}
 	wg.Wait()
 }
 
-var sink interface{}
+var sink any
 
 func BenchmarkIntsize(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sink = intsize(0x12345678)
 	}
 }
 
 func BenchmarkPutint(b *testing.B) {
 	buf := make([]byte, 8)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		putint(buf, 0x12345678)
 		sink = buf
 	}
@@ -530,10 +527,9 @@ func BenchmarkEncodeBigInts(b *testing.B) {
 		ints[i] = math.BigPow(2, int64(i))
 	}
 	out := bytes.NewBuffer(make([]byte, 0, 4096))
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(out, ints); err != nil {
 			b.Fatal(err)
@@ -547,10 +543,9 @@ func BenchmarkEncodeU256Ints(b *testing.B) {
 		ints[i], _ = uint256.FromBig(math.BigPow(2, int64(i)))
 	}
 	out := bytes.NewBuffer(make([]byte, 0, 4096))
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(out, ints); err != nil {
 			b.Fatal(err)
@@ -564,7 +559,7 @@ func BenchmarkEncodeConcurrentInterface(b *testing.B) {
 		B *big.Int
 		C [20]byte
 	}
-	value := []interface{}{
+	value := []any{
 		uint(999),
 		&struct1{A: "hello", B: big.NewInt(0xFFFFFFFF)},
 		[10]byte{1, 2, 3, 4, 5, 6},
@@ -572,11 +567,8 @@ func BenchmarkEncodeConcurrentInterface(b *testing.B) {
 	}
 
 	var wg sync.WaitGroup
-	for cpu := 0; cpu < runtime.NumCPU(); cpu++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-
+	for range runtime.NumCPU() {
+		wg.Go(func() {
 			var buffer bytes.Buffer
 			for i := 0; i < b.N; i++ {
 				buffer.Reset()
@@ -585,7 +577,7 @@ func BenchmarkEncodeConcurrentInterface(b *testing.B) {
 					panic(err)
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }
@@ -601,7 +593,7 @@ func BenchmarkEncodeByteArrayStruct(b *testing.B) {
 	var value byteArrayStruct
 
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(&out, &value); err != nil {
 			b.Fatal(err)
@@ -629,7 +621,7 @@ func BenchmarkEncodeStructPtrSlice(b *testing.B) {
 	}
 
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		out.Reset()
 		if err := Encode(&out, &value); err != nil {
 			b.Fatal(err)

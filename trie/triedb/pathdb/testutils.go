@@ -19,6 +19,7 @@ package pathdb
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"slices"
 
 	"github.com/theQRL/go-zond/common"
@@ -85,9 +86,7 @@ func (h *testHasher) Commit(collectLeaf bool) (common.Hash, *trienode.NodeSet, e
 		nodes = make(map[common.Hash][]byte)
 		set   = trienode.NewNodeSet(h.owner)
 	)
-	for hash, val := range h.cleans {
-		nodes[hash] = val
-	}
+	maps.Copy(nodes, h.cleans)
 	for hash, val := range h.dirties {
 		nodes[hash] = val
 		if bytes.Equal(val, h.cleans[hash]) {

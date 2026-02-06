@@ -29,7 +29,7 @@ var errInts = errors.New("error in subscribeInts")
 
 func subscribeInts(max, fail int, c chan<- int) Subscription {
 	return NewSubscription(func(quit <-chan struct{}) error {
-		for i := 0; i < max; i++ {
+		for i := range max {
 			if i >= fail {
 				return errInts
 			}
@@ -49,7 +49,7 @@ func TestNewSubscriptionError(t *testing.T) {
 	channel := make(chan int)
 	sub := subscribeInts(10, 2, channel)
 loop:
-	for want := 0; want < 10; want++ {
+	for want := range 10 {
 		select {
 		case got := <-channel:
 			if got != want {
@@ -153,4 +153,28 @@ func TestResubscribeWithErrorHandler(t *testing.T) {
 	if !reflect.DeepEqual(subErrs, expectedSubErrs) {
 		t.Fatalf("unexpected subscription errors %v, want %v", subErrs, expectedSubErrs)
 	}
+}
+
+func TestResubscribeWithCompletedSubscription(t *testing.T) {
+	t.Parallel()
+
+	quitProducerAck := make(chan struct{})
+	quitProducer := make(chan struct{})
+
+	sub := ResubscribeErr(100*time.Millisecond, func(ctx context.Context, lastErr error) (Subscription, error) {
+		return NewSubscription(func(unsubscribed <-chan struct{}) error {
+			select {
+			case <-quitProducer:
+				quitProducerAck <- struct{}{}
+				return nil
+			case <-unsubscribed:
+				return nil
+			}
+		}), nil
+	})
+
+	// Ensure producer has started and exited before Unsubscribe
+	close(quitProducer)
+	<-quitProducerAck
+	sub.Unsubscribe()
 }

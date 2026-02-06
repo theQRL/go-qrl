@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/theQRL/go-zond/internal/cmdtest"
+	"github.com/theQRL/go-zond/internal/reexec"
 	"github.com/theQRL/go-zond/rpc"
 )
 
@@ -83,7 +83,7 @@ func runGzond(t *testing.T, args ...string) *testgzond {
 // waitForEndpoint attempts to connect to an RPC endpoint until it succeeds.
 func waitForEndpoint(t *testing.T, endpoint string, timeout time.Duration) {
 	probe := func() bool {
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		ctx, cancel := context.WithTimeout(t.Context(), timeout)
 		defer cancel()
 		c, err := rpc.DialContext(ctx, endpoint)
 		if c != nil {

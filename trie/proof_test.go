@@ -174,7 +174,7 @@ func TestRangeProof(t *testing.T) {
 		entries = append(entries, kv)
 	}
 	slices.SortFunc(entries, (*kv).cmp)
-	for i := 0; i < 500; i++ {
+	for i := range 500 {
 		start := mrand.Intn(len(entries))
 		end := mrand.Intn(len(entries)-start) + start + 1
 
@@ -207,7 +207,7 @@ func TestRangeProofWithNonExistentProof(t *testing.T) {
 		entries = append(entries, kv)
 	}
 	slices.SortFunc(entries, (*kv).cmp)
-	for i := 0; i < 500; i++ {
+	for i := range 500 {
 		start := mrand.Intn(len(entries))
 		end := mrand.Intn(len(entries)-start) + start + 1
 		proof := memorydb.New()
@@ -466,10 +466,10 @@ func TestAllElementsProof(t *testing.T) {
 
 // TestSingleSideRangeProof tests the range starts from zero.
 func TestSingleSideRangeProof(t *testing.T) {
-	for i := 0; i < 64; i++ {
+	for range 64 {
 		trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 		var entries []*kv
-		for i := 0; i < 4096; i++ {
+		for range 4096 {
 			value := &kv{randBytes(32), randBytes(20), false}
 			trie.MustUpdate(value.k, value.v)
 			entries = append(entries, value)
@@ -501,10 +501,10 @@ func TestSingleSideRangeProof(t *testing.T) {
 
 // TestReverseSingleSideRangeProof tests the range ends with 0xffff...fff.
 func TestReverseSingleSideRangeProof(t *testing.T) {
-	for i := 0; i < 64; i++ {
+	for range 64 {
 		trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 		var entries []*kv
-		for i := 0; i < 4096; i++ {
+		for range 4096 {
 			value := &kv{randBytes(32), randBytes(20), false}
 			trie.MustUpdate(value.k, value.v)
 			entries = append(entries, value)
@@ -545,7 +545,7 @@ func TestBadRangeProof(t *testing.T) {
 	}
 	slices.SortFunc(entries, (*kv).cmp)
 
-	for i := 0; i < 500; i++ {
+	for i := range 500 {
 		start := mrand.Intn(len(entries))
 		end := mrand.Intn(len(entries)-start) + start + 1
 		proof := memorydb.New()
@@ -611,7 +611,7 @@ func TestBadRangeProof(t *testing.T) {
 func TestGappedRangeProof(t *testing.T) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	var entries []*kv // Sorted entries
-	for i := byte(0); i < 10; i++ {
+	for i := range byte(10) {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		trie.MustUpdate(value.k, value.v)
 		entries = append(entries, value)
@@ -685,7 +685,7 @@ func TestSameSideProofs(t *testing.T) {
 func TestHasRightElement(t *testing.T) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	var entries []*kv
-	for i := 0; i < 4096; i++ {
+	for range 4096 {
 		value := &kv{randBytes(32), randBytes(20), false}
 		trie.MustUpdate(value.k, value.v)
 		entries = append(entries, value)
@@ -939,8 +939,7 @@ func BenchmarkProve(b *testing.B) {
 		keys = append(keys, k)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		kv := vals[keys[i%len(keys)]]
 		proofs := memorydb.New()
 		if trie.Prove(kv.k, proofs); proofs.Len() == 0 {
@@ -961,8 +960,7 @@ func BenchmarkVerifyProof(b *testing.B) {
 		proofs = append(proofs, proof)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		im := i % len(keys)
 		if _, err := VerifyProof(root, []byte(keys[im]), proofs[im]); err != nil {
 			b.Fatalf("key %x: %v", keys[im], err)
@@ -999,8 +997,7 @@ func benchmarkVerifyRangeProof(b *testing.B, size int) {
 		values = append(values, entries[i].v)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, proof)
 		if err != nil {
 			b.Fatalf("Case %d(%d->%d) expect no error, got %v", i, start, end-1, err)
@@ -1026,8 +1023,7 @@ func benchmarkVerifyRangeNoProof(b *testing.B, size int) {
 		keys = append(keys, entry.k)
 		values = append(values, entry.v)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, err := VerifyRangeProof(trie.Hash(), keys[0], keys[len(keys)-1], keys, values, nil)
 		if err != nil {
 			b.Fatalf("Expected no error, got %v", err)
@@ -1038,7 +1034,7 @@ func benchmarkVerifyRangeNoProof(b *testing.B, size int) {
 func randomTrie(n int) (*Trie, map[string]*kv) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	vals := make(map[string]*kv)
-	for i := byte(0); i < 100; i++ {
+	for i := range byte(100) {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		value2 := &kv{common.LeftPadBytes([]byte{i + 10}, 32), []byte{i}, false}
 		trie.MustUpdate(value.k, value.v)
@@ -1046,7 +1042,7 @@ func randomTrie(n int) (*Trie, map[string]*kv) {
 		vals[string(value.k)] = value
 		vals[string(value2.k)] = value2
 	}
-	for i := 0; i < n; i++ {
+	for range n {
 		value := &kv{randBytes(32), randBytes(20), false}
 		trie.MustUpdate(value.k, value.v)
 		vals[string(value.k)] = value

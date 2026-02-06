@@ -22,7 +22,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"net"
 	"net/http"
@@ -115,11 +114,6 @@ var (
 		Usage:    "Directory for the keystore (default = inside the datadir)",
 		Category: flags.AccountCategory,
 	}
-	USBFlag = &cli.BoolFlag{
-		Name:     "usb",
-		Usage:    "Enable monitoring and management of USB hardware wallets",
-		Category: flags.AccountCategory,
-	}
 	NetworkIdFlag = &cli.Uint64Flag{
 		Name:     "networkid",
 		Usage:    "Explicitly set network id (integer)(For testnets: use --betanet instead)",
@@ -163,12 +157,6 @@ var (
 		Name:     "identity",
 		Usage:    "Custom node name",
 		Category: flags.NetworkingCategory,
-	}
-	DocRootFlag = &flags.DirectoryFlag{
-		Name:     "docroot",
-		Usage:    "Document Root for HTTPClient file scheme",
-		Value:    flags.DirectoryString(flags.HomeDir()),
-		Category: flags.APICategory,
 	}
 	ExitWhenSyncedFlag = &cli.BoolFlag{
 		Name:     "exitwhensynced",
@@ -236,7 +224,7 @@ var (
 	}
 	GCModeFlag = &cli.StringFlag{
 		Name:     "gcmode",
-		Usage:    `Blockchain garbage collection mode, only relevant in state.scheme=hash ("full", "archive")`,
+		Usage:    `Blockchain garbage collection mode ("full", "archive")`,
 		Value:    "full",
 		Category: flags.StateCategory,
 	}
@@ -406,12 +394,6 @@ var (
 	}
 
 	// Account settings
-	UnlockedAccountFlag = &cli.StringFlag{
-		Name:     "unlock",
-		Usage:    "Comma separated list of accounts to unlock",
-		Value:    "",
-		Category: flags.AccountCategory,
-	}
 	PasswordFileFlag = &cli.PathFlag{
 		Name:      "password",
 		Usage:     "Password file to use for non-interactive password input",
@@ -424,12 +406,6 @@ var (
 		Value:    "",
 		Category: flags.AccountCategory,
 	}
-	InsecureUnlockAllowedFlag = &cli.BoolFlag{
-		Name:     "allow-insecure-unlock",
-		Usage:    "Allow insecure account unlocking when account-related RPCs are exposed by http",
-		Category: flags.AccountCategory,
-	}
-
 	// QRVM settings
 	VMEnableDebugFlag = &cli.BoolFlag{
 		Name:     "vmdebug",
@@ -494,9 +470,9 @@ var (
 	}
 
 	// MISC settings
-	SyncTargetFlag = &cli.PathFlag{
+	SyncTargetFlag = &cli.StringFlag{
 		Name:      "synctarget",
-		Usage:     `File for containing the hex-encoded block-rlp as sync target(dev feature)`,
+		Usage:     `Hash of the block to full sync to (dev testing feature)`,
 		TakesFile: true,
 		Category:  flags.MiscCategory,
 	}
@@ -882,7 +858,7 @@ func MakeDataDir(ctx *cli.Context) string {
 
 // setNodeKey creates a node key from set command line flags, either loading it
 // from a file or as a specified hex value. If neither flags were provided, this
-// method returns nil and an emphemeral key is to be generated.
+// method returns nil and an ephemeral key is to be generated.
 func setNodeKey(ctx *cli.Context, cfg *p2p.Config) {
 	var (
 		hex  = ctx.String(NodeKeyHexFlag.Name)
@@ -993,8 +969,8 @@ func setNAT(ctx *cli.Context, cfg *p2p.Config) {
 // SplitAndTrim splits input separated by a comma
 // and trims excessive white space from the substrings.
 func SplitAndTrim(input string) (ret []string) {
-	l := strings.Split(input, ",")
-	for _, r := range l {
+	l := strings.SplitSeq(input, ",")
+	for r := range l {
 		if r = strings.TrimSpace(r); r != "" {
 			ret = append(ret, r)
 		}
@@ -1005,8 +981,10 @@ func SplitAndTrim(input string) (ret []string) {
 // setHTTP creates the HTTP RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setHTTP(ctx *cli.Context, cfg *node.Config) {
-	if ctx.Bool(HTTPEnabledFlag.Name) && cfg.HTTPHost == "" {
-		cfg.HTTPHost = "127.0.0.1"
+	if ctx.Bool(HTTPEnabledFlag.Name) {
+		if cfg.HTTPHost == "" {
+			cfg.HTTPHost = "127.0.0.1"
+		}
 		if ctx.IsSet(HTTPListenAddrFlag.Name) {
 			cfg.HTTPHost = ctx.String(HTTPListenAddrFlag.Name)
 		}
@@ -1067,8 +1045,10 @@ func setGraphQL(ctx *cli.Context, cfg *node.Config) {
 // setWS creates the WebSocket RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setWS(ctx *cli.Context, cfg *node.Config) {
-	if ctx.Bool(WSEnabledFlag.Name) && cfg.WSHost == "" {
-		cfg.WSHost = "127.0.0.1"
+	if ctx.Bool(WSEnabledFlag.Name) {
+		if cfg.WSHost == "" {
+			cfg.WSHost = "127.0.0.1"
+		}
 		if ctx.IsSet(WSListenAddrFlag.Name) {
 			cfg.WSHost = ctx.String(WSListenAddrFlag.Name)
 		}
@@ -1203,7 +1183,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.MaxPendingPeers = ctx.Int(MaxPendingPeersFlag.Name)
 	}
 	if ctx.IsSet(NoDiscoverFlag.Name) {
-		cfg.NoDiscovery = true
+		cfg.NoDiscovery = ctx.Bool(NoDiscoverFlag.Name)
 	}
 
 	CheckExclusive(ctx, DiscoveryV4Flag, NoDiscoverFlag)
@@ -1251,16 +1231,10 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		cfg.KeyStoreDir = ctx.String(KeyStoreDirFlag.Name)
 	}
 	if ctx.IsSet(DeveloperFlag.Name) {
-		cfg.UseLightweightKDF = true
+		cfg.UseLightweightKDF = ctx.Bool(DeveloperFlag.Name)
 	}
 	if ctx.IsSet(LightKDFFlag.Name) {
 		cfg.UseLightweightKDF = ctx.Bool(LightKDFFlag.Name)
-	}
-	if ctx.IsSet(USBFlag.Name) {
-		cfg.USB = ctx.Bool(USBFlag.Name)
-	}
-	if ctx.IsSet(InsecureUnlockAllowedFlag.Name) {
-		cfg.InsecureUnlockAllowed = ctx.Bool(InsecureUnlockAllowedFlag.Name)
 	}
 	if ctx.IsSet(DBEngineFlag.Name) {
 		dbEngine := ctx.String(DBEngineFlag.Name)
@@ -1302,8 +1276,8 @@ func setGPO(ctx *cli.Context, cfg *gasprice.Config) {
 
 func setTxPool(ctx *cli.Context, cfg *legacypool.Config) {
 	if ctx.IsSet(TxPoolLocalsFlag.Name) {
-		locals := strings.Split(ctx.String(TxPoolLocalsFlag.Name), ",")
-		for _, account := range locals {
+		locals := strings.SplitSeq(ctx.String(TxPoolLocalsFlag.Name), ",")
+		for account := range locals {
 			trimmed := strings.TrimSpace(account)
 			addr, err := common.NewAddressFromString(trimmed)
 			if err != nil {
@@ -1365,7 +1339,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 		return
 	}
 	cfg.RequiredBlocks = make(map[uint64]common.Hash)
-	for _, entry := range strings.Split(requiredBlocks, ",") {
+	for entry := range strings.SplitSeq(requiredBlocks, ",") {
 		parts := strings.Split(entry, "=")
 		if len(parts) != 2 {
 			Fatalf("Invalid required block entry: %s", entry)
@@ -1385,7 +1359,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 // CheckExclusive verifies that only a single instance of the provided flags was
 // set by the user. Each flag might optionally be followed by a string type to
 // specialize it further.
-func CheckExclusive(ctx *cli.Context, args ...interface{}) {
+func CheckExclusive(ctx *cli.Context, args ...any) {
 	set := make([]string, 0, 1)
 	for i := 0; i < len(args); i++ {
 		// Make sure the next argument is a flag and skip if not set
@@ -1451,7 +1425,7 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 	}
 	// Ensure Go's GC ignores the database cache for trigger percentage
 	cache := ctx.Int(CacheFlag.Name)
-	gogc := math.Max(20, math.Min(100, 100/(float64(cache)/1024)))
+	gogc := max(20, min(100, 100/(float64(cache)/1024)))
 
 	log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
 	godebug.SetGCPercent(int(gogc))
@@ -1524,9 +1498,6 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 			cfg.TrieCleanCache += cfg.SnapshotCache
 			cfg.SnapshotCache = 0 // Disabled
 		}
-	}
-	if ctx.IsSet(DocRootFlag.Name) {
-		cfg.DocRoot = ctx.String(DocRootFlag.Name)
 	}
 	if ctx.IsSet(VMEnableDebugFlag.Name) {
 		// TODO(fjl): force-enable this in --dev mode
@@ -1928,7 +1899,7 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 	// Otherwise resolve absolute paths and return them
 	var preloads []string
 
-	for _, file := range strings.Split(ctx.String(PreloadJSFlag.Name), ",") {
+	for file := range strings.SplitSeq(ctx.String(PreloadJSFlag.Name), ",") {
 		preloads = append(preloads, strings.TrimSpace(file))
 	}
 	return preloads

@@ -41,8 +41,8 @@ const (
 )
 
 var (
-	hashT    = reflect.TypeOf(Hash{})
-	addressT = reflect.TypeOf(Address{})
+	hashT    = reflect.TypeFor[Hash]()
+	addressT = reflect.TypeFor[Address]()
 
 	// MaxAddress represents the maximum possible address value.
 	MaxAddress, _ = NewAddressFromString("Qffffffffffffffffffffffffffffffffffffffff")
@@ -163,7 +163,7 @@ func (h Hash) Generate(rand *rand.Rand, size int) reflect.Value {
 }
 
 // Scan implements Scanner for database/sql.
-func (h *Hash) Scan(src interface{}) error {
+func (h *Hash) Scan(src any) error {
 	srcB, ok := src.([]byte)
 	if !ok {
 		return fmt.Errorf("can't scan %T into Hash", src)
@@ -184,7 +184,7 @@ func (h Hash) Value() (driver.Value, error) {
 func (Hash) ImplementsGraphQLType(name string) bool { return name == "Bytes32" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (h *Hash) UnmarshalGraphQL(input interface{}) error {
+func (h *Hash) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -350,7 +350,7 @@ func (a *Address) UnmarshalJSON(input []byte) error {
 }
 
 // Scan implements Scanner for database/sql.
-func (a *Address) Scan(src interface{}) error {
+func (a *Address) Scan(src any) error {
 	srcB, ok := src.([]byte)
 	if !ok {
 		return fmt.Errorf("can't scan %T into Address", src)
@@ -371,7 +371,7 @@ func (a Address) Value() (driver.Value, error) {
 func (a Address) ImplementsGraphQLType(name string) bool { return name == "Address" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (a *Address) UnmarshalGraphQL(input interface{}) error {
+func (a *Address) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -448,7 +448,7 @@ func isString(input []byte) bool {
 // UnmarshalJSON parses a hash in hex syntax.
 func (d *Decimal) UnmarshalJSON(input []byte) error {
 	if !isString(input) {
-		return &json.UnmarshalTypeError{Value: "non-string", Type: reflect.TypeOf(uint64(0))}
+		return &json.UnmarshalTypeError{Value: "non-string", Type: reflect.TypeFor[uint64]()}
 	}
 	if i, err := strconv.ParseInt(string(input[1:len(input)-1]), 10, 64); err == nil {
 		*d = Decimal(i)

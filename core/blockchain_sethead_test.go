@@ -20,25 +20,13 @@
 package core
 
 import (
-	"fmt"
-	"math/big"
-	"path"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
 )
 
+// TODO(now.youtrack.cloud/issue/TGZ-10)
+/*
 // rewindTest is a test case for chain rollback upon user request.
 type rewindTest struct {
 	canonicalBlocks int     // Number of blocks to generate for the canonical chain (heavier)
@@ -150,8 +138,6 @@ func (tt *rewindTest) dump(crash bool) string {
 	return buffer.String()
 }
 
-// TODO(now.youtrack.cloud/issue/TGZ-10)
-/*
 // Tests a sethead for a short canonical chain where a recent block was already
 // committed to disk and then the sethead called. In this case we expect the full
 // chain to be rolled back to the committed block. Everything above the sethead
@@ -1029,7 +1015,7 @@ func testLongReorgedSnapSyncingDeepSetHead(t *testing.T, snapshots bool) {
 		expHeadBlock:     0,
 	}, snapshots)
 }
-*/
+
 
 func testSetHead(t *testing.T, tt *rewindTest, snapshots bool) {
 	for _, scheme := range []string{rawdb.HashScheme, rawdb.PathScheme} {
@@ -1154,6 +1140,7 @@ func testSetHeadWithScheme(t *testing.T, tt *rewindTest, snapshots bool, scheme 
 		t.Errorf("Frozen block count mismatch: have %d, want %d", frozen, tt.expFrozen)
 	}
 }
+*/
 
 // verifyNoGaps checks that there are no gaps after the initial set of blocks in
 // the database and errors if found.

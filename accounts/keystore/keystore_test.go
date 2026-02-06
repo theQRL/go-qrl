@@ -29,13 +29,14 @@ import (
 
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 )
 
 var testSigData = make([]byte, 32)
 
 func TestKeyStore(t *testing.T) {
+	t.Parallel()
 	dir, ks := tmpKeyStore(t)
 
 	a, err := ks.NewAccount("foo")
@@ -70,6 +71,7 @@ func TestKeyStore(t *testing.T) {
 }
 
 func TestSign(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 
 	pass := "" // not used but required by API
@@ -86,6 +88,7 @@ func TestSign(t *testing.T) {
 }
 
 func TestSignWithPassphrase(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 
 	pass := "passwd"
@@ -247,7 +250,7 @@ func TestWalletNotifierLifecycle(t *testing.T) {
 	updates := make(chan accounts.WalletEvent)
 
 	subs := make([]event.Subscription, 2)
-	for i := 0; i < len(subs); i++ {
+	for i := range subs {
 		// Create a new subscription
 		subs[i] = ks.Subscribe(updates)
 		if !waitForKsUpdating(t, ks, true, 250*time.Millisecond) {
@@ -255,7 +258,7 @@ func TestWalletNotifierLifecycle(t *testing.T) {
 		}
 	}
 	// Close all but one sub
-	for i := 0; i < len(subs)-1; i++ {
+	for i := range len(subs) - 1 {
 		// Close an existing subscription
 		subs[i].Unsubscribe()
 	}
@@ -280,6 +283,7 @@ type walletEvent struct {
 // Tests that wallet notifications and correctly fired when accounts are added
 // or deleted from the keystore.
 func TestWalletNotifications(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 
 	// Subscribe to the wallet feed and collect events.
@@ -306,7 +310,7 @@ func TestWalletNotifications(t *testing.T) {
 		live       = make(map[common.Address]accounts.Account)
 		wantEvents []walletEvent
 	)
-	for i := 0; i < 1024; i++ {
+	for range 1024 {
 		if create := len(live) == 0 || rand.Int()%4 > 0; create {
 			// Add a new account and ensure wallet notifications arrives
 			account, err := ks.NewAccount("")
@@ -339,26 +343,28 @@ func TestWalletNotifications(t *testing.T) {
 	checkEvents(t, wantEvents, events)
 }
 
-// TestImportExport tests the import functionality of a keystore.
-func TestImportECDSA(t *testing.T) {
+// TestImportWallet tests the import functionality of a keystore.
+func TestImportWallet(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
-	key, err := pqcrypto.GenerateWalletKey()
+	wallet, err := wallet.Generate(wallet.ML_DSA_87)
 	if err != nil {
-		t.Fatalf("failed to generate key: %v", key)
+		t.Fatalf("failed to generate wallet: %v", wallet)
 	}
-	if _, err = ks.ImportMLDSA87(key, "old"); err != nil {
+	if _, err = ks.ImportWallet(wallet, "old"); err != nil {
 		t.Errorf("importing failed: %v", err)
 	}
-	if _, err = ks.ImportMLDSA87(key, "old"); err == nil {
-		t.Errorf("importing same key twice succeeded")
+	if _, err = ks.ImportWallet(wallet, "old"); err == nil {
+		t.Errorf("importing same wallet twice succeeded")
 	}
-	if _, err = ks.ImportMLDSA87(key, "new"); err == nil {
-		t.Errorf("importing same key twice succeeded")
+	if _, err = ks.ImportWallet(wallet, "new"); err == nil {
+		t.Errorf("importing same wallet twice succeeded")
 	}
 }
 
-// TestImportECDSA tests the import and export functionality of a keystore.
+// TestImportExport tests the import and export functionality of a keystore.
 func TestImportExport(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 	acc, err := ks.NewAccount("old")
 	if err != nil {
@@ -387,6 +393,7 @@ func TestImportExport(t *testing.T) {
 // TestImportRace tests the keystore on races.
 // This test should fail under -race if importing races.
 func TestImportRace(t *testing.T) {
+	t.Parallel()
 	_, ks := tmpKeyStore(t)
 	acc, err := ks.NewAccount("old")
 	if err != nil {
@@ -400,7 +407,7 @@ func TestImportRace(t *testing.T) {
 	var atom atomic.Uint32
 	var wg sync.WaitGroup
 	wg.Add(2)
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		go func() {
 			defer wg.Done()
 			if _, err := ks2.Import(json, "new", "new"); err != nil {
@@ -452,8 +459,5 @@ func checkEvents(t *testing.T, want []walletEvent, have []walletEvent) {
 
 func tmpKeyStore(t *testing.T) (string, *KeyStore) {
 	d := t.TempDir()
-	newKs := func(kd string) *KeyStore {
-		return NewKeyStore(kd, veryLightArgon2idT, veryLightArgon2idM, veryLightArgon2idP)
-	}
-	return d, newKs(d)
+	return d, NewKeyStore(d, veryLightArgon2idT, veryLightArgon2idM, veryLightArgon2idP)
 }

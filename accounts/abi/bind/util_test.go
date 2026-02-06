@@ -28,10 +28,10 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
-var testKey, _ = pqcrypto.HexToWallet("f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
+var testWallet, _ = wallet.RestoreFromSeedHex("010000f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
 
 var wantedAddr, _ = common.NewAddressFromString("QcF39819954C9b2937A802eCff89F4d7aA89b0769")
 var waitDeployedTests = map[string]struct {
@@ -57,14 +57,14 @@ func TestWaitDeployed(t *testing.T) {
 	for name, test := range waitDeployedTests {
 		backend := backends.NewSimulatedBackend(
 			core.GenesisAlloc{
-				testKey.GetAddress(): {Balance: big.NewInt(10000000000000000)},
+				testWallet.GetAddress(): {Balance: big.NewInt(10000000000000000)},
 			},
 			10000000,
 		)
 		defer backend.Close()
 
 		// Create the transaction
-		head, _ := backend.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+		head, _ := backend.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 		gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 		tx := types.NewTx(&types.DynamicFeeTx{
@@ -74,22 +74,21 @@ func TestWaitDeployed(t *testing.T) {
 			Data:      common.FromHex(test.code),
 			GasFeeCap: gasFeeCap,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testKey)
+		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
 
 		// Wait for it to get mined in the background.
 		var (
 			err     error
 			address common.Address
 			mined   = make(chan struct{})
-			ctx     = context.Background()
 		)
 		go func() {
-			address, err = bind.WaitDeployed(ctx, backend, tx)
+			address, err = bind.WaitDeployed(t.Context(), backend, tx)
 			close(mined)
 		}()
 
 		// Send and mine the transaction.
-		backend.SendTransaction(ctx, tx)
+		backend.SendTransaction(t.Context(), tx)
 		backend.Commit()
 
 		select {
@@ -109,13 +108,13 @@ func TestWaitDeployed(t *testing.T) {
 func TestWaitDeployedCornerCases(t *testing.T) {
 	backend := backends.NewSimulatedBackend(
 		core.GenesisAlloc{
-			testKey.GetAddress(): {Balance: big.NewInt(10000000000000000)},
+			testWallet.GetAddress(): {Balance: big.NewInt(10000000000000000)},
 		},
 		10000000,
 	)
 	defer backend.Close()
 
-	head, _ := backend.HeaderByNumber(context.Background(), nil) // Should be child's, good enough
+	head, _ := backend.HeaderByNumber(t.Context(), nil) // Should be child's, good enough
 	gasFeeCap := new(big.Int).Add(head.BaseFee, big.NewInt(1))
 
 	// Create a transaction to an account.
@@ -129,8 +128,8 @@ func TestWaitDeployedCornerCases(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(code),
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testKey)
-	ctx, cancel := context.WithCancel(context.Background())
+	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	backend.SendTransaction(ctx, tx)
 	backend.Commit()
@@ -147,7 +146,7 @@ func TestWaitDeployedCornerCases(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(code),
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testKey)
+	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
 
 	go func() {
 		contextCanceled := errors.New("context canceled")

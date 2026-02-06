@@ -24,7 +24,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/simulations/pipes"
+	"github.com/theQRL/go-zond/p2p/pipes"
 )
 
 func TestProtocolHandshake(t *testing.T) {
@@ -107,7 +107,7 @@ func TestProtocolHandshake(t *testing.T) {
 func TestProtocolHandshakeErrors(t *testing.T) {
 	tests := []struct {
 		code uint64
-		msg  interface{}
+		msg  any
 		err  error
 	}{
 		{

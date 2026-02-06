@@ -20,14 +20,13 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
+	gomath "math"
 	"math/big"
 
 	pkgerrors "github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto/bn256"
 	"github.com/theQRL/go-zond/params"
 )
 
@@ -45,10 +44,7 @@ var PrecompiledContractsShanghai = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{eip2565: true},
-	common.BytesToAddress([]byte{6}): &bn256AddIstanbul{},
-	common.BytesToAddress([]byte{7}): &bn256ScalarMulIstanbul{},
-	common.BytesToAddress([]byte{8}): &bn256PairingIstanbul{},
+	common.BytesToAddress([]byte{5}): &bigModExp{},
 }
 
 var (
@@ -199,55 +195,16 @@ func (c *dataCopy) Run(in []byte) ([]byte, error) {
 }
 
 // bigModExp implements a native big integer exponential modular operation.
-type bigModExp struct {
-	eip2565 bool
-}
+type bigModExp struct{}
 
 var (
-	big0      = big.NewInt(0)
-	big1      = big.NewInt(1)
-	big3      = big.NewInt(3)
-	big4      = big.NewInt(4)
-	big7      = big.NewInt(7)
-	big8      = big.NewInt(8)
-	big16     = big.NewInt(16)
-	big20     = big.NewInt(20)
-	big32     = big.NewInt(32)
-	big64     = big.NewInt(64)
-	big96     = big.NewInt(96)
-	big480    = big.NewInt(480)
-	big1024   = big.NewInt(1024)
-	big3072   = big.NewInt(3072)
-	big199680 = big.NewInt(199680)
+	big0  = big.NewInt(0)
+	big1  = big.NewInt(1)
+	big3  = big.NewInt(3)
+	big7  = big.NewInt(7)
+	big8  = big.NewInt(8)
+	big32 = big.NewInt(32)
 )
-
-// modexpMultComplexity implements bigModexp multComplexity formula, as defined in EIP-198
-//
-//	def mult_complexity(x):
-//		if x <= 64: return x ** 2
-//		elif x <= 1024: return x ** 2 // 4 + 96 * x - 3072
-//		else: return x ** 2 // 16 + 480 * x - 199680
-//
-// where is x is max(length_of_MODULUS, length_of_BASE)
-func modexpMultComplexity(x *big.Int) *big.Int {
-	switch {
-	case x.Cmp(big64) <= 0:
-		x.Mul(x, x) // x ** 2
-	case x.Cmp(big1024) <= 0:
-		// (x ** 2 // 4 ) + ( 96 * x - 3072)
-		x = new(big.Int).Add(
-			new(big.Int).Div(new(big.Int).Mul(x, x), big4),
-			new(big.Int).Sub(new(big.Int).Mul(big96, x), big3072),
-		)
-	default:
-		// (x ** 2 // 16) + (480 * x - 199680)
-		x = new(big.Int).Add(
-			new(big.Int).Div(new(big.Int).Mul(x, x), big16),
-			new(big.Int).Sub(new(big.Int).Mul(big480, x), big199680),
-		)
-	}
-	return x
-}
 
 // RequiredGas returns the gas required to execute the pre-compiled contract.
 func (c *bigModExp) RequiredGas(input []byte) uint64 {
@@ -285,37 +242,28 @@ func (c *bigModExp) RequiredGas(input []byte) uint64 {
 	adjExpLen.Add(adjExpLen, big.NewInt(int64(msb)))
 	// Calculate the gas cost of the operation
 	gas := new(big.Int).Set(math.BigMax(modLen, baseLen))
-	if c.eip2565 {
-		// EIP-2565 has three changes
-		// 1. Different multComplexity (inlined here)
-		// in EIP-2565 (https://eips.ethereum.org/EIPS/eip-2565):
-		//
-		// def mult_complexity(x):
-		//    ceiling(x/8)^2
-		//
-		//where is x is max(length_of_MODULUS, length_of_BASE)
-		gas = gas.Add(gas, big7)
-		gas = gas.Div(gas, big8)
-		gas.Mul(gas, gas)
 
-		gas.Mul(gas, math.BigMax(adjExpLen, big1))
-		// 2. Different divisor (`GQUADDIVISOR`) (3)
-		gas.Div(gas, big3)
-		if gas.BitLen() > 64 {
-			return math.MaxUint64
-		}
-		// 3. Minimum price of 200 gas
-		if gas.Uint64() < 200 {
-			return 200
-		}
-		return gas.Uint64()
-	}
-	gas = modexpMultComplexity(gas)
+	// EIP-2565 has three changes
+	// 1. Different multComplexity (inlined here)
+	// in EIP-2565 (https://eips.ethereum.org/EIPS/eip-2565):
+	//
+	// def mult_complexity(x):
+	//    ceiling(x/8)^2
+	//
+	//where is x is max(length_of_MODULUS, length_of_BASE)
+	gas = gas.Add(gas, big7)
+	gas = gas.Div(gas, big8)
+	gas.Mul(gas, gas)
+
 	gas.Mul(gas, math.BigMax(adjExpLen, big1))
-	gas.Div(gas, big20)
-
+	// 2. Different divisor (`GQUADDIVISOR`) (3)
+	gas.Div(gas, big3)
 	if gas.BitLen() > 64 {
-		return math.MaxUint64
+		return gomath.MaxUint64
+	}
+	// 3. Minimum price of 200 gas
+	if gas.Uint64() < 200 {
+		return 200
 	}
 	return gas.Uint64()
 }
@@ -353,133 +301,4 @@ func (c *bigModExp) Run(input []byte) ([]byte, error) {
 		v = base.Exp(base, exp, mod).Bytes()
 	}
 	return common.LeftPadBytes(v, int(modLen)), nil
-}
-
-// newCurvePoint unmarshals a binary blob into a bn256 elliptic curve point,
-// returning it, or an error if the point is invalid.
-func newCurvePoint(blob []byte) (*bn256.G1, error) {
-	p := new(bn256.G1)
-	if _, err := p.Unmarshal(blob); err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
-// newTwistPoint unmarshals a binary blob into a bn256 elliptic curve point,
-// returning it, or an error if the point is invalid.
-func newTwistPoint(blob []byte) (*bn256.G2, error) {
-	p := new(bn256.G2)
-	if _, err := p.Unmarshal(blob); err != nil {
-		return nil, err
-	}
-	return p, nil
-}
-
-// runBn256Add implements the Bn256Add precompile, referenced by both
-// Byzantium and Istanbul operations.
-func runBn256Add(input []byte) ([]byte, error) {
-	x, err := newCurvePoint(getData(input, 0, 64))
-	if err != nil {
-		return nil, err
-	}
-	y, err := newCurvePoint(getData(input, 64, 64))
-	if err != nil {
-		return nil, err
-	}
-	res := new(bn256.G1)
-	res.Add(x, y)
-	return res.Marshal(), nil
-}
-
-// bn256Add implements a native elliptic curve point addition conforming to
-// Istanbul consensus rules.
-type bn256AddIstanbul struct{}
-
-// RequiredGas returns the gas required to execute the pre-compiled contract.
-func (c *bn256AddIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256AddGasIstanbul
-}
-
-func (c *bn256AddIstanbul) Run(input []byte) ([]byte, error) {
-	return runBn256Add(input)
-}
-
-// runBn256ScalarMul implements the Bn256ScalarMul precompile, referenced by
-// both Byzantium and Istanbul operations.
-func runBn256ScalarMul(input []byte) ([]byte, error) {
-	p, err := newCurvePoint(getData(input, 0, 64))
-	if err != nil {
-		return nil, err
-	}
-	res := new(bn256.G1)
-	res.ScalarMult(p, new(big.Int).SetBytes(getData(input, 64, 32)))
-	return res.Marshal(), nil
-}
-
-// bn256ScalarMulIstanbul implements a native elliptic curve scalar
-// multiplication conforming to Istanbul consensus rules.
-type bn256ScalarMulIstanbul struct{}
-
-// RequiredGas returns the gas required to execute the pre-compiled contract.
-func (c *bn256ScalarMulIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256ScalarMulGasIstanbul
-}
-
-func (c *bn256ScalarMulIstanbul) Run(input []byte) ([]byte, error) {
-	return runBn256ScalarMul(input)
-}
-
-var (
-	// true32Byte is returned if the bn256 pairing check succeeds.
-	true32Byte = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-
-	// false32Byte is returned if the bn256 pairing check fails.
-	false32Byte = make([]byte, 32)
-
-	// errBadPairingInput is returned if the bn256 pairing input is invalid.
-	errBadPairingInput = errors.New("bad elliptic curve pairing size")
-)
-
-// runBn256Pairing implements the Bn256Pairing precompile, referenced by both
-// Byzantium and Istanbul operations.
-func runBn256Pairing(input []byte) ([]byte, error) {
-	// Handle some corner cases cheaply
-	if len(input)%192 > 0 {
-		return nil, errBadPairingInput
-	}
-	// Convert the input into a set of coordinates
-	var (
-		cs []*bn256.G1
-		ts []*bn256.G2
-	)
-	for i := 0; i < len(input); i += 192 {
-		c, err := newCurvePoint(input[i : i+64])
-		if err != nil {
-			return nil, err
-		}
-		t, err := newTwistPoint(input[i+64 : i+192])
-		if err != nil {
-			return nil, err
-		}
-		cs = append(cs, c)
-		ts = append(ts, t)
-	}
-	// Execute the pairing checks and return the results
-	if bn256.PairingCheck(cs, ts) {
-		return true32Byte, nil
-	}
-	return false32Byte, nil
-}
-
-// bn256PairingIstanbul implements a pairing pre-compile for the bn256 curve
-// conforming to Istanbul consensus rules.
-type bn256PairingIstanbul struct{}
-
-// RequiredGas returns the gas required to execute the pre-compiled contract.
-func (c *bn256PairingIstanbul) RequiredGas(input []byte) uint64 {
-	return params.Bn256PairingBaseGasIstanbul + uint64(len(input)/192)*params.Bn256PairingPerPointGasIstanbul
-}
-
-func (c *bn256PairingIstanbul) Run(input []byte) ([]byte, error) {
-	return runBn256Pairing(input)
 }

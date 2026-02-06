@@ -124,7 +124,7 @@ func newConnectionWrapper(conn *websocket.Conn) *connWrapper {
 }
 
 // WriteJSON wraps corresponding method on the websocket but is safe for concurrent calling
-func (w *connWrapper) WriteJSON(v interface{}) error {
+func (w *connWrapper) WriteJSON(v any) error {
 	w.wlock.Lock()
 	defer w.wlock.Unlock()
 
@@ -132,7 +132,7 @@ func (w *connWrapper) WriteJSON(v interface{}) error {
 }
 
 // ReadJSON wraps corresponding method on the websocket but is safe for concurrent calling
-func (w *connWrapper) ReadJSON(v interface{}) error {
+func (w *connWrapper) ReadJSON(v any) error {
 	w.rlock.Lock()
 	defer w.rlock.Unlock()
 
@@ -376,7 +376,7 @@ func (s *Service) readLoop(conn *connWrapper) {
 			continue
 		}
 		// Not a system ping, try to decode an actual state message
-		var msg map[string][]interface{}
+		var msg map[string][]any
 		if err := json.Unmarshal(blob, &msg); err != nil {
 			log.Warn("Failed to decode stats server message", "err", err)
 			return
@@ -406,7 +406,7 @@ func (s *Service) readLoop(conn *connWrapper) {
 		// If the message is a history request, forward to the event processor
 		if len(msg["emit"]) == 2 && command == "history" {
 			// Make sure the request is valid and doesn't crash us
-			request, ok := msg["emit"][1].(map[string]interface{})
+			request, ok := msg["emit"][1].(map[string]any)
 			if !ok {
 				log.Warn("Invalid stats history request", "msg", msg["emit"][1])
 				select {
@@ -415,7 +415,7 @@ func (s *Service) readLoop(conn *connWrapper) {
 				}
 				continue
 			}
-			list, ok := request["list"].([]interface{})
+			list, ok := request["list"].([]any)
 			if !ok {
 				log.Warn("Invalid stats history block list", "list", request["list"])
 				return
@@ -494,7 +494,7 @@ func (s *Service) login(conn *connWrapper) error {
 		},
 		Secret: s.pass,
 	}
-	login := map[string][]interface{}{
+	login := map[string][]any{
 		"emit": {"hello", auth},
 	}
 	if err := conn.WriteJSON(login); err != nil {
@@ -533,7 +533,7 @@ func (s *Service) reportLatency(conn *connWrapper) error {
 	// Send the current time to the qrlstats server
 	start := time.Now()
 
-	ping := map[string][]interface{}{
+	ping := map[string][]any{
 		"emit": {"node-ping", map[string]string{
 			"id":         s.node,
 			"clientTime": start.String(),
@@ -543,10 +543,13 @@ func (s *Service) reportLatency(conn *connWrapper) error {
 		return err
 	}
 	// Wait for the pong request to arrive back
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+
 	select {
 	case <-s.pongCh:
 		// Pong delivered, report the latency
-	case <-time.After(5 * time.Second):
+	case <-timer.C:
 		// Ping timeout, abort
 		return errors.New("ping timed out")
 	}
@@ -555,7 +558,7 @@ func (s *Service) reportLatency(conn *connWrapper) error {
 	// Send back the measured latency
 	log.Trace("Sending measured latency to qrlstats", "latency", latency)
 
-	stats := map[string][]interface{}{
+	stats := map[string][]any{
 		"emit": {"latency", map[string]string{
 			"id":      s.node,
 			"latency": latency,
@@ -588,14 +591,18 @@ func (s *Service) reportBlock(conn *connWrapper, block *types.Block) error {
 	// Gather the block details from the header or block chain
 	details := s.assembleBlockStats(block)
 
+	// Short circuit if the block detail is not available.
+	if details == nil {
+		return nil
+	}
 	// Assemble the block report and send it to the server
 	log.Trace("Sending new block to qrlstats", "number", details.Number, "hash", details.Hash)
 
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"id":    s.node,
 		"block": details,
 	}
-	report := map[string][]interface{}{
+	report := map[string][]any{
 		"emit": {"block", stats},
 	}
 	return conn.WriteJSON(report)
@@ -631,7 +638,6 @@ func (s *Service) assembleBlockStats(block *types.Block) *blockStats {
 		}
 		txs = []txStats{}
 	}
-
 	// Assemble and return the block stats
 	author, _ := s.engine.Author(header)
 
@@ -660,10 +666,7 @@ func (s *Service) reportHistory(conn *connWrapper, list []uint64) error {
 	} else {
 		// No indexes requested, send back the top ones
 		head := s.backend.CurrentHeader().Number.Int64()
-		start := head - historyUpdateRange + 1
-		if start < 0 {
-			start = 0
-		}
+		start := max(head-historyUpdateRange+1, 0)
 		for i := uint64(start); i <= uint64(head); i++ {
 			indexes = append(indexes, i)
 		}
@@ -696,11 +699,11 @@ func (s *Service) reportHistory(conn *connWrapper, list []uint64) error {
 	} else {
 		log.Trace("No history to send to stats server")
 	}
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"id":      s.node,
 		"history": history,
 	}
-	report := map[string][]interface{}{
+	report := map[string][]any{
 		"emit": {"history", stats},
 	}
 	return conn.WriteJSON(report)
@@ -719,13 +722,13 @@ func (s *Service) reportPending(conn *connWrapper) error {
 	// Assemble the transaction stats and send it to the server
 	log.Trace("Sending pending transactions to qrlstats", "count", pending)
 
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"id": s.node,
 		"stats": &pendStats{
 			Pending: pending,
 		},
 	}
-	report := map[string][]interface{}{
+	report := map[string][]any{
 		"emit": {"pending", stats},
 	}
 	return conn.WriteJSON(report)
@@ -740,10 +743,10 @@ type nodeStats struct {
 	Uptime   int  `json:"uptime"`
 }
 
-// reportStats retrieves various stats about the node at the networking and
-// mining layer and reports it to the stats server.
+// reportStats retrieves various stats about the node at the networking layer
+// and reports it to the stats server.
 func (s *Service) reportStats(conn *connWrapper) error {
-	// Gather the syncing and mining infos from the local miner instance
+	// Gather the syncing infos from the local miner instance
 	var (
 		syncing  bool
 		gasprice int
@@ -766,7 +769,7 @@ func (s *Service) reportStats(conn *connWrapper) error {
 	// Assemble the node stats and send it to the server
 	log.Trace("Sending node details to qrlstats")
 
-	stats := map[string]interface{}{
+	stats := map[string]any{
 		"id": s.node,
 		"stats": &nodeStats{
 			Active:   true,
@@ -776,7 +779,7 @@ func (s *Service) reportStats(conn *connWrapper) error {
 			Uptime:   100,
 		},
 	}
-	report := map[string][]interface{}{
+	report := map[string][]any{
 		"emit": {"stats", stats},
 	}
 	return conn.WriteJSON(report)

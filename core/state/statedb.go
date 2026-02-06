@@ -19,6 +19,7 @@ package state
 
 import (
 	"fmt"
+	"maps"
 	"math/big"
 	"sort"
 	"time"
@@ -679,9 +680,7 @@ func (s *StateDB) Copy() *StateDB {
 		state.stateObjectsDirty[addr] = struct{}{}
 	}
 	// Deep copy the destruction markers.
-	for addr, value := range s.stateObjectsDestruct {
-		state.stateObjectsDestruct[addr] = value
-	}
+	maps.Copy(state.stateObjectsDestruct, s.stateObjectsDestruct)
 	// Deep copy the state changes made in the scope of block
 	// along with their original values.
 	state.accounts = copySet(s.accounts)
@@ -699,9 +698,7 @@ func (s *StateDB) Copy() *StateDB {
 		state.logs[hash] = cpy
 	}
 	// Deep copy the preimages occurred in the scope of block
-	for hash, preimage := range s.preimages {
-		state.preimages[hash] = preimage
-	}
+	maps.Copy(state.preimages, s.preimages)
 	// Do we need to copy the access list?
 	// In practice: No. At the start of a transaction, these two lists are empty.
 	// In practice, we only ever copy state _between_ transactions/blocks, never
@@ -1073,9 +1070,7 @@ func (s *StateDB) handleDestruction(nodes *trienode.MergedNodeSet) (map[common.A
 		} else {
 			// It can overwrite the data in s.storagesOrigin[addrHash] set by
 			// 'object.updateTrie'.
-			for key, val := range slots {
-				s.storagesOrigin[addr][key] = val
-			}
+			maps.Copy(s.storagesOrigin[addr], slots)
 		}
 		if err := nodes.Merge(set); err != nil {
 			return nil, err

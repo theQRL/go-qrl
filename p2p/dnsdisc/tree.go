@@ -21,6 +21,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/base32"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"slices"
@@ -201,10 +202,7 @@ func (t *Tree) build(entries []entry) entry {
 	}
 	var subtrees []entry
 	for len(entries) > 0 {
-		n := maxChildren
-		if len(entries) < n {
-			n = len(entries)
-		}
+		n := min(len(entries), maxChildren)
 		sub := t.build(entries[:n])
 		entries = entries[n:]
 		subtrees = append(subtrees, sub)
@@ -341,14 +339,14 @@ func parseLinkEntry(e string) (entry, error) {
 
 func parseLink(e string) (*linkEntry, error) {
 	if !strings.HasPrefix(e, linkPrefix) {
-		return nil, fmt.Errorf("wrong/missing scheme 'qnrtree' in URL")
+		return nil, errors.New("wrong/missing scheme 'qnrtree' in URL")
 	}
 	e = e[len(linkPrefix):]
-	pos := strings.IndexByte(e, '@')
-	if pos == -1 {
+
+	keystring, domain, found := strings.Cut(e, "@")
+	if !found {
 		return nil, entryError{"link", errNoPubkey}
 	}
-	keystring, domain := e[:pos], e[pos+1:]
 	keybytes, err := b32format.DecodeString(keystring)
 	if err != nil {
 		return nil, entryError{"link", errBadPubkey}
@@ -366,7 +364,7 @@ func parseBranch(e string) (entry, error) {
 		return &branchEntry{}, nil // empty entry is OK
 	}
 	hashes := make([]string, 0, strings.Count(e, ","))
-	for _, c := range strings.Split(e, ",") {
+	for c := range strings.SplitSeq(e, ",") {
 		if !isValidHash(c) {
 			return nil, entryError{"branch", errInvalidChild}
 		}

@@ -56,21 +56,21 @@ func NewClient(c *rpc.Client) *Client {
 }
 
 // Close closes the underlying RPC connection.
-func (ec *Client) Close() {
-	ec.c.Close()
+func (qc *Client) Close() {
+	qc.c.Close()
 }
 
 // Client gets the underlying RPC client.
-func (ec *Client) Client() *rpc.Client {
-	return ec.c
+func (qc *Client) Client() *rpc.Client {
+	return qc.c
 }
 
 // Blockchain Access
 
 // ChainID retrieves the current chain ID for transaction replay protection.
-func (ec *Client) ChainID(ctx context.Context) (*big.Int, error) {
+func (qc *Client) ChainID(ctx context.Context) (*big.Int, error) {
 	var result hexutil.Big
-	err := ec.c.CallContext(ctx, &result, "qrl_chainId")
+	err := qc.c.CallContext(ctx, &result, "qrl_chainId")
 	if err != nil {
 		return nil, err
 	}
@@ -81,8 +81,8 @@ func (ec *Client) ChainID(ctx context.Context) (*big.Int, error) {
 //
 // Note that loading full blocks requires two requests. Use HeaderByHash
 // if you don't need all transactions.
-func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
-	return ec.getBlock(ctx, "qrl_getBlockByHash", hash, true)
+func (qc *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
+	return qc.getBlock(ctx, "qrl_getBlockByHash", hash, true)
 }
 
 // BlockByNumber returns a block from the current canonical chain. If number is nil, the
@@ -90,28 +90,28 @@ func (ec *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Blo
 //
 // Note that loading full blocks requires two requests. Use HeaderByNumber
 // if you don't need all transactions.
-func (ec *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
-	return ec.getBlock(ctx, "qrl_getBlockByNumber", toBlockNumArg(number), true)
+func (qc *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	return qc.getBlock(ctx, "qrl_getBlockByNumber", toBlockNumArg(number), true)
 }
 
 // BlockNumber returns the most recent block number
-func (ec *Client) BlockNumber(ctx context.Context) (uint64, error) {
+func (qc *Client) BlockNumber(ctx context.Context) (uint64, error) {
 	var result hexutil.Uint64
-	err := ec.c.CallContext(ctx, &result, "qrl_blockNumber")
+	err := qc.c.CallContext(ctx, &result, "qrl_blockNumber")
 	return uint64(result), err
 }
 
 // PeerCount returns the number of p2p peers as reported by the net_peerCount method.
-func (ec *Client) PeerCount(ctx context.Context) (uint64, error) {
+func (qc *Client) PeerCount(ctx context.Context) (uint64, error) {
 	var result hexutil.Uint64
-	err := ec.c.CallContext(ctx, &result, "net_peerCount")
+	err := qc.c.CallContext(ctx, &result, "net_peerCount")
 	return uint64(result), err
 }
 
 // BlockReceipts returns the receipts of a given block number or hash
-func (ec *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*types.Receipt, error) {
+func (qc *Client) BlockReceipts(ctx context.Context, blockNrOrHash rpc.BlockNumberOrHash) ([]*types.Receipt, error) {
 	var r []*types.Receipt
-	err := ec.c.CallContext(ctx, &r, "qrl_getBlockReceipts", blockNrOrHash)
+	err := qc.c.CallContext(ctx, &r, "qrl_getBlockReceipts", blockNrOrHash)
 	if err == nil && r == nil {
 		return nil, qrl.NotFound
 	}
@@ -124,9 +124,9 @@ type rpcBlock struct {
 	Withdrawals  []*types.Withdrawal `json:"withdrawals,omitempty"`
 }
 
-func (ec *Client) getBlock(ctx context.Context, method string, args ...interface{}) (*types.Block, error) {
+func (qc *Client) getBlock(ctx context.Context, method string, args ...any) (*types.Block, error) {
 	var raw json.RawMessage
-	err := ec.c.CallContext(ctx, &raw, method, args...)
+	err := qc.c.CallContext(ctx, &raw, method, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -168,9 +168,9 @@ func (ec *Client) getBlock(ctx context.Context, method string, args ...interface
 }
 
 // HeaderByHash returns the block header with the given hash.
-func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
+func (qc *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
 	var head *types.Header
-	err := ec.c.CallContext(ctx, &head, "qrl_getBlockByHash", hash, false)
+	err := qc.c.CallContext(ctx, &head, "qrl_getBlockByHash", hash, false)
 	if err == nil && head == nil {
 		err = qrl.NotFound
 	}
@@ -179,9 +179,9 @@ func (ec *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.He
 
 // HeaderByNumber returns a block header from the current canonical chain. If number is
 // nil, the latest known header is returned.
-func (ec *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
+func (qc *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
 	var head *types.Header
-	err := ec.c.CallContext(ctx, &head, "qrl_getBlockByNumber", toBlockNumArg(number), false)
+	err := qc.c.CallContext(ctx, &head, "qrl_getBlockByNumber", toBlockNumArg(number), false)
 	if err == nil && head == nil {
 		err = qrl.NotFound
 	}
@@ -207,9 +207,9 @@ func (tx *rpcTransaction) UnmarshalJSON(msg []byte) error {
 }
 
 // TransactionByHash returns the transaction with the given hash.
-func (ec *Client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
+func (qc *Client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
 	var json *rpcTransaction
-	err = ec.c.CallContext(ctx, &json, "qrl_getTransactionByHash", hash)
+	err = qc.c.CallContext(ctx, &json, "qrl_getTransactionByHash", hash)
 	if err != nil {
 		return nil, false, err
 	} else if json == nil {
@@ -229,7 +229,7 @@ func (ec *Client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *
 //
 // There is a fast-path for transactions retrieved by TransactionByHash and
 // TransactionInBlock. Getting their sender address can be done without an RPC interaction.
-func (ec *Client) TransactionSender(ctx context.Context, tx *types.Transaction, block common.Hash, index uint) (common.Address, error) {
+func (qc *Client) TransactionSender(ctx context.Context, tx *types.Transaction, block common.Hash, index uint) (common.Address, error) {
 	// Try to load the address from the cache.
 	sender, err := types.Sender(&senderFromServer{blockhash: block}, tx)
 	if err == nil {
@@ -241,7 +241,7 @@ func (ec *Client) TransactionSender(ctx context.Context, tx *types.Transaction, 
 		Hash common.Hash
 		From common.Address
 	}
-	if err = ec.c.CallContext(ctx, &meta, "qrl_getTransactionByBlockHashAndIndex", block, hexutil.Uint64(index)); err != nil {
+	if err = qc.c.CallContext(ctx, &meta, "qrl_getTransactionByBlockHashAndIndex", block, hexutil.Uint64(index)); err != nil {
 		return common.Address{}, err
 	}
 	if meta.Hash == (common.Hash{}) || meta.Hash != tx.Hash() {
@@ -251,16 +251,16 @@ func (ec *Client) TransactionSender(ctx context.Context, tx *types.Transaction, 
 }
 
 // TransactionCount returns the total number of transactions in the given block.
-func (ec *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
+func (qc *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
 	var num hexutil.Uint
-	err := ec.c.CallContext(ctx, &num, "qrl_getBlockTransactionCountByHash", blockHash)
+	err := qc.c.CallContext(ctx, &num, "qrl_getBlockTransactionCountByHash", blockHash)
 	return uint(num), err
 }
 
 // TransactionInBlock returns a single transaction at index in the given block.
-func (ec *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
+func (qc *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
 	var json *rpcTransaction
-	err := ec.c.CallContext(ctx, &json, "qrl_getTransactionByBlockHashAndIndex", blockHash, hexutil.Uint64(index))
+	err := qc.c.CallContext(ctx, &json, "qrl_getTransactionByBlockHashAndIndex", blockHash, hexutil.Uint64(index))
 	if err != nil {
 		return nil, err
 	}
@@ -277,9 +277,9 @@ func (ec *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash,
 
 // TransactionReceipt returns the receipt of a transaction by transaction hash.
 // Note that the receipt is not available for pending transactions.
-func (ec *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
+func (qc *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
 	var r *types.Receipt
-	err := ec.c.CallContext(ctx, &r, "qrl_getTransactionReceipt", txHash)
+	err := qc.c.CallContext(ctx, &r, "qrl_getTransactionReceipt", txHash)
 	if err == nil && r == nil {
 		return nil, qrl.NotFound
 	}
@@ -288,9 +288,9 @@ func (ec *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*
 
 // SyncProgress retrieves the current progress of the sync algorithm. If there's
 // no sync currently running, it returns nil.
-func (ec *Client) SyncProgress(ctx context.Context) (*qrl.SyncProgress, error) {
+func (qc *Client) SyncProgress(ctx context.Context) (*qrl.SyncProgress, error) {
 	var raw json.RawMessage
-	if err := ec.c.CallContext(ctx, &raw, "qrl_syncing"); err != nil {
+	if err := qc.c.CallContext(ctx, &raw, "qrl_syncing"); err != nil {
 		return nil, err
 	}
 	// Handle the possible response types
@@ -307,8 +307,8 @@ func (ec *Client) SyncProgress(ctx context.Context) (*qrl.SyncProgress, error) {
 
 // SubscribeNewHead subscribes to notifications about the current blockchain head
 // on the given channel.
-func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (qrl.Subscription, error) {
-	sub, err := ec.c.QRLSubscribe(ctx, ch, "newHeads")
+func (qc *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (qrl.Subscription, error) {
+	sub, err := qc.c.QRLSubscribe(ctx, ch, "newHeads")
 	if err != nil {
 		// Defensively prefer returning nil interface explicitly on error-path, instead
 		// of letting default golang behavior wrap it with non-nil interface that stores
@@ -321,10 +321,10 @@ func (ec *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header)
 // State Access
 
 // NetworkID returns the network ID for this client.
-func (ec *Client) NetworkID(ctx context.Context) (*big.Int, error) {
+func (qc *Client) NetworkID(ctx context.Context) (*big.Int, error) {
 	version := new(big.Int)
 	var ver string
-	if err := ec.c.CallContext(ctx, &ver, "net_version"); err != nil {
+	if err := qc.c.CallContext(ctx, &ver, "net_version"); err != nil {
 		return nil, err
 	}
 	if _, ok := version.SetString(ver, 10); !ok {
@@ -335,56 +335,56 @@ func (ec *Client) NetworkID(ctx context.Context) (*big.Int, error) {
 
 // BalanceAt returns the planck balance of the given account.
 // The block number can be nil, in which case the balance is taken from the latest known block.
-func (ec *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+func (qc *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
 	var result hexutil.Big
-	err := ec.c.CallContext(ctx, &result, "qrl_getBalance", account, toBlockNumArg(blockNumber))
+	err := qc.c.CallContext(ctx, &result, "qrl_getBalance", account, toBlockNumArg(blockNumber))
 	return (*big.Int)(&result), err
 }
 
 // StorageAt returns the value of key in the contract storage of the given account.
 // The block number can be nil, in which case the value is taken from the latest known block.
-func (ec *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
+func (qc *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
 	var result hexutil.Bytes
-	err := ec.c.CallContext(ctx, &result, "qrl_getStorageAt", account, key, toBlockNumArg(blockNumber))
+	err := qc.c.CallContext(ctx, &result, "qrl_getStorageAt", account, key, toBlockNumArg(blockNumber))
 	return result, err
 }
 
 // CodeAt returns the contract code of the given account.
 // The block number can be nil, in which case the code is taken from the latest known block.
-func (ec *Client) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
+func (qc *Client) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
 	var result hexutil.Bytes
-	err := ec.c.CallContext(ctx, &result, "qrl_getCode", account, toBlockNumArg(blockNumber))
+	err := qc.c.CallContext(ctx, &result, "qrl_getCode", account, toBlockNumArg(blockNumber))
 	return result, err
 }
 
 // NonceAt returns the account nonce of the given account.
 // The block number can be nil, in which case the nonce is taken from the latest known block.
-func (ec *Client) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
+func (qc *Client) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
 	var result hexutil.Uint64
-	err := ec.c.CallContext(ctx, &result, "qrl_getTransactionCount", account, toBlockNumArg(blockNumber))
+	err := qc.c.CallContext(ctx, &result, "qrl_getTransactionCount", account, toBlockNumArg(blockNumber))
 	return uint64(result), err
 }
 
 // Filters
 
 // FilterLogs executes a filter query.
-func (ec *Client) FilterLogs(ctx context.Context, q qrl.FilterQuery) ([]types.Log, error) {
+func (qc *Client) FilterLogs(ctx context.Context, q qrl.FilterQuery) ([]types.Log, error) {
 	var result []types.Log
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
 	}
-	err = ec.c.CallContext(ctx, &result, "qrl_getLogs", arg)
+	err = qc.c.CallContext(ctx, &result, "qrl_getLogs", arg)
 	return result, err
 }
 
 // SubscribeFilterLogs subscribes to the results of a streaming filter query.
-func (ec *Client) SubscribeFilterLogs(ctx context.Context, q qrl.FilterQuery, ch chan<- types.Log) (qrl.Subscription, error) {
+func (qc *Client) SubscribeFilterLogs(ctx context.Context, q qrl.FilterQuery, ch chan<- types.Log) (qrl.Subscription, error) {
 	arg, err := toFilterArg(q)
 	if err != nil {
 		return nil, err
 	}
-	sub, err := ec.c.QRLSubscribe(ctx, ch, "logs", arg)
+	sub, err := qc.c.QRLSubscribe(ctx, ch, "logs", arg)
 	if err != nil {
 		// Defensively prefer returning nil interface explicitly on error-path, instead
 		// of letting default golang behavior wrap it with non-nil interface that stores
@@ -394,8 +394,8 @@ func (ec *Client) SubscribeFilterLogs(ctx context.Context, q qrl.FilterQuery, ch
 	return sub, nil
 }
 
-func toFilterArg(q qrl.FilterQuery) (interface{}, error) {
-	arg := map[string]interface{}{
+func toFilterArg(q qrl.FilterQuery) (any, error) {
+	arg := map[string]any{
 		"address": q.Addresses,
 		"topics":  q.Topics,
 	}
@@ -418,38 +418,38 @@ func toFilterArg(q qrl.FilterQuery) (interface{}, error) {
 // Pending State
 
 // PendingBalanceAt returns the planck balance of the given account in the pending state.
-func (ec *Client) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
+func (qc *Client) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
 	var result hexutil.Big
-	err := ec.c.CallContext(ctx, &result, "qrl_getBalance", account, "pending")
+	err := qc.c.CallContext(ctx, &result, "qrl_getBalance", account, "pending")
 	return (*big.Int)(&result), err
 }
 
 // PendingStorageAt returns the value of key in the contract storage of the given account in the pending state.
-func (ec *Client) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
+func (qc *Client) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
 	var result hexutil.Bytes
-	err := ec.c.CallContext(ctx, &result, "qrl_getStorageAt", account, key, "pending")
+	err := qc.c.CallContext(ctx, &result, "qrl_getStorageAt", account, key, "pending")
 	return result, err
 }
 
 // PendingCodeAt returns the contract code of the given account in the pending state.
-func (ec *Client) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
+func (qc *Client) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
 	var result hexutil.Bytes
-	err := ec.c.CallContext(ctx, &result, "qrl_getCode", account, "pending")
+	err := qc.c.CallContext(ctx, &result, "qrl_getCode", account, "pending")
 	return result, err
 }
 
 // PendingNonceAt returns the account nonce of the given account in the pending state.
 // This is the nonce that should be used for the next transaction.
-func (ec *Client) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
+func (qc *Client) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
 	var result hexutil.Uint64
-	err := ec.c.CallContext(ctx, &result, "qrl_getTransactionCount", account, "pending")
+	err := qc.c.CallContext(ctx, &result, "qrl_getTransactionCount", account, "pending")
 	return uint64(result), err
 }
 
 // PendingTransactionCount returns the total number of transactions in the pending state.
-func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
+func (qc *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 	var num hexutil.Uint
-	err := ec.c.CallContext(ctx, &num, "qrl_getBlockTransactionCountByNumber", "pending")
+	err := qc.c.CallContext(ctx, &num, "qrl_getBlockTransactionCountByNumber", "pending")
 	return uint(num), err
 }
 
@@ -461,9 +461,9 @@ func (ec *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 // blockNumber selects the block height at which the call runs. It can be nil, in which
 // case the code is taken from the latest known block. Note that state from very old
 // blocks might not be available.
-func (ec *Client) CallContract(ctx context.Context, msg qrl.CallMsg, blockNumber *big.Int) ([]byte, error) {
+func (qc *Client) CallContract(ctx context.Context, msg qrl.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	var hex hexutil.Bytes
-	err := ec.c.CallContext(ctx, &hex, "qrl_call", toCallArg(msg), toBlockNumArg(blockNumber))
+	err := qc.c.CallContext(ctx, &hex, "qrl_call", toCallArg(msg), toBlockNumArg(blockNumber))
 	if err != nil {
 		return nil, err
 	}
@@ -472,9 +472,9 @@ func (ec *Client) CallContract(ctx context.Context, msg qrl.CallMsg, blockNumber
 
 // CallContractAtHash is almost the same as CallContract except that it selects
 // the block by block hash instead of block height.
-func (ec *Client) CallContractAtHash(ctx context.Context, msg qrl.CallMsg, blockHash common.Hash) ([]byte, error) {
+func (qc *Client) CallContractAtHash(ctx context.Context, msg qrl.CallMsg, blockHash common.Hash) ([]byte, error) {
 	var hex hexutil.Bytes
-	err := ec.c.CallContext(ctx, &hex, "qrl_call", toCallArg(msg), rpc.BlockNumberOrHashWithHash(blockHash, false))
+	err := qc.c.CallContext(ctx, &hex, "qrl_call", toCallArg(msg), rpc.BlockNumberOrHashWithHash(blockHash, false))
 	if err != nil {
 		return nil, err
 	}
@@ -483,9 +483,9 @@ func (ec *Client) CallContractAtHash(ctx context.Context, msg qrl.CallMsg, block
 
 // PendingCallContract executes a message call transaction using the QRVM.
 // The state seen by the contract call is the pending state.
-func (ec *Client) PendingCallContract(ctx context.Context, msg qrl.CallMsg) ([]byte, error) {
+func (qc *Client) PendingCallContract(ctx context.Context, msg qrl.CallMsg) ([]byte, error) {
 	var hex hexutil.Bytes
-	err := ec.c.CallContext(ctx, &hex, "qrl_call", toCallArg(msg), "pending")
+	err := qc.c.CallContext(ctx, &hex, "qrl_call", toCallArg(msg), "pending")
 	if err != nil {
 		return nil, err
 	}
@@ -494,9 +494,9 @@ func (ec *Client) PendingCallContract(ctx context.Context, msg qrl.CallMsg) ([]b
 
 // SuggestGasPrice retrieves the currently suggested gas price to allow a timely
 // execution of a transaction.
-func (zc *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
+func (qc *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 	var hex hexutil.Big
-	if err := zc.c.CallContext(ctx, &hex, "qrl_gasPrice"); err != nil {
+	if err := qc.c.CallContext(ctx, &hex, "qrl_gasPrice"); err != nil {
 		return nil, err
 	}
 	return (*big.Int)(&hex), nil
@@ -504,9 +504,9 @@ func (zc *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 
 // SuggestGasTipCap retrieves the currently suggested gas tip cap to
 // allow a timely execution of a transaction.
-func (ec *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
+func (qc *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 	var hex hexutil.Big
-	if err := ec.c.CallContext(ctx, &hex, "qrl_maxPriorityFeePerGas"); err != nil {
+	if err := qc.c.CallContext(ctx, &hex, "qrl_maxPriorityFeePerGas"); err != nil {
 		return nil, err
 	}
 	return (*big.Int)(&hex), nil
@@ -520,9 +520,9 @@ type feeHistoryResultMarshaling struct {
 }
 
 // FeeHistory retrieves the fee market history.
-func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *big.Int, rewardPercentiles []float64) (*qrl.FeeHistory, error) {
+func (qc *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *big.Int, rewardPercentiles []float64) (*qrl.FeeHistory, error) {
 	var res feeHistoryResultMarshaling
-	if err := ec.c.CallContext(ctx, &res, "qrl_feeHistory", hexutil.Uint(blockCount), toBlockNumArg(lastBlock), rewardPercentiles); err != nil {
+	if err := qc.c.CallContext(ctx, &res, "qrl_feeHistory", hexutil.Uint(blockCount), toBlockNumArg(lastBlock), rewardPercentiles); err != nil {
 		return nil, err
 	}
 	reward := make([][]*big.Int, len(res.Reward))
@@ -548,9 +548,9 @@ func (ec *Client) FeeHistory(ctx context.Context, blockCount uint64, lastBlock *
 // the current pending state of the backend blockchain. There is no guarantee that this is
 // the true gas limit requirement as other transactions may be added or removed by miners,
 // but it should provide a basis for setting a reasonable default.
-func (ec *Client) EstimateGas(ctx context.Context, msg qrl.CallMsg) (uint64, error) {
+func (qc *Client) EstimateGas(ctx context.Context, msg qrl.CallMsg) (uint64, error) {
 	var hex hexutil.Uint64
-	err := ec.c.CallContext(ctx, &hex, "qrl_estimateGas", toCallArg(msg))
+	err := qc.c.CallContext(ctx, &hex, "qrl_estimateGas", toCallArg(msg))
 	if err != nil {
 		return 0, err
 	}
@@ -561,12 +561,12 @@ func (ec *Client) EstimateGas(ctx context.Context, msg qrl.CallMsg) (uint64, err
 //
 // If the transaction was a contract creation use the TransactionReceipt method to get the
 // contract address after the transaction has been mined.
-func (ec *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
+func (qc *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	data, err := tx.MarshalBinary()
 	if err != nil {
 		return err
 	}
-	return ec.c.CallContext(ctx, nil, "qrl_sendRawTransaction", hexutil.Encode(data))
+	return qc.c.CallContext(ctx, nil, "qrl_sendRawTransaction", hexutil.Encode(data))
 }
 
 func toBlockNumArg(number *big.Int) string {
@@ -584,8 +584,8 @@ func toBlockNumArg(number *big.Int) string {
 	return fmt.Sprintf("<invalid %d>", number)
 }
 
-func toCallArg(msg qrl.CallMsg) interface{} {
-	arg := map[string]interface{}{
+func toCallArg(msg qrl.CallMsg) any {
+	arg := map[string]any{
 		"from": msg.From,
 		"to":   msg.To,
 	}

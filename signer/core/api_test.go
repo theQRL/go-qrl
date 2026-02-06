@@ -18,7 +18,6 @@ package core_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"math/big"
 	"os"
@@ -127,7 +126,7 @@ func setup(t *testing.T) (*core.SignerAPI, *headlessUi) {
 func createAccount(ui *headlessUi, api *core.SignerAPI, t *testing.T) {
 	ui.approveCh <- "Y"
 	ui.inputCh <- "a_long_password"
-	_, err := api.New(context.Background())
+	_, err := api.New(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +141,7 @@ func failCreateAccountWithPassword(ui *headlessUi, api *core.SignerAPI, password
 	ui.inputCh <- password
 	ui.inputCh <- password
 
-	addr, err := api.New(context.Background())
+	addr, err := api.New(t.Context())
 	if err == nil {
 		t.Fatal("Should have returned an error")
 	}
@@ -153,7 +152,7 @@ func failCreateAccountWithPassword(ui *headlessUi, api *core.SignerAPI, password
 
 func failCreateAccount(ui *headlessUi, api *core.SignerAPI, t *testing.T) {
 	ui.approveCh <- "N"
-	addr, err := api.New(context.Background())
+	addr, err := api.New(t.Context())
 	if err != core.ErrRequestDenied {
 		t.Fatal(err)
 	}
@@ -164,7 +163,7 @@ func failCreateAccount(ui *headlessUi, api *core.SignerAPI, t *testing.T) {
 
 func list(ui *headlessUi, api *core.SignerAPI, t *testing.T) ([]common.Address, error) {
 	ui.approveCh <- "A"
-	return api.List(context.Background())
+	return api.List(t.Context())
 }
 
 func TestNewAcc(t *testing.T) {
@@ -197,7 +196,7 @@ func TestNewAcc(t *testing.T) {
 	// Testing listing:
 	// Listing one Account
 	control.approveCh <- "1"
-	list, err := api.List(context.Background())
+	list, err := api.List(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +205,7 @@ func TestNewAcc(t *testing.T) {
 	}
 	// Listing denied
 	control.approveCh <- "Nope"
-	list, err = api.List(context.Background())
+	list, err = api.List(t.Context())
 	if len(list) != 0 {
 		t.Fatalf("List should be empty")
 	}
@@ -244,7 +243,7 @@ func TestSignTx(t *testing.T) {
 	api, control := setup(t)
 	createAccount(control, api, t)
 	control.approveCh <- "A"
-	list, err = api.List(context.Background())
+	list, err = api.List(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -258,7 +257,7 @@ func TestSignTx(t *testing.T) {
 
 	control.approveCh <- "Y"
 	control.inputCh <- "wrongpassword"
-	res, err = api.SignTransaction(context.Background(), tx, &methodSig)
+	res, err = api.SignTransaction(t.Context(), tx, &methodSig)
 	if res != nil {
 		t.Errorf("Expected nil-response, got %v", res)
 	}
@@ -266,7 +265,7 @@ func TestSignTx(t *testing.T) {
 		t.Errorf("Expected ErrLocked! %v", err)
 	}
 	control.approveCh <- "No way"
-	res, err = api.SignTransaction(context.Background(), tx, &methodSig)
+	res, err = api.SignTransaction(t.Context(), tx, &methodSig)
 	if res != nil {
 		t.Errorf("Expected nil-response, got %v", res)
 	}
@@ -276,7 +275,7 @@ func TestSignTx(t *testing.T) {
 	// Sign with correct password
 	control.approveCh <- "Y"
 	control.inputCh <- "a_long_password"
-	res, err = api.SignTransaction(context.Background(), tx, &methodSig)
+	res, err = api.SignTransaction(t.Context(), tx, &methodSig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -293,7 +292,7 @@ func TestSignTx(t *testing.T) {
 	control.approveCh <- "Y"
 	control.inputCh <- "a_long_password"
 
-	res2, err = api.SignTransaction(context.Background(), tx, &methodSig)
+	res2, err = api.SignTransaction(t.Context(), tx, &methodSig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +304,7 @@ func TestSignTx(t *testing.T) {
 	control.approveCh <- "M"
 	control.inputCh <- "a_long_password"
 
-	res2, err = api.SignTransaction(context.Background(), tx, &methodSig)
+	res2, err = api.SignTransaction(t.Context(), tx, &methodSig)
 	if err != nil {
 		t.Fatal(err)
 	}

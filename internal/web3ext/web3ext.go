@@ -148,11 +148,6 @@ web3._extend({
 			params: 1
 		}),
 		new web3._extend.Method({
-			name: 'seedHash',
-			call: 'debug_seedHash',
-			params: 1
-		}),
-		new web3._extend.Method({
 			name: 'dumpBlock',
 			call: 'debug_dumpBlock',
 			params: 1,
@@ -161,7 +156,6 @@ web3._extend({
 		new web3._extend.Method({
 			name: 'chaindbProperty',
 			call: 'debug_chaindbProperty',
-			params: 1,
 			outputFormatter: console.log
 		}),
 		new web3._extend.Method({
@@ -177,11 +171,6 @@ web3._extend({
 			name: 'vmodule',
 			call: 'debug_vmodule',
 			params: 1
-		}),
-		new web3._extend.Method({
-			name: 'backtraceAt',
-			call: 'debug_backtraceAt',
-			params: 1,
 		}),
 		new web3._extend.Method({
 			name: 'stacks',

@@ -370,7 +370,7 @@ func (b *QRLAPIBackend) BloomStatus() (uint64, uint64) {
 }
 
 func (b *QRLAPIBackend) ServiceFilter(ctx context.Context, session *bloombits.MatcherSession) {
-	for i := 0; i < bloomFilterThreads; i++ {
+	for range bloomFilterThreads {
 		go session.Multiplex(bloomRetrievalBatch, bloomRetrievalWait, b.qrl.bloomRequests)
 	}
 }

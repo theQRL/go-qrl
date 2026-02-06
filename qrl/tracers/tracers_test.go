@@ -25,19 +25,19 @@ import (
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/tracers/logger"
 	"github.com/theQRL/go-zond/tests"
 )
 
 func BenchmarkTransactionTrace(b *testing.B) {
-	key, _ := pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	from := key.GetAddress()
+	wallet, _ := wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+	from := wallet.GetAddress()
 	gas := uint64(1000000) // 1M gas
 	to, _ := common.NewAddressFromString("Q00000000000000000000000000000000deadbeef")
 	signer := types.LatestSignerForChainID(big.NewInt(1337))
-	tx, err := types.SignNewTx(key, signer,
+	tx, err := types.SignNewTx(wallet, signer,
 		&types.DynamicFeeTx{
 			Nonce:     1,
 			GasFeeCap: big.NewInt(500),
@@ -94,10 +94,10 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
 	}
-	b.ResetTimer()
+
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		snap := statedb.Snapshot()
 		st := core.NewStateTransition(qrvm, msg, new(core.GasPool).AddGas(tx.Gas()))
 		_, err = st.TransitionDb()

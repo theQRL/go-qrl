@@ -17,7 +17,6 @@
 package filters
 
 import (
-	"context"
 	"fmt"
 	"testing"
 	"time"
@@ -85,7 +84,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 	start := time.Now()
 	cnt := (*headNum - 512) / sectionSize
 	var dataSize, compSize uint64
-	for sectionIdx := uint64(0); sectionIdx < cnt; sectionIdx++ {
+	for sectionIdx := range cnt {
 		bc, err := bloombits.NewGenerator(uint(sectionSize))
 		if err != nil {
 			b.Fatalf("failed to create generator: %v", err)
@@ -100,7 +99,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 			bc.AddBloom(uint(i-sectionIdx*sectionSize), header.Bloom)
 		}
 		sectionHead := rawdb.ReadCanonicalHash(db, (sectionIdx+1)*sectionSize-1)
-		for i := 0; i < types.BloomBitLength; i++ {
+		for i := range types.BloomBitLength {
 			data, err := bc.Bitset(uint(i))
 			if err != nil {
 				b.Fatalf("failed to retrieve bitset: %v", err)
@@ -127,7 +126,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 		backend *testBackend
 		sys     *FilterSystem
 	)
-	for i := 0; i < benchFilterCnt; i++ {
+	for i := range benchFilterCnt {
 		if i%20 == 0 {
 			db.Close()
 			db, _ = rawdb.NewLevelDBDatabase(benchDataDir, 128, 1024, "", false)
@@ -138,7 +137,7 @@ func benchmarkBloomBits(b *testing.B, sectionSize uint64) {
 		addr[0] = byte(i)
 		addr[1] = byte(i / 256)
 		filter := sys.NewRangeFilter(0, int64(cnt*sectionSize-1), []common.Address{addr}, nil)
-		if _, err := filter.Logs(context.Background()); err != nil {
+		if _, err := filter.Logs(b.Context()); err != nil {
 			b.Error("filter.Logs error:", err)
 		}
 	}
@@ -181,7 +180,7 @@ func BenchmarkNoBloomBits(b *testing.B) {
 	b.Log("Running filter benchmarks...")
 	start := time.Now()
 	filter := sys.NewRangeFilter(0, int64(*headNum), []common.Address{{}}, nil)
-	filter.Logs(context.Background())
+	filter.Logs(b.Context())
 	d := time.Since(start)
 	b.Log("Finished running filter benchmarks")
 	b.Log(" ", d, "total  ", d*time.Duration(1000000)/time.Duration(*headNum+1), "per million blocks")

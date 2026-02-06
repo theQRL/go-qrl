@@ -21,18 +21,17 @@ import (
 	"math/big"
 	"testing"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 func TestEIP155ChainId(t *testing.T) {
-	key, _ := crypto.GenerateMLDSA87Key()
-	addr := common.Address(key.GetAddress())
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	addr := common.Address(wallet.GetAddress())
 
 	signer := NewShanghaiSigner(big.NewInt(18))
-	tx, err := SignTx(NewTx(&DynamicFeeTx{Nonce: 0, To: &addr, Value: new(big.Int), Gas: 0, GasFeeCap: new(big.Int), Data: nil}), signer, key)
+	tx, err := SignTx(NewTx(&DynamicFeeTx{Nonce: 0, To: &addr, Value: new(big.Int), Gas: 0, GasFeeCap: new(big.Int), Data: nil}), signer, wallet)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,12 +55,13 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 			AccessList: nil,
 		})
 	}
+	extraParams := []byte{}
 
-	signTx := func(t *testing.T, signer Signer, tx *Transaction, wallet *walletmldsa87.Wallet) (*Transaction, []byte, []byte, []byte) {
+	signTx := func(t *testing.T, signer Signer, tx *Transaction, wallet wallet.Wallet) (*Transaction, []byte, []byte, []byte) {
 		t.Helper()
 
-		desc := wallet.GetDescriptor().ToDescriptor().ToBytes()
-		h := signer.Hash(tx, desc)
+		desc := wallet.GetDescriptor().ToBytes()
+		h := signer.Hash(tx, desc, extraParams)
 		sigArr, err := wallet.Sign(h.Bytes())
 		if err != nil {
 			t.Fatalf("sign: %v", err)
@@ -69,29 +69,18 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		pkArr := wallet.GetPK()
 
-		signed, err := tx.WithSignaturePublicKeyAndDescriptor(signer, sigArr[:], pkArr[:], desc)
+		signed, err := tx.WithAuthValues(signer, sigArr[:], pkArr[:], desc, extraParams)
 		if err != nil {
-			t.Fatalf("WithSignaturePublicKeyAndDescriptor: %v", err)
+			t.Fatalf("WithAuthValues: %v", err)
 		}
 
 		return signed, sigArr[:], pkArr[:], desc
 	}
 
-	wantAddr := func(t *testing.T, w *walletmldsa87.Wallet) common.Address {
-		t.Helper()
-
-		addrBytes, err := walletmldsa87.GetMLDSA87Address(w.GetPK(), w.GetDescriptor())
-		if err != nil {
-			t.Fatalf("GetMLDSA87Address: %v", err)
-		}
-
-		return common.Address(addrBytes)
-	}
-
 	t.Run("ok/recovers-sender", func(t *testing.T) {
 		t.Parallel()
 
-		wallet, err := walletmldsa87.NewWallet()
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
@@ -105,14 +94,14 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Sender error: %v", err)
 		}
-		if got != wantAddr(t, wallet) {
-			t.Fatalf("sender mismatch: got %x want %x", got.Bytes(), wantAddr(t, wallet).Bytes())
+		if got != wallet.GetAddress() {
+			t.Fatalf("sender mismatch: got %x want %x", got.Bytes(), wallet.GetAddress())
 		}
 	})
 	t.Run("error/invalid-chain-id", func(t *testing.T) {
 		t.Parallel()
 
-		wallet, err := walletmldsa87.NewWallet()
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
@@ -130,7 +119,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 	t.Run("error/descriptor-mismatch", func(t *testing.T) {
 		t.Parallel()
 
-		wallet, err := walletmldsa87.NewWallet()
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
@@ -140,7 +129,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		// Flip one bit in the descriptor and re-wrap.
 		desc[len(desc)-1] ^= 0x01
-		tampered, err := signed.WithSignaturePublicKeyAndDescriptor(signer, sig, pk, desc)
+		tampered, err := signed.WithAuthValues(signer, sig, pk, desc, extraParams)
 		if err != nil {
 			t.Fatalf("re-wrap with bad descriptor: %v", err)
 		}
@@ -148,12 +137,11 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
 			t.Fatalf("expected bad signature error; got %v", err)
 		}
-
 	})
 	t.Run("error/mutated-signature", func(t *testing.T) {
 		t.Parallel()
 
-		wallet, err := walletmldsa87.NewWallet()
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
@@ -163,7 +151,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 
 		// Tweak the signature bytes and re-wrap.
 		sig[len(sig)-1] ^= 0x80
-		tampered, err := signed.WithSignaturePublicKeyAndDescriptor(signer, sig, pk, desc)
+		tampered, err := signed.WithAuthValues(signer, sig, pk, desc, extraParams)
 		if err != nil {
 			t.Fatalf("re-wrap with bad signature: %v", err)
 		}
@@ -171,6 +159,5 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
 			t.Fatalf("expected bad signature error; got %v", err)
 		}
-
 	})
 }

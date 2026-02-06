@@ -61,19 +61,18 @@ var (
 	// paths with any of these prefixes will be skipped
 	skipPrefixes = []string{
 		// boring stuff
-		"vendor/", "tests/testdata/", "build/",
+		"vendor/", "build/",
 
 		// don't relicense vendored sources
-		"cmd/internal/browser",
 		"common/bitutil/bitutil",
 		"common/prque/",
-		"crypto/bn256/",
 		"crypto/ecies/",
 		"graphql/graphiql.go",
 		"internal/jsre/deps",
 		"log/",
 		"metrics/",
 		"signer/rules/deps",
+		"internal/reexec",
 
 		// skip special licenses
 		"crypto/secp256k1", // Relicensed to BSD-3 via https://github.com/theQRL/go-zond/pull/17225
@@ -289,8 +288,8 @@ func writeAuthors(files []string) {
 		}
 	}
 	// Write sorted list of authors back to the file.
-	slices.SortFunc(list, func(a, b string) bool {
-		return strings.ToLower(a) < strings.ToLower(b)
+	slices.SortFunc(list, func(a, b string) int {
+		return strings.Compare(strings.ToLower(a), strings.ToLower(b))
 	})
 	content := new(bytes.Buffer)
 	content.WriteString(authorsFileHeader)

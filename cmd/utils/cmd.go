@@ -48,13 +48,16 @@ const (
 	importBatchSize = 2500
 )
 
+// ErrImportInterrupted is returned when the user interrupts the import process.
+var ErrImportInterrupted = errors.New("interrupted")
+
 // Fatalf formats a message to standard error and exits the program.
 // The message is also printed to standard output if standard error
 // is redirected to a different file.
-func Fatalf(format string, args ...interface{}) {
+func Fatalf(format string, args ...any) {
 	w := io.MultiWriter(os.Stdout, os.Stderr)
-	if runtime.GOOS == "windows" {
-		// The SameFile check below doesn't work on Windows.
+	if runtime.GOOS == "windows" || runtime.GOOS == "openbsd" {
+		// The SameFile check below doesn't work on Windows neither OpenBSD.
 		// stdout is unlikely to get redirected though, so just print there.
 		w = os.Stdout
 	} else {
@@ -184,7 +187,7 @@ func ImportChain(chain *core.BlockChain, fn string) error {
 	for batch := 0; ; batch++ {
 		// Load a batch of RLP blocks.
 		if checkInterrupt() {
-			return errors.New("interrupted")
+			return ErrImportInterrupted
 		}
 		i := 0
 		for ; i < importBatchSize; i++ {
@@ -460,7 +463,7 @@ func ImportLDBData(db qrldb.Database, f string, startIndex int64, interrupt chan
 		case OpBatchAdd:
 			batch.Put(key, val)
 		default:
-			return fmt.Errorf("unknown op %d\n", op)
+			return fmt.Errorf("unknown op %d", op)
 		}
 		if batch.ValueSize() > qrldb.IdealBatchSize {
 			if err := batch.Write(); err != nil {

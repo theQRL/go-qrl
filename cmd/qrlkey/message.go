@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"os"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/cmd/utils"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/urfave/cli/v2"
 )
 
@@ -102,16 +102,26 @@ It is possible to refer to a file containing the message.`,
 		msgfileFlag,
 	},
 	Action: func(ctx *cli.Context) error {
-		signatureHex := ctx.Args().First()
-		pubKeyHex := ctx.Args().Get(1)
+		signature := common.FromHex(ctx.Args().First())
+		publicKey := common.FromHex(ctx.Args().Get(1))
 		message := getMessage(ctx, 2)
 
-		signature := common.FromHex(signatureHex)
-		publicKey := common.FromHex(pubKeyHex)
+		var (
+			ok  bool
+			err error
+		)
+		switch len(signature) {
+		case pqcrypto.MLDSA87SignatureLength:
+			ok, err = pqcrypto.MLDSA87VerifySignature(signature, accounts.TextHash(message), publicKey)
+			if err != nil {
+				utils.Fatalf("Can't verify ML-DSA-87 signature: %v", err)
+			}
+		default:
+			utils.Fatalf("verifymessage: %v", wallet.ErrBadWalletType)
+		}
 
-		pk := walletmldsa87.PK(publicKey)
 		out := outputVerify{
-			Success: walletmldsa87.Verify(accounts.TextHash(message), signature, &pk, walletmldsa87.NewMLDSA87Descriptor()),
+			Success: ok,
 		}
 		if ctx.Bool(jsonFlag.Name) {
 			mustPrintJSON(out)

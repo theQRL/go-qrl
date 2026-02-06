@@ -141,9 +141,10 @@ const schema string = `
         # Logs is a list of log entries emitted by this transaction. If the
         # transaction has not yet been mined, this field will be null.
         logs: [Log!]
-        publicKey: Bytes!
-        signature: Bytes!
         descriptor: Bytes!
+        extraParams: Bytes!
+        signature: Bytes!
+        publicKey: Bytes!
         # Envelope transaction support
         type: Long
         accessList: [AccessTuple!]

@@ -92,7 +92,7 @@ func checkNodes(t *testing.T, nodes []*Node, wantLen int) {
 // This test checks fairness of FairMix in the happy case where all sources return nodes
 // within the context's deadline.
 func TestFairMix(t *testing.T) {
-	for i := 0; i < 500; i++ {
+	for range 500 {
 		testMixerFairness(t)
 	}
 }

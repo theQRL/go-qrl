@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"strings"
 
 	"github.com/theQRL/go-zond/common"
@@ -214,12 +215,7 @@ func (t *flatCallTracer) Stop(err error) {
 
 // isPrecompiled returns whether the addr is a precompile.
 func (t *flatCallTracer) isPrecompiled(addr common.Address) bool {
-	for _, p := range t.activePrecompiles {
-		if p == addr {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(t.activePrecompiles, addr)
 }
 
 func flatFromNested(input *callFrame, traceAddress []int, ctx *tracers.Context) (output []flatCallFrame, err error) {

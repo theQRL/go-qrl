@@ -784,7 +784,7 @@ func makeLog(size int) executionFunc {
 		topics := make([]common.Hash, size)
 		stack := scope.Stack
 		mStart, mSize := stack.pop(), stack.pop()
-		for i := 0; i < size; i++ {
+		for i := range size {
 			addr := stack.pop()
 			topics[i] = addr.Bytes32()
 		}
@@ -823,15 +823,9 @@ func makePush(size uint64, pushByteSize int) executionFunc {
 	return func(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 		codeLen := len(scope.Contract.Code)
 
-		startMin := codeLen
-		if int(*pc+1) < startMin {
-			startMin = int(*pc + 1)
-		}
+		startMin := min(int(*pc+1), codeLen)
 
-		endMin := codeLen
-		if startMin+pushByteSize < endMin {
-			endMin = startMin + pushByteSize
-		}
+		endMin := min(startMin+pushByteSize, codeLen)
 
 		integer := new(uint256.Int)
 		scope.Stack.push(integer.SetBytes(common.RightPadBytes(

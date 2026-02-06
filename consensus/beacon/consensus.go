@@ -158,7 +158,7 @@ func (beacon *Beacon) verifyHeaders(chain consensus.ChainHeaderReader, headers [
 		results = make(chan error, len(headers))
 	)
 	if beacon.fakeFull || len(headers) == 0 {
-		for i := 0; i < len(headers); i++ {
+		for range headers {
 			results <- nil
 		}
 		return abort, results

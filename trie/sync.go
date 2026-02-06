@@ -426,7 +426,7 @@ func (s *Sync) children(req *nodeRequest, object node) ([]*nodeRequest, error) {
 			path: append(append([]byte(nil), req.path...), key...),
 		}}
 	case *fullNode:
-		for i := 0; i < 17; i++ {
+		for i := range 17 {
 			if node.Children[i] != nil {
 				children = append(children, childNode{
 					node: node.Children[i],

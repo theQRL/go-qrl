@@ -26,7 +26,6 @@ import (
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/rlp"
 	"github.com/urfave/cli/v2"
 )
@@ -108,11 +107,6 @@ func (i *bbInput) SealBlock(block *types.Block) (*types.Block, error) {
 
 // BuildBlock constructs a block from the given inputs.
 func BuildBlock(ctx *cli.Context) error {
-	// Configure the go-ethereum logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
-
 	baseDir, err := createBasedir(ctx)
 	if err != nil {
 		return NewError(ErrorIO, fmt.Errorf("failed creating output basedir: %v", err))

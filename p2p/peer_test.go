@@ -203,7 +203,7 @@ func TestPeerDisconnect(t *testing.T) {
 func TestPeerDisconnectRace(t *testing.T) {
 	maybe := func() bool { return rand.Intn(2) == 1 }
 
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		protoclose := make(chan error)
 		protodisc := make(chan DiscReason)
 		closer, rw, p, disc := testPeer([]Protocol{

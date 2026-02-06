@@ -89,10 +89,9 @@ func TestSetFeeDefaults(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
 	for i, test := range tests {
 		got := test.in
-		err := got.setFeeDefaults(ctx, b)
+		err := got.setFeeDefaults(t.Context(), b)
 		if err != nil && err.Error() == test.err.Error() {
 			// Test threw expected error.
 			continue

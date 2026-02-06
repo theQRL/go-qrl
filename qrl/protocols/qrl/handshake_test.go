@@ -43,11 +43,11 @@ func testHandshake(t *testing.T, protocol uint) {
 	)
 	tests := []struct {
 		code uint64
-		data interface{}
+		data any
 		want error
 	}{
 		{
-			code: TransactionsMsg, data: []interface{}{},
+			code: TransactionsMsg, data: []any{},
 			want: errNoStatusMsg,
 		},
 		{

@@ -76,7 +76,7 @@ func (b *BloomIndexer) Process(ctx context.Context, header *types.Header) error 
 // writing it out into the database.
 func (b *BloomIndexer) Commit() error {
 	batch := b.db.NewBatchWithSize((int(b.size) / 8) * types.BloomBitLength)
-	for i := 0; i < types.BloomBitLength; i++ {
+	for i := range types.BloomBitLength {
 		bits, err := b.gen.Bitset(uint(i))
 		if err != nil {
 			return err

@@ -17,10 +17,10 @@
 package params
 
 const (
-	GasLimitBoundDivisor uint64 = 1024               // The bound divisor of the gas limit, used in update calculations.
-	MinGasLimit          uint64 = 5000               // Minimum the gas limit may ever be.
-	MaxGasLimit          uint64 = 20000000           // Maximum the gas limit
-	GenesisGasLimit      uint64 = 4712388            // Gas limit of the Genesis block.
+	GasLimitBoundDivisor uint64 = 1024     // The bound divisor of the gas limit, used in update calculations.
+	MinGasLimit          uint64 = 5000     // Minimum the gas limit may ever be.
+	MaxGasLimit          uint64 = 20000000 // Maximum the gas limit
+	GenesisGasLimit      uint64 = 4712388  // Gas limit of the Genesis block.
 
 	MaximumExtraDataSize  uint64 = 32    // Maximum size extra data may be after Genesis.
 	SloadGas              uint64 = 50    // Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added.
@@ -88,11 +88,6 @@ const (
 	Sha256PerWordGas   uint64 = 12   // Per-word price for a SHA256 operation
 	IdentityBaseGas    uint64 = 15   // Base price for a data copy operation
 	IdentityPerWordGas uint64 = 3    // Per-work price for a data copy operation
-
-	Bn256AddGasIstanbul             uint64 = 150   // Gas needed for an elliptic curve addition
-	Bn256ScalarMulGasIstanbul       uint64 = 6000  // Gas needed for an elliptic curve scalar multiplication
-	Bn256PairingBaseGasIstanbul     uint64 = 45000 // Base price for an elliptic curve pairing check
-	Bn256PairingPerPointGasIstanbul uint64 = 34000 // Per-point price for an elliptic curve pairing check
 
 	// The Refund Quotient is the cap on how much of the used gas can be refunded. Before EIP-3529,
 	// up to half the consumed gas could be refunded. Redefined as 1/5th in EIP-3529

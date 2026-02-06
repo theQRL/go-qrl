@@ -81,6 +81,7 @@ var pledgeData1 = "00000000000000000000000000ce0d46d924cc8437c806721496599fc3ffa
 var mixedCaseData1 = "00000000000000000000000000000000000000000000000000000000000f42400000000000000000000000000000000000000000000000000000020489e8000000000000000000000000000000000000000000000000000000000000000f4241"
 
 func TestEventId(t *testing.T) {
+	t.Parallel()
 	var table = []struct {
 		definition   string
 		expectations map[string]common.Hash
@@ -112,6 +113,7 @@ func TestEventId(t *testing.T) {
 }
 
 func TestEventString(t *testing.T) {
+	t.Parallel()
 	var table = []struct {
 		definition   string
 		expectations map[string]string
@@ -146,6 +148,7 @@ func TestEventString(t *testing.T) {
 
 // TestEventMultiValueWithArrayUnpack verifies that array fields will be counted after parsing array.
 func TestEventMultiValueWithArrayUnpack(t *testing.T) {
+	t.Parallel()
 	definition := `[{"name": "test", "type": "event", "inputs": [{"indexed": false, "name":"value1", "type":"uint8[2]"},{"indexed": false, "name":"value2", "type":"uint8"}]}]`
 	abi, err := JSON(strings.NewReader(definition))
 	require.NoError(t, err)
@@ -161,6 +164,7 @@ func TestEventMultiValueWithArrayUnpack(t *testing.T) {
 }
 
 func TestEventTupleUnpack(t *testing.T) {
+	t.Parallel()
 	type EventTransfer struct {
 		Value *big.Int
 	}
@@ -211,8 +215,8 @@ func TestEventTupleUnpack(t *testing.T) {
 	addr, _ := common.NewAddressFromString("Q00Ce0d46d924CC8437c806721496599FC3FFA268")
 	var testCases = []struct {
 		data     string
-		dest     interface{}
-		expected interface{}
+		dest     any
+		expected any
 		jsonLog  []byte
 		error    string
 		name     string
@@ -225,8 +229,8 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can unpack SQRC-TF1 Transfer event into structure",
 	}, {
 		transferData1,
-		&[]interface{}{&bigint},
-		&[]interface{}{&bigintExpected},
+		&[]any{&bigint},
+		&[]any{&bigintExpected},
 		jsonEventTransfer,
 		"",
 		"Can unpack SQRC-TF1 Transfer event into slice",
@@ -270,8 +274,8 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can unpack Pledge event into structure",
 	}, {
 		pledgeData1,
-		&[]interface{}{&common.Address{}, &bigint, &[3]byte{}},
-		&[]interface{}{
+		&[]any{&common.Address{}, &bigint, &[3]byte{}},
+		&[]any{
 			&addr,
 			&bigintExpected2,
 			&[3]byte{'u', 's', 'd'}},
@@ -280,8 +284,8 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can unpack Pledge event into slice",
 	}, {
 		pledgeData1,
-		&[3]interface{}{&common.Address{}, &bigint, &[3]byte{}},
-		&[3]interface{}{
+		&[3]any{&common.Address{}, &bigint, &[3]byte{}},
+		&[3]any{
 			&addr,
 			&bigintExpected2,
 			&[3]byte{'u', 's', 'd'}},
@@ -290,8 +294,8 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can unpack Pledge event into an array",
 	}, {
 		pledgeData1,
-		&[]interface{}{new(int), 0, 0},
-		&[]interface{}{},
+		&[]any{new(int), 0, 0},
+		&[]any{},
 		jsonEventPledge,
 		"abi: cannot unmarshal common.Address in to int",
 		"Can not unpack Pledge event into slice with wrong types",
@@ -304,15 +308,15 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can not unpack Pledge event into struct with wrong filed types",
 	}, {
 		pledgeData1,
-		&[]interface{}{common.Address{}, new(big.Int)},
-		&[]interface{}{},
+		&[]any{common.Address{}, new(big.Int)},
+		&[]any{},
 		jsonEventPledge,
 		"abi: insufficient number of arguments for unpack, want 3, got 2",
 		"Can not unpack Pledge event into too short slice",
 	}, {
 		pledgeData1,
-		new(map[string]interface{}),
-		&[]interface{}{},
+		new(map[string]any),
+		&[]any{},
 		jsonEventPledge,
 		"abi:[2] cannot unmarshal tuple in to map[string]interface {}",
 		"Can not unpack Pledge event into map",
@@ -327,7 +331,6 @@ func TestEventTupleUnpack(t *testing.T) {
 
 	for _, tc := range testCases {
 		assert := assert.New(t)
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := unpackTestEventData(tc.dest, tc.data, tc.jsonLog, assert)
 			if tc.error == "" {
@@ -340,7 +343,7 @@ func TestEventTupleUnpack(t *testing.T) {
 	}
 }
 
-func unpackTestEventData(dest interface{}, hexData string, jsonEvent []byte, assert *assert.Assertions) error {
+func unpackTestEventData(dest any, hexData string, jsonEvent []byte, assert *assert.Assertions) error {
 	data, err := hex.DecodeString(hexData)
 	assert.NoError(err, "Hex data should be a correct hex-string")
 	var e Event
@@ -351,6 +354,7 @@ func unpackTestEventData(dest interface{}, hexData string, jsonEvent []byte, ass
 
 // TestEventUnpackIndexed verifies that indexed field will be skipped by event decoder.
 func TestEventUnpackIndexed(t *testing.T) {
+	t.Parallel()
 	definition := `[{"name": "test", "type": "event", "inputs": [{"indexed": true, "name":"value1", "type":"uint8"},{"indexed": false, "name":"value2", "type":"uint8"}]}]`
 	type testStruct struct {
 		Value1 uint8 // indexed
@@ -368,6 +372,7 @@ func TestEventUnpackIndexed(t *testing.T) {
 
 // TestEventIndexedWithArrayUnpack verifies that decoder will not overflow when static array is indexed input.
 func TestEventIndexedWithArrayUnpack(t *testing.T) {
+	t.Parallel()
 	definition := `[{"name": "test", "type": "event", "inputs": [{"indexed": true, "name":"value1", "type":"uint8[2]"},{"indexed": false, "name":"value2", "type":"string"}]}]`
 	type testStruct struct {
 		Value1 [2]uint8 // indexed

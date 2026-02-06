@@ -26,11 +26,11 @@ import (
 )
 
 var (
-	bytesT  = reflect.TypeOf(Bytes(nil))
-	bytesqT = reflect.TypeOf(BytesQ(nil))
-	bigT    = reflect.TypeOf((*Big)(nil))
-	uintT   = reflect.TypeOf(Uint(0))
-	uint64T = reflect.TypeOf(Uint64(0))
+	bytesT  = reflect.TypeFor[Bytes]()
+	bytesqT = reflect.TypeFor[BytesQ]()
+	bigT    = reflect.TypeFor[*Big]()
+	uintT   = reflect.TypeFor[Uint]()
+	uint64T = reflect.TypeFor[Uint64]()
 )
 
 // Bytes marshals/unmarshals as a JSON string with 0x prefix.
@@ -77,7 +77,7 @@ func (b Bytes) String() string {
 func (b Bytes) ImplementsGraphQLType(name string) bool { return name == "Bytes" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (b *Bytes) UnmarshalGraphQL(input interface{}) error {
+func (b *Bytes) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -202,10 +202,7 @@ func (b *Big) UnmarshalText(input []byte) error {
 	words := make([]big.Word, len(raw)/bigWordNibbles+1)
 	end := len(raw)
 	for i := range words {
-		start := end - bigWordNibbles
-		if start < 0 {
-			start = 0
-		}
+		start := max(end-bigWordNibbles, 0)
 		for ri := start; ri < end; ri++ {
 			nib := decodeNibble(raw[ri])
 			if nib == badNibble {
@@ -236,7 +233,7 @@ func (b *Big) String() string {
 func (b Big) ImplementsGraphQLType(name string) bool { return name == "BigInt" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (b *Big) UnmarshalGraphQL(input interface{}) error {
+func (b *Big) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -302,7 +299,7 @@ func (b Uint64) String() string {
 func (b Uint64) ImplementsGraphQLType(name string) bool { return name == "Long" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (b *Uint64) UnmarshalGraphQL(input interface{}) error {
+func (b *Uint64) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -394,7 +391,7 @@ func (b BytesQ) String() string {
 func (b BytesQ) ImplementsGraphQLType(name string) bool { return name == "BytesQ" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (b *BytesQ) UnmarshalGraphQL(input interface{}) error {
+func (b *BytesQ) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:

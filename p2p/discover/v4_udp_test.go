@@ -107,7 +107,7 @@ func (test *udpTest) packetInFrom(wantError error, key *ecdsa.PrivateKey, addr *
 
 // waits for a packet to be sent by the transport.
 // validate should have type func(X, *net.UDPAddr, []byte), where X is a packet type.
-func (test *udpTest) waitPacketOut(validate interface{}) (closed bool) {
+func (test *udpTest) waitPacketOut(validate any) (closed bool) {
 	test.t.Helper()
 
 	dgram, err := test.pipe.receive()
@@ -175,7 +175,7 @@ func TestUDPv4_responseTimeouts(t *testing.T) {
 		nilErr     = make(chan error, nReqs) // for requests that get a reply
 		timeoutErr = make(chan error, nReqs) // for requests that time out
 	)
-	for i := 0; i < nReqs; i++ {
+	for i := range nReqs {
 		// Create a matcher for a random request in udp.loop. Requests
 		// with ptype <= 128 will not get a reply and should time out.
 		// For all other requests, a reply is scheduled to arrive
@@ -207,7 +207,7 @@ func TestUDPv4_responseTimeouts(t *testing.T) {
 		recvDeadline        = time.After(20 * time.Second)
 		nTimeoutsRecv, nNil = 0, 0
 	)
-	for i := 0; i < nReqs; i++ {
+	for i := range nReqs {
 		select {
 		case err := <-timeoutErr:
 			if err != errTimeout {
@@ -258,7 +258,7 @@ func TestUDPv4_findnode(t *testing.T) {
 	nodes := &nodesByDistance{target: testTarget.ID()}
 	live := make(map[qnode.ID]bool)
 	numCandidates := 2 * bucketSize
-	for i := 0; i < numCandidates; i++ {
+	for i := range numCandidates {
 		key := newkey()
 		ip := net.IP{10, 13, 0, byte(i)}
 		n := wrapNode(qnode.NewV4(&key.PublicKey, ip, 0, 2000))
@@ -557,12 +557,7 @@ func startLocalhostV4(t *testing.T, cfg Config) *UDPv4 {
 
 	// Prefix logs with node ID.
 	lprefix := fmt.Sprintf("(%s)", ln.ID().TerminalString())
-	lfmt := log.TerminalFormat(false)
-	cfg.Log = testlog.Logger(t, log.LvlTrace)
-	cfg.Log.SetHandler(log.FuncHandler(func(r *log.Record) error {
-		t.Logf("%s %s", lprefix, lfmt.Format(r))
-		return nil
-	}))
+	cfg.Log = testlog.Logger(t, log.LevelTrace).With("node-id", lprefix)
 
 	// Listen.
 	socket, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IP{127, 0, 0, 1}})

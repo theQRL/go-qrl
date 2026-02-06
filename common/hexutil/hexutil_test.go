@@ -23,13 +23,13 @@ import (
 )
 
 type marshalTest struct {
-	input interface{}
+	input any
 	want  string
 }
 
 type unmarshalTest struct {
 	input        string
-	want         interface{}
+	want         any
 	wantErr      error // if set, decoding must fail on any platform
 	wantErr32bit error // if set, decoding must fail on 32bit platforms (used for Uint tests)
 }
@@ -253,7 +253,7 @@ func BenchmarkEncodeBig(b *testing.B) {
 		b.Run(bench.want, func(b *testing.B) {
 			b.ReportAllocs()
 			bigint := bench.input.(*big.Int)
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				EncodeBig(bigint)
 			}
 		})

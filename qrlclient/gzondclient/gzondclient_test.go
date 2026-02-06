@@ -18,7 +18,6 @@ package gzondclient
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"math/big"
 	"testing"
@@ -29,7 +28,7 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/params"
 	qrlsvc "github.com/theQRL/go-zond/qrl"
@@ -40,8 +39,8 @@ import (
 )
 
 var (
-	testKey, _      = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	testAddr        = testKey.GetAddress()
+	testWallet, _   = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+	testAddr        = testWallet.GetAddress()
 	zeroAddr, _     = common.NewAddressFromString("Q0000000000000000000000000000000000000000")
 	testContract, _ = common.NewAddressFromString("Q000000000000000000000000000000000000beef")
 	testEmpty, _    = common.NewAddressFromString("Q000000000000000000000000000000000000eeee")
@@ -186,7 +185,7 @@ func testAccessList(t *testing.T, client *rpc.Client) {
 		GasFeeCap: big.NewInt(1000000000),
 		Value:     big.NewInt(1),
 	}
-	al, gas, vmErr, err := zc.CreateAccessList(context.Background(), msg)
+	al, gas, vmErr, err := zc.CreateAccessList(t.Context(), msg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -208,7 +207,7 @@ func testAccessList(t *testing.T, client *rpc.Client) {
 		Value:     big.NewInt(1),
 		Data:      common.FromHex("0x608060806080608155fd"),
 	}
-	al, gas, vmErr, err = zc.CreateAccessList(context.Background(), msg)
+	al, gas, vmErr, err = zc.CreateAccessList(t.Context(), msg)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -233,7 +232,7 @@ func testAccessList(t *testing.T, client *rpc.Client) {
 func testGetProof(t *testing.T, client *rpc.Client, addr common.Address) {
 	zc := New(client)
 	qrlcl := qrlclient.NewClient(client)
-	result, err := zc.GetProof(context.Background(), addr, []string{testSlot.String()}, nil)
+	result, err := zc.GetProof(t.Context(), addr, []string{testSlot.String()}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,11 +240,11 @@ func testGetProof(t *testing.T, client *rpc.Client, addr common.Address) {
 		t.Fatalf("unexpected address, have: %v want: %v", result.Address, addr)
 	}
 	// test nonce
-	if nonce, _ := qrlcl.NonceAt(context.Background(), result.Address, nil); result.Nonce != nonce {
+	if nonce, _ := qrlcl.NonceAt(t.Context(), result.Address, nil); result.Nonce != nonce {
 		t.Fatalf("invalid nonce, want: %v got: %v", nonce, result.Nonce)
 	}
 	// test balance
-	if balance, _ := qrlcl.BalanceAt(context.Background(), result.Address, nil); result.Balance.Cmp(balance) != 0 {
+	if balance, _ := qrlcl.BalanceAt(t.Context(), result.Address, nil); result.Balance.Cmp(balance) != 0 {
 		t.Fatalf("invalid balance, want: %v got: %v", balance, result.Balance)
 	}
 
@@ -257,13 +256,13 @@ func testGetProof(t *testing.T, client *rpc.Client, addr common.Address) {
 		if proof.Key != testSlot.String() {
 			t.Fatalf("invalid storage proof key, want: %q, got: %q", testSlot.String(), proof.Key)
 		}
-		slotValue, _ := qrlcl.StorageAt(context.Background(), addr, common.HexToHash(proof.Key), nil)
+		slotValue, _ := qrlcl.StorageAt(t.Context(), addr, common.HexToHash(proof.Key), nil)
 		if have, want := common.BigToHash(proof.Value), common.BytesToHash(slotValue); have != want {
 			t.Fatalf("addr %x, invalid storage proof value: have: %v, want: %v", addr, have, want)
 		}
 	}
 	// test code
-	code, _ := qrlcl.CodeAt(context.Background(), addr, nil)
+	code, _ := qrlcl.CodeAt(t.Context(), addr, nil)
 	if have, want := result.CodeHash, crypto.Keccak256Hash(code); have != want {
 		t.Fatalf("codehash wrong, have %v want %v ", have, want)
 	}
@@ -274,14 +273,14 @@ func testGetProofCanonicalizeKeys(t *testing.T, client *rpc.Client) {
 
 	// Tests with non-canon input for storage keys.
 	// Here we check that the storage key is canonicalized.
-	result, err := zc.GetProof(context.Background(), testAddr, []string{"0x0dEadbeef"}, nil)
+	result, err := zc.GetProof(t.Context(), testAddr, []string{"0x0dEadbeef"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if result.StorageProof[0].Key != "0xdeadbeef" {
 		t.Fatalf("wrong storage key encoding in proof: %q", result.StorageProof[0].Key)
 	}
-	if result, err = zc.GetProof(context.Background(), testAddr, []string{"0x000deadbeef"}, nil); err != nil {
+	if result, err = zc.GetProof(t.Context(), testAddr, []string{"0x000deadbeef"}, nil); err != nil {
 		t.Fatal(err)
 	}
 	if result.StorageProof[0].Key != "0xdeadbeef" {
@@ -290,7 +289,7 @@ func testGetProofCanonicalizeKeys(t *testing.T, client *rpc.Client) {
 
 	// If the requested storage key is 32 bytes long, it will be returned as is.
 	hashSizedKey := "0x00000000000000000000000000000000000000000000000000000000deadbeef"
-	result, err = zc.GetProof(context.Background(), testAddr, []string{hashSizedKey}, nil)
+	result, err = zc.GetProof(t.Context(), testAddr, []string{hashSizedKey}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,7 +301,7 @@ func testGetProofCanonicalizeKeys(t *testing.T, client *rpc.Client) {
 func testGetProofNonExistent(t *testing.T, client *rpc.Client) {
 	addr, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000001")
 	ec := New(client)
-	result, err := ec.GetProof(context.Background(), addr, nil, nil)
+	result, err := ec.GetProof(t.Context(), addr, nil, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -333,7 +332,7 @@ func testGetProofNonExistent(t *testing.T, client *rpc.Client) {
 
 func testGCStats(t *testing.T, client *rpc.Client) {
 	zc := New(client)
-	_, err := zc.GCStats(context.Background())
+	_, err := zc.GCStats(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -341,7 +340,7 @@ func testGCStats(t *testing.T, client *rpc.Client) {
 
 func testMemStats(t *testing.T, client *rpc.Client) {
 	zc := New(client)
-	stats, err := zc.MemStats(context.Background())
+	stats, err := zc.MemStats(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -352,7 +351,7 @@ func testMemStats(t *testing.T, client *rpc.Client) {
 
 func testGetNodeInfo(t *testing.T, client *rpc.Client) {
 	zc := New(client)
-	info, err := zc.GetNodeInfo(context.Background())
+	info, err := zc.GetNodeInfo(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -364,7 +363,7 @@ func testGetNodeInfo(t *testing.T, client *rpc.Client) {
 
 func testSetHead(t *testing.T, client *rpc.Client) {
 	zc := New(client)
-	err := zc.SetHead(context.Background(), big.NewInt(0))
+	err := zc.SetHead(t.Context(), big.NewInt(0))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,9 +374,9 @@ func testSubscribePendingTransactions(t *testing.T, client *rpc.Client) {
 	qrlcl := qrlclient.NewClient(client)
 	// Subscribe to Transactions
 	ch := make(chan common.Hash)
-	qc.SubscribePendingTransactions(context.Background(), ch)
+	qc.SubscribePendingTransactions(t.Context(), ch)
 	// Send a transaction
-	chainID, err := qrlcl.ChainID(context.Background())
+	chainID, err := qrlcl.ChainID(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -391,12 +390,12 @@ func testSubscribePendingTransactions(t *testing.T, client *rpc.Client) {
 		Data:      nil,
 	})
 	signer := types.LatestSignerForChainID(chainID)
-	signedTx, err := types.SignTx(tx, signer, testKey)
+	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Send transaction
-	err = qrlcl.SendTransaction(context.Background(), signedTx)
+	err = qrlcl.SendTransaction(t.Context(), signedTx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -412,9 +411,9 @@ func testSubscribeFullPendingTransactions(t *testing.T, client *rpc.Client) {
 	qrlcl := qrlclient.NewClient(client)
 	// Subscribe to Transactions
 	ch := make(chan *types.Transaction)
-	zc.SubscribeFullPendingTransactions(context.Background(), ch)
+	zc.SubscribeFullPendingTransactions(t.Context(), ch)
 	// Send a transaction
-	chainID, err := qrlcl.ChainID(context.Background())
+	chainID, err := qrlcl.ChainID(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -428,12 +427,12 @@ func testSubscribeFullPendingTransactions(t *testing.T, client *rpc.Client) {
 		Data:      nil,
 	})
 	signer := types.LatestSignerForChainID(chainID)
-	signedTx, err := types.SignTx(tx, signer, testKey)
+	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Send transaction
-	err = qrlcl.SendTransaction(context.Background(), signedTx)
+	err = qrlcl.SendTransaction(t.Context(), signedTx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -454,7 +453,7 @@ func testCallContract(t *testing.T, client *rpc.Client) {
 		Value:     big.NewInt(1),
 	}
 	// CallContract without override
-	if _, err := zc.CallContract(context.Background(), msg, big.NewInt(0), nil); err != nil {
+	if _, err := zc.CallContract(t.Context(), msg, big.NewInt(0), nil); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	// CallContract with override
@@ -463,7 +462,7 @@ func testCallContract(t *testing.T, client *rpc.Client) {
 	}
 	mapAcc := make(map[common.Address]OverrideAccount)
 	mapAcc[testAddr] = override
-	if _, err := zc.CallContract(context.Background(), msg, big.NewInt(0), &mapAcc); err != nil {
+	if _, err := zc.CallContract(t.Context(), msg, big.NewInt(0), &mapAcc); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -570,7 +569,7 @@ func testCallContractWithBlockOverrides(t *testing.T, client *rpc.Client) {
 	}
 	mapAcc := make(map[common.Address]OverrideAccount)
 	mapAcc[common.Address{}] = override
-	res, err := zc.CallContract(context.Background(), msg, big.NewInt(0), &mapAcc)
+	res, err := zc.CallContract(t.Context(), msg, big.NewInt(0), &mapAcc)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -583,7 +582,7 @@ func testCallContractWithBlockOverrides(t *testing.T, client *rpc.Client) {
 	bo := BlockOverrides{
 		Coinbase: coinbase,
 	}
-	res, err = zc.CallContractWithBlockOverrides(context.Background(), msg, big.NewInt(0), &mapAcc, bo)
+	res, err = zc.CallContractWithBlockOverrides(t.Context(), msg, big.NewInt(0), &mapAcc, bo)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

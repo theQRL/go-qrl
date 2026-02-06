@@ -25,7 +25,7 @@ import (
 	"github.com/theQRL/go-zond/consensus/beacon"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rlp"
 	"golang.org/x/crypto/sha3"
@@ -37,7 +37,7 @@ func getBlock(transactions int, dataSize int) *types.Block {
 		engine = beacon.NewFaker()
 
 		// A sender who makes transactions, has some funds
-		d, _    = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+		d, _    = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address = d.GetAddress()
 		funds   = big.NewInt(1_000_000_000_000_000_000)
 		gspec   = &Genesis{
@@ -49,7 +49,7 @@ func getBlock(transactions int, dataSize int) *types.Block {
 		func(n int, b *BlockGen) {
 			if n == 0 {
 				// Add transactions and stuff on the last block
-				for i := 0; i < transactions; i++ {
+				for i := range transactions {
 					tx := types.NewTx(&types.DynamicFeeTx{
 						Nonce:     uint64(i),
 						To:        &aa,
@@ -61,7 +61,6 @@ func getBlock(transactions int, dataSize int) *types.Block {
 					signedTx, _ := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, d)
 					b.AddTx(signedTx)
 				}
-
 			}
 		})
 	block := blocks[len(blocks)-1]
@@ -153,8 +152,7 @@ func BenchmarkHashing(b *testing.B) {
 	var got common.Hash
 	var hasher = sha3.NewLegacyKeccak256()
 	b.Run("iteratorhashing", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			var hash common.Hash
 			it, err := rlp.NewListIterator(bodyRlp)
 			if err != nil {
@@ -176,8 +174,7 @@ func BenchmarkHashing(b *testing.B) {
 	})
 	var exp common.Hash
 	b.Run("fullbodyhashing", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			var body types.Body
 			rlp.DecodeBytes(bodyRlp, &body)
 			for _, tx := range body.Transactions {
@@ -186,8 +183,7 @@ func BenchmarkHashing(b *testing.B) {
 		}
 	})
 	b.Run("fullblockhashing", func(b *testing.B) {
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			var block types.Block
 			rlp.DecodeBytes(blockRlp, &block)
 			for _, tx := range block.Transactions() {

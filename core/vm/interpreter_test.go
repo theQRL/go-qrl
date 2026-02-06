@@ -17,12 +17,12 @@
 package vm
 
 import (
+	"math"
 	"math/big"
 	"testing"
 	"time"
 
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"

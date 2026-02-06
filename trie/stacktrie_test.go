@@ -204,7 +204,7 @@ func TestStackTrieInsertAndHash(t *testing.T) {
 		// so we will create new trie for every sequence length of inserts.
 		for l := 1; l <= len(test); l++ {
 			st.Reset()
-			for j := 0; j < l; j++ {
+			for j := range l {
 				kv := &test[j]
 				if err := st.Update(common.FromHex(kv.K), []byte(kv.V)); err != nil {
 					t.Fatal(err)
@@ -359,7 +359,7 @@ func TestStacktrieNotModifyValues(t *testing.T) {
 			return big.NewInt(int64(i)).Bytes()
 		}
 	}
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		key := common.BigToHash(keyB)
 		value := getValue(i)
 		st.Update(key.Bytes(), value)
@@ -368,7 +368,7 @@ func TestStacktrieNotModifyValues(t *testing.T) {
 		keyDelta.Add(keyDelta, common.Big1)
 	}
 	st.Hash()
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		want := getValue(i)
 
 		have := vals[i]
@@ -396,7 +396,7 @@ func TestStacktrieSerialization(t *testing.T) {
 			return big.NewInt(int64(i)).Bytes()
 		}
 	}
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		vals = append(vals, getValue(i))
 		keys = append(keys, common.BigToHash(keyB).Bytes())
 		keyB = keyB.Add(keyB, keyDelta)

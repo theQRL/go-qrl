@@ -551,10 +551,7 @@ func writeHistory(db qrldb.KeyValueStore, freezer *rawdb.ResettableFreezer, dl *
 // and performs the callback on each item.
 func checkHistories(freezer *rawdb.ResettableFreezer, start, count uint64, check func(*meta) error) error {
 	for count > 0 {
-		number := count
-		if number > 10000 {
-			number = 10000 // split the big read into small chunks
-		}
+		number := min(count, 10000) // split the big read into small chunks
 		blobs, err := rawdb.ReadStateHistoryMetaList(freezer, start, number)
 		if err != nil {
 			return err

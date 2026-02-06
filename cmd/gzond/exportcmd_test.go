@@ -36,7 +36,7 @@ func initGzond(t *testing.T) string {
 
 // TestExport does a basic test of "gzond export", exporting the test-genesis.
 func TestExport(t *testing.T) {
-	outfile := fmt.Sprintf("%v/testExport.out", os.TempDir())
+	outfile := fmt.Sprintf("%v/testExport.out", t.TempDir())
 	defer os.Remove(outfile)
 	gzond := runGzond(t, "--datadir", initGzond(t), "export", outfile)
 	gzond.WaitExit()

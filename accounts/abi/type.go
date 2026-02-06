@@ -64,6 +64,9 @@ type Type struct {
 var (
 	// typeRegex parses the abi sub types
 	typeRegex = regexp.MustCompile("([a-zA-Z]+)(([0-9]+)(x([0-9]+))?)?")
+
+	// sliceSizeRegex grab the slice size
+	sliceSizeRegex = regexp.MustCompile("[0-9]+")
 )
 
 // NewType creates a new reflection type of abi type given in t.
@@ -91,8 +94,7 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 		// grab the last cell and create a type from there
 		sliced := t[i:]
 		// grab the slice size with regexp
-		re := regexp.MustCompile("[0-9]+")
-		intz := re.FindAllString(sliced, -1)
+		intz := sliceSizeRegex.FindAllString(sliced, -1)
 
 		if len(intz) == 0 {
 			// is a slice
@@ -165,10 +167,10 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 			fields     []reflect.StructField
 			elems      []*Type
 			names      []string
-			expression string // canonical parameter expression
+			expression strings.Builder // canonical parameter expression
 			used       = make(map[string]bool)
 		)
-		expression += "("
+		expression.WriteString("(")
 		for idx, c := range components {
 			cType, err := NewType(c.Type, c.InternalType, c.Components)
 			if err != nil {
@@ -179,9 +181,6 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 				return Type{}, errors.New("abi: purely anonymous or underscored field is not supported")
 			}
 			fieldName := ResolveNameConflict(name, func(s string) bool { return used[s] })
-			if err != nil {
-				return Type{}, err
-			}
 			used[fieldName] = true
 			if !isValidFieldName(fieldName) {
 				return Type{}, fmt.Errorf("field %d has invalid name", idx)
@@ -193,18 +192,18 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 			})
 			elems = append(elems, &cType)
 			names = append(names, c.Name)
-			expression += cType.stringKind
+			expression.WriteString(cType.stringKind)
 			if idx != len(components)-1 {
-				expression += ","
+				expression.WriteString(",")
 			}
 		}
-		expression += ")"
+		expression.WriteString(")")
 
 		typ.TupleType = reflect.StructOf(fields)
 		typ.TupleElems = elems
 		typ.TupleRawNames = names
 		typ.T = TupleTy
-		typ.stringKind = expression
+		typ.stringKind = expression.String()
 
 		const structPrefix = "struct "
 		// We can obtain the struct name user defined in
@@ -219,7 +218,12 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 		typ.T = FunctionTy
 		typ.Size = common.AddressLength + 4
 	default:
-		return Type{}, fmt.Errorf("unsupported arg type: %s", t)
+		if strings.HasPrefix(internalType, "contract ") {
+			typ.Size = common.AddressLength
+			typ.T = AddressTy
+		} else {
+			return Type{}, fmt.Errorf("unsupported arg type: %s", t)
+		}
 	}
 
 	return
@@ -233,9 +237,9 @@ func (t Type) GetType() reflect.Type {
 	case UintTy:
 		return reflectIntType(true, t.Size)
 	case BoolTy:
-		return reflect.TypeOf(false)
+		return reflect.TypeFor[bool]()
 	case StringTy:
-		return reflect.TypeOf("")
+		return reflect.TypeFor[string]()
 	case SliceTy:
 		return reflect.SliceOf(t.Elem.GetType())
 	case ArrayTy:
@@ -243,19 +247,15 @@ func (t Type) GetType() reflect.Type {
 	case TupleTy:
 		return t.TupleType
 	case AddressTy:
-		return reflect.TypeOf(common.Address{})
+		return reflect.TypeFor[common.Address]()
 	case FixedBytesTy:
-		return reflect.ArrayOf(t.Size, reflect.TypeOf(byte(0)))
+		return reflect.ArrayOf(t.Size, reflect.TypeFor[byte]())
 	case BytesTy:
-		return reflect.SliceOf(reflect.TypeOf(byte(0)))
-	case HashTy:
-		// hashtype currently not used
-		return reflect.ArrayOf(32, reflect.TypeOf(byte(0)))
-	case FixedPointTy:
-		// fixedpoint type currently not used
-		return reflect.ArrayOf(32, reflect.TypeOf(byte(0)))
+		return reflect.TypeFor[[]byte]()
+	case HashTy, FixedPointTy: // currently not used
+		return reflect.TypeFor[[32]byte]()
 	case FunctionTy:
-		return reflect.ArrayOf(common.AddressLength+4, reflect.TypeOf(byte(0)))
+		return reflect.TypeFor[[common.AddressLength + 4]byte]()
 	default:
 		panic("Invalid type")
 	}

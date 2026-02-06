@@ -146,7 +146,7 @@ func TestTable_IPLimit(t *testing.T) {
 	defer db.Close()
 	defer tab.close()
 
-	for i := 0; i < tableIPLimit+1; i++ {
+	for i := range tableIPLimit + 1 {
 		n := nodeAtDistance(tab.self().ID(), i, net.IP{172, 0, 1, byte(i)})
 		tab.addSeenNode(n)
 	}
@@ -164,7 +164,7 @@ func TestTable_BucketIPLimit(t *testing.T) {
 	defer tab.close()
 
 	d := 3
-	for i := 0; i < bucketIPLimit+1; i++ {
+	for i := range bucketIPLimit + 1 {
 		n := nodeAtDistance(tab.self().ID(), d, net.IP{172, 0, 1, byte(i)})
 		tab.addSeenNode(n)
 	}
@@ -416,7 +416,7 @@ func slicesEqual[T any](s1, s2 []T, check func(e1, e2 T) bool) bool {
 
 // gen wraps quick.Value so it's easier to use.
 // it generates a random value of the given value's type.
-func gen(typ interface{}, rand *rand.Rand) interface{} {
+func gen(typ any, rand *rand.Rand) any {
 	v, ok := quick.Value(reflect.TypeOf(typ), rand)
 	if !ok {
 		panic(fmt.Sprintf("couldn't generate random value of type %T", typ))

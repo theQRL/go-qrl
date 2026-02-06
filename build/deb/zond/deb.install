@@ -1,5 +1,0 @@
-build/bin/{{.BinaryName}} usr/bin
-{{- if eq .BinaryName "gzond" }}
-build/deb/zond/completions/bash/gzond etc/bash_completion.d
-build/deb/zond/completions/zsh/_gzond usr/share/zsh/vendor-completions
-{{end -}}

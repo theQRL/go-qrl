@@ -64,7 +64,7 @@ func benchmarkSearch(b *testing.B, depth int, total int) {
 	fill := func(parent layer, index int) *diffLayer {
 		nodes := make(map[common.Hash]map[string]*trienode.Node)
 		nodes[common.Hash{}] = make(map[string]*trienode.Node)
-		for i := 0; i < 3000; i++ {
+		for range 3000 {
 			var (
 				path = testutil.RandBytes(32)
 				node = testutil.RandomNode()
@@ -80,16 +80,15 @@ func benchmarkSearch(b *testing.B, depth int, total int) {
 	}
 	var layer layer
 	layer = emptyLayer()
-	for i := 0; i < total; i++ {
+	for i := range total {
 		layer = fill(layer, i)
 	}
-	b.ResetTimer()
 
 	var (
 		have []byte
 		err  error
 	)
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		have, err = layer.Node(common.Hash{}, npath, nhash)
 		if err != nil {
 			b.Fatal(err)
@@ -110,7 +109,7 @@ func BenchmarkPersist(b *testing.B) {
 	fill := func(parent layer) *diffLayer {
 		nodes := make(map[common.Hash]map[string]*trienode.Node)
 		nodes[common.Hash{}] = make(map[string]*trienode.Node)
-		for i := 0; i < 3000; i++ {
+		for range 3000 {
 			var (
 				path = testutil.RandBytes(32)
 				node = testutil.RandomNode()
@@ -119,7 +118,7 @@ func BenchmarkPersist(b *testing.B) {
 		}
 		return newDiffLayer(parent, common.Hash{}, 0, 0, nodes, nil)
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		var layer layer
 		layer = emptyLayer()
@@ -147,7 +146,7 @@ func BenchmarkJournal(b *testing.B) {
 	fill := func(parent layer) *diffLayer {
 		nodes := make(map[common.Hash]map[string]*trienode.Node)
 		nodes[common.Hash{}] = make(map[string]*trienode.Node)
-		for i := 0; i < 3000; i++ {
+		for range 3000 {
 			var (
 				path = testutil.RandBytes(32)
 				node = testutil.RandomNode()
@@ -159,12 +158,11 @@ func BenchmarkJournal(b *testing.B) {
 	}
 	var layer layer
 	layer = emptyLayer()
-	for i := 0; i < 128; i++ {
+	for range 128 {
 		layer = fill(layer)
 	}
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		layer.journal(new(bytes.Buffer))
 	}
 }

@@ -17,9 +17,10 @@
 package vm
 
 import (
+	"math"
+
 	"github.com/holiman/uint256"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
 )
 
 // calcMemSize64 calculates the required memory size, and returns
@@ -56,10 +57,7 @@ func getData(data []byte, start uint64, size uint64) []byte {
 	if start > length {
 		start = length
 	}
-	end := start + size
-	if end > length {
-		end = length
-	}
+	end := min(start+size, length)
 	return common.RightPadBytes(data[start:end], int(size))
 }
 

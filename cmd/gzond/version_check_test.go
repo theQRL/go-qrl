@@ -131,8 +131,8 @@ func TestMatching(t *testing.T) {
 		}
 	}
 	for major := 1; major < 2; major++ {
-		for minor := 0; minor < 30; minor++ {
-			for patch := 0; patch < 30; patch++ {
+		for minor := range 30 {
+			for patch := range 30 {
 				vShort := fmt.Sprintf("v%d.%d.%d", major, minor, patch)
 				check(vShort)
 			}

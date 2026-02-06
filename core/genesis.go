@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"math/big"
 	"strings"
 
@@ -105,9 +106,7 @@ func (ga *GenesisAlloc) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*ga = make(GenesisAlloc)
-	for addr, a := range m {
-		(*ga)[common.Address(addr)] = a
-	}
+	maps.Copy((*ga), m)
 	return nil
 }
 

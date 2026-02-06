@@ -22,11 +22,10 @@ import (
 	"testing"
 	"time"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/txpool"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 func TestTransactionPriceNonceSort1559(t *testing.T) {
@@ -41,19 +40,19 @@ func TestTransactionPriceNonceSort1559(t *testing.T) {
 // the same account.
 func testTransactionPriceNonceSort(t *testing.T, baseFee *big.Int) {
 	// Generate a batch of accounts to start with
-	keys := make([]*walletmldsa87.Wallet, 25)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
+	wallets := make([]wallet.Wallet, 25)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 	}
 	signer := types.LatestSignerForChainID(common.Big1)
 
 	// Generate a batch of transactions with overlapping values, but shifted nonces
 	groups := map[common.Address][]*txpool.LazyTransaction{}
 	expectedCount := 0
-	for start, key := range keys {
-		addr := key.GetAddress()
+	for start, wallet := range wallets {
+		addr := wallet.GetAddress()
 		count := 25
-		for i := 0; i < 25; i++ {
+		for i := range 25 {
 			var tx *types.Transaction
 			gasFeeCap := rand.Intn(50)
 			tx = types.NewTx(&types.DynamicFeeTx{
@@ -68,7 +67,7 @@ func testTransactionPriceNonceSort(t *testing.T, baseFee *big.Int) {
 			if count == 25 && int64(gasFeeCap) < baseFee.Int64() {
 				count = i
 			}
-			tx, err := types.SignTx(tx, signer, key)
+			tx, err := types.SignTx(tx, signer, wallet)
 			if err != nil {
 				t.Fatalf("failed to sign tx: %s", err)
 			}
@@ -125,19 +124,19 @@ func testTransactionPriceNonceSort(t *testing.T, baseFee *big.Int) {
 func TestTransactionTimeSort(t *testing.T) {
 	t.Parallel()
 	// Generate a batch of accounts to start with
-	keys := make([]*walletmldsa87.Wallet, 5)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
+	wallets := make([]wallet.Wallet, 5)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 	}
 	signer := types.ShanghaiSigner{ChainId: big.NewInt(0)}
 
 	// Generate a batch of transactions with overlapping prices, but different creation times
 	groups := map[common.Address][]*txpool.LazyTransaction{}
-	for start, key := range keys {
-		addr := key.GetAddress()
+	for start, wallet := range wallets {
+		addr := wallet.GetAddress()
 
-		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &common.Address{}, Value: big.NewInt(100), Gas: 100, Data: nil}), signer, key)
-		tx.SetTime(time.Unix(0, int64(len(keys)-start)))
+		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &common.Address{}, Value: big.NewInt(100), Gas: 100, Data: nil}), signer, wallet)
+		tx.SetTime(time.Unix(0, int64(len(wallets)-start)))
 
 		groups[addr] = append(groups[addr], &txpool.LazyTransaction{
 			Hash:      tx.Hash(),
@@ -156,8 +155,8 @@ func TestTransactionTimeSort(t *testing.T) {
 		txs = append(txs, tx.Tx)
 		txset.Shift()
 	}
-	if len(txs) != len(keys) {
-		t.Errorf("expected %d transactions, found %d", len(keys), len(txs))
+	if len(txs) != len(wallets) {
+		t.Errorf("expected %d transactions, found %d", len(wallets), len(txs))
 	}
 	for i, txi := range txs {
 		fromi, _ := types.Sender(signer, txi)

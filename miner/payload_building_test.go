@@ -12,7 +12,7 @@
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package miner
 
@@ -33,6 +33,7 @@ import (
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
 	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrldb"
 )
@@ -43,9 +44,9 @@ var (
 	beaconChainConfig *params.ChainConfig
 
 	// Test accounts
-	testBankKey, _  = crypto.GenerateMLDSA87Key()
-	testBankAddress = testBankKey.GetAddress()
-	testBankFunds   = big.NewInt(1000000000000000000)
+	testBankWallet, _ = wallet.Generate(wallet.ML_DSA_87)
+	testBankAddress   = testBankWallet.GetAddress()
+	testBankFunds     = big.NewInt(1000000000000000000)
 
 	testUserKey, _  = crypto.GenerateKey()
 	testUserAddress = crypto.PubkeyToAddress(testUserKey.PublicKey)
@@ -68,7 +69,7 @@ func init() {
 	*beaconChainConfig = *params.TestChainConfig
 
 	signer := types.LatestSigner(params.TestChainConfig)
-	tx1 := types.MustSignNewTx(testBankKey, signer, &types.DynamicFeeTx{
+	tx1 := types.MustSignNewTx(testBankWallet, signer, &types.DynamicFeeTx{
 		ChainID:   params.TestChainConfig.ChainID,
 		Nonce:     0,
 		To:        &testUserAddress,
@@ -78,7 +79,7 @@ func init() {
 	})
 	pendingTxs = append(pendingTxs, tx1)
 
-	tx2 := types.MustSignNewTx(testBankKey, signer, &types.DynamicFeeTx{
+	tx2 := types.MustSignNewTx(testBankWallet, signer, &types.DynamicFeeTx{
 		Nonce:     1,
 		To:        &testUserAddress,
 		Value:     big.NewInt(1000),

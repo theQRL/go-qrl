@@ -65,7 +65,7 @@ func (api *SignerAPI) sign(req *SignDataRequest) (hexutil.Bytes, error) {
 // depending on the content-type specified.
 //
 // Different types of validation occur.
-func (api *SignerAPI) SignData(ctx context.Context, contentType string, addr common.MixedcaseAddress, data interface{}) (hexutil.Bytes, error) {
+func (api *SignerAPI) SignData(ctx context.Context, contentType string, addr common.MixedcaseAddress, data any) (hexutil.Bytes, error) {
 	var req, err = api.determineSignatureFormat(ctx, contentType, addr, data)
 	if err != nil {
 		return nil, err
@@ -84,7 +84,7 @@ func (api *SignerAPI) SignData(ctx context.Context, contentType string, addr com
 // charset, ok := params["charset"]
 // As it is now, we accept any charset and just treat it as 'raw'.
 // This method returns the mimetype for signing along with the request
-func (api *SignerAPI) determineSignatureFormat(ctx context.Context, contentType string, addr common.MixedcaseAddress, data interface{}) (*SignDataRequest, error) {
+func (api *SignerAPI) determineSignatureFormat(ctx context.Context, contentType string, addr common.MixedcaseAddress, data any) (*SignDataRequest, error) {
 	var req *SignDataRequest
 
 	mediaType, _, err := mime.ParseMediaType(contentType)
@@ -202,7 +202,7 @@ func fromHex(data any) ([]byte, error) {
 	return nil, fmt.Errorf("wrong type %T", data)
 }
 
-// typeDataRequest tries to convert the data into a SignDataRequest.
+// typedDataRequest tries to convert the data into a SignDataRequest.
 func typedDataRequest(data any) (*SignDataRequest, error) {
 	var typedData apitypes.TypedData
 	if td, ok := data.(apitypes.TypedData); ok {
@@ -232,10 +232,10 @@ func typedDataRequest(data any) (*SignDataRequest, error) {
 }
 
 // UnmarshalValidatorData converts the bytes input to typed data
-func UnmarshalValidatorData(data interface{}) (apitypes.ValidatorData, error) {
-	raw, ok := data.(map[string]interface{})
+func UnmarshalValidatorData(data any) (apitypes.ValidatorData, error) {
+	raw, ok := data.(map[string]any)
 	if !ok {
-		return apitypes.ValidatorData{}, errors.New("validator input is not a map[string]interface{}")
+		return apitypes.ValidatorData{}, errors.New("validator input is not a map[string]any")
 	}
 	addrBytes, err := fromHex(raw["address"])
 	if err != nil {

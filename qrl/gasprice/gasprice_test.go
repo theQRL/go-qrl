@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rpc"
@@ -122,10 +122,10 @@ func (b *testBackend) teardown() {
 // after use, otherwise the blockchain instance will mem-leak via goroutines.
 func newTestBackend(t *testing.T, pending bool) *testBackend {
 	var (
-		key, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		addr   = key.GetAddress()
-		config = *params.TestChainConfig // needs copy because it is modified below
-		gspec  = &core.Genesis{
+		wallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		addr      = wallet.GetAddress()
+		config    = *params.TestChainConfig // needs copy because it is modified below
+		gspec     = &core.Genesis{
 			Config: &config,
 			Alloc:  core.GenesisAlloc{addr: {Balance: big.NewInt(math.MaxInt64)}},
 		}
@@ -147,7 +147,7 @@ func newTestBackend(t *testing.T, pending bool) *testBackend {
 			GasTipCap: big.NewInt(int64(i+1) * params.Shor),
 			Data:      []byte{},
 		}
-		b.AddTx(types.MustSignNewTx(key, signer, txdata))
+		b.AddTx(types.MustSignNewTx(wallet, signer, txdata))
 	})
 	// Construct testing chain
 	chain, err := core.NewBlockChain(db, &core.CacheConfig{TrieCleanNoPrefetch: true}, gspec, engine, vm.Config{}, nil)
@@ -191,7 +191,7 @@ func TestSuggestTipCap(t *testing.T) {
 		oracle := NewOracle(backend, config)
 
 		// The gas price sampled is: 32G, 31G, 30G, 29G, 28G, 27G
-		got, err := oracle.SuggestTipCap(context.Background())
+		got, err := oracle.SuggestTipCap(t.Context())
 		backend.teardown()
 		if err != nil {
 			t.Fatalf("Failed to retrieve recommended gas price: %v", err)

@@ -1,48 +1,48 @@
 {
     "test_vector_argon2id": {
         "json": {
-            "crypto" : {
-                "cipher" : "aes-256-gcm",
-                "cipherparams" : {
-                    "iv" : "4c2275c4a14a5e984bfaec2b"
+            "crypto": {
+                "cipher": "aes-256-gcm",
+                "ciphertext": "c42ac873cf649cf61970f0ec1b382d25495a77ed4865f1366cfa10b2560514b0b618ea6e2c83c1473baf619897c9495b8e97e4c16e0cc5c92c00d2c3f3940d2e40a460",
+                "cipherparams": {
+                "iv": "f59185068e4cbe729dd0000c"
                 },
-                "ciphertext" : "f833f12f6cb57f6961fb34bbf4ff5019c9fd70e1ab98bf0f1ba164f1b4bc773e853f973b708a4ec1b5e1148de96437ac5fc75da87c6b7293628e9d45b4bc2ab7",
-                "kdf" : "argon2id",
-                "kdfparams" : {
-                    "dklen" : 32,
-                    "m" : 262144,
-                    "p" : 1,
-                    "salt" : "2c2f566f38f5b79634d17267d95a0914ed47a44fe91f9cbb0b8765ebaa0b7ddd",
-                    "t" : 8
+                "kdf": "argon2id",
+                "kdfparams": {
+                "dklen": 32,
+                "m": 4096,
+                "p": 1,
+                "salt": "6140afd0defbcc3fe45d2166969adf5fb45479da880c6cc10d4510b5dfa9908b",
+                "t": 8
                 }
             },
-            "id" : "3198bc9c-6672-5ab3-d995-4942343ae5b6",
-            "version" : 1
+            "id": "14f53da4-0f1f-40de-b1df-e23bc1c82fb8",
+            "version": 1
         },
         "password": "1234567890",
-        "seed": "5dfdcad4f721fe41d1bdf632de24ba60ba7cfab9c9a79287fa007b6a0dec8200b1fa35d2575bb15bd44d59b8d878828b"
+        "seed": "0100005dfdcad4f721fe41d1bdf632de24ba60ba7cfab9c9a79287fa007b6a0dec8200b1fa35d2575bb15bd44d59b8d878828b"
     },
     "test_vector_argon2id_2": {
         "json": {
-            "crypto" : {
-                "cipher" : "aes-256-gcm",
-                "cipherparams" : {
-                    "iv" : "4c2275c4a14a5e984bfaec2b"
+            "crypto": {
+                "cipher": "aes-256-gcm",
+                "ciphertext": "45f20aac29b8415d6f31a3f35b58216434157568107b524fdd7e0339fcaa8ba052641da407e368c718903112d53a2080ec6742ea51332b8b9cc79c75aeb2635ac0c25a",
+                "cipherparams": {
+                "iv": "90fd0982d977c33ab1276c44"
                 },
-                "ciphertext" : "bde2b4e9fd51a73917bab6ec31b25f1cdd9c908eeb0d81bd6cf70217175abcb583734fd9524ec12b5491df8f7cbd9425e4a8bfde730a42b56074a2dd4b5b05f9",
-                "kdf" : "argon2id",
-                "kdfparams" : {
-                    "dklen" : 32,
-                    "m" : 65536,
-                    "p" : 1,
-                    "salt" : "2c2f566f38f5b79634d17267d95a0914ed47a44fe91f9cbb0b8765ebaa0b7ddd",
-                    "t" : 1
+                "kdf": "argon2id",
+                "kdfparams": {
+                "dklen": 32,
+                "m": 262144,
+                "p": 1,
+                "salt": "42126c768f4b13d59b010e5bb170f500c421d2ccecb73432be4113477fd0adba",
+                "t": 8
                 }
             },
-            "id" : "3198bc9c-6672-5ab3-d995-4942343ae5b6",
-            "version" : 1
+            "id": "e59590d4-3ef3-4a8d-829e-790b83bbf4da",
+            "version": 1
         },
         "password": "1234567890",
-        "seed": "5dfdcad4f721fe41d1bdf632de24ba60ba7cfab9c9a79287fa007b6a0dec8200b1fa35d2575bb15bd44d59b8d878828b"
+        "seed": "0100005dfdcad4f721fe41d1bdf632de24ba60ba7cfab9c9a79287fa007b6a0dec8200b1fa35d2575bb15bd44d59b8d878828b"
     }
 }

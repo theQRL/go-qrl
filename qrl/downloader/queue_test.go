@@ -18,8 +18,10 @@ package downloader
 
 import (
 	"fmt"
+	"log/slog"
 	"math/big"
 	"math/rand"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -43,7 +45,7 @@ func makeChain(n int, seed byte, parent *types.Block, empty bool) ([]*types.Bloc
 		// Add one tx to every secondblock
 		if !empty && i%2 == 0 {
 			signer := types.MakeSigner(params.TestChainConfig)
-			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testKey)
+			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testWallet)
 			if err != nil {
 				panic(err)
 			}
@@ -271,15 +273,13 @@ func XTestDelivery(t *testing.T) {
 	world.chain = blo
 	world.progress(10)
 	if false {
-		log.Root().SetHandler(log.StdoutHandler)
+		log.SetDefault(log.NewLogger(slog.NewTextHandler(os.Stdout, nil)))
 	}
 	q := newQueue(10, 10)
 	var wg sync.WaitGroup
 	q.Prepare(1, SnapSync)
-	wg.Add(1)
-	go func() {
+	wg.Go(func() {
 		// deliver headers
-		defer wg.Done()
 		c := 1
 		for {
 			//fmt.Printf("getting headers from %d\n", c)
@@ -294,11 +294,9 @@ func XTestDelivery(t *testing.T) {
 			q.Schedule(headers, hashes, uint64(c))
 			c += l
 		}
-	}()
-	wg.Add(1)
-	go func() {
+	})
+	wg.Go(func() {
 		// collect results
-		defer wg.Done()
 		tot := 0
 		for {
 			res := q.Results(true)
@@ -307,10 +305,8 @@ func XTestDelivery(t *testing.T) {
 			// Now we can forget about these
 			world.forget(res[len(res)-1].Header.Number.Uint64())
 		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		// reserve body fetch
 		i := 4
 		for {
@@ -341,7 +337,7 @@ func XTestDelivery(t *testing.T) {
 				time.Sleep(200 * time.Millisecond)
 			}
 		}
-	}()
+	})
 	go func() {
 		defer wg.Done()
 		// reserve receiptfetch
@@ -368,29 +364,25 @@ func XTestDelivery(t *testing.T) {
 			}
 		}
 	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		for i := 0; i < 50; i++ {
+	wg.Go(func() {
+		for range 50 {
 			time.Sleep(300 * time.Millisecond)
 			//world.tick()
 			//fmt.Printf("trying to progress\n")
 			world.progress(rand.Intn(100))
 		}
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			time.Sleep(2990 * time.Millisecond)
 		}
-	}()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		for {
 			time.Sleep(990 * time.Millisecond)
 			fmt.Printf("world block tip is %d\n",
 				world.chain[len(world.chain)-1].Header().Number.Uint64())
 			fmt.Println(q.Stats())
 		}
-	}()
+	})
 	wg.Wait()
 }
 

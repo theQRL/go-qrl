@@ -19,16 +19,15 @@ import (
 	"math/big"
 	"testing"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 )
 
-func dynamicFeeValuedTransaction(nonce uint64, value int64, gasLimit uint64, gasFeeCap *big.Int, key *walletmldsa87.Wallet) *types.Transaction {
+func dynamicFeeValuedTransaction(nonce uint64, value int64, gasLimit uint64, gasFeeCap *big.Int, key wallet.Wallet) *types.Transaction {
 	tx := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     nonce,
 		To:        &common.Address{},
@@ -55,12 +54,12 @@ func fillPool(t testing.TB, pool *LegacyPool) {
 	// Create a number of test accounts, fund them and make transactions
 	executableTxs := types.Transactions{}
 	nonExecutableTxs := types.Transactions{}
-	for i := 0; i < 384; i++ {
-		key, _ := crypto.GenerateMLDSA87Key()
-		pool.currentState.AddBalance(key.GetAddress(), big.NewInt(10000000000))
+	for range 384 {
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(10000000000))
 		// Add executable ones
 		for j := 0; j < int(pool.config.AccountSlots); j++ {
-			executableTxs = append(executableTxs, dynamicFeeTx(uint64(j), 100000, big.NewInt(300), big.NewInt(0), key))
+			executableTxs = append(executableTxs, dynamicFeeTx(uint64(j), 100000, big.NewInt(300), big.NewInt(0), wallet))
 		}
 	}
 	// Import the batch and verify that limits have been enforced
@@ -98,13 +97,13 @@ func TestTransactionFutureAttack(t *testing.T) {
 	pending, _ := pool.Stats()
 	// Now, future transaction attack starts, let's add a bunch of expensive non-executables, and see if the pending-count drops
 	{
-		key, _ := crypto.GenerateMLDSA87Key()
-		pool.currentState.AddBalance(key.GetAddress(), big.NewInt(100000000000))
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(100000000000))
 		futureTxs := types.Transactions{}
 		for j := 0; j < int(pool.config.GlobalSlots+pool.config.GlobalQueue); j++ {
-			futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 100000, big.NewInt(500), big.NewInt(0), key))
+			futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 100000, big.NewInt(500), big.NewInt(0), wallet))
 		}
-		for i := 0; i < 5; i++ {
+		for range 5 {
 			pool.addRemotesSync(futureTxs)
 			newPending, newQueued := count(t, pool)
 			t.Logf("pending: %d queued: %d, all: %d\n", newPending, newQueued, pool.all.Slots())
@@ -135,11 +134,11 @@ func TestTransactionFuture1559(t *testing.T) {
 
 	// Now, future transaction attack starts, let's add a bunch of expensive non-executables, and see if the pending-count drops
 	{
-		key, _ := crypto.GenerateMLDSA87Key()
-		pool.currentState.AddBalance(key.GetAddress(), big.NewInt(100000000000))
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(100000000000))
 		futureTxs := types.Transactions{}
 		for j := 0; j < int(pool.config.GlobalSlots+pool.config.GlobalQueue); j++ {
-			futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 100000, big.NewInt(200), big.NewInt(101), key))
+			futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 100000, big.NewInt(200), big.NewInt(101), wallet))
 		}
 		pool.addRemotesSync(futureTxs)
 	}
@@ -189,18 +188,18 @@ func TestTransactionZAttack(t *testing.T) {
 	// Now, DETER-Z attack starts, let's add a bunch of expensive non-executables (from N accounts) along with balance-overdraft txs (from one account), and see if the pending-count drops
 	for j := 0; j < int(pool.config.GlobalQueue); j++ {
 		futureTxs := types.Transactions{}
-		key, _ := crypto.GenerateMLDSA87Key()
-		pool.currentState.AddBalance(key.GetAddress(), big.NewInt(100000000000))
-		futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 21000, big.NewInt(500), big.NewInt(0), key))
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(100000000000))
+		futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(j), 21000, big.NewInt(500), big.NewInt(0), wallet))
 		pool.addRemotesSync(futureTxs)
 	}
 
 	overDraftTxs := types.Transactions{}
 	{
-		key, _ := crypto.GenerateMLDSA87Key()
-		pool.currentState.AddBalance(key.GetAddress(), big.NewInt(100000000000))
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(100000000000))
 		for j := 0; j < int(pool.config.GlobalSlots); j++ {
-			overDraftTxs = append(overDraftTxs, dynamicFeeValuedTransaction(uint64(j), 600000000000, 21000, big.NewInt(500), key))
+			overDraftTxs = append(overDraftTxs, dynamicFeeValuedTransaction(uint64(j), 600000000000, 21000, big.NewInt(500), wallet))
 		}
 	}
 	pool.addRemotesSync(overDraftTxs)
@@ -234,15 +233,15 @@ func BenchmarkFutureAttack(b *testing.B) {
 	defer pool.Close()
 	fillPool(b, pool)
 
-	key, _ := crypto.GenerateMLDSA87Key()
-	pool.currentState.AddBalance(key.GetAddress(), big.NewInt(100000000000))
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	pool.currentState.AddBalance(wallet.GetAddress(), big.NewInt(100000000000))
 	futureTxs := types.Transactions{}
 
 	for n := 0; n < b.N; n++ {
-		futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(n), 100000, big.NewInt(500), big.NewInt(0), key))
+		futureTxs = append(futureTxs, dynamicFeeTx(1000+uint64(n), 100000, big.NewInt(500), big.NewInt(0), wallet))
 	}
 	b.ResetTimer()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		pool.addRemotesSync(futureTxs)
 	}
 }

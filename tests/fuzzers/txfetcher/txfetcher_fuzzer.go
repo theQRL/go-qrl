@@ -39,11 +39,11 @@ func init() {
 	rand := rand.New(rand.NewSource(0x3a29))
 
 	peers = make([]string, 10)
-	for i := 0; i < len(peers); i++ {
+	for i := range peers {
 		peers[i] = fmt.Sprintf("Peer #%d", i)
 	}
 	txs = make([]*types.Transaction, 65536) // We need to bump enough to hit all the limits
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		txs[i] = types.NewTx(&types.DynamicFeeTx{
 			Nonce:     rand.Uint64(),
 			To:        &common.Address{byte(rand.Intn(256))},
@@ -127,7 +127,7 @@ func fuzz(input []byte) int {
 				types        = make([]byte, announce)
 				sizes        = make([]uint32, announce)
 			)
-			for i := 0; i < len(announces); i++ {
+			for i := range announces {
 				annBuf := make([]byte, 2)
 				if n, err := r.Read(annBuf); err != nil || n != 2 {
 					return 0
@@ -165,7 +165,7 @@ func fuzz(input []byte) int {
 				deliverIdxs = make([]int, deliver)
 				deliveries  = make([]*types.Transaction, deliver)
 			)
-			for i := 0; i < len(deliveries); i++ {
+			for i := range deliveries {
 				deliverBuf := make([]byte, 2)
 				if n, err := r.Read(deliverBuf); err != nil || n != 2 {
 					return 0

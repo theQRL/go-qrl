@@ -170,7 +170,7 @@ func (f *chainFreezer) freeze(db qrldb.KeyValueStore) {
 
 		// Wipe out all data from the active database
 		batch := db.NewBatch()
-		for i := 0; i < len(ancients); i++ {
+		for i := range ancients {
 			// Always keep the genesis block in active database
 			if first+uint64(i) != 0 {
 				DeleteBlockWithoutNumber(batch, ancients[i], first+uint64(i))
@@ -235,11 +235,11 @@ func (f *chainFreezer) freeze(db qrldb.KeyValueStore) {
 		}
 
 		// Log something friendly for the user
-		context := []interface{}{
+		context := []any{
 			"blocks", frozen - first, "elapsed", common.PrettyDuration(time.Since(start)), "number", frozen - 1,
 		}
 		if n := len(ancients); n > 0 {
-			context = append(context, []interface{}{"hash", ancients[n-1]}...)
+			context = append(context, []any{"hash", ancients[n-1]}...)
 		}
 		log.Debug("Deep froze chain segment", context...)
 

@@ -321,10 +321,7 @@ func (f *TxFetcher) Enqueue(peer string, txs []*types.Transaction, direct bool) 
 	)
 	// proceed in batches
 	for i := 0; i < len(txs); i += 128 {
-		end := i + 128
-		if end > len(txs) {
-			end = len(txs)
-		}
+		end := min(i+128, len(txs))
 		var (
 			duplicate   int64
 			underpriced int64
@@ -975,7 +972,7 @@ func rotateStrings(slice []string, n int) {
 	orig := make([]string, len(slice))
 	copy(orig, slice)
 
-	for i := 0; i < len(orig); i++ {
+	for i := range orig {
 		slice[i] = orig[(i+n)%len(orig)]
 	}
 }
@@ -983,7 +980,7 @@ func rotateStrings(slice []string, n int) {
 // sortHashes sorts a slice of hashes. This method is only used in tests in order
 // to simulate random map iteration but keep it deterministic.
 func sortHashes(slice []common.Hash) {
-	for i := 0; i < len(slice); i++ {
+	for i := range slice {
 		for j := i + 1; j < len(slice); j++ {
 			if bytes.Compare(slice[i][:], slice[j][:]) > 0 {
 				slice[i], slice[j] = slice[j], slice[i]
@@ -998,7 +995,7 @@ func rotateHashes(slice []common.Hash, n int) {
 	orig := make([]common.Hash, len(slice))
 	copy(orig, slice)
 
-	for i := 0; i < len(orig); i++ {
+	for i := range orig {
 		slice[i] = orig[(i+n)%len(orig)]
 	}
 }

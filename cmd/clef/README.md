@@ -31,7 +31,6 @@ GLOBAL OPTIONS:
    --configdir value       Directory for Clef configuration (default: "$HOME/.clef")
    --chainid value         Chain id to use for signing (1=mainnet) (default: 1)
    --lightkdf              Reduce key-derivation RAM & CPU usage at some expense of KDF strength
-   --usb                   Enables monitoring and managing for USB hardware wallets
    --http.addr value       HTTP-RPC server listening interface (default: "localhost")
    --http.vhosts value     Comma separated list of virtual hostnames from which to accept requests (server enforced). Accepts '*' wildcard. (default: "localhost")
    --ipcdisable            Disable the IPC-RPC server

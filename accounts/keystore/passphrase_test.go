@@ -31,6 +31,7 @@ const (
 
 // Tests that a json key file can be decrypted and encrypted in multiple rounds.
 func TestKeyEncryptDecrypt(t *testing.T) {
+	t.Parallel()
 	keyjson, err := os.ReadFile("testdata/very-light-argon2id.json")
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +40,7 @@ func TestKeyEncryptDecrypt(t *testing.T) {
 	address, _ := common.NewAddressFromString("Qcf3a354d32c36db1e9c27602bd3c154f5679401e")
 
 	// Do a few rounds of decryption and encryption
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		// Try a bad password first
 		if _, err := DecryptKey(keyjson, password+"bad"); err == nil {
 			t.Errorf("test %d: json key decrypted with bad password", i)
@@ -52,10 +53,10 @@ func TestKeyEncryptDecrypt(t *testing.T) {
 		if key.Address != address {
 			t.Errorf("test %d: key address mismatch: have %x, want %x", i, key.Address, address)
 		}
-		// Recrypt with a new password and start over
+		// Re-encrypt with a new password and start over
 		password += "new data appended" // nolint: gosec
 		if keyjson, err = EncryptKey(key, password, veryLightArgon2idT, veryLightArgon2idM, veryLightArgon2idP); err != nil {
-			t.Errorf("test %d: failed to recrypt key %v", i, err)
+			t.Errorf("test %d: failed to re-encrypt key %v", i, err)
 		}
 	}
 }

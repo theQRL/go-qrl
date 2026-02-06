@@ -25,7 +25,6 @@ import (
 	"path"
 	"strings"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/consensus/misc/eip1559"
@@ -33,7 +32,7 @@ import (
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/tracers/logger"
@@ -84,11 +83,6 @@ type input struct {
 }
 
 func Transition(ctx *cli.Context) error {
-	// Configure the go-ethereum logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
-
 	var (
 		err    error
 		tracer vm.QRVMLogger
@@ -207,7 +201,7 @@ func Transition(ctx *cli.Context) error {
 // txWithKey is a helper-struct, to allow us to use the types.Transaction along with
 // a `seed`-field, for input
 type txWithKey struct {
-	key *walletmldsa87.Wallet
+	key wallet.Wallet
 	tx  *types.Transaction
 }
 
@@ -222,7 +216,7 @@ func (t *txWithKey) UnmarshalJSON(input []byte) error {
 	}
 	if data.Seed != nil {
 		sd := *data.Seed
-		if wallet, err := pqcrypto.HexToWallet(sd[2:]); err != nil {
+		if wallet, err := wallet.RestoreFromSeedHex(sd); err != nil {
 			return err
 		} else {
 			t.key = wallet
@@ -370,7 +364,7 @@ func (g Alloc) OnAccount(addr *common.Address, dumpAccount state.DumpAccount) {
 }
 
 // saveFile marshals the object to the given file
-func saveFile(baseDir, filename string, data interface{}) error {
+func saveFile(baseDir, filename string, data any) error {
 	b, err := json.MarshalIndent(data, "", " ")
 	if err != nil {
 		return NewError(ErrorJson, fmt.Errorf("failed marshalling output: %v", err))
@@ -386,9 +380,9 @@ func saveFile(baseDir, filename string, data interface{}) error {
 // dispatchOutput writes the output data to either stderr or stdout, or to the specified
 // files
 func dispatchOutput(ctx *cli.Context, baseDir string, result *ExecutionResult, alloc Alloc, body hexutil.Bytes) error {
-	stdOutObject := make(map[string]interface{})
-	stdErrObject := make(map[string]interface{})
-	dispatch := func(baseDir, fName, name string, obj interface{}) error {
+	stdOutObject := make(map[string]any)
+	stdErrObject := make(map[string]any)
+	dispatch := func(baseDir, fName, name string, obj any) error {
 		switch fName {
 		case "stdout":
 			stdOutObject[name] = obj

@@ -98,9 +98,9 @@ func dumpNodeURL(out io.Writer, n *qnode.Node) {
 	fmt.Fprintf(out, "URLv4:   %s\n", n.URLv4())
 }
 
-func dumpRecordKV(kv []interface{}, indent int) string {
+func dumpRecordKV(kv []any, indent int) string {
 	// Determine the longest key name for alignment.
-	var out string
+	var out strings.Builder
 	var longestKey = 0
 	for i := 0; i < len(kv); i += 2 {
 		key := kv[i].(string)
@@ -113,19 +113,19 @@ func dumpRecordKV(kv []interface{}, indent int) string {
 		key := kv[i].(string)
 		val := kv[i+1].(rlp.RawValue)
 		pad := longestKey - len(key)
-		out += strings.Repeat(" ", indent) + strconv.Quote(key) + strings.Repeat(" ", pad+1)
+		out.WriteString(strings.Repeat(" ", indent) + strconv.Quote(key) + strings.Repeat(" ", pad+1))
 		formatter := attrFormatters[key]
 		if formatter == nil {
 			formatter = formatAttrRaw
 		}
 		fmtval, ok := formatter(val)
 		if ok {
-			out += fmtval + "\n"
+			out.WriteString(fmtval + "\n")
 		} else {
-			out += hex.EncodeToString(val) + " (!)\n"
+			out.WriteString(hex.EncodeToString(val) + " (!)\n")
 		}
 	}
-	return out
+	return out.String()
 }
 
 // parseNode parses a node record and verifies its signature.

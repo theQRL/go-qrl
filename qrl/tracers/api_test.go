@@ -28,7 +28,6 @@ import (
 	"testing"
 	"time"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/consensus"
@@ -38,7 +37,7 @@ import (
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/internal/qrlapi"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/tracers/logger"
@@ -212,7 +211,7 @@ func TestTraceCall(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 	})
 	defer backend.teardown()
@@ -299,7 +298,7 @@ func TestTraceCall(t *testing.T) {
 		},
 	}
 	for i, testspec := range testSuite {
-		result, err := api.TraceCall(context.Background(), testspec.call, rpc.BlockNumberOrHash{BlockNumber: &testspec.blockNumber}, testspec.config)
+		result, err := api.TraceCall(t.Context(), testspec.call, rpc.BlockNumberOrHash{BlockNumber: &testspec.blockNumber}, testspec.config)
 		if testspec.expectErr != nil {
 			if err == nil {
 				t.Errorf("test %d: expect error %v, got nothing", i, testspec.expectErr)
@@ -354,13 +353,13 @@ func TestTraceTransaction(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 		target = signedTx.Hash()
 	})
 	defer backend.chain.Stop()
 	api := NewAPI(backend)
-	result, err := api.TraceTransaction(context.Background(), target, nil)
+	result, err := api.TraceTransaction(t.Context(), target, nil)
 	if err != nil {
 		t.Errorf("Failed to trace transaction %v", err)
 	}
@@ -378,7 +377,7 @@ func TestTraceTransaction(t *testing.T) {
 	}
 
 	// Test non-existent transaction
-	_, err = api.TraceTransaction(context.Background(), common.Hash{42}, nil)
+	_, err = api.TraceTransaction(t.Context(), common.Hash{42}, nil)
 	if !errors.Is(err, errTxNotFound) {
 		t.Fatalf("want %v, have %v", errTxNotFound, err)
 	}
@@ -412,7 +411,7 @@ func TestTraceBlock(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 		txHash = signedTx.Hash()
 	})
@@ -452,7 +451,7 @@ func TestTraceBlock(t *testing.T) {
 		},
 	}
 	for i, tc := range testSuite {
-		result, err := api.TraceBlockByNumber(context.Background(), tc.blockNumber, tc.config)
+		result, err := api.TraceBlockByNumber(t.Context(), tc.blockNumber, tc.config)
 		if tc.expectErr != nil {
 			if err == nil {
 				t.Errorf("test %d, want error %v", i, tc.expectErr)
@@ -510,7 +509,7 @@ func TestTracingWithOverrides(t *testing.T) {
 			GasFeeCap: b.BaseFee(),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+		signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 		b.AddTx(signedTx)
 	})
 	defer backend.chain.Stop()
@@ -781,7 +780,7 @@ func TestTracingWithOverrides(t *testing.T) {
 		},
 	}
 	for i, tc := range testSuite {
-		result, err := api.TraceCall(context.Background(), tc.call, rpc.BlockNumberOrHash{BlockNumber: &tc.blockNumber}, tc.config)
+		result, err := api.TraceCall(t.Context(), tc.call, rpc.BlockNumberOrHash{BlockNumber: &tc.blockNumber}, tc.config)
 		if tc.expectErr != nil {
 			if err == nil {
 				t.Errorf("test %d: want error %v, have nothing", i, tc.expectErr)
@@ -812,15 +811,14 @@ func TestTracingWithOverrides(t *testing.T) {
 }
 
 type Account struct {
-	key  *walletmldsa87.Wallet
-	addr common.Address
+	wallet wallet.Wallet
+	addr   common.Address
 }
 
 func newAccounts(n int) (accounts []Account) {
-	for i := 0; i < n; i++ {
-		key, _ := crypto.GenerateMLDSA87Key()
-		addr := key.GetAddress()
-		accounts = append(accounts, Account{key: key, addr: addr})
+	for range n {
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		accounts = append(accounts, Account{wallet: wallet, addr: wallet.GetAddress()})
 	}
 	slices.SortFunc(accounts, func(a, b Account) int { return a.addr.Cmp(b.addr) })
 	return accounts
@@ -841,7 +839,7 @@ func newStates(keys []common.Hash, vals []common.Hash) *map[common.Hash]common.H
 		panic("invalid input")
 	}
 	m := make(map[common.Hash]common.Hash)
-	for i := 0; i < len(keys); i++ {
+	for i := range keys {
 		m[keys[i]] = vals[i]
 	}
 	return &m
@@ -879,7 +877,7 @@ func TestTraceChain(t *testing.T) {
 				GasFeeCap: b.BaseFee(),
 				Data:      nil,
 			})
-			signedTx, _ := types.SignTx(tx, signer, accounts[0].key)
+			signedTx, _ := types.SignTx(tx, signer, accounts[0].wallet)
 			b.AddTx(signedTx)
 			nonce += 1
 		}
@@ -901,8 +899,8 @@ func TestTraceChain(t *testing.T) {
 		ref.Store(0)
 		rel.Store(0)
 
-		from, _ := api.blockByNumber(context.Background(), rpc.BlockNumber(c.start))
-		to, _ := api.blockByNumber(context.Background(), rpc.BlockNumber(c.end))
+		from, _ := api.blockByNumber(t.Context(), rpc.BlockNumber(c.start))
+		to, _ := api.blockByNumber(t.Context(), rpc.BlockNumber(c.end))
 		resCh := api.traceChain(from, to, c.config, nil)
 
 		next := c.start + 1

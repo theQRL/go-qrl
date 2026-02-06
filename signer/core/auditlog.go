@@ -19,6 +19,8 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
+	"os"
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
@@ -62,7 +64,7 @@ func (l *AuditLogger) SignTransaction(ctx context.Context, args apitypes.SendTxA
 	return res, e
 }
 
-func (l *AuditLogger) SignData(ctx context.Context, contentType string, addr common.MixedcaseAddress, data interface{}) (hexutil.Bytes, error) {
+func (l *AuditLogger) SignData(ctx context.Context, contentType string, addr common.MixedcaseAddress, data any) (hexutil.Bytes, error) {
 	marshalledData, _ := json.Marshal(data) // can ignore error, marshalling what we just unmarshalled
 	l.log.Info("SignData", "type", "request", "metadata", MetadataFromContext(ctx).String(),
 		"addr", addr.String(), "data", marshalledData, "content-type", contentType)
@@ -87,12 +89,13 @@ func (l *AuditLogger) Version(ctx context.Context) (string, error) {
 }
 
 func NewAuditLogger(path string, api ExternalAPI) (*AuditLogger, error) {
-	l := log.New("api", "signer")
-	handler, err := log.FileHandler(path, log.LogfmtFormat())
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
-	l.SetHandler(handler)
+
+	handler := slog.NewTextHandler(f, nil)
+	l := log.NewLogger(handler).With("api", "signer")
 	l.Info("Configured", "audit log", path)
 	return &AuditLogger{l, api}, nil
 }

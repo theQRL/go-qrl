@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"math/bits"
 	"reflect"
 
 	"github.com/holiman/uint256"
@@ -58,7 +59,7 @@ type Encoder interface {
 // buffered.
 //
 // Please see package-level documentation of encoding rules.
-func Encode(w io.Writer, val interface{}) error {
+func Encode(w io.Writer, val any) error {
 	// Optimization: reuse *encBuffer when called by EncodeRLP.
 	if buf := encBufferFromWriter(w); buf != nil {
 		return buf.encode(val)
@@ -74,7 +75,7 @@ func Encode(w io.Writer, val interface{}) error {
 
 // EncodeToBytes returns the RLP encoding of val.
 // Please see package-level documentation for the encoding rules.
-func EncodeToBytes(val interface{}) ([]byte, error) {
+func EncodeToBytes(val any) ([]byte, error) {
 	buf := getEncBuffer()
 	defer encBufferPool.Put(buf)
 
@@ -89,7 +90,7 @@ func EncodeToBytes(val interface{}) ([]byte, error) {
 // data.
 //
 // Please see the documentation of Encode for the encoding rules.
-func EncodeToReader(val interface{}) (size int, r io.Reader, err error) {
+func EncodeToReader(val any) (size int, r io.Reader, err error) {
 	buf := getEncBuffer()
 	if err := buf.encode(val); err != nil {
 		encBufferPool.Put(buf)
@@ -133,7 +134,7 @@ func puthead(buf []byte, smalltag, largetag byte, size uint64) int {
 	return sizesize + 1
 }
 
-var encoderInterface = reflect.TypeOf(new(Encoder)).Elem()
+var encoderInterface = reflect.TypeFor[Encoder]()
 
 // makeWriter creates a writer function for the given type.
 func makeWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
@@ -141,17 +142,17 @@ func makeWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
 	switch {
 	case typ == rawValueType:
 		return writeRawValue, nil
-	case typ.AssignableTo(reflect.PtrTo(bigInt)):
+	case typ.AssignableTo(reflect.PointerTo(bigInt)):
 		return writeBigIntPtr, nil
 	case typ.AssignableTo(bigInt):
 		return writeBigIntNoPtr, nil
-	case typ == reflect.PtrTo(u256Int):
+	case typ == reflect.PointerTo(u256Int):
 		return writeU256IntPtr, nil
 	case typ == u256Int:
 		return writeU256IntNoPtr, nil
 	case kind == reflect.Ptr:
 		return makePtrWriter(typ, ts)
-	case reflect.PtrTo(typ).Implements(encoderInterface):
+	case reflect.PointerTo(typ).Implements(encoderInterface):
 		return makeEncoderWriter(typ), nil
 	case isUint(kind):
 		return writeUint, nil
@@ -239,7 +240,6 @@ func makeByteArrayWriter(typ reflect.Type) writer {
 	case 1:
 		return writeLengthOneByteArray
 	default:
-		length := typ.Len()
 		return func(val reflect.Value, w *encBuffer) error {
 			if !val.CanAddr() {
 				// Getting the byte slice of val requires it to be addressable. Make it
@@ -248,7 +248,7 @@ func makeByteArrayWriter(typ reflect.Type) writer {
 				copy.Set(val)
 				val = copy
 			}
-			slice := byteArrayBytes(val, length)
+			slice := val.Bytes()
 			w.encodeStringHeader(len(slice))
 			w.str = append(w.str, slice...)
 			return nil
@@ -311,7 +311,7 @@ func makeSliceWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
 		// w.list is not called for them.
 		wfn = func(val reflect.Value, w *encBuffer) error {
 			vlen := val.Len()
-			for i := 0; i < vlen; i++ {
+			for i := range vlen {
 				if err := etypeinfo.writer(val.Index(i), w); err != nil {
 					return err
 				}
@@ -327,7 +327,7 @@ func makeSliceWriter(typ reflect.Type, ts rlpstruct.Tags) (writer, error) {
 				return nil
 			}
 			listOffset := w.list()
-			for i := 0; i < vlen; i++ {
+			for i := range vlen {
 				if err := etypeinfo.writer(val.Index(i), w); err != nil {
 					return err
 				}
@@ -487,9 +487,8 @@ func putint(b []byte, i uint64) (size int) {
 
 // intsize computes the minimum number of bytes required to store i.
 func intsize(i uint64) (size int) {
-	for size = 1; ; size++ {
-		if i >>= 8; i == 0 {
-			return size
-		}
+	if i == 0 {
+		return 1
 	}
+	return (bits.Len64(i) + 7) / 8
 }

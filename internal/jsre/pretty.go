@@ -133,7 +133,7 @@ func (ctx ppctx) printObject(obj *goja.Object, level int, inArray bool) {
 			return
 		}
 		fmt.Fprint(ctx.w, "[")
-		for i := int64(0); i < len; i++ {
+		for i := range len {
 			el := obj.Get(strconv.FormatInt(i, 10))
 			if el != nil {
 				ctx.printValue(el, level+1, true)
@@ -253,7 +253,7 @@ func iterOwnKeys(vm *goja.Runtime, obj *goja.Object, f func(string)) {
 	}
 	gv := rv.Export()
 	switch gv := gv.(type) {
-	case []interface{}:
+	case []any:
 		for _, v := range gv {
 			f(v.(string))
 		}

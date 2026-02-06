@@ -38,7 +38,6 @@ import (
 
 // Register adds the engine API to the full node.
 func Register(stack *node.Node, backend *qrl.QRL) error {
-	log.Warn("Engine API enabled", "protocol", "qrl")
 	stack.RegisterAPIs([]rpc.API{
 		{
 			Namespace:     "engine",
@@ -203,12 +202,12 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 		finalized := api.remoteBlocks.get(update.FinalizedBlockHash)
 
 		// Header advertised via a past newPayload request. Start syncing to it.
-		context := []interface{}{"number", header.Number, "hash", header.Hash()}
+		context := []any{"number", header.Number, "hash", header.Hash()}
 		if update.FinalizedBlockHash != (common.Hash{}) {
 			if finalized == nil {
-				context = append(context, []interface{}{"finalized", "unknown"}...)
+				context = append(context, []any{"finalized", "unknown"}...)
 			} else {
-				context = append(context, []interface{}{"finalized", finalized.Number}...)
+				context = append(context, []any{"finalized", finalized.Number}...)
 			}
 		}
 		log.Info("Forkchoice requested sync to new head", context...)
@@ -617,10 +616,7 @@ func (api *ConsensusAPI) GetPayloadBodiesByRangeV1(start, count hexutil.Uint64) 
 	}
 	// limit count up until current
 	current := api.qrl.BlockChain().CurrentBlock().Number.Uint64()
-	last := uint64(start) + uint64(count) - 1
-	if last > current {
-		last = current
-	}
+	last := min(uint64(start)+uint64(count)-1, current)
 	bodies := make([]*engine.ExecutionPayloadBodyV1, 0, uint64(count))
 	for i := uint64(start); i <= last; i++ {
 		block := api.qrl.BlockChain().GetBlockByNumber(i)

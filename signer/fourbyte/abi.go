@@ -38,7 +38,7 @@ type decodedCallData struct {
 // to an ABI method signature.
 type decodedArgument struct {
 	hyptype abi.Argument
-	value   interface{}
+	value   any
 }
 
 // String implements stringer interface, tries to use the underlying value-type
@@ -98,7 +98,7 @@ func parseCallData(calldata []byte, unescapedAbidata string) (*decodedCallData, 
 	if len(argdata)%32 != 0 {
 		return nil, fmt.Errorf("invalid call data; length should be a multiple of 32 bytes (was %d)", len(argdata))
 	}
-	// Validate the called method and upack the call data accordingly
+	// Validate the called method and unpack the call data accordingly
 	abispec, err := abi.JSON(strings.NewReader(unescapedAbidata))
 	if err != nil {
 		return nil, fmt.Errorf("invalid method signature (%q): %v", unescapedAbidata, err)

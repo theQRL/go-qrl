@@ -55,7 +55,7 @@ func TestPythonInterop(t *testing.T) {
 	if n.ID() != wantID {
 		t.Errorf("wrong id: got %x, want %x", n.ID(), wantID)
 	}
-	want := map[qnr.Entry]interface{}{new(qnr.IPv4): &wantIP, new(qnr.UDP): &wantUDP}
+	want := map[qnr.Entry]any{new(qnr.IPv4): &wantIP, new(qnr.UDP): &wantUDP}
 	for k, v := range want {
 		desc := fmt.Sprintf("loading key %q", k.QNRKey())
 		if assert.NoError(t, n.Load(k), desc) {

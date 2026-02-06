@@ -55,7 +55,7 @@ func (p *Peer) Handshake(network uint64, head common.Hash, genesis common.Hash, 
 	}()
 	timeout := time.NewTimer(handshakeTimeout)
 	defer timeout.Stop()
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case err := <-errc:
 			if err != nil {

@@ -24,9 +24,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/theQRL/go-zond/cmd/qrvm/internal/t8ntool"
 	"github.com/theQRL/go-zond/internal/cmdtest"
+	"github.com/theQRL/go-zond/internal/reexec"
 )
 
 func TestMain(m *testing.M) {
@@ -309,7 +309,7 @@ func TestT9n(t *testing.T) {
 			ok, err := cmpJson(have, want)
 			switch {
 			case err != nil:
-				t.Logf(string(have))
+				t.Log(string(have))
 				t.Fatalf("test %d, json parsing failed: %v", i, err)
 			case !ok:
 				t.Fatalf("test %d: output wrong, have \n%v\nwant\n%v\n", i, string(have), string(want))
@@ -389,7 +389,7 @@ func TestB11r(t *testing.T) {
 			ok, err := cmpJson(have, want)
 			switch {
 			case err != nil:
-				t.Logf(string(have))
+				t.Log(string(have))
 				t.Fatalf("test %d, json parsing failed: %v", i, err)
 			case !ok:
 				t.Fatalf("test %d: output wrong, have \n%v\nwant\n%v\n", i, string(have), string(want))
@@ -404,7 +404,7 @@ func TestB11r(t *testing.T) {
 
 // cmpJson compares the JSON in two byte slices.
 func cmpJson(a, b []byte) (bool, error) {
-	var j, j2 interface{}
+	var j, j2 any
 	if err := json.Unmarshal(a, &j); err != nil {
 		return false, err
 	}

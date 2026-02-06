@@ -26,21 +26,20 @@ import (
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/trie"
 )
 
 func TestGenerateWithdrawalChain(t *testing.T) {
 	var (
-		keyHex  = "9c647b8b7c4e7c3490668fb6c11473619db80c93704c70893d3813af4090c39c"
-		key, _  = pqcrypto.HexToWallet(keyHex)
-		address = key.GetAddress()
-		aa      = common.Address{0xaa}
-		bb      = common.Address{0xbb}
-		funds   = big.NewInt(0).Mul(big.NewInt(1337), big.NewInt(params.Quanta))
-		config  = *params.AllBeaconProtocolChanges
-		gspec   = &Genesis{
+		wallet, _ = wallet.RestoreFromSeedHex("0x0100009c647b8b7c4e7c3490668fb6c11473619db80c93704c70893d3813af4090c39c00000000000000000000000000000000")
+		address   = wallet.GetAddress()
+		aa        = common.Address{0xaa}
+		bb        = common.Address{0xbb}
+		funds     = big.NewInt(0).Mul(big.NewInt(1337), big.NewInt(params.Quanta))
+		config    = *params.AllBeaconProtocolChanges
+		gspec     = &Genesis{
 			Config:   &config,
 			Alloc:    GenesisAlloc{address: {Balance: funds}},
 			BaseFee:  big.NewInt(params.InitialBaseFee),
@@ -81,7 +80,7 @@ func TestGenerateWithdrawalChain(t *testing.T) {
 			GasFeeCap: new(big.Int).Add(gen.BaseFee(), common.Big1),
 			Data:      nil,
 		})
-		signedTx, _ := types.SignTx(tx, signer, key)
+		signedTx, _ := types.SignTx(tx, signer, wallet)
 		gen.AddTx(signedTx)
 		if i == 1 {
 			gen.AddWithdrawal(&types.Withdrawal{
@@ -123,15 +122,15 @@ func TestGenerateWithdrawalChain(t *testing.T) {
 		withdrawalIndex uint64
 		head            = blockchain.CurrentBlock().Number.Uint64()
 	)
-	for i := 0; i < int(head); i++ {
-		block := blockchain.GetBlockByNumber(uint64(i))
+	for i := range head {
+		block := blockchain.GetBlockByNumber(i)
 		if block == nil {
 			t.Fatalf("block %d not found", i)
 		}
 		if len(block.Withdrawals()) == 0 {
 			continue
 		}
-		for j := 0; j < len(block.Withdrawals()); j++ {
+		for j := range block.Withdrawals() {
 			if block.Withdrawals()[j].Index != withdrawalIndex {
 				t.Fatalf("withdrawal index %d does not equal expected index %d", block.Withdrawals()[j].Index, withdrawalIndex)
 			}
@@ -142,14 +141,14 @@ func TestGenerateWithdrawalChain(t *testing.T) {
 
 func ExampleGenerateChain() {
 	var (
-		key1, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-		key2, _ = pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-		key3, _ = pqcrypto.HexToWallet("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
-		addr1   = key1.GetAddress()
-		addr2   = key2.GetAddress()
-		addr3   = key3.GetAddress()
-		db      = rawdb.NewMemoryDatabase()
-		genDb   = rawdb.NewMemoryDatabase()
+		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+		wallet2, _ = wallet.RestoreFromSeedHex("0x0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a00000000000000000000000000000000")
+		wallet3, _ = wallet.RestoreFromSeedHex("0x01000049a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee00000000000000000000000000000000")
+		addr1      = wallet1.GetAddress()
+		addr2      = wallet2.GetAddress()
+		addr3      = wallet3.GetAddress()
+		db         = rawdb.NewMemoryDatabase()
+		genDb      = rawdb.NewMemoryDatabase()
 	)
 
 	// Ensure that key1 has some funds in the genesis block.
@@ -178,7 +177,7 @@ func ExampleGenerateChain() {
 				GasFeeCap: gen.header.BaseFee,
 				Data:      nil,
 			})
-			signedTx, _ := types.SignTx(tx, signer, key1)
+			signedTx, _ := types.SignTx(tx, signer, wallet1)
 			gen.AddTx(signedTx)
 
 		case 1:
@@ -202,8 +201,8 @@ func ExampleGenerateChain() {
 				GasFeeCap: gen.header.BaseFee,
 				Data:      nil,
 			})
-			signedTx1, _ := types.SignTx(tx1, signer, key1)
-			signedTx2, _ := types.SignTx(tx2, signer, key2)
+			signedTx1, _ := types.SignTx(tx1, signer, wallet1)
+			signedTx2, _ := types.SignTx(tx2, signer, wallet2)
 			gen.AddTx(signedTx1)
 			gen.AddTx(signedTx2)
 		case 2:

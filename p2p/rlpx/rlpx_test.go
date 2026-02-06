@@ -32,7 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/theQRL/go-zond/crypto"
 	"github.com/theQRL/go-zond/crypto/ecies"
-	"github.com/theQRL/go-zond/p2p/simulations/pipes"
+	"github.com/theQRL/go-zond/p2p/pipes"
 	"github.com/theQRL/go-zond/rlp"
 )
 
@@ -369,8 +369,7 @@ func TestHandshakeForwardCompatibility(t *testing.T) {
 
 func BenchmarkHandshakeRead(b *testing.B) {
 	var input = unhex(eip8HandshakeAuthTests[0].input)
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		var (
 			h   handshakeState
 			r   = bytes.NewReader(input)
@@ -421,13 +420,13 @@ func BenchmarkThroughput(b *testing.B) {
 	}
 	conn2.SetSnappy(true)
 	if err := <-handshakeDone; err != nil {
-		b.Fatal("server hanshake error:", err)
+		b.Fatal("server handshake error:", err)
 	}
 
 	// Read N messages.
 	b.SetBytes(int64(len(msgdata)))
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		_, _, _, err := conn2.Read()
 		if err != nil {
 			b.Fatal("read error:", err)

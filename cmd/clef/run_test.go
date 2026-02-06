@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/docker/docker/pkg/reexec"
 	"github.com/theQRL/go-zond/internal/cmdtest"
+	"github.com/theQRL/go-zond/internal/reexec"
 )
 
 const registeredName = "clef-test"
@@ -57,14 +57,7 @@ func TestMain(m *testing.M) {
 // This method creates a temporary  keystore folder which will be removed after
 // the test exits.
 func runClef(t *testing.T, args ...string) *testproc {
-	ddir, err := os.MkdirTemp("", "cleftest-*")
-	if err != nil {
-		return nil
-	}
-	t.Cleanup(func() {
-		os.RemoveAll(ddir)
-	})
-	return runWithKeystore(t, ddir, args...)
+	return runWithKeystore(t, t.TempDir(), args...)
 }
 
 // runWithKeystore spawns clef with the given command line args and adds keystore arg.

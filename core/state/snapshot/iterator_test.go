@@ -37,7 +37,7 @@ func TestAccountIteratorBasics(t *testing.T) {
 		storage   = make(map[common.Hash]map[common.Hash][]byte)
 	)
 	// Fill up a parent
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		h := randomHash()
 		data := randomAccount()
 
@@ -71,7 +71,7 @@ func TestStorageIteratorBasics(t *testing.T) {
 		storage    = make(map[common.Hash]map[common.Hash][]byte)
 	)
 	// Fill some random data
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		h := randomHash()
 		accounts[h] = randomAccount()
 
@@ -79,7 +79,7 @@ func TestStorageIteratorBasics(t *testing.T) {
 		value := make([]byte, 32)
 
 		var nilstorage int
-		for i := 0; i < 100; i++ {
+		for range 100 {
 			crand.Read(value)
 			if rand.Intn(2) == 0 {
 				accStorage[randomHash()] = common.CopyBytes(value)
@@ -330,27 +330,27 @@ func TestAccountIteratorTraversalValues(t *testing.T) {
 		h = make(map[common.Hash][]byte)
 	)
 	for i := byte(2); i < 0xff; i++ {
-		a[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 0, i))
+		a[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 0, i)
 		if i > 20 && i%2 == 0 {
-			b[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 1, i))
+			b[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 1, i)
 		}
 		if i%4 == 0 {
-			c[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 2, i))
+			c[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 2, i)
 		}
 		if i%7 == 0 {
-			d[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 3, i))
+			d[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 3, i)
 		}
 		if i%8 == 0 {
-			e[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 4, i))
+			e[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 4, i)
 		}
 		if i > 50 || i < 85 {
-			f[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 5, i))
+			f[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 5, i)
 		}
 		if i%64 == 0 {
-			g[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 6, i))
+			g[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 6, i)
 		}
 		if i%128 == 0 {
-			h[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 7, i))
+			h[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 7, i)
 		}
 	}
 	// Assemble a stack of snapshots from the account layers
@@ -429,27 +429,27 @@ func TestStorageIteratorTraversalValues(t *testing.T) {
 		h = make(map[common.Hash][]byte)
 	)
 	for i := byte(2); i < 0xff; i++ {
-		a[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 0, i))
+		a[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 0, i)
 		if i > 20 && i%2 == 0 {
-			b[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 1, i))
+			b[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 1, i)
 		}
 		if i%4 == 0 {
-			c[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 2, i))
+			c[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 2, i)
 		}
 		if i%7 == 0 {
-			d[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 3, i))
+			d[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 3, i)
 		}
 		if i%8 == 0 {
-			e[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 4, i))
+			e[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 4, i)
 		}
 		if i > 50 || i < 85 {
-			f[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 5, i))
+			f[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 5, i)
 		}
 		if i%64 == 0 {
-			g[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 6, i))
+			g[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 6, i)
 		}
 		if i%128 == 0 {
-			h[common.Hash{i}] = []byte(fmt.Sprintf("layer-%d, key %d", 7, i))
+			h[common.Hash{i}] = fmt.Appendf(nil, "layer-%d, key %d", 7, i)
 		}
 	}
 	// Assemble a stack of snapshots from the account layers
@@ -504,7 +504,7 @@ func TestAccountIteratorLargeTraversal(t *testing.T) {
 	// Create a custom account factory to recreate the same addresses
 	makeAccounts := func(num int) map[common.Hash][]byte {
 		accounts := make(map[common.Hash][]byte)
-		for i := 0; i < num; i++ {
+		for i := range num {
 			h := common.Hash{}
 			binary.BigEndian.PutUint64(h[:], uint64(i+1))
 			accounts[h] = randomAccount()
@@ -830,7 +830,7 @@ func BenchmarkAccountIteratorTraversal(b *testing.B) {
 	// Create a custom account factory to recreate the same addresses
 	makeAccounts := func(num int) map[common.Hash][]byte {
 		accounts := make(map[common.Hash][]byte)
-		for i := 0; i < num; i++ {
+		for i := range num {
 			h := common.Hash{}
 			binary.BigEndian.PutUint64(h[:], uint64(i+1))
 			accounts[h] = randomAccount()
@@ -857,7 +857,7 @@ func BenchmarkAccountIteratorTraversal(b *testing.B) {
 	head.(*diffLayer).newBinaryAccountIterator()
 
 	b.Run("binary iterator keys", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			got := 0
 			it := head.(*diffLayer).newBinaryAccountIterator()
 			for it.Next() {
@@ -869,7 +869,7 @@ func BenchmarkAccountIteratorTraversal(b *testing.B) {
 		}
 	})
 	b.Run("binary iterator values", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			got := 0
 			it := head.(*diffLayer).newBinaryAccountIterator()
 			for it.Next() {
@@ -882,7 +882,7 @@ func BenchmarkAccountIteratorTraversal(b *testing.B) {
 		}
 	})
 	b.Run("fast iterator keys", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			it, _ := snaps.AccountIterator(common.HexToHash("0x65"), common.Hash{})
 			defer it.Release()
 
@@ -896,7 +896,7 @@ func BenchmarkAccountIteratorTraversal(b *testing.B) {
 		}
 	})
 	b.Run("fast iterator values", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			it, _ := snaps.AccountIterator(common.HexToHash("0x65"), common.Hash{})
 			defer it.Release()
 
@@ -926,7 +926,7 @@ func BenchmarkAccountIteratorLargeBaselayer(b *testing.B) {
 	// Create a custom account factory to recreate the same addresses
 	makeAccounts := func(num int) map[common.Hash][]byte {
 		accounts := make(map[common.Hash][]byte)
-		for i := 0; i < num; i++ {
+		for i := range num {
 			h := common.Hash{}
 			binary.BigEndian.PutUint64(h[:], uint64(i+1))
 			accounts[h] = randomAccount()
@@ -954,7 +954,7 @@ func BenchmarkAccountIteratorLargeBaselayer(b *testing.B) {
 	head.(*diffLayer).newBinaryAccountIterator()
 
 	b.Run("binary iterator (keys)", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			got := 0
 			it := head.(*diffLayer).newBinaryAccountIterator()
 			for it.Next() {
@@ -966,7 +966,7 @@ func BenchmarkAccountIteratorLargeBaselayer(b *testing.B) {
 		}
 	})
 	b.Run("binary iterator (values)", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			got := 0
 			it := head.(*diffLayer).newBinaryAccountIterator()
 			for it.Next() {
@@ -980,7 +980,7 @@ func BenchmarkAccountIteratorLargeBaselayer(b *testing.B) {
 		}
 	})
 	b.Run("fast iterator (keys)", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			it, _ := snaps.AccountIterator(common.HexToHash("0x65"), common.Hash{})
 			defer it.Release()
 
@@ -994,7 +994,7 @@ func BenchmarkAccountIteratorLargeBaselayer(b *testing.B) {
 		}
 	})
 	b.Run("fast iterator (values)", func(b *testing.B) {
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			it, _ := snaps.AccountIterator(common.HexToHash("0x65"), common.Hash{})
 			defer it.Release()
 
@@ -1027,7 +1027,7 @@ func benchmarkAccountIteration(b *testing.B, iterator func(snap snapshot) Accoun
 	for i := 0; i < len(layers); i++ {
 		layers[i] = make(map[common.Hash][]byte)
 	}
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		depth := rand.Intn(len(layers))
 		layers[depth][randomHash()] = randomAccount()
 	}

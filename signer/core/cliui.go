@@ -126,7 +126,7 @@ func (ui *CommandlineUI) ApproveTx(request *SignTxRequest) (SignTxResponse, erro
 		fmt.Printf("chainid:  %v\n", chainId)
 	}
 	if list := request.Transaction.AccessList; list != nil {
-		fmt.Printf("Accesslist\n")
+		fmt.Printf("Accesslist:\n")
 		for i, el := range *list {
 			fmt.Printf(" %d. %v\n", i, el.Address)
 			for j, slot := range el.StorageKeys {

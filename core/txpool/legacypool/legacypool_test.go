@@ -28,14 +28,13 @@ import (
 	"testing"
 	"time"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/txpool"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/trie"
@@ -94,12 +93,12 @@ func (bc *testBlockChain) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent)
 	return bc.chainHeadFeed.Subscribe(ch)
 }
 
-func transaction(nonce uint64, gaslimit uint64, key *walletmldsa87.Wallet) *types.Transaction {
-	return dynamicFeeTx(nonce, gaslimit, big.NewInt(1), big.NewInt(1), key)
+func transaction(nonce uint64, gaslimit uint64, wallet wallet.Wallet) *types.Transaction {
+	return dynamicFeeTx(nonce, gaslimit, big.NewInt(1), big.NewInt(1), wallet)
 }
 
-func dynamicFeeTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.Int, key *walletmldsa87.Wallet) *types.Transaction {
-	tx, _ := types.SignNewTx(key, types.LatestSignerForChainID(params.TestChainConfig.ChainID), &types.DynamicFeeTx{
+func dynamicFeeTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.Int, wallet wallet.Wallet) *types.Transaction {
+	tx, _ := types.SignNewTx(wallet, types.LatestSignerForChainID(params.TestChainConfig.ChainID), &types.DynamicFeeTx{
 		ChainID:    params.TestChainConfig.ChainID,
 		Nonce:      nonce,
 		GasTipCap:  tip,
@@ -113,11 +112,11 @@ func dynamicFeeTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.Int, 
 	return tx
 }
 
-func dynamicFeeDataTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.Int, key *walletmldsa87.Wallet, bytes uint64) *types.Transaction {
+func dynamicFeeDataTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.Int, wallet wallet.Wallet, bytes uint64) *types.Transaction {
 	data := make([]byte, bytes)
 	crand.Read(data)
 
-	tx, _ := types.SignNewTx(key, types.ShanghaiSigner{ChainId: big.NewInt(1)}, &types.DynamicFeeTx{
+	tx, _ := types.SignNewTx(wallet, types.ShanghaiSigner{ChainId: big.NewInt(1)}, &types.DynamicFeeTx{
 		ChainID:    params.TestChainConfig.ChainID,
 		Nonce:      nonce,
 		GasTipCap:  tip,
@@ -156,22 +155,22 @@ func makeAddressReserver() txpool.AddressReserver {
 	}
 }
 
-func setupPool() (*LegacyPool, *walletmldsa87.Wallet) {
+func setupPool() (*LegacyPool, wallet.Wallet) {
 	return setupPoolWithConfig(params.TestChainConfig)
 }
 
-func setupPoolWithConfig(config *params.ChainConfig) (*LegacyPool, *walletmldsa87.Wallet) {
+func setupPoolWithConfig(config *params.ChainConfig) (*LegacyPool, wallet.Wallet) {
 	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 	blockchain := newTestBlockChain(config, 10000000, statedb, new(event.Feed))
 
-	key, _ := crypto.GenerateMLDSA87Key()
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 	pool := New(testTxPoolConfig, blockchain)
 	if err := pool.Init(new(big.Int).SetUint64(testTxPoolConfig.PriceLimit), blockchain.CurrentBlock(), makeAddressReserver()); err != nil {
 		panic(err)
 	}
 	// wait for the pool to initialize
 	<-pool.initDoneCh
-	return pool, key
+	return pool, wallet
 }
 
 // validatePoolInternals checks various consistency invariants within the pool.
@@ -268,8 +267,8 @@ func TestStateChangeDuringReset(t *testing.T) {
 	t.Parallel()
 
 	var (
-		key, _     = crypto.GenerateMLDSA87Key()
-		address    = key.GetAddress()
+		wallet, _  = wallet.Generate(wallet.ML_DSA_87)
+		address    = wallet.GetAddress()
 		statedb, _ = state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
 		trigger    = false
 	)
@@ -278,8 +277,8 @@ func TestStateChangeDuringReset(t *testing.T) {
 	statedb.SetBalance(address, new(big.Int).SetUint64(params.Quanta))
 	blockchain := &testChain{newTestBlockChain(params.TestChainConfig, 1000000000, statedb, new(event.Feed)), address, &trigger}
 
-	tx0 := transaction(0, 100000, key)
-	tx1 := transaction(1, 100000, key)
+	tx0 := transaction(0, 100000, wallet)
+	tx1 := transaction(1, 100000, wallet)
 
 	pool := New(testTxPoolConfig, blockchain)
 	pool.Init(new(big.Int).SetUint64(testTxPoolConfig.PriceLimit), blockchain.CurrentBlock(), makeAddressReserver())
@@ -713,24 +712,24 @@ func TestPostponing(t *testing.T) {
 	defer pool.Close()
 
 	// Create two test accounts to produce different gap profiles with
-	keys := make([]*walletmldsa87.Wallet, 2)
-	accs := make([]common.Address, len(keys))
+	wallets := make([]wallet.Wallet, 2)
+	accs := make([]common.Address, len(wallets))
 
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		accs[i] = keys[i].GetAddress()
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		accs[i] = wallets[i].GetAddress()
 
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(50100))
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(50100))
 	}
 	// Add a batch consecutive pending transactions for validation
 	txs := []*types.Transaction{}
-	for i, key := range keys {
-		for j := 0; j < 100; j++ {
+	for i, wallet := range wallets {
+		for j := range 100 {
 			var tx *types.Transaction
 			if (i+j)%2 == 0 {
-				tx = transaction(uint64(j), 25000, key)
+				tx = transaction(uint64(j), 25000, wallet)
 			} else {
-				tx = transaction(uint64(j), 50000, key)
+				tx = transaction(uint64(j), 50000, wallet)
 			}
 			txs = append(txs, tx)
 		}
@@ -930,22 +929,22 @@ func testQueueGlobalLimiting(t *testing.T, nolocals bool) {
 	defer pool.Close()
 
 	// Create a number of test accounts and fund them (last one will be the local)
-	keys := make([]*walletmldsa87.Wallet, 5)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 5)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
-	local := keys[len(keys)-1]
+	local := wallets[len(wallets)-1]
 
 	// Generate and queue a batch of transactions
 	nonces := make(map[common.Address]uint64)
 
 	txs := make(types.Transactions, 0, 3*config.GlobalQueue)
 	for len(txs) < cap(txs) {
-		key := keys[rand.Intn(len(keys)-1)] // skip adding transactions with the local account
-		addr := key.GetAddress()
+		wallet := wallets[rand.Intn(len(wallets)-1)] // skip adding transactions with the local account
+		addr := wallet.GetAddress()
 
-		txs = append(txs, transaction(nonces[addr]+1, 100000, key))
+		txs = append(txs, transaction(nonces[addr]+1, 100000, wallet))
 		nonces[addr]++
 	}
 	// Import the batch and verify that limits have been enforced
@@ -1024,8 +1023,8 @@ func testQueueTimeLimiting(t *testing.T, nolocals bool) {
 	defer pool.Close()
 
 	// Create two test accounts to ensure remotes expire but locals do not
-	local, _ := crypto.GenerateMLDSA87Key()
-	remote, _ := crypto.GenerateMLDSA87Key()
+	local, _ := wallet.Generate(wallet.ML_DSA_87)
+	remote, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	testAddBalance(pool, local.GetAddress(), big.NewInt(1000000000))
 	testAddBalance(pool, remote.GetAddress(), big.NewInt(1000000000))
@@ -1209,19 +1208,19 @@ func TestPendingGlobalLimiting(t *testing.T) {
 	defer pool.Close()
 
 	// Create a number of test accounts and fund them
-	keys := make([]*walletmldsa87.Wallet, 5)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 5)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
 	// Generate and queue a batch of transactions
 	nonces := make(map[common.Address]uint64)
 
 	txs := types.Transactions{}
-	for _, key := range keys {
-		addr := key.GetAddress()
-		for j := 0; j < int(config.GlobalSlots)/len(keys)*2; j++ {
-			txs = append(txs, transaction(nonces[addr], 100000, key))
+	for _, wallet := range wallets {
+		addr := wallet.GetAddress()
+		for range int(config.GlobalSlots) / len(wallets) * 2 {
+			txs = append(txs, transaction(nonces[addr], 100000, wallet))
 			nonces[addr]++
 		}
 	}
@@ -1247,40 +1246,34 @@ func TestAllowedTxSize(t *testing.T) {
 	t.Parallel()
 
 	// Create a test account and fund it
-	pool, key := setupPool()
+	pool, wallet := setupPool()
 	defer pool.Close()
 
-	account := key.GetAddress()
+	account := wallet.GetAddress()
 	testAddBalance(pool, account, big.NewInt(1000000000))
 
-	// Compute maximal data size for transactions (lower bound).
-	//
-	// It is assumed the fields in the transaction (except of the data) are:
-	//   - nonce     <= 32 bytes
-	//   - gasTip  <= 32 bytes
-	//   - gasLimit  <= 32 bytes
-	//   - recipient == 20 bytes
-	//   - value     <= 32 bytes
-	//   - signature == 4627 bytes
-	//   - publicKey == 2592 bytes
-	// All those fields are summed up to at most 7335 bytes.
-	baseSize := uint64(7335)
-	dataSize := txMaxSize - baseSize
+	// Find the maximum data length for the kind of transaction which will
+	// be generated in the pool.addRemoteSync calls below.
+	const largeDataLength = txMaxSize - 200 // enough to have a 5 bytes RLP encoding of the data length number
+	txWithLargeData := dynamicFeeDataTx(0, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, largeDataLength)
+	maxTxLengthWithoutData := txWithLargeData.Size() - largeDataLength // 103 bytes
+	maxTxDataLength := txMaxSize - maxTxLengthWithoutData              // 131072 - 103 = 130969 bytes
+
 	// Try adding a transaction with maximal allowed size
-	tx := dynamicFeeDataTx(0, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), key, dataSize)
+	tx := dynamicFeeDataTx(0, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, maxTxDataLength)
 	if err := pool.addRemoteSync(tx); err != nil {
 		t.Fatalf("failed to add transaction of size %d, close to maximal: %v", int(tx.Size()), err)
 	}
 	// Try adding a transaction with random allowed size
-	if err := pool.addRemoteSync(dynamicFeeDataTx(1, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), key, uint64(rand.Intn(int(dataSize))))); err != nil {
+	if err := pool.addRemoteSync(dynamicFeeDataTx(1, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, uint64(rand.Intn(int(maxTxDataLength+1))))); err != nil {
 		t.Fatalf("failed to add transaction of random allowed size: %v", err)
 	}
-	// Try adding a transaction of minimal not allowed size
-	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), key, txMaxSize)); err == nil {
+	// Try adding a transaction above maximum size by one
+	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, maxTxDataLength+1)); err == nil {
 		t.Fatalf("expected rejection on slightly oversize transaction")
 	}
-	// Try adding a transaction of random not allowed size
-	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), key, dataSize+1+uint64(rand.Intn(10*txMaxSize)))); err == nil {
+	// Try adding a transaction above maximum size by more than one
+	if err := pool.addRemoteSync(dynamicFeeDataTx(2, pool.currentHead.Load().GasLimit, big.NewInt(1), big.NewInt(1), wallet, maxTxDataLength+1+uint64(rand.Intn(10*txMaxSize)))); err == nil {
 		t.Fatalf("expected rejection on oversize transaction")
 	}
 	// Run some sanity checks on the pool internals
@@ -1314,13 +1307,13 @@ func TestCapClearsFromAll(t *testing.T) {
 	defer pool.Close()
 
 	// Create a number of test accounts and fund them
-	key, _ := crypto.GenerateMLDSA87Key()
-	addr := key.GetAddress()
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	addr := wallet.GetAddress()
 	testAddBalance(pool, addr, big.NewInt(1000000))
 
 	txs := types.Transactions{}
 	for j := 0; j < int(config.GlobalSlots)*2; j++ {
-		txs = append(txs, transaction(uint64(j), 100000, key))
+		txs = append(txs, transaction(uint64(j), 100000, wallet))
 	}
 	// Import the batch and verify that limits have been enforced
 	pool.addRemotes(txs)
@@ -1347,19 +1340,19 @@ func TestPendingMinimumAllowance(t *testing.T) {
 	defer pool.Close()
 
 	// Create a number of test accounts and fund them
-	keys := make([]*walletmldsa87.Wallet, 5)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 5)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
 	// Generate and queue a batch of transactions
 	nonces := make(map[common.Address]uint64)
 
 	txs := types.Transactions{}
-	for _, key := range keys {
-		addr := key.GetAddress()
+	for _, wallet := range wallets {
+		addr := wallet.GetAddress()
 		for j := 0; j < int(config.AccountSlots)*2; j++ {
-			txs = append(txs, transaction(nonces[addr], 100000, key))
+			txs = append(txs, transaction(nonces[addr], 100000, wallet))
 			nonces[addr]++
 		}
 	}
@@ -1389,10 +1382,10 @@ func TestMinGasPriceEnforced(t *testing.T) {
 	pool.Init(new(big.Int).SetUint64(txPoolConfig.PriceLimit), blockchain.CurrentBlock(), makeAddressReserver())
 	defer pool.Close()
 
-	key, _ := crypto.GenerateMLDSA87Key()
-	testAddBalance(pool, common.Address(key.GetAddress()), big.NewInt(1000000))
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	testAddBalance(pool, common.Address(wallet.GetAddress()), big.NewInt(1000000))
 
-	tx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(2), key)
+	tx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(2), wallet)
 	pool.SetGasTip(big.NewInt(tx.GasPrice().Int64() + 1))
 
 	if err := pool.addLocal(tx); !errors.Is(err, txpool.ErrUnderpriced) {
@@ -1403,7 +1396,7 @@ func TestMinGasPriceEnforced(t *testing.T) {
 		t.Fatalf("Min tip not enforced")
 	}
 
-	tx = dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(2), key)
+	tx = dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(2), wallet)
 	pool.SetGasTip(big.NewInt(tx.GasTipCap().Int64() + 1))
 
 	if err := pool.addLocal(tx); !errors.Is(err, txpool.ErrUnderpriced) {
@@ -1438,27 +1431,27 @@ func TestRepricingDynamicFee(t *testing.T) {
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
-	keys := make([]*walletmldsa87.Wallet, 4)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 4)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := types.Transactions{}
 
-	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(2), keys[0]))
-	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(2), big.NewInt(2), keys[0]))
-	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(1), big.NewInt(1), keys[0]))
+	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(2), wallets[0]))
+	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(2), big.NewInt(2), wallets[0]))
+	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(1), big.NewInt(1), wallets[0]))
 
-	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), keys[1]))
-	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(3), big.NewInt(2), keys[1]))
-	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(3), big.NewInt(2), keys[1]))
+	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), wallets[1]))
+	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(3), big.NewInt(2), wallets[1]))
+	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(3), big.NewInt(2), wallets[1]))
 
-	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(2), keys[2]))
-	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), keys[2]))
-	txs = append(txs, dynamicFeeTx(3, 100000, big.NewInt(2), big.NewInt(2), keys[2]))
+	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(2), wallets[2]))
+	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), wallets[2]))
+	txs = append(txs, dynamicFeeTx(3, 100000, big.NewInt(2), big.NewInt(2), wallets[2]))
 
-	ltx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), keys[3])
+	ltx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), wallets[3])
 
 	// Import the batch and that both pending and queued transactions match up
 	pool.addRemotesSync(txs)
@@ -1494,15 +1487,15 @@ func TestRepricingDynamicFee(t *testing.T) {
 		t.Fatalf("pool internal state corrupted: %v", err)
 	}
 	// Check that we can't add the old transactions back
-	tx := dynamicFeeTx(1, 100000, big.NewInt(1), big.NewInt(1), keys[0])
+	tx := dynamicFeeTx(1, 100000, big.NewInt(1), big.NewInt(1), wallets[0])
 	if err := pool.addRemote(tx); !errors.Is(err, txpool.ErrUnderpriced) {
 		t.Fatalf("adding underpriced pending transaction error mismatch: have %v, want %v", err, txpool.ErrUnderpriced)
 	}
-	tx = dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), keys[1])
+	tx = dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), wallets[1])
 	if err := pool.addRemote(tx); !errors.Is(err, txpool.ErrUnderpriced) {
 		t.Fatalf("adding underpriced pending transaction error mismatch: have %v, want %v", err, txpool.ErrUnderpriced)
 	}
-	tx = dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), keys[2])
+	tx = dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), wallets[2])
 	if err := pool.addRemote(tx); !errors.Is(err, txpool.ErrUnderpriced) {
 		t.Fatalf("adding underpriced queued transaction error mismatch: have %v, want %v", err, txpool.ErrUnderpriced)
 	}
@@ -1513,7 +1506,7 @@ func TestRepricingDynamicFee(t *testing.T) {
 		t.Fatalf("pool internal state corrupted: %v", err)
 	}
 	// However we can add local underpriced transactions
-	tx = dynamicFeeTx(1, 100000, big.NewInt(1), big.NewInt(1), keys[3])
+	tx = dynamicFeeTx(1, 100000, big.NewInt(1), big.NewInt(1), wallets[3])
 	if err := pool.addLocal(tx); err != nil {
 		t.Fatalf("failed to add underpriced local transaction: %v", err)
 	}
@@ -1527,15 +1520,15 @@ func TestRepricingDynamicFee(t *testing.T) {
 		t.Fatalf("pool internal state corrupted: %v", err)
 	}
 	// And we can fill gaps with properly priced transactions
-	tx = dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(2), keys[0])
+	tx = dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(2), wallets[0])
 	if err := pool.addRemote(tx); err != nil {
 		t.Fatalf("failed to add pending transaction: %v", err)
 	}
-	tx = dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(2), keys[1])
+	tx = dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(2), wallets[1])
 	if err := pool.addRemote(tx); err != nil {
 		t.Fatalf("failed to add pending transaction: %v", err)
 	}
-	tx = dynamicFeeTx(2, 100000, big.NewInt(2), big.NewInt(2), keys[2])
+	tx = dynamicFeeTx(2, 100000, big.NewInt(2), big.NewInt(2), wallets[2])
 	if err := pool.addRemoteSync(tx); err != nil {
 		t.Fatalf("failed to add queued transaction: %v", err)
 	}
@@ -1561,20 +1554,20 @@ func TestRepricingKeepsLocals(t *testing.T) {
 	defer pool.Close()
 
 	// Create a number of test accounts and fund them
-	keys := make([]*walletmldsa87.Wallet, 3)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(100000*1000000))
+	wallets := make([]wallet.Wallet, 3)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(100000*1000000))
 	}
 	// Create transaction (both pending and queued) with a linearly growing gasprice
-	for i := uint64(0); i < 500; i++ {
+	for i := range uint64(500) {
 		// Add pending dynamic fee transaction.
-		pendingTx := dynamicFeeTx(i, 100000, big.NewInt(int64(i)+1), big.NewInt(int64(i)), keys[1])
+		pendingTx := dynamicFeeTx(i, 100000, big.NewInt(int64(i)+1), big.NewInt(int64(i)), wallets[1])
 		if err := pool.addLocal(pendingTx); err != nil {
 			t.Fatal(err)
 		}
 		// Add queued dynamic fee transaction.
-		queuedTx := dynamicFeeTx(i+501, 100000, big.NewInt(int64(i)+1), big.NewInt(int64(i)), keys[1])
+		queuedTx := dynamicFeeTx(i+501, 100000, big.NewInt(int64(i)+1), big.NewInt(int64(i)), wallets[1])
 		if err := pool.addLocal(queuedTx); err != nil {
 			t.Fatal(err)
 		}
@@ -1631,15 +1624,15 @@ func TestStableUnderpricing(t *testing.T) {
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
-	keys := make([]*walletmldsa87.Wallet, 2)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 2)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
 	// Fill up the entire queue with the same transaction price points
 	txs := types.Transactions{}
 	for i := uint64(0); i < config.GlobalSlots; i++ {
-		txs = append(txs, dynamicFeeTx(i, 100000, big.NewInt(1), big.NewInt(1), keys[0]))
+		txs = append(txs, dynamicFeeTx(i, 100000, big.NewInt(1), big.NewInt(1), wallets[0]))
 	}
 	pool.addRemotesSync(txs)
 
@@ -1657,7 +1650,7 @@ func TestStableUnderpricing(t *testing.T) {
 		t.Fatalf("pool internal state corrupted: %v", err)
 	}
 	// Ensure that adding high priced transactions drops a cheap, but doesn't produce a gap
-	if err := pool.addRemoteSync(dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(3), keys[1])); err != nil {
+	if err := pool.addRemoteSync(dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(3), wallets[1])); err != nil {
 		t.Fatalf("failed to add well priced transaction: %v", err)
 	}
 	pending, queued = pool.Stats()
@@ -1695,20 +1688,20 @@ func TestUnderpricingDynamicFee(t *testing.T) {
 	defer sub.Unsubscribe()
 
 	// Create a number of test accounts and fund them
-	keys := make([]*walletmldsa87.Wallet, 4)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = walletmldsa87.NewWallet()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 4)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
 
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := types.Transactions{}
 
-	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(2), keys[0]))
-	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(2), keys[0]))
-	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(1), keys[1]))
+	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(3), big.NewInt(2), wallets[0]))
+	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(2), wallets[0]))
+	txs = append(txs, dynamicFeeTx(1, 100000, big.NewInt(2), big.NewInt(1), wallets[1]))
 
-	ltx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), keys[2])
+	ltx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), wallets[2])
 
 	// Import the batch and that both pending and queued transactions match up
 	pool.addRemotes(txs) // Pend K0:0, K0:1; Que K1:1
@@ -1729,22 +1722,22 @@ func TestUnderpricingDynamicFee(t *testing.T) {
 	}
 
 	// Ensure that adding an underpriced transaction fails
-	tx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), keys[1])
+	tx := dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(1), wallets[1])
 	if err := pool.addRemote(tx); !errors.Is(err, txpool.ErrUnderpriced) { // Pend K0:0, K0:1, K2:0; Que K1:1
 		t.Fatalf("adding underpriced pending transaction error mismatch: have %v, want %v", err, txpool.ErrUnderpriced)
 	}
 
 	// Ensure that adding high priced transactions drops cheap ones, but not own
-	tx = dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(2), keys[1])
+	tx = dynamicFeeTx(0, 100000, big.NewInt(2), big.NewInt(2), wallets[1])
 	if err := pool.addRemote(tx); err != nil { // +K1:0, -K1:1 => Pend K0:0, K0:1, K1:0, K2:0; Que -
 		t.Fatalf("failed to add well priced transaction: %v", err)
 	}
 
-	tx = dynamicFeeTx(1, 100000, big.NewInt(3), big.NewInt(3), keys[1])
+	tx = dynamicFeeTx(1, 100000, big.NewInt(3), big.NewInt(3), wallets[1])
 	if err := pool.addRemoteSync(tx); err != nil { // +K1:2, -K0:1 => Pend K0:0 K1:0, K2:0; Que K1:2
 		t.Fatalf("failed to add well priced transaction: %v", err)
 	}
-	tx = dynamicFeeTx(2, 100000, big.NewInt(4), big.NewInt(1), keys[1])
+	tx = dynamicFeeTx(2, 100000, big.NewInt(4), big.NewInt(1), wallets[1])
 	if err := pool.addRemoteSync(tx); err != nil { // +K1:3, -K1:0 => Pend K0:0 K2:0; Que K1:2 K1:3
 		t.Fatalf("failed to add well priced transaction: %v", err)
 	}
@@ -1762,11 +1755,11 @@ func TestUnderpricingDynamicFee(t *testing.T) {
 		t.Fatalf("pool internal state corrupted: %v", err)
 	}
 	// Ensure that adding local transactions can push out even higher priced ones
-	ltx = dynamicFeeTx(1, 100000, big.NewInt(0), big.NewInt(0), keys[2])
+	ltx = dynamicFeeTx(1, 100000, big.NewInt(0), big.NewInt(0), wallets[2])
 	if err := pool.addLocal(ltx); err != nil {
 		t.Fatalf("failed to append underpriced local transaction: %v", err)
 	}
-	ltx = dynamicFeeTx(0, 100000, big.NewInt(0), big.NewInt(0), keys[3])
+	ltx = dynamicFeeTx(0, 100000, big.NewInt(0), big.NewInt(0), wallets[3])
 	if err := pool.addLocal(ltx); err != nil {
 		t.Fatalf("failed to add new underpriced local transaction: %v", err)
 	}
@@ -1808,16 +1801,16 @@ func TestDualHeapEviction(t *testing.T) {
 	}
 
 	add := func(urgent bool) {
-		for i := 0; i < 20; i++ {
+		for i := range 20 {
 			var tx *types.Transaction
 			// Create a test accounts and fund it
-			key, _ := crypto.GenerateMLDSA87Key()
-			testAddBalance(pool, key.GetAddress(), big.NewInt(1000000000000))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			testAddBalance(pool, wallet.GetAddress(), big.NewInt(1000000000000))
 			if urgent {
-				tx = dynamicFeeTx(0, 100000, big.NewInt(int64(baseFee+1+i)), big.NewInt(int64(1+i)), key)
+				tx = dynamicFeeTx(0, 100000, big.NewInt(int64(baseFee+1+i)), big.NewInt(int64(1+i)), wallet)
 				highTip = tx
 			} else {
-				tx = dynamicFeeTx(0, 100000, big.NewInt(int64(baseFee+200+i)), big.NewInt(1), key)
+				tx = dynamicFeeTx(0, 100000, big.NewInt(int64(baseFee+200+i)), big.NewInt(1), wallet)
 				highCap = tx
 			}
 			pool.addRemotesSync([]*types.Transaction{tx})
@@ -1855,13 +1848,13 @@ func TestDeduplication(t *testing.T) {
 	defer pool.Close()
 
 	// Create a test account to add transactions with
-	key, _ := crypto.GenerateMLDSA87Key()
-	testAddBalance(pool, key.GetAddress(), big.NewInt(1000000000))
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	testAddBalance(pool, wallet.GetAddress(), big.NewInt(1000000000))
 
 	// Create a batch of transactions and add a few of them
 	txs := make([]*types.Transaction, 16)
-	for i := 0; i < len(txs); i++ {
-		txs[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(1), big.NewInt(1), key)
+	for i := range txs {
+		txs[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(1), big.NewInt(1), wallet)
 	}
 	var firsts []*types.Transaction
 	for i := 0; i < len(txs); i += 2 {
@@ -2027,12 +2020,11 @@ func testJournaling(t *testing.T, nolocals bool) {
 	t.Parallel()
 
 	// Create a temporary file for the journal
-	file, err := os.CreateTemp("", "")
+	file, err := os.CreateTemp(t.TempDir(), "")
 	if err != nil {
 		t.Fatalf("failed to create temporary journal: %v", err)
 	}
 	journal := file.Name()
-	defer os.Remove(journal)
 
 	// Clean up the temporary file, we only need the path for now
 	file.Close()
@@ -2051,8 +2043,8 @@ func testJournaling(t *testing.T, nolocals bool) {
 	pool.Init(new(big.Int).SetUint64(config.PriceLimit), blockchain.CurrentBlock(), makeAddressReserver())
 
 	// Create two test accounts to ensure remotes expire but locals do not
-	local, _ := crypto.GenerateMLDSA87Key()
-	remote, _ := crypto.GenerateMLDSA87Key()
+	local, _ := wallet.Generate(wallet.ML_DSA_87)
+	remote, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	testAddBalance(pool, local.GetAddress(), big.NewInt(1000000000))
 	testAddBalance(pool, remote.GetAddress(), big.NewInt(1000000000))
@@ -2148,18 +2140,18 @@ func TestStatusCheck(t *testing.T) {
 	defer pool.Close()
 
 	// Create the test accounts to check various transaction statuses with
-	keys := make([]*walletmldsa87.Wallet, 3)
-	for i := 0; i < len(keys); i++ {
-		keys[i], _ = crypto.GenerateMLDSA87Key()
-		testAddBalance(pool, keys[i].GetAddress(), big.NewInt(1000000))
+	wallets := make([]wallet.Wallet, 3)
+	for i := range wallets {
+		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		testAddBalance(pool, wallets[i].GetAddress(), big.NewInt(1000000))
 	}
 	// Generate and queue a batch of transactions, both pending and queued
 	txs := types.Transactions{}
 
-	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(1), big.NewInt(1), keys[0])) // Pending only
-	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(1), big.NewInt(1), keys[1])) // Pending and queued
-	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), keys[1]))
-	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), keys[2])) // Queued only
+	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(1), big.NewInt(1), wallets[0])) // Pending only
+	txs = append(txs, dynamicFeeTx(0, 100000, big.NewInt(1), big.NewInt(1), wallets[1])) // Pending and queued
+	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), wallets[1]))
+	txs = append(txs, dynamicFeeTx(2, 100000, big.NewInt(1), big.NewInt(1), wallets[2])) // Queued only
 
 	// Import the transaction and ensure they are correctly added
 	pool.addRemotesSync(txs)
@@ -2193,15 +2185,15 @@ func TestStatusCheck(t *testing.T) {
 func TestSlotCount(t *testing.T) {
 	t.Parallel()
 
-	key, _ := crypto.GenerateMLDSA87Key()
+	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 
 	// Check that an empty transaction consumes a single slot
-	smallTx := dynamicFeeDataTx(0, 0, big.NewInt(0), big.NewInt(0), key, 0)
+	smallTx := dynamicFeeDataTx(0, 0, big.NewInt(0), big.NewInt(0), wallet, 0)
 	if slots := numSlots(smallTx); slots != 1 {
 		t.Fatalf("small transactions slot count mismatch: have %d want %d", slots, 1)
 	}
 	// Check that a large transaction consumes the correct number of slots
-	bigTx := dynamicFeeDataTx(0, 0, big.NewInt(0), big.NewInt(0), key, uint64(10*txSlotSize))
+	bigTx := dynamicFeeDataTx(0, 0, big.NewInt(0), big.NewInt(0), wallet, uint64(10*txSlotSize))
 	if slots := numSlots(bigTx); slots != 11 {
 		t.Fatalf("big transactions slot count mismatch: have %d want %d", slots, 11)
 	}
@@ -2221,13 +2213,12 @@ func benchmarkPendingDemotion(b *testing.B, size int) {
 	account := key.GetAddress()
 	testAddBalance(pool, account, big.NewInt(1000000))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		tx := transaction(uint64(i), 100000, key)
 		pool.promoteTx(account, tx.Hash(), tx)
 	}
 	// Benchmark the speed of pool validation
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		pool.demoteUnexecutables()
 	}
 }
@@ -2246,13 +2237,12 @@ func benchmarkFuturePromotion(b *testing.B, size int) {
 	account := key.GetAddress()
 	testAddBalance(pool, account, big.NewInt(1000000))
 
-	for i := 0; i < size; i++ {
+	for i := range size {
 		tx := transaction(uint64(1+i), 100000, key)
 		pool.enqueueTx(tx.Hash(), tx, false, true)
 	}
 	// Benchmark the speed of pool validation
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		pool.promoteExecutables(nil)
 	}
 }
@@ -2277,7 +2267,7 @@ func benchmarkBatchInsert(b *testing.B, size int, local bool) {
 	batches := make([]types.Transactions, b.N)
 	for i := 0; i < b.N; i++ {
 		batches[i] = make(types.Transactions, size)
-		for j := 0; j < size; j++ {
+		for j := range size {
 			batches[i][j] = transaction(uint64(size*i+j), 100000, key)
 		}
 	}
@@ -2293,34 +2283,33 @@ func benchmarkBatchInsert(b *testing.B, size int, local bool) {
 }
 
 func BenchmarkInsertRemoteWithAllLocals(b *testing.B) {
-	// Allocate keys for testing
-	key, _ := crypto.GenerateMLDSA87Key()
-	account := key.GetAddress()
+	// Allocate wallets for testing
+	localWallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	localAddr := localWallet.GetAddress()
 
-	remoteKey, _ := crypto.GenerateMLDSA87Key()
-	remoteAddr := remoteKey.GetAddress()
+	remoteWallet, _ := wallet.Generate(wallet.ML_DSA_87)
+	remoteAddr := remoteWallet.GetAddress()
 
 	locals := make([]*types.Transaction, 4096+1024) // Occupy all slots
-	for i := 0; i < len(locals); i++ {
-		locals[i] = transaction(uint64(i), 100000, key)
+	for i := range locals {
+		locals[i] = transaction(uint64(i), 100000, localWallet)
 	}
 	remotes := make([]*types.Transaction, 1000)
-	for i := 0; i < len(remotes); i++ {
-		remotes[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(2), big.NewInt(0), remoteKey) // Higher gasprice
+	for i := range remotes {
+		remotes[i] = dynamicFeeTx(uint64(i), 100000, big.NewInt(2), big.NewInt(0), remoteWallet) // Higher gasprice
 	}
 	// Benchmark importing the transactions into the queue
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		b.StopTimer()
 		pool, _ := setupPool()
-		testAddBalance(pool, account, big.NewInt(100000000))
+		testAddBalance(pool, localAddr, big.NewInt(100000000))
 		for _, local := range locals {
 			pool.addLocal(local)
 		}
 		b.StartTimer()
 		// Assign a high enough balance for testing
 		testAddBalance(pool, remoteAddr, big.NewInt(100000000))
-		for i := 0; i < len(remotes); i++ {
+		for i := range remotes {
 			pool.addRemotes([]*types.Transaction{remotes[i]})
 		}
 		pool.Close()
@@ -2335,10 +2324,10 @@ func BenchmarkMultiAccountBatchInsert(b *testing.B) {
 	b.ReportAllocs()
 	batches := make(types.Transactions, b.N)
 	for i := 0; i < b.N; i++ {
-		key, _ := crypto.GenerateMLDSA87Key()
-		account := key.GetAddress()
+		wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+		account := wallet.GetAddress()
 		pool.currentState.AddBalance(account, big.NewInt(1000000))
-		tx := transaction(uint64(0), 100000, key)
+		tx := transaction(uint64(0), 100000, wallet)
 		batches[i] = tx
 	}
 	// Benchmark importing the transactions into the queue

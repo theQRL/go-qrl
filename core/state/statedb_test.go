@@ -54,7 +54,7 @@ func TestUpdateLeaks(t *testing.T) {
 	state, _ := New(types.EmptyRootHash, NewDatabaseWithNodeDB(db, tdb), nil)
 
 	// Update it with some accounts
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		addr := common.BytesToAddress([]byte{i})
 		state.AddBalance(addr, big.NewInt(int64(11*i)))
 		state.SetNonce(addr, uint64(42*i))
@@ -103,14 +103,14 @@ func TestIntermediateLeaks(t *testing.T) {
 	}
 
 	// Modify the transient state.
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		modify(transState, common.Address{i}, i, 0)
 	}
 	// Write modifications to trie.
 	transState.IntermediateRoot(false)
 
 	// Overwrite all the data with new values in the transient database.
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		modify(transState, common.Address{i}, i, 99)
 		modify(finalState, common.Address{i}, i, 99)
 	}
@@ -165,7 +165,7 @@ func TestCopy(t *testing.T) {
 	// Create a random state test to copy and modify "independently"
 	orig, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		obj := orig.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		obj.AddBalance(big.NewInt(int64(i)))
 		orig.updateStateObject(obj)
@@ -179,7 +179,7 @@ func TestCopy(t *testing.T) {
 	ccopy := copy.Copy()
 
 	// modify all in memory
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		origObj := orig.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		copyObj := copy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		ccopyObj := ccopy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
@@ -207,7 +207,7 @@ func TestCopy(t *testing.T) {
 	wg.Wait()
 
 	// Verify that the three states have been updated independently
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		origObj := orig.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		copyObj := copy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		ccopyObj := ccopy.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
@@ -475,7 +475,7 @@ func forEachStorage(s *StateDB, addr common.Address, cb func(key, value common.H
 func (test *snapshotTest) checkEqual(state, checkstate *StateDB) error {
 	for _, addr := range test.addrs {
 		var err error
-		checkeq := func(op string, a, b interface{}) bool {
+		checkeq := func(op string, a, b any) bool {
 			if err == nil && !reflect.DeepEqual(a, b) {
 				err = fmt.Errorf("got %s(%s) == %v, want %v", op, addr.Hex(), a, b)
 				return false
@@ -988,9 +988,9 @@ func TestFlushOrderDataLoss(t *testing.T) {
 		statedb  = NewDatabaseWithNodeDB(memdb, triedb)
 		state, _ = New(types.EmptyRootHash, statedb, nil)
 	)
-	for a := byte(0); a < 10; a++ {
+	for a := range byte(10) {
 		state.CreateAccount(common.Address{a})
-		for s := byte(0); s < 10; s++ {
+		for s := range byte(10) {
 			state.SetState(common.Address{a}, common.Hash{a, s}, common.Hash{a, s})
 		}
 	}
@@ -1010,8 +1010,8 @@ func TestFlushOrderDataLoss(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to reopen state trie: %v", err)
 	}
-	for a := byte(0); a < 10; a++ {
-		for s := byte(0); s < 10; s++ {
+	for a := range byte(10) {
+		for s := range byte(10) {
 			if have := state.GetState(common.Address{a}, common.Hash{a, s}); have != (common.Hash{a, s}) {
 				t.Errorf("account %d: slot %d: state mismatch: have %x, want %x", a, s, have, common.Hash{a, s})
 			}
@@ -1065,7 +1065,7 @@ func TestDeleteStorage(t *testing.T) {
 	// Initialize account and populate storage
 	state.SetBalance(addr, big.NewInt(1))
 	state.CreateAccount(addr)
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		slot := common.Hash(uint256.NewInt(uint64(i)).Bytes32())
 		value := common.Hash(uint256.NewInt(uint64(10 * i)).Bytes32())
 		state.SetState(addr, slot, value)

@@ -50,7 +50,7 @@ type Long int64
 func (b Long) ImplementsGraphQLType(name string) bool { return name == "Long" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (b *Long) UnmarshalGraphQL(input interface{}) error {
+func (b *Long) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -550,7 +550,15 @@ func (t *Transaction) Descriptor(ctx context.Context) (hexutil.Bytes, error) {
 	if err != nil || tx == nil {
 		return hexutil.Bytes{}, nil
 	}
-	return tx.RawDescriptorValue(), nil
+	return tx.Descriptor(), nil
+}
+
+func (t *Transaction) ExtraParams(ctx context.Context) (hexutil.Bytes, error) {
+	tx, err := t.resolve(ctx)
+	if err != nil || tx == nil {
+		return hexutil.Bytes{}, nil
+	}
+	return tx.ExtraParams(), nil
 }
 
 func (t *Transaction) Raw(ctx context.Context) (hexutil.Bytes, error) {

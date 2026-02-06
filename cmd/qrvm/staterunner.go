@@ -27,7 +27,6 @@ import (
 	"github.com/theQRL/go-zond/core/state"
 	"github.com/theQRL/go-zond/core/state/snapshot"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/qrl/tracers/logger"
 	"github.com/theQRL/go-zond/tests"
 	"github.com/urfave/cli/v2"
@@ -52,11 +51,6 @@ type StatetestResult struct {
 }
 
 func stateTestCmd(ctx *cli.Context) error {
-	// Configure the go-zond logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
-
 	// Configure the QRVM logger
 	config := &logger.Config{
 		EnableMemory:     !ctx.Bool(DisableMemoryFlag.Name),

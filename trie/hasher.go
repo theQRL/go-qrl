@@ -35,7 +35,7 @@ type hasher struct {
 
 // hasherPool holds pureHashers
 var hasherPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &hasher{
 			tmp:    make([]byte, 0, 550), // cap is as large as a full fullNode.
 			sha:    sha3.NewLegacyKeccak256().(crypto.KeccakState),
@@ -114,7 +114,7 @@ func (h *hasher) hashFullNodeChildren(n *fullNode) (collapsed *fullNode, cached 
 	if h.parallel {
 		var wg sync.WaitGroup
 		wg.Add(16)
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			go func(i int) {
 				hasher := newHasher(false)
 				if child := n.Children[i]; child != nil {
@@ -128,7 +128,7 @@ func (h *hasher) hashFullNodeChildren(n *fullNode) (collapsed *fullNode, cached 
 		}
 		wg.Wait()
 	} else {
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			if child := n.Children[i]; child != nil {
 				collapsed.Children[i], cached.Children[i] = h.hash(child, false)
 			} else {

@@ -17,7 +17,6 @@
 package graphql
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -33,8 +32,7 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl"
@@ -169,10 +167,10 @@ func TestGraphQLBlockSerialization(t *testing.T) {
 func TestGraphQLBlockSerializationEIP2718(t *testing.T) {
 	// Account for signing txes
 	var (
-		key, _  = pqcrypto.HexToWallet("f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
-		address = key.GetAddress()
-		funds   = big.NewInt(1000000000000000)
-		dad, _  = common.NewAddressFromString("Q0000000000000000000000000000000000000dad")
+		wallet, _ = wallet.RestoreFromSeedHex("0x010000f29f58aff0b00de2844f7e20bd9eeaacc379150043beeb328335817512b29fbb7184da84a092f842b2a06d72a24a5d28")
+		address   = wallet.GetAddress()
+		funds     = big.NewInt(1000000000000000)
+		dad, _    = common.NewAddressFromString("Q0000000000000000000000000000000000000dad")
 	)
 	stack := createNode(t)
 	defer stack.Close()
@@ -193,7 +191,7 @@ func TestGraphQLBlockSerializationEIP2718(t *testing.T) {
 	signer := types.LatestSigner(genesis.Config)
 	newGQLService(t, stack, genesis, 1, func(i int, gen *core.BlockGen) {
 		gen.SetCoinbase(common.Address{1})
-		tx, _ := types.SignNewTx(key, signer, &types.DynamicFeeTx{
+		tx, _ := types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
 			Nonce:     uint64(0),
 			To:        &dad,
 			Value:     big.NewInt(100),
@@ -201,7 +199,7 @@ func TestGraphQLBlockSerializationEIP2718(t *testing.T) {
 			GasFeeCap: big.NewInt(params.InitialBaseFee),
 		})
 		gen.AddTx(tx)
-		tx, _ = types.SignNewTx(key, signer, &types.DynamicFeeTx{
+		tx, _ = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
 			ChainID:   genesis.Config.ChainID,
 			Nonce:     uint64(1),
 			To:        &dad,
@@ -227,7 +225,7 @@ func TestGraphQLBlockSerializationEIP2718(t *testing.T) {
 	}{
 		{
 			body: `{"query": "{block {number transactions { from { address } to { address } value hash type accessList { address storageKeys } index}}}"}`,
-			want: `{"data":{"block":{"number":"0x1","transactions":[{"from":{"address":"Qd5812f6cf4a0f645aa620cd57319a0ed649dd8f5"},"to":{"address":"Q0000000000000000000000000000000000000dad"},"value":"0x64","hash":"0x3e37b7410457c8cd3023ce1400803f41342f9e4c401816d8705a2c77790418bb","type":"0x2","accessList":[],"index":"0x0"},{"from":{"address":"Qd5812f6cf4a0f645aa620cd57319a0ed649dd8f5"},"to":{"address":"Q0000000000000000000000000000000000000dad"},"value":"0x32","hash":"0x58f21830f3916cd03e7388250ec8e7a54568bb656f9604c6c44f5b3483a769b4","type":"0x2","accessList":[{"address":"Q0000000000000000000000000000000000000dad","storageKeys":["0x0000000000000000000000000000000000000000000000000000000000000000"]}],"index":"0x1"}]}}}`,
+			want: `{"data":{"block":{"number":"0x1","transactions":[{"from":{"address":"Qd5812f6cf4a0f645aa620cd57319a0ed649dd8f5"},"to":{"address":"Q0000000000000000000000000000000000000dad"},"value":"0x64","hash":"0xaccc1bbdcc246afeee7dec4c3dd9b3da84755774a696a6822fb5fe716f14254f","type":"0x2","accessList":[],"index":"0x0"},{"from":{"address":"Qd5812f6cf4a0f645aa620cd57319a0ed649dd8f5"},"to":{"address":"Q0000000000000000000000000000000000000dad"},"value":"0x32","hash":"0xeb6a6e0f5f64894f783b48b6fb1da060df829ca9fa776ff3ab60ae6dcd668ce5","type":"0x2","accessList":[{"address":"Q0000000000000000000000000000000000000dad","storageKeys":["0x0000000000000000000000000000000000000000000000000000000000000000"]}],"index":"0x1"}]}}}`,
 			code: 200,
 		},
 	} {
@@ -268,15 +266,14 @@ func TestGraphQLHTTPOnSamePort_GQLRequest_Unsuccessful(t *testing.T) {
 
 func TestGraphQLConcurrentResolvers(t *testing.T) {
 	var (
-		key, _  = crypto.GenerateMLDSA87Key()
-		addr    = key.GetAddress()
-		dadStr  = "Q0000000000000000000000000000000000000dad"
-		dad, _  = common.NewAddressFromString(dadStr)
-		genesis = &core.Genesis{
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
+		dadStr    = "Q0000000000000000000000000000000000000dad"
+		dad, _    = common.NewAddressFromString(dadStr)
+		genesis   = &core.Genesis{
 			Config:   params.AllBeaconProtocolChanges,
 			GasLimit: 11500000,
 			Alloc: core.GenesisAlloc{
-				addr: {Balance: big.NewInt(params.Quanta)},
+				wallet.GetAddress(): {Balance: big.NewInt(params.Quanta)},
 				dad: {
 					// LOG0(0, 0), LOG0(0, 0), RETURN(0, 0)
 					Code:    common.Hex2Bytes("60006000a060006000a060006000f3"),
@@ -292,11 +289,11 @@ func TestGraphQLConcurrentResolvers(t *testing.T) {
 
 	var tx *types.Transaction
 	handler, chain := newGQLService(t, stack, genesis, 1, func(i int, gen *core.BlockGen) {
-		tx, _ = types.SignNewTx(key, signer, &types.DynamicFeeTx{To: &dad, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
+		tx, _ = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{To: &dad, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
 		gen.AddTx(tx)
-		tx, _ = types.SignNewTx(key, signer, &types.DynamicFeeTx{To: &dad, Nonce: 1, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
+		tx, _ = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{To: &dad, Nonce: 1, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
 		gen.AddTx(tx)
-		tx, _ = types.SignNewTx(key, signer, &types.DynamicFeeTx{To: &dad, Nonce: 2, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
+		tx, _ = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{To: &dad, Nonce: 2, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
 		gen.AddTx(tx)
 	})
 	// start node
@@ -345,7 +342,7 @@ func TestGraphQLConcurrentResolvers(t *testing.T) {
 			want: `{"block":{"account":{"balance":"0x0","transactionCount":"0x0","code":"0x"}}}`,
 		},
 	} {
-		res := handler.Schema.Exec(context.Background(), tt.body, "", map[string]interface{}{})
+		res := handler.Schema.Exec(t.Context(), tt.body, "", map[string]any{})
 		if res.Errors != nil {
 			t.Fatalf("failed to execute query for testcase #%d: %v", i, res.Errors)
 		}
@@ -361,14 +358,13 @@ func TestGraphQLConcurrentResolvers(t *testing.T) {
 
 func TestWithdrawals(t *testing.T) {
 	var (
-		key, _ = crypto.GenerateMLDSA87Key()
-		addr   = key.GetAddress()
+		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
 
 		genesis = &core.Genesis{
 			Config:   params.AllBeaconProtocolChanges,
 			GasLimit: 11500000,
 			Alloc: core.GenesisAlloc{
-				addr: {Balance: big.NewInt(params.Quanta)},
+				wallet.GetAddress(): {Balance: big.NewInt(params.Quanta)},
 			},
 		}
 		signer = types.LatestSigner(genesis.Config)
@@ -377,7 +373,7 @@ func TestWithdrawals(t *testing.T) {
 	defer stack.Close()
 
 	handler, _ := newGQLService(t, stack, genesis, 1, func(i int, gen *core.BlockGen) {
-		tx, _ := types.SignNewTx(key, signer, &types.DynamicFeeTx{To: &common.Address{}, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
+		tx, _ := types.SignNewTx(wallet, signer, &types.DynamicFeeTx{To: &common.Address{}, Gas: 100000, GasFeeCap: big.NewInt(params.InitialBaseFee)})
 		gen.AddTx(tx)
 		gen.AddWithdrawal(&types.Withdrawal{
 			Validator: 5,
@@ -403,7 +399,7 @@ func TestWithdrawals(t *testing.T) {
 			want: `{"block":{"withdrawalsRoot":"0x8418fc1a48818928f6692f148e9b10e99a88edc093b095cb8ca97950284b553d","withdrawals":[{"validator":"0x5","amount":"0xa"}]}}`,
 		},
 	} {
-		res := handler.Schema.Exec(context.Background(), tt.body, "", map[string]interface{}{})
+		res := handler.Schema.Exec(t.Context(), tt.body, "", map[string]any{})
 		if res.Errors != nil {
 			t.Fatalf("failed to execute query for testcase #%d: %v", i, res.Errors)
 		}

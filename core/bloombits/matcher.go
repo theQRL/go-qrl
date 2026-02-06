@@ -39,7 +39,7 @@ func calcBloomIndexes(b []byte) bloomIndexes {
 	b = crypto.Keccak256(b)
 
 	var idxs bloomIndexes
-	for i := 0; i < len(idxs); i++ {
+	for i := range idxs {
 		idxs[i] = (uint(b[2*i])<<8)&2047 + uint(b[2*i+1])
 	}
 	return idxs
@@ -163,9 +163,7 @@ func (m *Matcher) Start(ctx context.Context, begin, end uint64, results chan uin
 	sink := m.run(begin, end, cap(results), session)
 
 	// Read the output from the result sink and deliver to the user
-	session.pend.Add(1)
-	go func() {
-		defer session.pend.Done()
+	session.pend.Go(func() {
 		defer close(results)
 
 		for {
@@ -181,14 +179,8 @@ func (m *Matcher) Start(ctx context.Context, begin, end uint64, results chan uin
 				// Calculate the first and last blocks of the section
 				sectionStart := res.section * m.sectionSize
 
-				first := sectionStart
-				if begin > first {
-					first = begin
-				}
-				last := sectionStart + m.sectionSize - 1
-				if end < last {
-					last = end
-				}
+				first := max(begin, sectionStart)
+				last := min(end, sectionStart+m.sectionSize-1)
 				// Iterate over all the blocks in the section and return the matching ones
 				for i := first; i <= last; i++ {
 					// Skip the entire byte if no matches are found inside (and we're processing an entire byte!)
@@ -210,7 +202,7 @@ func (m *Matcher) Start(ctx context.Context, begin, end uint64, results chan uin
 				}
 			}
 		}
-	}()
+	})
 	return session, nil
 }
 
@@ -225,9 +217,7 @@ func (m *Matcher) run(begin, end uint64, buffer int, session *MatcherSession) ch
 	// Create the source channel and feed section indexes into
 	source := make(chan *partialMatches, buffer)
 
-	session.pend.Add(1)
-	go func() {
-		defer session.pend.Done()
+	session.pend.Go(func() {
 		defer close(source)
 
 		for i := begin / m.sectionSize; i <= end/m.sectionSize; i++ {
@@ -237,7 +227,7 @@ func (m *Matcher) run(begin, end uint64, buffer int, session *MatcherSession) ch
 			case source <- &partialMatches{i, bytes.Repeat([]byte{0xff}, int(m.sectionSize/8))}:
 			}
 		}
-	}()
+	})
 	// Assemble the daisy-chained filtering pipeline
 	next := source
 	dist := make(chan *request, buffer)

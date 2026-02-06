@@ -1,0 +1,13 @@
+// -*- mode: go -*-
+
+package test
+
+import (
+       qrl1 "github.com/theQRL/go-zond/qrl"
+       qrl2 "github.com/theQRL/go-zond/qrl/protocols/qrl"
+)
+
+type Test struct {
+    A qrl1.MinerAPI
+    B qrl2.GetReceiptsPacket
+}

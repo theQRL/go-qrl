@@ -28,7 +28,7 @@ import (
 	"github.com/theQRL/go-zond/core/txpool"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrl/downloader"
@@ -36,11 +36,8 @@ import (
 )
 
 var (
-	// testKey is a private key to use for funding a tester account.
-	testKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-
-	// testAddr is the QRL address of the tester account.
-	testAddr = testKey.GetAddress()
+	// testWallet is a wallet to use for funding a tester account.
+	testWallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 )
 
 // testTxPool is a mock transaction pool that blindly accepts all transactions.
@@ -147,7 +144,7 @@ func newTestHandlerWithBlocks(blocks int) *testHandler {
 	db := rawdb.NewMemoryDatabase()
 	gspec := &core.Genesis{
 		Config: params.TestChainConfig,
-		Alloc:  core.GenesisAlloc{testAddr: {Balance: big.NewInt(1000000)}},
+		Alloc:  core.GenesisAlloc{testWallet.GetAddress(): {Balance: big.NewInt(1000000)}},
 	}
 	chain, _ := core.NewBlockChain(db, nil, gspec, beacon.NewFaker(), vm.Config{}, nil)
 

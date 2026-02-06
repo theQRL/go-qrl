@@ -125,13 +125,13 @@ func (d *Database) onWriteStallEnd() {
 // TODO(karalabe): Remove when Pebble sets this as the default.
 type panicLogger struct{}
 
-func (l panicLogger) Infof(format string, args ...interface{}) {
+func (l panicLogger) Infof(format string, args ...any) {
 }
 
-func (l panicLogger) Errorf(format string, args ...interface{}) {
+func (l panicLogger) Errorf(format string, args ...any) {
 }
 
-func (l panicLogger) Fatalf(format string, args ...interface{}) {
+func (l panicLogger) Fatalf(format string, args ...any) {
 	panic(fmt.Errorf("fatal: "+format, args...))
 }
 
@@ -342,55 +342,6 @@ func (d *Database) NewBatchWithSize(size int) qrldb.Batch {
 		b:  d.db.NewBatchWithSize(size),
 		db: d,
 	}
-}
-
-// snapshot wraps a pebble snapshot for implementing the Snapshot interface.
-type snapshot struct {
-	db *pebble.Snapshot
-}
-
-// NewSnapshot creates a database snapshot based on the current state.
-// The created snapshot will not be affected by all following mutations
-// happened on the database.
-// Note don't forget to release the snapshot once it's used up, otherwise
-// the stale data will never be cleaned up by the underlying compactor.
-func (d *Database) NewSnapshot() (qrldb.Snapshot, error) {
-	snap := d.db.NewSnapshot()
-	return &snapshot{db: snap}, nil
-}
-
-// Has retrieves if a key is present in the snapshot backing by a key-value
-// data store.
-func (snap *snapshot) Has(key []byte) (bool, error) {
-	_, closer, err := snap.db.Get(key)
-	if err != nil {
-		if err != pebble.ErrNotFound {
-			return false, err
-		} else {
-			return false, nil
-		}
-	}
-	closer.Close()
-	return true, nil
-}
-
-// Get retrieves the given key if it's present in the snapshot backing by
-// key-value data store.
-func (snap *snapshot) Get(key []byte) ([]byte, error) {
-	dat, closer, err := snap.db.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	ret := make([]byte, len(dat))
-	copy(ret, dat)
-	closer.Close()
-	return ret, nil
-}
-
-// Release releases associated resources. Release should always succeed and can
-// be called multiple times without causing error.
-func (snap *snapshot) Release() {
-	snap.db.Close()
 }
 
 // upperBound returns the upper bound for the given prefix

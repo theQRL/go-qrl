@@ -31,7 +31,7 @@ import (
 	"github.com/theQRL/go-zond/core/txpool/legacypool"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/p2p"
 	"github.com/theQRL/go-zond/p2p/qnode"
 	"github.com/theQRL/go-zond/params"
@@ -39,11 +39,11 @@ import (
 )
 
 var (
-	// testKey is a private key to use for funding a tester account.
-	testKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	// testWallet is a wallet to use for funding a tester account.
+	testWallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 
 	// testAddr is the QRL address of the tester account.
-	testAddr = testKey.GetAddress()
+	testAddr = testWallet.GetAddress()
 )
 
 // testBackend is a mock implementation of the live QRL message handler. Its
@@ -110,7 +110,7 @@ func (b *testBackend) RunPeer(peer *Peer, handler Handler) error {
 	// is omitted and we will just give control back to the handler.
 	return handler(peer)
 }
-func (b *testBackend) PeerInfo(qnode.ID) interface{} { panic("not implemented") }
+func (b *testBackend) PeerInfo(qnode.ID) any { panic("not implemented") }
 
 func (b *testBackend) AcceptTxs() bool {
 	panic("data processing tests should be done in the handler package")
@@ -137,7 +137,7 @@ func testGetBlockHeaders(t *testing.T, protocol uint) {
 		unknown[i] = byte(i)
 	}
 	getHashes := func(from, limit uint64) (hashes []common.Hash) {
-		for i := uint64(0); i < limit; i++ {
+		for i := range limit {
 			hashes = append(hashes, backend.chain.GetCanonicalHash(from-1-i))
 		}
 		return hashes
@@ -405,10 +405,10 @@ func testGetBlockReceipts(t *testing.T, protocol uint) {
 	t.Parallel()
 
 	// Define three accounts to simulate transactions with
-	acc1Key, _ := pqcrypto.HexToWallet("8a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a")
-	acc2Key, _ := pqcrypto.HexToWallet("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
-	acc1Addr := acc1Key.GetAddress()
-	acc2Addr := acc2Key.GetAddress()
+	acc1Wallet, _ := wallet.RestoreFromSeedHex("0100008a1f9a8f95be41cd7ccb6168179afb4504aefe388d1e14474d32c45c72ce7b7a00000000000000000000000000000000")
+	acc2Wallet, _ := wallet.RestoreFromSeedHex("01000049a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee00000000000000000000000000000000")
+	acc1Addr := acc1Wallet.GetAddress()
+	acc2Addr := acc2Wallet.GetAddress()
 
 	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
 	// Create a chain generator with some simple transactions (blatantly stolen from @fjl/chain_markets_test)
@@ -426,7 +426,7 @@ func testGetBlockReceipts(t *testing.T, protocol uint) {
 				GasFeeCap: block.BaseFee(),
 				Data:      nil,
 			})
-			signedTx, _ := types.SignTx(tx, signer, testKey)
+			signedTx, _ := types.SignTx(tx, signer, testWallet)
 			block.AddTx(signedTx)
 		case 1:
 			// In block 2, the test bank sends some more quanta to account #1.
@@ -447,8 +447,8 @@ func testGetBlockReceipts(t *testing.T, protocol uint) {
 				GasFeeCap: block.BaseFee(),
 				Data:      nil,
 			})
-			signedTx1, _ := types.SignTx(tx1, signer, testKey)
-			signedTx2, _ := types.SignTx(tx2, signer, acc1Key)
+			signedTx1, _ := types.SignTx(tx1, signer, testWallet)
+			signedTx2, _ := types.SignTx(tx2, signer, acc1Wallet)
 			block.AddTx(signedTx1)
 			block.AddTx(signedTx2)
 		case 2:

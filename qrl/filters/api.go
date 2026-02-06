@@ -273,7 +273,6 @@ func (api *FilterAPI) Logs(ctx context.Context, crit FilterCriteria) (*rpc.Subsc
 			select {
 			case logs := <-matchedLogs:
 				for _, log := range logs {
-					log := log
 					notifier.Notify(rpcSub.ID, &log)
 				}
 			case <-rpcSub.Err(): // client send an unsubscribe request
@@ -421,7 +420,7 @@ func (api *FilterAPI) GetFilterLogs(ctx context.Context, id rpc.ID) ([]*types.Lo
 //
 // For pending transaction and block filters the result is []common.Hash.
 // (pending)Log filters return []Log.
-func (api *FilterAPI) GetFilterChanges(id rpc.ID) (interface{}, error) {
+func (api *FilterAPI) GetFilterChanges(id rpc.ID) (any, error) {
 	api.filtersMu.Lock()
 	defer api.filtersMu.Unlock()
 
@@ -464,7 +463,7 @@ func (api *FilterAPI) GetFilterChanges(id rpc.ID) (interface{}, error) {
 		}
 	}
 
-	return []interface{}{}, errFilterNotFound
+	return []any{}, errFilterNotFound
 }
 
 // returnHashes is a helper that will return an empty hash array case the given hash array is nil,
@@ -491,8 +490,8 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 		BlockHash *common.Hash     `json:"blockHash"`
 		FromBlock *rpc.BlockNumber `json:"fromBlock"`
 		ToBlock   *rpc.BlockNumber `json:"toBlock"`
-		Addresses interface{}      `json:"address"`
-		Topics    []interface{}    `json:"topics"`
+		Addresses any              `json:"address"`
+		Topics    []any            `json:"topics"`
 	}
 
 	var raw input
@@ -521,7 +520,7 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 	if raw.Addresses != nil {
 		// raw.Address can contain a single address or an array of addresses
 		switch rawAddr := raw.Addresses.(type) {
-		case []interface{}:
+		case []any:
 			for i, addr := range rawAddr {
 				if strAddr, ok := addr.(string); ok {
 					addr, err := decodeAddress(strAddr)
@@ -564,7 +563,7 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 				}
 				args.Topics[i] = []common.Hash{top}
 
-			case []interface{}:
+			case []any:
 				// or case e.g. [null, "topic0", "topic1"]
 				if len(topic) > maxSubTopics {
 					return errExceedMaxTopics

@@ -207,8 +207,6 @@ func init() {
 		DisableReturnDataFlag,
 	}
 	app.Commands = []*cli.Command{
-		compileCommand,
-		disasmCommand,
 		runCommand,
 		blockTestCommand,
 		stateTestCommand,

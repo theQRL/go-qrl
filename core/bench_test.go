@@ -20,14 +20,13 @@ import (
 	"math/big"
 	"testing"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/consensus/beacon"
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/qrldb"
 )
@@ -65,9 +64,9 @@ func BenchmarkInsertChain_ring1000_diskdb(b *testing.B) {
 
 var (
 	// This is the content of the genesis block used by the benchmarks.
-	benchRootKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	benchRootAddr   = common.Address(benchRootKey.GetAddress())
-	benchRootFunds  = math.BigPow(2, 200)
+	benchRootWallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+	benchRootAddr      = common.Address(benchRootWallet.GetAddress())
+	benchRootFunds     = math.BigPow(2, 200)
 )
 
 // genValueTx returns a block generator that includes a single
@@ -83,7 +82,7 @@ func genValueTx(nbytes int) func(int, *BlockGen) {
 		if gen.header.BaseFee != nil {
 			baseFee = gen.header.BaseFee
 		}
-		tx, _ := types.SignNewTx(benchRootKey, signer, &types.DynamicFeeTx{
+		tx, _ := types.SignNewTx(benchRootWallet, signer, &types.DynamicFeeTx{
 			Nonce:     gen.TxNonce(benchRootAddr),
 			To:        &toaddr,
 			Value:     big.NewInt(1),
@@ -96,16 +95,16 @@ func genValueTx(nbytes int) func(int, *BlockGen) {
 }
 
 var (
-	ringKeys  = make([]*walletmldsa87.Wallet, 1000)
-	ringAddrs = make([]common.Address, len(ringKeys))
+	ringWallets = make([]wallet.Wallet, 1000)
+	ringAddrs   = make([]common.Address, len(ringWallets))
 )
 
 func init() {
-	ringKeys[0] = benchRootKey
+	ringWallets[0] = benchRootWallet
 	ringAddrs[0] = benchRootAddr
-	for i := 1; i < len(ringKeys); i++ {
-		ringKeys[i], _ = pqcrypto.GenerateWalletKey()
-		ringAddrs[i] = ringKeys[i].GetAddress()
+	for i := 1; i < len(ringWallets); i++ {
+		ringWallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
+		ringAddrs[i] = ringWallets[i].GetAddress()
 	}
 }
 
@@ -135,7 +134,7 @@ func genTxRing(naccounts int) func(int, *BlockGen) {
 			if availableFunds.Cmp(big.NewInt(1)) < 0 {
 				panic("not enough funds")
 			}
-			tx, err := types.SignNewTx(ringKeys[from], signer,
+			tx, err := types.SignNewTx(ringWallets[from], signer,
 				&types.DynamicFeeTx{
 					Nonce:     gen.TxNonce(ringAddrs[from]),
 					To:        &ringAddrs[to],
@@ -227,7 +226,7 @@ func BenchmarkChainWrite_full_500k(b *testing.B) {
 // into a database.
 func makeChainForBench(db qrldb.Database, full bool, count uint64) {
 	var hash common.Hash
-	for n := uint64(0); n < count; n++ {
+	for n := range count {
 		header := &types.Header{
 			Coinbase:    common.Address{},
 			Number:      big.NewInt(int64(n)),
@@ -255,7 +254,7 @@ func makeChainForBench(db qrldb.Database, full bool, count uint64) {
 }
 
 func benchWriteChain(b *testing.B, full bool, count uint64) {
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		dir := b.TempDir()
 		db, err := rawdb.NewLevelDBDatabase(dir, 128, 1024, "", false)
 		if err != nil {
@@ -279,9 +278,8 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 	cacheConfig.TrieDirtyDisabled = true
 
 	b.ReportAllocs()
-	b.ResetTimer()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		db, err := rawdb.NewLevelDBDatabase(dir, 128, 1024, "", false)
 		if err != nil {
 			b.Fatalf("error opening database at %v: %v", dir, err)
@@ -291,7 +289,7 @@ func benchReadChain(b *testing.B, full bool, count uint64) {
 			b.Fatalf("error creating chain: %v", err)
 		}
 
-		for n := uint64(0); n < count; n++ {
+		for n := range count {
 			header := chain.GetHeaderByNumber(n)
 			if full {
 				hash := header.Hash()

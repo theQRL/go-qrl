@@ -46,7 +46,7 @@ func getCompletions(vm *goja.Runtime, line string) (results []string) {
 	// Find the right-most fully named object in the line. e.g. if line = "x.y.z"
 	// and "x.y" is an object, obj will reference "x.y".
 	obj := vm.GlobalObject()
-	for i := 0; i < len(parts)-1; i++ {
+	for i := range len(parts) - 1 {
 		if numerical.MatchString(parts[i]) {
 			return nil
 		}

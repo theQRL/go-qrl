@@ -20,6 +20,7 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"errors"
+	"maps"
 	"reflect"
 	"testing"
 	"time"
@@ -411,7 +412,7 @@ func makeTestTree(domain string, nodes []*qnode.Node, links []string) (*Tree, st
 // testKeys creates deterministic private keys for testing.
 func testKeys(n int) []*ecdsa.PrivateKey {
 	keys := make([]*ecdsa.PrivateKey, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		key, err := crypto.GenerateKey()
 		if err != nil {
 			panic("can't generate key: " + err.Error())
@@ -447,15 +448,11 @@ func newMapResolver(maps ...map[string]string) mapResolver {
 }
 
 func (mr mapResolver) clear() {
-	for k := range mr {
-		delete(mr, k)
-	}
+	clear(mr)
 }
 
 func (mr mapResolver) add(m map[string]string) {
-	for k, v := range m {
-		mr[k] = v
-	}
+	maps.Copy(mr, m)
 }
 
 func (mr mapResolver) LookupTXT(ctx context.Context, name string) ([]string, error) {

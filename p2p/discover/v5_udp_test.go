@@ -43,7 +43,7 @@ func TestUDPv5_lookupE2E(t *testing.T) {
 
 	const N = 5
 	var nodes []*UDPv5
-	for i := 0; i < N; i++ {
+	for range N {
 		var cfg Config
 		if len(nodes) > 0 {
 			bn := nodes[0].Self()
@@ -79,12 +79,7 @@ func startLocalhostV5(t *testing.T, cfg Config) *UDPv5 {
 
 	// Prefix logs with node ID.
 	lprefix := fmt.Sprintf("(%s)", ln.ID().TerminalString())
-	lfmt := log.TerminalFormat(false)
-	cfg.Log = testlog.Logger(t, log.LvlTrace)
-	cfg.Log.SetHandler(log.FuncHandler(func(r *log.Record) error {
-		t.Logf("%s %s", lprefix, lfmt.Format(r))
-		return nil
-	}))
+	cfg.Log = testlog.Logger(t, log.LevelTrace).With("node-id", lprefix)
 
 	// Listen.
 	socket, err := net.ListenUDP("udp4", &net.UDPAddr{IP: net.IP{127, 0, 0, 1}})
@@ -815,7 +810,7 @@ func (test *udpV5Test) getNode(key *ecdsa.PrivateKey, addr *net.UDPAddr) *qnode.
 // waitPacketOut waits for the next output packet and handles it using the given 'validate'
 // function. The function must be of type func (X, *net.UDPAddr, v5wire.Nonce) where X is
 // assignable to packetV5.
-func (test *udpV5Test) waitPacketOut(validate interface{}) (closed bool) {
+func (test *udpV5Test) waitPacketOut(validate any) (closed bool) {
 	test.t.Helper()
 
 	fn := reflect.ValueOf(validate)

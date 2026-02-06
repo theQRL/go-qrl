@@ -27,13 +27,13 @@ import (
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/internal/utesting"
 	"github.com/theQRL/go-zond/params"
 )
 
 // var faucetAddr, _ = common.NewAddressFromString("Q71562b71999873DB5b286dF957af199Ec94617F7")
-var faucetKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+var faucetKey, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 
 func (s *Suite) sendSuccessfulTxs(t *utesting.T) error {
 	tests := []*types.Transaction{
@@ -226,7 +226,7 @@ func sendMultipleSuccessfulTxs(t *utesting.T, s *Suite, txs []*types.Transaction
 	// all txs should be announced within a couple announcements.
 	recvHashes := make([]common.Hash, 0)
 
-	for i := 0; i < 20; i++ {
+	for i := range 20 {
 		switch msg := recvConn.readAndServe(s.chain, timeout).(type) {
 		case *Transactions:
 			for _, tx := range *msg {
@@ -364,7 +364,7 @@ func generateTxs(s *Suite, numTxs int) (map[common.Hash]common.Hash, []*types.Tr
 
 	nonce = nonce + 1
 	// generate txs
-	for i := 0; i < numTxs; i++ {
+	for i := range numTxs {
 		tx := generateTx(s.chain.chainConfig, nonce, gas)
 		if tx == nil {
 			return nil, nil, errors.New("failed to get the next transaction")

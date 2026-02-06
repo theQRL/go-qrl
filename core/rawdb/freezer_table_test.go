@@ -56,7 +56,7 @@ func TestFreezerBasics(t *testing.T) {
 	//db[1] =  010101010101010101010101010101
 	//db[2] =  020202020202020202020202020202
 
-	for y := 0; y < 255; y++ {
+	for y := range 255 {
 		exp := getChunk(15, y)
 		got, err := f.Retrieve(uint64(y))
 		if err != nil {
@@ -91,7 +91,7 @@ func TestFreezerBasicsClosing(t *testing.T) {
 
 	// Write 15 bytes 255 times, results in 85 files.
 	// In-between writes, the table is closed and re-opened.
-	for x := 0; x < 255; x++ {
+	for x := range 255 {
 		data := getChunk(15, x)
 		batch := f.newBatch()
 		require.NoError(t, batch.AppendRaw(uint64(x), data))
@@ -105,7 +105,7 @@ func TestFreezerBasicsClosing(t *testing.T) {
 	}
 	defer f.Close()
 
-	for y := 0; y < 255; y++ {
+	for y := range 255 {
 		exp := getChunk(15, y)
 		got, err := f.Retrieve(uint64(y))
 		if err != nil {
@@ -498,7 +498,7 @@ func TestFreezerReadAndTruncate(t *testing.T) {
 			f.Close()
 			t.Fatalf("expected %d items, got %d", 0, f.items.Load())
 		}
-		for y := byte(0); y < 30; y++ {
+		for y := range byte(30) {
 			f.Retrieve(uint64(y))
 		}
 
@@ -507,7 +507,7 @@ func TestFreezerReadAndTruncate(t *testing.T) {
 
 		// Write the data again
 		batch := f.newBatch()
-		for x := 0; x < 30; x++ {
+		for x := range 30 {
 			require.NoError(t, batch.AppendRaw(uint64(x), getChunk(15, ^x)))
 		}
 		require.NoError(t, batch.commit())
@@ -546,7 +546,7 @@ func TestFreezerOffset(t *testing.T) {
 	// Now crop it.
 	{
 		// delete files 0 and 1
-		for i := 0; i < 2; i++ {
+		for i := range 2 {
 			p := filepath.Join(os.TempDir(), fmt.Sprintf("%v.%04d.rdat", fname, i))
 			if err := os.Remove(p); err != nil {
 				t.Fatal(err)
@@ -875,7 +875,7 @@ func writeChunks(t *testing.T, ft *freezerTable, n int, length int) {
 	t.Helper()
 
 	batch := ft.newBatch()
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if err := batch.AppendRaw(uint64(i), getChunk(length, i)); err != nil {
 			t.Fatalf("AppendRaw(%d, ...) returned error: %v", i, err)
 		}
@@ -1152,7 +1152,7 @@ const (
 
 func getVals(first uint64, n int) [][]byte {
 	var ret [][]byte
-	for i := 0; i < n; i++ {
+	for i := range n {
 		val := make([]byte, 8)
 		binary.BigEndian.PutUint64(val, first+uint64(i))
 		ret = append(ret, val)
@@ -1186,7 +1186,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 				first = items[len(items)-1] + 1
 			}
 			var ret []uint64
-			for i := 0; i < n; i++ {
+			for i := range n {
 				ret = append(ret, first+uint64(i))
 			}
 			items = append(items, ret...)
@@ -1195,7 +1195,7 @@ func (randTest) Generate(r *rand.Rand, size int) reflect.Value {
 	)
 
 	var steps randTest
-	for i := 0; i < size; i++ {
+	for range size {
 		step := randTestStep{op: r.Intn(opMax)}
 		switch step.op {
 		case opReload, opCheckAll:

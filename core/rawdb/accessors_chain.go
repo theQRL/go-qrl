@@ -659,7 +659,7 @@ func deriveLogFields(receipts []*receiptLogs, hash common.Hash, number uint64, t
 	if len(txs) != len(receipts) {
 		return errors.New("transaction and receipt count mismatch")
 	}
-	for i := 0; i < len(receipts); i++ {
+	for i := range receipts {
 		txHash := txs[i].Hash()
 		// The derived log fields can simply be set from the block and transaction
 		for j := 0; j < len(receipts[i].Logs); j++ {

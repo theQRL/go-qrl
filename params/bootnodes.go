@@ -40,7 +40,7 @@ var V5Bootnodes = []string{
 }
 
 // TODO(now.youtrack.cloud/issue/TGZ-21)
-const dnsPrefix = "qnrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@"
+// const dnsPrefix = "qnrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@"
 
 // TODO(now.youtrack.cloud/issue/TGZ-21)
 // KnownDNSNetwork returns the address of a public DNS-based node list for the given

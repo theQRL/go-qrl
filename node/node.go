@@ -25,6 +25,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"sync"
 
@@ -128,13 +129,12 @@ func New(conf *Config) (*Node, error) {
 	node.keyDirTemp = isEphem
 	// Creates an empty AccountManager with no backends. Callers (e.g. cmd/gzond)
 	// are required to add the backends later on.
-	node.accman = accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: conf.InsecureUnlockAllowed})
+	node.accman = accounts.NewManager()
 
 	// Initialize the p2p server. This creates the node key and discovery databases.
 	node.server.Config.PrivateKey = node.config.NodeKey()
 	node.server.Config.Name = node.config.NodeName()
 	node.server.Config.Logger = node.log
-	node.config.checkLegacyFiles()
 	if node.server.Config.NodeDatabase == "" {
 		node.server.Config.NodeDatabase = node.config.NodeDB()
 	}
@@ -278,16 +278,6 @@ func (n *Node) openEndpoints() error {
 	return err
 }
 
-// containsLifecycle checks if 'lfs' contains 'l'.
-func containsLifecycle(lfs []Lifecycle, l Lifecycle) bool {
-	for _, obj := range lfs {
-		if obj == l {
-			return true
-		}
-	}
-	return false
-}
-
 // stopServices terminates running services, RPC and p2p networking.
 // It is the inverse of Start.
 func (n *Node) stopServices(running []Lifecycle) error {
@@ -339,15 +329,9 @@ func (n *Node) closeDataDir() {
 	}
 }
 
-// obtainJWTSecret loads the jwt-secret, either from the provided config,
-// or from the default location. If neither of those are present, it generates
-// a new secret and stores to the default location.
-func (n *Node) obtainJWTSecret(cliParam string) ([]byte, error) {
-	fileName := cliParam
-	if len(fileName) == 0 {
-		// no path provided, use default
-		fileName = n.ResolvePath(datadirJWTKey)
-	}
+// ObtainJWTSecret loads the jwt-secret from the provided config. If the file is not
+// present, it generates a new secret and stores to the given location.
+func ObtainJWTSecret(fileName string) ([]byte, error) {
 	// try reading from file
 	if data, err := os.ReadFile(fileName); err == nil {
 		jwtSecret := common.FromHex(strings.TrimSpace(string(data)))
@@ -373,19 +357,29 @@ func (n *Node) obtainJWTSecret(cliParam string) ([]byte, error) {
 	return jwtSecret, nil
 }
 
+// obtainJWTSecret loads the jwt-secret, either from the provided config,
+// or from the default location. If neither of those are present, it generates
+// a new secret and stores to the default location.
+func (n *Node) obtainJWTSecret(cliParam string) ([]byte, error) {
+	fileName := cliParam
+	if len(fileName) == 0 {
+		// no path provided, use default
+		fileName = n.ResolvePath(datadirJWTKey)
+	}
+	return ObtainJWTSecret(fileName)
+}
+
 // startRPC is a helper method to configure all the various RPC endpoints during node
 // startup. It's not meant to be called at any time afterwards as it makes certain
 // assumptions about the state of the node.
 func (n *Node) startRPC() error {
-	var apis []rpc.API
-	apis = append(apis, n.rpcAPIs...)
-	if err := n.startInProc(apis); err != nil {
+	if err := n.startInProc(n.rpcAPIs); err != nil {
 		return err
 	}
 
 	// Configure IPC.
 	if n.ipc.endpoint != "" {
-		if err := n.ipc.start(apis); err != nil {
+		if err := n.ipc.start(n.rpcAPIs); err != nil {
 			return err
 		}
 	}
@@ -443,14 +437,16 @@ func (n *Node) startRPC() error {
 			jwtSecret:              secret,
 			batchItemLimit:         engineAPIBatchItemLimit,
 			batchResponseSizeLimit: engineAPIBatchResponseSizeLimit,
+			httpBodyLimit:          engineAPIBodyLimit,
 		}
-		if err := server.enableRPC(allAPIs, httpConfig{
+		err := server.enableRPC(allAPIs, httpConfig{
 			CorsAllowedOrigins: DefaultAuthCors,
 			Vhosts:             n.config.AuthVirtualHosts,
 			Modules:            DefaultAuthModules,
 			prefix:             DefaultAuthPrefix,
 			rpcEndpointConfig:  sharedConfig,
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 		servers = append(servers, server)
@@ -553,7 +549,7 @@ func (n *Node) RegisterLifecycle(lifecycle Lifecycle) {
 	if n.state != initializingState {
 		panic("can't register lifecycle on running/stopped node")
 	}
-	if containsLifecycle(n.lifecycles, lifecycle) {
+	if slices.Contains(n.lifecycles, lifecycle) {
 		panic(fmt.Sprintf("attempt to register lifecycle %T more than once", lifecycle))
 	}
 	n.lifecycles = append(n.lifecycles, lifecycle)

@@ -535,12 +535,11 @@ func (d *Downloader) spawnSync(fetchers []func() error) error {
 	errc := make(chan error, len(fetchers))
 	d.cancelWg.Add(len(fetchers))
 	for _, fn := range fetchers {
-		fn := fn
 		go func() { defer d.cancelWg.Done(); errc <- fn() }()
 	}
 	// Wait for the first error, then terminate the others.
 	var err error
-	for i := 0; i < len(fetchers); i++ {
+	for i := range fetchers {
 		if i == len(fetchers)-1 {
 			// Close the queue when all fetchers have exited.
 			// This will cause the block processor to end when
@@ -663,10 +662,7 @@ func (d *Downloader) processHeaders(origin uint64) error {
 				default:
 				}
 				// Select the next chunk of headers to import
-				limit := maxHeadersProcess
-				if limit > len(headers) {
-					limit = len(headers)
-				}
+				limit := min(maxHeadersProcess, len(headers))
 				chunkHeaders := headers[:limit]
 				chunkHashes := hashes[:limit]
 

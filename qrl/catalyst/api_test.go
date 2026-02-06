@@ -18,7 +18,6 @@ package catalyst
 
 import (
 	"bytes"
-	"context"
 	crand "crypto/rand"
 	"fmt"
 	"math/big"
@@ -35,7 +34,7 @@ import (
 	"github.com/theQRL/go-zond/core"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/miner"
 	"github.com/theQRL/go-zond/node"
 	"github.com/theQRL/go-zond/p2p"
@@ -48,11 +47,11 @@ import (
 )
 
 var (
-	// testKey is a private key to use for funding a tester account.
-	testKey, _ = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	// testWallet is a private key to use for funding a tester account.
+	testWallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 
 	// testAddr is the QRL address of the tester account.
-	testAddr = common.Address(testKey.GetAddress())
+	testAddr = common.Address(testWallet.GetAddress())
 
 	testBalance = big.NewInt(2e18)
 )
@@ -81,7 +80,7 @@ func generateChain(n int) (*core.Genesis, []*types.Block) {
 			Gas:       params.TxGas,
 			GasFeeCap: big.NewInt(8750000000),
 			GasTipCap: big.NewInt(params.Shor),
-			Data:      nil}), types.LatestSigner(&config), testKey)
+			Data:      nil}), types.LatestSigner(&config), testWallet)
 		g.AddTx(tx)
 		testNonce++
 	}
@@ -98,7 +97,7 @@ func TestAssembleBlock(t *testing.T) {
 	api := NewConsensusAPI(qrlservice)
 	signer := types.NewShanghaiSigner(qrlservice.BlockChain().Config().ChainID)
 	to := blocks[9].Coinbase()
-	tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(10), To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testKey)
+	tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(10), To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testWallet)
 	if err != nil {
 		t.Fatalf("error signing transaction, err=%v", err)
 	}
@@ -208,10 +207,10 @@ func checkLogEvents(t *testing.T, logsCh <-chan []*types.Log, rmLogsCh <-chan co
 		t.Fatalf("wrong number of removed log events: got %d, want %d", len(rmLogsCh), wantRemoved)
 	}
 	// Drain events.
-	for i := 0; i < len(logsCh); i++ {
+	for range len(logsCh) {
 		<-logsCh
 	}
-	for i := 0; i < len(rmLogsCh); i++ {
+	for range len(rmLogsCh) {
 		<-rmLogsCh
 	}
 }
@@ -276,7 +275,7 @@ func TestNewBlock(t *testing.T) {
 	qrlservice.BlockChain().SubscribeLogsEvent(newLogCh)
 	qrlservice.BlockChain().SubscribeRemovedLogsEvent(rmLogsCh)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root())
 		nonce := statedb.GetNonce(testAddr)
 		signer := types.LatestSigner(qrlservice.BlockChain().Config())
@@ -287,7 +286,7 @@ func TestNewBlock(t *testing.T) {
 			GasFeeCap: big.NewInt(2 * params.InitialBaseFee),
 			Data:      logCode,
 		})
-		signedTx, _ := types.SignTx(tx, signer, testKey)
+		signedTx, _ := types.SignTx(tx, signer, testWallet)
 		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, false)
 
 		execData, err := assembleWithTransactions(api, parent.Hash(), &engine.PayloadAttributes{
@@ -331,7 +330,7 @@ func TestNewBlock(t *testing.T) {
 		head = qrlservice.BlockChain().CurrentBlock().Number.Uint64()
 	)
 	parent = blocks[len(blocks)-1]
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		execData, err := assembleBlock(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 6,
 		})
@@ -381,7 +380,7 @@ func TestDeepReorg(t *testing.T) {
 		if qrlservice.BlockChain().HasBlockAndState(parent.Hash(), parent.NumberU64()) {
 			t.Errorf("Block %d not pruned", parent.NumberU64())
 		}
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			execData, err := api.assembleBlock(AssembleBlockParams{
 				ParentHash: parent.Hash(),
 				Timestamp:  parent.Time() + 5,
@@ -464,7 +463,7 @@ func TestFullAPI(t *testing.T) {
 			Gas:   1000000,
 			Data:  logCode,
 		})
-		signedTx, _ := types.SignTx(tx, signer, testKey)
+		signedTx, _ := types.SignTx(tx, signer, testWallet)
 		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, false)
 	}
 
@@ -474,7 +473,7 @@ func TestFullAPI(t *testing.T) {
 func setupBlocks(t *testing.T, qrlservice *qrl.QRL, n int, parent *types.Header, callback func(parent *types.Header), withdrawals [][]*types.Withdrawal) []*types.Header {
 	api := NewConsensusAPI(qrlservice)
 	var blocks []*types.Header
-	for i := 0; i < n; i++ {
+	for i := range n {
 		callback(parent)
 		var w []*types.Withdrawal
 		if withdrawals != nil {
@@ -538,9 +537,9 @@ func TestNewPayloadOnInvalidChain(t *testing.T) {
 		// This QRVM code generates a log when the contract is created.
 		logCode = common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
 	)
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root)
-		tx := types.MustSignNewTx(testKey, signer, &types.DynamicFeeTx{
+		tx := types.MustSignNewTx(testWallet, signer, &types.DynamicFeeTx{
 			Nonce:     statedb.GetNonce(testAddr),
 			Value:     new(big.Int),
 			Gas:       1000000,
@@ -772,7 +771,7 @@ func TestTrickRemoteBlockCache(t *testing.T) {
 
 	head := payload2
 	// create some valid payloads on top
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		payload := getNewPayload(t, apiA, commonAncestor, nil)
 		payload.ParentHash = head.BlockHash
 		payload = setBlockhash(payload)
@@ -836,7 +835,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 		api    = NewConsensusAPI(qrlservice)
 		parent = blocks[len(blocks)-1]
 	)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		execData, err := assembleBlock(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 5,
 		})
@@ -851,7 +850,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 				errMu   sync.Mutex
 			)
 			wg.Add(10)
-			for ii := 0; ii < 10; ii++ {
+			for range 10 {
 				go func() {
 					defer wg.Done()
 					if newResp, err := api.NewPayloadV2(*execData); err != nil {
@@ -890,7 +889,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 			)
 			wg.Add(10)
 			// Do each FCU 10 times
-			for ii := 0; ii < 10; ii++ {
+			for range 10 {
 				go func() {
 					defer wg.Done()
 					if _, err := api.ForkchoiceUpdatedV2(fcState, nil); err != nil {
@@ -1012,7 +1011,7 @@ func TestWithdrawals(t *testing.T) {
 	}
 
 	// 11: verify withdrawals were processed.
-	db, _, err := qrlservice.APIBackend.StateAndHeaderByNumber(context.Background(), rpc.BlockNumber(execData.ExecutionPayload.Number))
+	db, _, err := qrlservice.APIBackend.StateAndHeaderByNumber(t.Context(), rpc.BlockNumber(execData.ExecutionPayload.Number))
 	if err != nil {
 		t.Fatalf("unable to load db: %v", err)
 	}
@@ -1123,7 +1122,7 @@ func setupBodies(t *testing.T) (*node.Node, *qrl.QRL, []*types.Block) {
 			Gas:   1000000,
 			Data:  logCode,
 		})
-		signedTx, _ := types.SignTx(tx, signer, testKey)
+		signedTx, _ := types.SignTx(tx, signer, testWallet)
 		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, false, false)
 	}
 

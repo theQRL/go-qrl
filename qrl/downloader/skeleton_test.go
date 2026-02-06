@@ -151,7 +151,7 @@ func (p *skeletonTestPeer) RequestHeadersByNumber(origin uint64, amount int, ski
 	if headers == nil {
 		headers = make([]*types.Header, 0, amount)
 		if len(p.headers) > int(origin) { // Don't serve headers if we're missing the origin
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				// Consider nil headers as a form of attack and withhold them. Nil
 				// cannot be decoded from RLP, so it's not possible to produce an
 				// attack by sending/receiving those over qrl.

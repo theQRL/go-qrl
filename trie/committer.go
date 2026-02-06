@@ -93,7 +93,7 @@ func (c *committer) commit(path []byte, n node) node {
 // commitChildren commits the children of the given fullnode
 func (c *committer) commitChildren(path []byte, n *fullNode) [17]node {
 	var children [17]node
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		child := n.Children[i]
 		if child == nil {
 			continue
@@ -170,7 +170,7 @@ func forGatherChildren(n node, onChild func(hash common.Hash)) {
 	case *shortNode:
 		forGatherChildren(n.Val, onChild)
 	case *fullNode:
-		for i := 0; i < 16; i++ {
+		for i := range 16 {
 			forGatherChildren(n.Children[i], onChild)
 		}
 	case hashNode:

@@ -73,7 +73,7 @@ type Backend interface {
 	RunPeer(peer *Peer, handler Handler) error
 
 	// PeerInfo retrieves all known `snap` information about a peer.
-	PeerInfo(id qnode.ID) interface{}
+	PeerInfo(id qnode.ID) any
 
 	// Handle is a callback to be invoked when a data packet is received from
 	// the remote peer. Only packets not consumed by the protocol handler will
@@ -91,8 +91,6 @@ func MakeProtocols(backend Backend, dnsdisc qnode.Iterator) []p2p.Protocol {
 
 	protocols := make([]p2p.Protocol, len(ProtocolVersions))
 	for i, version := range ProtocolVersions {
-		version := version // Closure
-
 		protocols[i] = p2p.Protocol{
 			Name:    ProtocolName,
 			Version: version,
@@ -102,10 +100,10 @@ func MakeProtocols(backend Backend, dnsdisc qnode.Iterator) []p2p.Protocol {
 					return Handle(backend, peer)
 				})
 			},
-			NodeInfo: func() interface{} {
+			NodeInfo: func() any {
 				return nodeInfo(backend.Chain())
 			},
-			PeerInfo: func(id qnode.ID) interface{} {
+			PeerInfo: func(id qnode.ID) any {
 				return backend.PeerInfo(id)
 			},
 			Attributes:     []qnr.Entry{&qnrEntry{}},

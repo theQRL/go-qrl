@@ -23,56 +23,74 @@ import (
 	"runtime/debug"
 	"strings"
 
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-zond/version"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const ourPath = "github.com/theQRL/go-zond" // Path to our module
 
-// These variables are set at build-time by the linker when the build is
-// done by build/ci.go.
-var gitCommit, gitDate string
+// Family holds the textual version string for major.minor
+var Family = fmt.Sprintf("%d.%d", version.Major, version.Minor)
 
-// VCSInfo represents the git repository state.
-type VCSInfo struct {
-	Commit string // head commit hash
-	Date   string // commit time in YYYYMMDD format
-	Dirty  bool
+// Semantic holds the textual version string for major.minor.patch.
+var Semantic = fmt.Sprintf("%d.%d.%d", version.Major, version.Minor, version.Patch)
+
+// WithMeta holds the textual version string including the metadata.
+var WithMeta = func() string {
+	v := Semantic
+	if version.Meta != "" {
+		v += "-" + version.Meta
+	}
+	return v
+}()
+
+func WithCommit(gitCommit, gitDate string) string {
+	vsn := WithMeta
+	if len(gitCommit) >= 8 {
+		vsn += "-" + gitCommit[:8]
+	}
+	if (version.Meta != "stable") && (gitDate != "") {
+		vsn += "-" + gitDate
+	}
+	return vsn
 }
 
-// VCS returns version control information of the current executable.
-func VCS() (VCSInfo, bool) {
-	if gitCommit != "" {
-		// Use information set by the build script if present.
-		return VCSInfo{Commit: gitCommit, Date: gitDate}, true
+// Archive holds the textual version string used for Gzond archives. e.g.
+// "1.8.11-dea1ce05" for stable releases, or "1.8.13-unstable-21c059b6" for unstable
+// releases.
+func Archive(gitCommit string) string {
+	vsn := Semantic
+	if version.Meta != "stable" {
+		vsn += "-" + version.Meta
 	}
-	if buildInfo, ok := debug.ReadBuildInfo(); ok {
-		if buildInfo.Main.Path == ourPath {
-			return buildInfoVCS(buildInfo)
-		}
+	if len(gitCommit) >= 8 {
+		vsn += "-" + gitCommit[:8]
 	}
-	return VCSInfo{}, false
+	return vsn
 }
 
 // ClientName creates a software name/version identifier according to common
 // conventions in the QRL p2p network.
 func ClientName(clientIdentifier string) string {
 	git, _ := VCS()
+	title := cases.Title(language.Und, cases.NoLower)
 	return fmt.Sprintf("%s/v%v/%v-%v/%v",
-		strings.Title(clientIdentifier),
-		params.VersionWithCommit(git.Commit, git.Date),
+		title.String(clientIdentifier),
+		WithCommit(git.Commit, git.Date),
 		runtime.GOOS, runtime.GOARCH,
 		runtime.Version(),
 	)
 }
 
-// runtimeInfo returns build and platform information about the current binary.
+// Info returns build and platform information about the current binary.
 //
-// If the package that is currently executing is a prefixed by our go-ethereum
+// If the package that is currently executing is a prefixed by our go-zond
 // module path, it will print out commit and date VCS information. Otherwise,
 // it will assume it's imported by a third-party and will return the imported
 // version and whether it was replaced by another module.
 func Info() (version, vcs string) {
-	version = params.VersionWithMeta
+	version = WithMeta
 	buildInfo, ok := debug.ReadBuildInfo()
 	if !ok {
 		return version, ""
@@ -115,7 +133,7 @@ func versionInfo(info *debug.BuildInfo) string {
 		// If our module path wasn't imported, it's unclear which
 		// version of our code they are running. Fallback to hardcoded
 		// version.
-		return version + fmt.Sprintf("gzond %s", params.VersionWithMeta)
+		return version + fmt.Sprintf("gzond %s", WithMeta)
 	}
 	// Our package is a dependency for the main module. Return path and
 	// version data for both.

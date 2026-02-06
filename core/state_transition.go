@@ -393,10 +393,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 func (st *StateTransition) refundGas(refundQuotient uint64) {
 	// Apply refund counter, capped to a refund quotient
-	refund := st.gasUsed() / refundQuotient
-	if refund > st.state.GetRefund() {
-		refund = st.state.GetRefund()
-	}
+	refund := min(st.gasUsed()/refundQuotient, st.state.GetRefund())
 	st.gasRemaining += refund
 
 	// Return QRL for remaining gas, exchanged at the original rate.

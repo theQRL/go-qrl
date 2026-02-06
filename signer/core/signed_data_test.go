@@ -18,11 +18,10 @@ package core_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -162,12 +161,12 @@ var domainStandard = apitypes.TypedDataDomain{
 	Salt:              "",
 }
 
-var messageStandard = map[string]interface{}{
-	"from": map[string]interface{}{
+var messageStandard = map[string]any{
+	"from": map[string]any{
 		"name":   "Cow",
 		"wallet": "QCD2a3d9F938E13CD947Ec05AbC7FE734Df8DD826",
 	},
-	"to": map[string]interface{}{
+	"to": map[string]any{
 		"name":   "Bob",
 		"wallet": "QbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB",
 	},
@@ -182,12 +181,13 @@ var typedData = apitypes.TypedData{
 }
 
 func TestSignData(t *testing.T) {
+	t.Parallel()
 	api, control := setup(t)
 	//Create two accounts
 	createAccount(control, api, t)
 	createAccount(control, api, t)
 	control.approveCh <- "1"
-	list, err := api.List(context.Background())
+	list, err := api.List(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -195,15 +195,15 @@ func TestSignData(t *testing.T) {
 
 	control.approveCh <- "Y"
 	control.inputCh <- "wrongpassword"
-	signature, err := api.SignData(context.Background(), apitypes.TextPlain.Mime, a, hexutil.Encode([]byte("EHLO world")))
+	signature, err := api.SignData(t.Context(), apitypes.TextPlain.Mime, a, hexutil.Encode([]byte("EHLO world")))
 	if signature != nil {
 		t.Errorf("Expected nil-data, got %x", signature)
 	}
 	if err != keystore.ErrDecrypt {
-		t.Errorf("Expected ErrLocked! '%v'", err)
+		t.Errorf("Expected ErrDecrypt! '%v'", err)
 	}
 	control.approveCh <- "No way"
-	signature, err = api.SignData(context.Background(), apitypes.TextPlain.Mime, a, hexutil.Encode([]byte("EHLO world")))
+	signature, err = api.SignData(t.Context(), apitypes.TextPlain.Mime, a, hexutil.Encode([]byte("EHLO world")))
 	if signature != nil {
 		t.Errorf("Expected nil-data, got %x", signature)
 	}
@@ -213,7 +213,7 @@ func TestSignData(t *testing.T) {
 	// text/plain
 	control.approveCh <- "Y"
 	control.inputCh <- "a_long_password"
-	signature, err = api.SignData(context.Background(), apitypes.TextPlain.Mime, a, hexutil.Encode([]byte("EHLO world")))
+	signature, err = api.SignData(t.Context(), apitypes.TextPlain.Mime, a, hexutil.Encode([]byte("EHLO world")))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -224,7 +224,7 @@ func TestSignData(t *testing.T) {
 	control.approveCh <- "Y"
 	control.inputCh <- "a_long_password"
 	var want []byte
-	if signature, err = api.SignTypedData(context.Background(), a, typedData); err != nil {
+	if signature, err = api.SignTypedData(t.Context(), a, typedData); err != nil {
 		t.Fatal(err)
 	} else if signature == nil || len(signature) != 4627 {
 		t.Errorf("Expected 65 byte signature (got %d bytes)", len(signature))
@@ -237,7 +237,7 @@ func TestSignData(t *testing.T) {
 	control.inputCh <- "a_long_password"
 	if typedDataJson, err := json.Marshal(typedData); err != nil {
 		t.Fatal(err)
-	} else if signature, err = api.SignData(context.Background(), apitypes.DataTyped.Mime, a, hexutil.Encode(typedDataJson)); err != nil {
+	} else if signature, err = api.SignData(t.Context(), apitypes.DataTyped.Mime, a, hexutil.Encode(typedDataJson)); err != nil {
 		t.Fatal(err)
 	} else if signature == nil || len(signature) != 4627 {
 		t.Errorf("Expected 65 byte signature (got %d bytes)", len(signature))
@@ -247,6 +247,7 @@ func TestSignData(t *testing.T) {
 }
 
 func TestDomainChainId(t *testing.T) {
+	t.Parallel()
 	withoutChainID := apitypes.TypedData{
 		Types: apitypes.Types{
 			"EIP712Domain": []apitypes.Type{
@@ -288,6 +289,7 @@ func TestDomainChainId(t *testing.T) {
 }
 
 func TestHashStruct(t *testing.T) {
+	t.Parallel()
 	hash, err := typedData.HashStruct(typedData.PrimaryType, typedData.Message)
 	if err != nil {
 		t.Fatal(err)
@@ -308,6 +310,7 @@ func TestHashStruct(t *testing.T) {
 }
 
 func TestEncodeType(t *testing.T) {
+	t.Parallel()
 	domainTypeEncoding := string(typedData.EncodeType("EIP712Domain"))
 	if domainTypeEncoding != "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)" {
 		t.Errorf("Expected different encodeType result (got %s)", domainTypeEncoding)
@@ -320,6 +323,7 @@ func TestEncodeType(t *testing.T) {
 }
 
 func TestTypeHash(t *testing.T) {
+	t.Parallel()
 	mailTypeHash := fmt.Sprintf("0x%s", common.Bytes2Hex(typedData.TypeHash(typedData.PrimaryType)))
 	if mailTypeHash != "0xa0cedeb2dc280ba39b857546d74f5549c3a1d7bdc2dd96bf881f76108e23dac2" {
 		t.Errorf("Expected different typeHash result (got %s)", mailTypeHash)
@@ -327,6 +331,7 @@ func TestTypeHash(t *testing.T) {
 }
 
 func TestEncodeData(t *testing.T) {
+	t.Parallel()
 	hash, err := typedData.EncodeData(typedData.PrimaryType, typedData.Message, 0)
 	if err != nil {
 		t.Fatal(err)
@@ -338,6 +343,7 @@ func TestEncodeData(t *testing.T) {
 }
 
 func TestFormatter(t *testing.T) {
+	t.Parallel()
 	var d apitypes.TypedData
 	err := json.Unmarshal([]byte(jsonTypedData), &d)
 	if err != nil {
@@ -361,12 +367,13 @@ func sign(typedData apitypes.TypedData) ([]byte, []byte, error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	rawData := []byte(fmt.Sprintf("\x19\x01%s%s", string(domainSeparator), string(typedDataHash)))
+	rawData := fmt.Appendf(nil, "\x19\x01%s%s", string(domainSeparator), string(typedDataHash))
 	sighash := crypto.Keccak256(rawData)
 	return typedDataHash, sighash, nil
 }
 
 func TestJsonFiles(t *testing.T) {
+	t.Parallel()
 	testfiles, err := os.ReadDir("testdata/")
 	if err != nil {
 		t.Fatalf("failed reading files: %v", err)
@@ -376,7 +383,7 @@ func TestJsonFiles(t *testing.T) {
 			continue
 		}
 		expectedFailure := strings.HasPrefix(fInfo.Name(), "expfail")
-		data, err := os.ReadFile(path.Join("testdata", fInfo.Name()))
+		data, err := os.ReadFile(filepath.Join("testdata", fInfo.Name()))
 		if err != nil {
 			t.Errorf("Failed to read file %v: %v", fInfo.Name(), err)
 			continue
@@ -401,14 +408,15 @@ func TestJsonFiles(t *testing.T) {
 // TestFuzzerFiles tests some files that have been found by fuzzing to cause
 // crashes or hangs.
 func TestFuzzerFiles(t *testing.T) {
-	corpusdir := path.Join("testdata", "fuzzing")
+	t.Parallel()
+	corpusdir := filepath.Join("testdata", "fuzzing")
 	testfiles, err := os.ReadDir(corpusdir)
 	if err != nil {
 		t.Fatalf("failed reading files: %v", err)
 	}
 	verbose := false
 	for i, fInfo := range testfiles {
-		data, err := os.ReadFile(path.Join(corpusdir, fInfo.Name()))
+		data, err := os.ReadFile(filepath.Join(corpusdir, fInfo.Name()))
 		if err != nil {
 			t.Errorf("Failed to read file %v: %v", fInfo.Name(), err)
 			continue
@@ -566,6 +574,7 @@ var complexTypedData = `
 `
 
 func TestComplexTypedData(t *testing.T) {
+	t.Parallel()
 	var td apitypes.TypedData
 	err := json.Unmarshal([]byte(complexTypedData), &td)
 	if err != nil {
@@ -716,6 +725,7 @@ var complexTypedDataLCRefType = `
 `
 
 func TestComplexTypedDataWithLowercaseReftype(t *testing.T) {
+	t.Parallel()
 	var td apitypes.TypedData
 	err := json.Unmarshal([]byte(complexTypedDataLCRefType), &td)
 	if err != nil {

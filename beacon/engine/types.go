@@ -23,6 +23,7 @@ import (
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/common/hexutil"
 	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/trie"
 )
 
@@ -151,51 +152,63 @@ func decodeTransactions(enc [][]byte) ([]*types.Transaction, error) {
 //
 // and that the blockhash of the constructed block matches the parameters. Nil
 // Withdrawals value will propagate through the returned block. Empty
-// Withdrawals value must be passed via non-nil, length 0 value in params.
-func ExecutableDataToBlock(params ExecutableData) (*types.Block, error) {
-	txs, err := decodeTransactions(params.Transactions)
+// Withdrawals value must be passed via non-nil, length 0 value in data.
+func ExecutableDataToBlock(data ExecutableData) (*types.Block, error) {
+	block, err := ExecutableDataToBlockNoHash(data)
 	if err != nil {
 		return nil, err
 	}
-	if len(params.ExtraData) > 32 {
-		return nil, fmt.Errorf("invalid extradata length: %v", len(params.ExtraData))
+	if block.Hash() != data.BlockHash {
+		return nil, fmt.Errorf("blockhash mismatch, want %x, got %x", data.BlockHash, block.Hash())
 	}
-	if len(params.LogsBloom) != 256 {
-		return nil, fmt.Errorf("invalid logsBloom length: %v", len(params.LogsBloom))
+	return block, nil
+}
+
+// ExecutableDataToBlockNoHash is analogous to ExecutableDataToBlock, but is used
+// for stateless execution, so it skips checking if the executable data hashes to
+// the requested hash (stateless has to *compute* the root hash, it's not given).
+func ExecutableDataToBlockNoHash(data ExecutableData) (*types.Block, error) {
+	txs, err := decodeTransactions(data.Transactions)
+	if err != nil {
+		return nil, err
+	}
+	if len(data.ExtraData) > int(params.MaximumExtraDataSize) {
+		return nil, fmt.Errorf("invalid extradata length: %v", len(data.ExtraData))
+	}
+	if len(data.LogsBloom) != 256 {
+		return nil, fmt.Errorf("invalid logsBloom length: %v", len(data.LogsBloom))
 	}
 	// Check that baseFeePerGas is not negative or too big
-	if params.BaseFeePerGas != nil && (params.BaseFeePerGas.Sign() == -1 || params.BaseFeePerGas.BitLen() > 256) {
-		return nil, fmt.Errorf("invalid baseFeePerGas: %v", params.BaseFeePerGas)
+	if data.BaseFeePerGas != nil && (data.BaseFeePerGas.Sign() == -1 || data.BaseFeePerGas.BitLen() > 256) {
+		return nil, fmt.Errorf("invalid baseFeePerGas: %v", data.BaseFeePerGas)
 	}
 	// Only set withdrawalsRoot if it is non-nil. This allows CLs to use
 	// ExecutableData before withdrawals are enabled by marshaling
 	// Withdrawals as the json null value.
 	var withdrawalsRoot *common.Hash
-	if params.Withdrawals != nil {
-		h := types.DeriveSha(types.Withdrawals(params.Withdrawals), trie.NewStackTrie(nil))
+	if data.Withdrawals != nil {
+		h := types.DeriveSha(types.Withdrawals(data.Withdrawals), trie.NewStackTrie(nil))
 		withdrawalsRoot = &h
 	}
 	header := &types.Header{
-		ParentHash:      params.ParentHash,
-		Coinbase:        params.FeeRecipient,
-		Root:            params.StateRoot,
+		ParentHash:      data.ParentHash,
+		Coinbase:        data.FeeRecipient,
+		Root:            data.StateRoot,
 		TxHash:          types.DeriveSha(types.Transactions(txs), trie.NewStackTrie(nil)),
-		ReceiptHash:     params.ReceiptsRoot,
-		Bloom:           types.BytesToBloom(params.LogsBloom),
-		Number:          new(big.Int).SetUint64(params.Number),
-		GasLimit:        params.GasLimit,
-		GasUsed:         params.GasUsed,
-		Time:            params.Timestamp,
-		BaseFee:         params.BaseFeePerGas,
-		Extra:           params.ExtraData,
-		Random:          params.Random,
+		ReceiptHash:     data.ReceiptsRoot,
+		Bloom:           types.BytesToBloom(data.LogsBloom),
+		Number:          new(big.Int).SetUint64(data.Number),
+		GasLimit:        data.GasLimit,
+		GasUsed:         data.GasUsed,
+		Time:            data.Timestamp,
+		BaseFee:         data.BaseFeePerGas,
+		Extra:           data.ExtraData,
+		Random:          data.Random,
 		WithdrawalsHash: withdrawalsRoot,
 	}
-	block := types.NewBlockWithHeader(header).WithBody(types.Body{Transactions: txs, Withdrawals: params.Withdrawals})
-	if block.Hash() != params.BlockHash {
-		return nil, fmt.Errorf("blockhash mismatch, want %x, got %x", params.BlockHash, block.Hash())
-	}
-	return block, nil
+	return types.NewBlockWithHeader(header).
+			WithBody(types.Body{Transactions: txs, Withdrawals: data.Withdrawals}),
+		nil
 }
 
 // BlockToExecutableData constructs the ExecutableData structure by filling the
@@ -219,7 +232,11 @@ func BlockToExecutableData(block *types.Block, fees *big.Int) *ExecutionPayloadE
 		Withdrawals:   block.Withdrawals(),
 	}
 
-	return &ExecutionPayloadEnvelope{ExecutionPayload: data, BlockValue: fees, Override: false}
+	return &ExecutionPayloadEnvelope{
+		ExecutionPayload: data,
+		BlockValue:       fees,
+		Override:         false,
+	}
 }
 
 // ExecutionPayloadBodyV1 is used in the response to GetPayloadBodiesByHashV1 and GetPayloadBodiesByRangeV1

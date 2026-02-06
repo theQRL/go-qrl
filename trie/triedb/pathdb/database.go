@@ -179,7 +179,7 @@ func New(diskdb qrldb.Database, config *Config) *Database {
 			log.Warn("Truncated extra state histories", "number", pruned)
 		}
 	}
-	log.Warn("Path-based state scheme is an experimental feature")
+
 	return db
 }
 

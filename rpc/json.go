@@ -35,6 +35,7 @@ const (
 	subscribeMethodSuffix    = "_subscribe"
 	unsubscribeMethodSuffix  = "_unsubscribe"
 	notificationMethodSuffix = "_subscription"
+	maxMethodNameLength      = 2048
 
 	defaultWriteTimeout = 10 * time.Second // used if context has no deadline
 )
@@ -44,6 +45,17 @@ var null = json.RawMessage("null")
 type subscriptionResult struct {
 	ID     string          `json:"subscription"`
 	Result json.RawMessage `json:"result,omitempty"`
+}
+
+type subscriptionResultEnc struct {
+	ID     string `json:"subscription"`
+	Result any    `json:"result"`
+}
+
+type jsonrpcSubscriptionNotification struct {
+	Version string                `json:"jsonrpc"`
+	Method  string                `json:"method"`
+	Params  subscriptionResultEnc `json:"params"`
 }
 
 // A value of this type can a JSON-RPC request, notification, successful response or
@@ -86,8 +98,8 @@ func (msg *jsonrpcMessage) isUnsubscribe() bool {
 }
 
 func (msg *jsonrpcMessage) namespace() string {
-	elem := strings.SplitN(msg.Method, serviceMethodSeparator, 2)
-	return elem[0]
+	before, _, _ := strings.Cut(msg.Method, serviceMethodSeparator)
+	return before
 }
 
 func (msg *jsonrpcMessage) String() string {
@@ -101,7 +113,7 @@ func (msg *jsonrpcMessage) errorResponse(err error) *jsonrpcMessage {
 	return resp
 }
 
-func (msg *jsonrpcMessage) response(result interface{}) *jsonrpcMessage {
+func (msg *jsonrpcMessage) response(result any) *jsonrpcMessage {
 	enc, err := json.Marshal(result)
 	if err != nil {
 		return msg.errorResponse(&internalServerError{errcodeMarshalError, err.Error()})
@@ -126,9 +138,9 @@ func errorMessage(err error) *jsonrpcMessage {
 }
 
 type jsonError struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
 func (err *jsonError) Error() string {
@@ -142,7 +154,7 @@ func (err *jsonError) ErrorCode() int {
 	return err.Code
 }
 
-func (err *jsonError) ErrorData() interface{} {
+func (err *jsonError) ErrorData() any {
 	return err.Data
 }
 
@@ -168,24 +180,24 @@ type ConnRemoteAddr interface {
 // support for parsing arguments and serializing (result) objects.
 type jsonCodec struct {
 	remote  string
-	closer  sync.Once        // close closed channel once
-	closeCh chan interface{} // closed on Close
-	decode  decodeFunc       // decoder to allow multiple transports
-	encMu   sync.Mutex       // guards the encoder
-	encode  encodeFunc       // encoder to allow multiple transports
+	closer  sync.Once  // close closed channel once
+	closeCh chan any   // closed on Close
+	decode  decodeFunc // decoder to allow multiple transports
+	encMu   sync.Mutex // guards the encoder
+	encode  encodeFunc // encoder to allow multiple transports
 	conn    deadlineCloser
 }
 
-type encodeFunc = func(v interface{}, isErrorResponse bool) error
+type encodeFunc = func(v any, isErrorResponse bool) error
 
-type decodeFunc = func(v interface{}) error
+type decodeFunc = func(v any) error
 
 // NewFuncCodec creates a codec which uses the given functions to read and write. If conn
 // implements ConnRemoteAddr, log messages will use it to include the remote address of
 // the connection.
 func NewFuncCodec(conn deadlineCloser, encode encodeFunc, decode decodeFunc) ServerCodec {
 	codec := &jsonCodec{
-		closeCh: make(chan interface{}),
+		closeCh: make(chan any),
 		encode:  encode,
 		decode:  decode,
 		conn:    conn,
@@ -203,7 +215,7 @@ func NewCodec(conn Conn) ServerCodec {
 	dec := json.NewDecoder(conn)
 	dec.UseNumber()
 
-	encode := func(v interface{}, isErrorResponse bool) error {
+	encode := func(v any, isErrorResponse bool) error {
 		return enc.Encode(v)
 	}
 	return NewFuncCodec(conn, encode, dec.Decode)
@@ -236,7 +248,7 @@ func (c *jsonCodec) readBatch() (messages []*jsonrpcMessage, batch bool, err err
 	return messages, batch, nil
 }
 
-func (c *jsonCodec) writeJSON(ctx context.Context, v interface{}, isErrorResponse bool) error {
+func (c *jsonCodec) writeJSON(ctx context.Context, v any, isErrorResponse bool) error {
 	c.encMu.Lock()
 	defer c.encMu.Unlock()
 
@@ -255,8 +267,8 @@ func (c *jsonCodec) close() {
 	})
 }
 
-// Closed returns a channel which will be closed when Close is called
-func (c *jsonCodec) closed() <-chan interface{} {
+// closed returns a channel which will be closed when Close is called
+func (c *jsonCodec) closed() <-chan any {
 	return c.closeCh
 }
 

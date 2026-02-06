@@ -277,7 +277,7 @@ func (c *Console) AutoCompleteInput(line string, pos int) (string, []string, str
 		return "", nil, ""
 	}
 	// Chunk data to relevant part for autocompletion
-	// E.g. in case of nested lines qrl.getBalance(zond.coinb<tab><tab>
+	// E.g. in case of nested lines qrl.getBalance(qrl.coinb<tab><tab>
 	start := pos - 1
 	for ; start > 0; start-- {
 		// Skip all methods and namespaces (i.e. including the dot)

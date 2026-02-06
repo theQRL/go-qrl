@@ -24,11 +24,12 @@ import (
 	"reflect"
 
 	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-zond/common/math"
 	"github.com/theQRL/go-zond/crypto"
 )
 
 // MakeTopics converts a filter query argument list into a filter topic set.
-func MakeTopics(query ...[]interface{}) ([][]common.Hash, error) {
+func MakeTopics(query ...[]any) ([][]common.Hash, error) {
 	topics := make([][]common.Hash, len(query))
 	for i, filter := range query {
 		for _, rule := range filter {
@@ -41,8 +42,7 @@ func MakeTopics(query ...[]interface{}) ([][]common.Hash, error) {
 			case common.Address:
 				copy(topic[common.HashLength-common.AddressLength:], rule[:])
 			case *big.Int:
-				blob := rule.Bytes()
-				copy(topic[common.HashLength-len(blob):], blob)
+				copy(topic[:], math.U256Bytes(new(big.Int).Set(rule)))
 			case bool:
 				if rule {
 					topic[common.HashLength-1] = 1
@@ -75,7 +75,7 @@ func MakeTopics(query ...[]interface{}) ([][]common.Hash, error) {
 				copy(topic[:], hash[:])
 
 			default:
-				// todo(rjl493456442) according hyperion documentation, indexed event
+				// todo(rjl493456442) according to hyperion documentation, indexed event
 				// parameters that are not value types i.e. arrays and structs are not
 				// stored directly but instead a keccak256-hash of an encoding is stored.
 				//
@@ -105,25 +105,25 @@ func genIntType(rule int64, size uint) []byte {
 		// extended to common.HashLength bytes.
 		topic = [common.HashLength]byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}
 	}
-	for i := uint(0); i < size; i++ {
+	for i := range size {
 		topic[common.HashLength-i-1] = byte(rule >> (i * 8))
 	}
 	return topic[:]
 }
 
 // ParseTopics converts the indexed topic fields into actual log field values.
-func ParseTopics(out interface{}, fields Arguments, topics []common.Hash) error {
+func ParseTopics(out any, fields Arguments, topics []common.Hash) error {
 	return parseTopicWithSetter(fields, topics,
-		func(arg Argument, reconstr interface{}) {
+		func(arg Argument, reconstr any) {
 			field := reflect.ValueOf(out).Elem().FieldByName(ToCamelCase(arg.Name))
 			field.Set(reflect.ValueOf(reconstr))
 		})
 }
 
 // ParseTopicsIntoMap converts the indexed topic field-value pairs into map key-value pairs.
-func ParseTopicsIntoMap(out map[string]interface{}, fields Arguments, topics []common.Hash) error {
+func ParseTopicsIntoMap(out map[string]any, fields Arguments, topics []common.Hash) error {
 	return parseTopicWithSetter(fields, topics,
-		func(arg Argument, reconstr interface{}) {
+		func(arg Argument, reconstr any) {
 			out[arg.Name] = reconstr
 		})
 }
@@ -133,7 +133,7 @@ func ParseTopicsIntoMap(out map[string]interface{}, fields Arguments, topics []c
 //
 // Note, dynamic types cannot be reconstructed since they get mapped to Keccak256
 // hashes as the topic value!
-func parseTopicWithSetter(fields Arguments, topics []common.Hash, setter func(Argument, interface{})) error {
+func parseTopicWithSetter(fields Arguments, topics []common.Hash, setter func(Argument, any)) error {
 	// Sanity check that the fields and topics match up
 	if len(fields) != len(topics) {
 		return errors.New("topic/field count mismatch")
@@ -143,7 +143,7 @@ func parseTopicWithSetter(fields Arguments, topics []common.Hash, setter func(Ar
 		if !arg.Indexed {
 			return errors.New("non-indexed field in topic reconstruction")
 		}
-		var reconstr interface{}
+		var reconstr any
 		switch arg.Type.T {
 		case TupleTy:
 			return errors.New("tuple type in topic reconstruction")

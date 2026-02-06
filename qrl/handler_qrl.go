@@ -37,7 +37,7 @@ func (h *qrlHandler) RunPeer(peer *qrl.Peer, hand qrl.Handler) error {
 }
 
 // PeerInfo retrieves all known `qrl` information about a peer.
-func (h *qrlHandler) PeerInfo(id qnode.ID) interface{} {
+func (h *qrlHandler) PeerInfo(id qnode.ID) any {
 	if p := h.peers.peer(id.String()); p != nil {
 		return p.info()
 	}

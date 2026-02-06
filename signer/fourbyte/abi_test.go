@@ -26,7 +26,7 @@ import (
 	"github.com/theQRL/go-zond/common"
 )
 
-func verify(t *testing.T, jsondata, calldata string, exp []interface{}) {
+func verify(t *testing.T, jsondata, calldata string, exp []any) {
 	abispec, err := abi.JSON(strings.NewReader(jsondata))
 	if err != nil {
 		t.Fatal(err)
@@ -52,10 +52,11 @@ func verify(t *testing.T, jsondata, calldata string, exp []interface{}) {
 }
 
 func TestNewUnpacker(t *testing.T) {
+	t.Parallel()
 	type unpackTest struct {
 		jsondata string
 		calldata string
-		exp      []interface{}
+		exp      []any
 	}
 	address, _ := common.NewAddressFromString("Q00000133700000deadbeef000000000000000000")
 	testcases := []unpackTest{
@@ -63,7 +64,7 @@ func TestNewUnpacker(t *testing.T) {
 			`[{"type":"function","name":"f", "inputs":[{"type":"uint256"},{"type":"uint32[]"},{"type":"bytes10"},{"type":"bytes"}]}]`,
 			// 0x123, [0x456, 0x789], "1234567890", "Hello, world!"
 			"8be65246" + "00000000000000000000000000000000000000000000000000000000000001230000000000000000000000000000000000000000000000000000000000000080313233343536373839300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000004560000000000000000000000000000000000000000000000000000000000000789000000000000000000000000000000000000000000000000000000000000000d48656c6c6f2c20776f726c642100000000000000000000000000000000000000",
-			[]interface{}{
+			[]any{
 				big.NewInt(0x123),
 				[]uint32{0x456, 0x789},
 				[10]byte{49, 50, 51, 52, 53, 54, 55, 56, 57, 48},
@@ -73,7 +74,7 @@ func TestNewUnpacker(t *testing.T) {
 			`[{"type":"function","name":"sam","inputs":[{"type":"bytes"},{"type":"bool"},{"type":"uint256[]"}]}]`,
 			//  "dave", true and [1,2,3]
 			"a5643bf20000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000000464617665000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003",
-			[]interface{}{
+			[]any{
 				[]byte{0x64, 0x61, 0x76, 0x65},
 				true,
 				[]*big.Int{big.NewInt(1), big.NewInt(2), big.NewInt(3)},
@@ -81,11 +82,11 @@ func TestNewUnpacker(t *testing.T) {
 		}, {
 			`[{"type":"function","name":"send","inputs":[{"type":"uint256"}]}]`,
 			"a52c101e0000000000000000000000000000000000000000000000000000000000000012",
-			[]interface{}{big.NewInt(0x12)},
+			[]any{big.NewInt(0x12)},
 		}, {
 			`[{"type":"function","name":"compareAndApprove","inputs":[{"type":"address"},{"type":"uint256"},{"type":"uint256"}]}]`,
 			"751e107900000000000000000000000000000133700000deadbeef00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
-			[]interface{}{
+			[]any{
 				address,
 				new(big.Int).SetBytes([]byte{0x00}),
 				big.NewInt(0x1),
@@ -98,6 +99,7 @@ func TestNewUnpacker(t *testing.T) {
 }
 
 func TestCalldataDecoding(t *testing.T) {
+	t.Parallel()
 	// send(uint256)                              : a52c101e
 	// compareAndApprove(address,uint256,uint256) : 751e1079
 	// issue(address[],uint256)                   : 42958b54
@@ -160,6 +162,7 @@ func TestCalldataDecoding(t *testing.T) {
 }
 
 func TestMaliciousABIStrings(t *testing.T) {
+	t.Parallel()
 	tests := []string{
 		"func(uint256,uint256,[]uint256)",
 		"func(uint256,uint256,uint256,)",

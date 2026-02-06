@@ -97,7 +97,7 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 			}
 		}
 		// Database does not have the state for the given block, try to regenerate
-		for i := uint64(0); i < reexec; i++ {
+		for range reexec {
 			if err := ctx.Err(); err != nil {
 				return nil, nil, err
 			}

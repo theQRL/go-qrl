@@ -27,9 +27,9 @@ type hypcOutput struct {
 		BinRuntime            string `json:"bin-runtime"`
 		SrcMapRuntime         string `json:"srcmap-runtime"`
 		Bin, SrcMap, Metadata string
-		Abi                   interface{}
-		Devdoc                interface{}
-		Userdoc               interface{}
+		Abi                   any
+		Devdoc                any
+		Userdoc               any
 		Hashes                map[string]string
 	}
 	Version string

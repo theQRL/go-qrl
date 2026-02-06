@@ -95,8 +95,8 @@ func TestLookupStorage(t *testing.T) {
 func TestDeleteBloomBits(t *testing.T) {
 	// Prepare testing data
 	db := NewMemoryDatabase()
-	for i := uint(0); i < 2; i++ {
-		for s := uint64(0); s < 2; s++ {
+	for i := range uint(2) {
+		for s := range uint64(2) {
 			WriteBloomBits(db, i, s, params.MainnetGenesisHash, []byte{0x01, 0x02})
 		}
 	}

@@ -29,7 +29,7 @@ func (h header) MarshalJSON() ([]byte, error) {
 		GasUsed         math.HexOrDecimal64   `json:"gasUsed"`
 		Time            math.HexOrDecimal64   `json:"timestamp"        gencodec:"required"`
 		Extra           hexutil.Bytes         `json:"extraData"`
-		Random       common.Hash           `json:"prevRandao"`
+		Random          common.Hash           `json:"prevRandao"`
 		BaseFee         *math.HexOrDecimal256 `json:"baseFeePerGas" rlp:"optional"`
 		WithdrawalsHash *common.Hash          `json:"withdrawalsRoot" rlp:"optional"`
 	}
@@ -65,7 +65,7 @@ func (h *header) UnmarshalJSON(input []byte) error {
 		GasUsed         *math.HexOrDecimal64  `json:"gasUsed"`
 		Time            *math.HexOrDecimal64  `json:"timestamp"        gencodec:"required"`
 		Extra           *hexutil.Bytes        `json:"extraData"`
-		Random       *common.Hash          `json:"prevRandao"`
+		Random          *common.Hash          `json:"prevRandao"`
 		BaseFee         *math.HexOrDecimal256 `json:"baseFeePerGas" rlp:"optional"`
 		WithdrawalsHash *common.Hash          `json:"withdrawalsRoot" rlp:"optional"`
 	}

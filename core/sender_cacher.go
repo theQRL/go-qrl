@@ -51,7 +51,7 @@ func newTxSenderCacher(threads int) *txSenderCacher {
 		tasks:   make(chan *txSenderCacherRequest, threads),
 		threads: threads,
 	}
-	for i := 0; i < threads; i++ {
+	for range threads {
 		go cacher.cache()
 	}
 	return cacher
@@ -80,7 +80,7 @@ func (cacher *txSenderCacher) Recover(signer types.Signer, txs []*types.Transact
 	if len(txs) < tasks*4 {
 		tasks = (len(txs) + 3) / 4
 	}
-	for i := 0; i < tasks; i++ {
+	for i := range tasks {
 		cacher.tasks <- &txSenderCacherRequest{
 			signer: signer,
 			txs:    txs[i:],

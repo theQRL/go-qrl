@@ -50,12 +50,6 @@ func (t *table) Get(key []byte) ([]byte, error) {
 	return t.db.Get(append([]byte(t.prefix), key...))
 }
 
-// HasAncient is a noop passthrough that just forwards the request to the underlying
-// database.
-func (t *table) HasAncient(kind string, number uint64) (bool, error) {
-	return t.db.HasAncient(kind, number)
-}
-
 // Ancient is a noop passthrough that just forwards the request to the underlying
 // database.
 func (t *table) Ancient(kind string, number uint64) ([]byte, error) {
@@ -111,12 +105,6 @@ func (t *table) TruncateTail(items uint64) (uint64, error) {
 // database.
 func (t *table) Sync() error {
 	return t.db.Sync()
-}
-
-// MigrateTable processes the entries in a given table in sequence
-// converting them to a new format if they're of an old format.
-func (t *table) MigrateTable(kind string, convert convertLegacyFn) error {
-	return t.db.MigrateTable(kind, convert)
 }
 
 // AncientDatadir returns the ancient datadir of the underlying database.
@@ -198,13 +186,6 @@ func (t *table) NewBatch() qrldb.Batch {
 // NewBatchWithSize creates a write-only database batch with pre-allocated buffer.
 func (t *table) NewBatchWithSize(size int) qrldb.Batch {
 	return &tableBatch{t.db.NewBatchWithSize(size), t.prefix}
-}
-
-// NewSnapshot creates a database snapshot based on the current state.
-// The created snapshot will not be affected by all following mutations
-// happened on the database.
-func (t *table) NewSnapshot() (qrldb.Snapshot, error) {
-	return t.db.NewSnapshot()
 }
 
 // tableBatch is a wrapper around a database batch that prefixes each key access

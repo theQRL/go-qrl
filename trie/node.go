@@ -79,15 +79,16 @@ func (n hashNode) String() string   { return n.fstring("") }
 func (n valueNode) String() string  { return n.fstring("") }
 
 func (n *fullNode) fstring(ind string) string {
-	resp := fmt.Sprintf("[\n%s  ", ind)
+	var resp strings.Builder
+	resp.WriteString(fmt.Sprintf("[\n%s  ", ind))
 	for i, node := range &n.Children {
 		if node == nil {
-			resp += fmt.Sprintf("%s: <nil> ", indices[i])
+			resp.WriteString(fmt.Sprintf("%s: <nil> ", indices[i]))
 		} else {
-			resp += fmt.Sprintf("%s: %v", indices[i], node.fstring(ind+"  "))
+			resp.WriteString(fmt.Sprintf("%s: %v", indices[i], node.fstring(ind+"  ")))
 		}
 	}
-	return resp + fmt.Sprintf("\n%s] ", ind)
+	return resp.String() + fmt.Sprintf("\n%s] ", ind)
 }
 func (n *shortNode) fstring(ind string) string {
 	return fmt.Sprintf("{%x: %v} ", n.Key, n.Val.fstring(ind+"  "))
@@ -187,7 +188,7 @@ func decodeShort(hash, elems []byte) (node, error) {
 
 func decodeFull(hash, elems []byte) (*fullNode, error) {
 	n := &fullNode{flags: nodeFlag{hash: hash}}
-	for i := 0; i < 16; i++ {
+	for i := range 16 {
 		cld, rest, err := decodeRef(elems)
 		if err != nil {
 			return n, wrapError(err, fmt.Sprintf("[%d]", i))

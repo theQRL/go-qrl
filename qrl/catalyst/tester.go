@@ -55,10 +55,7 @@ func RegisterFullSyncTester(stack *node.Node, backend *qrl.QRL, target common.Ha
 
 // Start launches the beacon sync with provided sync target.
 func (tester *FullSyncTester) Start() error {
-	tester.wg.Add(1)
-	go func() {
-		defer tester.wg.Done()
-
+	tester.wg.Go(func() {
 		// Trigger beacon sync with the provided block hash as trusted
 		// chain head.
 		err := tester.backend.Downloader().BeaconDevSync(downloader.FullSync, tester.target, tester.closed)
@@ -83,7 +80,7 @@ func (tester *FullSyncTester) Start() error {
 				return
 			}
 		}
-	}()
+	})
 	return nil
 }
 

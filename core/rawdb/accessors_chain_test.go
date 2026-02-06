@@ -28,7 +28,7 @@ import (
 
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/rlp"
 	"golang.org/x/crypto/sha3"
@@ -396,7 +396,7 @@ func TestBlockReceiptStorage(t *testing.T) {
 		t.Fatalf("no receipts returned")
 	} else {
 		if err := checkReceiptsRLP(rs, receipts); err != nil {
-			t.Fatalf(err.Error())
+			t.Fatal(err)
 		}
 	}
 	// Delete the body and ensure that the receipts are no longer returned (metadata can't be recomputed)
@@ -424,7 +424,7 @@ func checkReceiptsRLP(have, want types.Receipts) error {
 	if len(have) != len(want) {
 		return fmt.Errorf("receipts sizes mismatch: have %d, want %d", len(have), len(want))
 	}
-	for i := 0; i < len(want); i++ {
+	for i := range want {
 		rlpHave, err := rlp.EncodeToBytes(have[i])
 		if err != nil {
 			return err
@@ -536,8 +536,8 @@ func TestHashesInRange(t *testing.T) {
 	db := NewMemoryDatabase()
 	// For each number, write N versions of that particular number
 	total := 0
-	for i := 0; i < 15; i++ {
-		for ii := 0; ii < i; ii++ {
+	for i := range 15 {
+		for ii := range i {
 			WriteHeader(db, mkHeader(i, ii))
 			total++
 		}
@@ -582,13 +582,12 @@ func BenchmarkWriteAncientBlocks(b *testing.B) {
 	const blockTxs = 20
 	allBlocks := makeTestBlocks(b.N, blockTxs)
 	batchReceipts := makeTestReceipts(batchSize, blockTxs)
-	b.ResetTimer()
 
 	// The benchmark loop writes batches of blocks, but note that the total block count is
 	// b.N. This means the resulting ns/op measurement is the time it takes to write a
 	// single block and its associated data.
 	var totalSize int64
-	for i := 0; i < b.N; i += batchSize {
+	for i := 0; b.Loop(); i += batchSize {
 		length := batchSize
 		if i+batchSize > b.N {
 			length = b.N - i
@@ -609,15 +608,15 @@ func BenchmarkWriteAncientBlocks(b *testing.B) {
 
 // makeTestBlocks creates fake blocks for the ancient write benchmark.
 func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
-	key, _ := pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
+	wallet, _ := wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 	signer := types.LatestSignerForChainID(big.NewInt(8))
 
 	// Create transactions.
 	txs := make([]*types.Transaction, txsPerBlock)
-	for i := 0; i < len(txs); i++ {
+	for i := range txs {
 		var err error
 		to := common.Address{1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
-		txs[i], err = types.SignNewTx(key, signer, &types.DynamicFeeTx{
+		txs[i], err = types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
 			Nonce:     2,
 			GasFeeCap: big.NewInt(30000),
 			Gas:       0x45454545,
@@ -630,7 +629,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 
 	// Create the blocks.
 	blocks := make([]*types.Block, nblock)
-	for i := 0; i < nblock; i++ {
+	for i := range nblock {
 		header := &types.Header{
 			Number: big.NewInt(int64(i)),
 			Extra:  []byte("test block"),
@@ -644,7 +643,7 @@ func makeTestBlocks(nblock int, txsPerBlock int) []*types.Block {
 // makeTestReceipts creates fake receipts for the ancient write benchmark.
 func makeTestReceipts(n int, nPerBlock int) []types.Receipts {
 	receipts := make([]*types.Receipt, nPerBlock)
-	for i := 0; i < len(receipts); i++ {
+	for i := range receipts {
 		receipts[i] = &types.Receipt{
 			Status:            types.ReceiptStatusSuccessful,
 			CumulativeGasUsed: 0x888888888,
@@ -652,7 +651,7 @@ func makeTestReceipts(n int, nPerBlock int) []types.Receipts {
 		}
 	}
 	allReceipts := make([]types.Receipts, n)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		allReceipts[i] = receipts
 	}
 	return allReceipts
@@ -866,7 +865,7 @@ func BenchmarkDecodeRLPLogs(b *testing.B) {
 	b.Run("ReceiptForStorage", func(b *testing.B) {
 		b.ReportAllocs()
 		var r []*types.ReceiptForStorage
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if err := rlp.DecodeBytes(buf, &r); err != nil {
 				b.Fatal(err)
 			}
@@ -875,7 +874,7 @@ func BenchmarkDecodeRLPLogs(b *testing.B) {
 	b.Run("rlpLogs", func(b *testing.B) {
 		b.ReportAllocs()
 		var r []*receiptLogs
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			if err := rlp.DecodeBytes(buf, &r); err != nil {
 				b.Fatal(err)
 			}
@@ -895,7 +894,7 @@ func TestHeadersRLPStorage(t *testing.T) {
 	// Create blocks
 	var chain []*types.Block
 	var pHash common.Hash
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		block := types.NewBlockWithHeader(&types.Header{
 			Number:          big.NewInt(int64(i)),
 			Extra:           []byte("test block"),

@@ -74,7 +74,7 @@ type Backend interface {
 	RunPeer(peer *Peer, handler Handler) error
 
 	// PeerInfo retrieves all known `qrl` information about a peer.
-	PeerInfo(id qnode.ID) interface{}
+	PeerInfo(id qnode.ID) any
 
 	// Handle is a callback to be invoked when a data packet is received from
 	// the remote peer. Only packets not consumed by the protocol handler will
@@ -92,8 +92,6 @@ type TxPool interface {
 func MakeProtocols(backend Backend, network uint64, dnsdisc qnode.Iterator) []p2p.Protocol {
 	protocols := make([]p2p.Protocol, 0, len(ProtocolVersions))
 	for _, version := range ProtocolVersions {
-		version := version // Closure
-
 		protocols = append(protocols, p2p.Protocol{
 			Name:    ProtocolName,
 			Version: version,
@@ -106,10 +104,10 @@ func MakeProtocols(backend Backend, network uint64, dnsdisc qnode.Iterator) []p2
 					return Handle(backend, peer)
 				})
 			},
-			NodeInfo: func() interface{} {
+			NodeInfo: func() any {
 				return nodeInfo(backend.Chain(), network)
 			},
-			PeerInfo: func(id qnode.ID) interface{} {
+			PeerInfo: func(id qnode.ID) any {
 				return backend.PeerInfo(id)
 			},
 			Attributes:     []qnr.Entry{currentQNREntry(backend.Chain())},
@@ -155,7 +153,7 @@ func Handle(backend Backend, peer *Peer) error {
 
 type msgHandler func(backend Backend, msg Decoder, peer *Peer) error
 type Decoder interface {
-	Decode(val interface{}) error
+	Decode(val any) error
 	Time() time.Time
 }
 

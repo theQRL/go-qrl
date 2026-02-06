@@ -197,7 +197,7 @@ func (api *ExternalSigner) SignTx(account accounts.Account, tx *types.Transactio
 		to = &t
 	}
 	args := &apitypes.SendTxArgs{
-		Data:  &data,
+		Input: &data,
 		Nonce: hexutil.Uint64(tx.Nonce()),
 		Value: hexutil.Big(*tx.Value()),
 		Gas:   hexutil.Uint64(tx.Gas()),

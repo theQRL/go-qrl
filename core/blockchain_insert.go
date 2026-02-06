@@ -55,30 +55,30 @@ func (st *insertStats) report(chain []*types.Block, index int, snapDiffItems, sn
 		end := chain[index]
 
 		// Assemble the log context and send it to the logger
-		context := []interface{}{
+		context := []any{
 			"number", end.Number(), "hash", end.Hash(),
 			"blocks", st.processed, "txs", txs, "mgas", float64(st.usedGas) / 1000000,
 			"elapsed", common.PrettyDuration(elapsed), "mgasps", float64(st.usedGas) * 1000 / float64(elapsed),
 		}
 		if timestamp := time.Unix(int64(end.Time()), 0); time.Since(timestamp) > time.Minute {
-			context = append(context, []interface{}{"age", common.PrettyAge(timestamp)}...)
+			context = append(context, []any{"age", common.PrettyAge(timestamp)}...)
 		}
 		if snapDiffItems != 0 || snapBufItems != 0 { // snapshots enabled
-			context = append(context, []interface{}{"snapdiffs", snapDiffItems}...)
+			context = append(context, []any{"snapdiffs", snapDiffItems}...)
 			if snapBufItems != 0 { // future snapshot refactor
-				context = append(context, []interface{}{"snapdirty", snapBufItems}...)
+				context = append(context, []any{"snapdirty", snapBufItems}...)
 			}
 		}
 		if trieDiffNodes != 0 { // pathdb
-			context = append(context, []interface{}{"triediffs", trieDiffNodes}...)
+			context = append(context, []any{"triediffs", trieDiffNodes}...)
 		}
-		context = append(context, []interface{}{"triedirty", triebufNodes}...)
+		context = append(context, []any{"triedirty", triebufNodes}...)
 
 		if st.queued > 0 {
-			context = append(context, []interface{}{"queued", st.queued}...)
+			context = append(context, []any{"queued", st.queued}...)
 		}
 		if st.ignored > 0 {
-			context = append(context, []interface{}{"ignored", st.ignored}...)
+			context = append(context, []any{"ignored", st.ignored}...)
 		}
 		if setHead {
 			log.Info("Imported new chain segment", context...)
@@ -170,17 +170,7 @@ func (it *insertIterator) current() *types.Header {
 	return it.chain[it.index].Header()
 }
 
-// first returns the first block in the it.
-func (it *insertIterator) first() *types.Block {
-	return it.chain[0]
-}
-
 // remaining returns the number of remaining blocks.
 func (it *insertIterator) remaining() int {
 	return len(it.chain) - it.index
-}
-
-// processed returns the number of processed blocks.
-func (it *insertIterator) processed() int {
-	return it.index + 1
 }

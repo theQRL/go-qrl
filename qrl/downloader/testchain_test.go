@@ -28,16 +28,16 @@ import (
 	"github.com/theQRL/go-zond/core/rawdb"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/params"
 	"github.com/theQRL/go-zond/trie"
 )
 
 // Test chain parameters.
 var (
-	testKey, _  = pqcrypto.HexToWallet("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
-	testAddress = testKey.GetAddress()
-	testDB      = rawdb.NewMemoryDatabase()
+	testWallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
+	testAddress   = testWallet.GetAddress()
+	testDB        = rawdb.NewMemoryDatabase()
 
 	testGspec = &core.Genesis{
 		Config:  params.TestChainConfig,
@@ -138,7 +138,7 @@ func (tc *testChain) generate(n int, seed byte, parent *types.Block) {
 		if parent == tc.blocks[0] && i%22 == 0 {
 			signer := types.MakeSigner(params.TestChainConfig)
 
-			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: block.BaseFee(), Data: nil}), signer, testKey)
+			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: block.BaseFee(), Data: nil}), signer, testWallet)
 			if err != nil {
 				panic(err)
 			}

@@ -31,8 +31,8 @@ func TestGenerator(t *testing.T) {
 	// Generate the input and the rotated output
 	var input, output [types.BloomBitLength][types.BloomByteLength]byte
 
-	for i := 0; i < types.BloomBitLength; i++ {
-		for j := 0; j < types.BloomBitLength; j++ {
+	for i := range types.BloomBitLength {
+		for j := range types.BloomBitLength {
 			bit := byte(rand.Int() % 2)
 
 			input[i][j/8] |= bit << byte(7-j%8)
@@ -64,8 +64,7 @@ func BenchmarkGenerator(b *testing.B) {
 	var input [types.BloomBitLength][types.BloomByteLength]byte
 	b.Run("empty", func(b *testing.B) {
 		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			// Crunch the input through the generator and verify the result
 			gen, err := NewGenerator(types.BloomBitLength)
 			if err != nil {
@@ -78,13 +77,12 @@ func BenchmarkGenerator(b *testing.B) {
 			}
 		}
 	})
-	for i := 0; i < types.BloomBitLength; i++ {
+	for i := range types.BloomBitLength {
 		crand.Read(input[i][:])
 	}
 	b.Run("random", func(b *testing.B) {
 		b.ReportAllocs()
-		b.ResetTimer()
-		for i := 0; i < b.N; i++ {
+		for i := 0; b.Loop(); i++ {
 			// Crunch the input through the generator and verify the result
 			gen, err := NewGenerator(types.BloomBitLength)
 			if err != nil {

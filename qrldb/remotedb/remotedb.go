@@ -34,7 +34,7 @@ type Database struct {
 
 func (db *Database) Has(key []byte) (bool, error) {
 	if _, err := db.Get(key); err != nil {
-		return false, nil
+		return false, err
 	}
 	return true, nil
 }
@@ -46,13 +46,6 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 		return nil, err
 	}
 	return resp, nil
-}
-
-func (db *Database) HasAncient(kind string, number uint64) (bool, error) {
-	if _, err := db.Ancient(kind, number); err != nil {
-		return false, nil
-	}
-	return true, nil
 }
 
 func (db *Database) Ancient(kind string, number uint64) ([]byte, error) {
@@ -110,10 +103,6 @@ func (db *Database) Sync() error {
 	return nil
 }
 
-func (db *Database) MigrateTable(s string, f func([]byte) ([]byte, error)) error {
-	panic("not supported")
-}
-
 func (db *Database) NewBatch() qrldb.Batch {
 	panic("not supported")
 }
@@ -136,10 +125,6 @@ func (db *Database) AncientDatadir() (string, error) {
 
 func (db *Database) Compact(start []byte, limit []byte) error {
 	return nil
-}
-
-func (db *Database) NewSnapshot() (qrldb.Snapshot, error) {
-	panic("not supported")
 }
 
 func (db *Database) Close() error {

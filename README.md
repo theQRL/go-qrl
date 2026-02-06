@@ -11,7 +11,7 @@ Official Golang execution layer implementation of the QRL protocol.
 
 For prerequisites and detailed build instructions please read the [Installation Instructions](https://test-zond.theqrl.org/install).
 
-Building `gzond` requires both a Go (version 1.21 or later) and a C compiler. You can install
+Building `gzond` requires both a Go (version 1.25 or later) and a C compiler. You can install
 them using your favourite package manager. Once the dependencies are installed, run
 
 ```shell
@@ -35,7 +35,6 @@ directory.
 |   `clef`    | Stand-alone signing tool, which can be used as a backend signer for `gzond`.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 |  `devp2p`   | Utilities to interact with nodes on the networking layer, without running a full blockchain.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 |  `abigen`   | Source code generator to convert QRL contract definitions into easy-to-use, compile-time type-safe Go packages. It operates on plain [QRL contract ABIs](https://docs.soliditylang.org/en/develop/abi-spec.html) with expanded functionality if the contract bytecode is also available. However, it also accepts Hyperion source files, making development much more streamlined. Please see the [Native DApps](https://geth.ethereum.org/docs/developers/dapp-developer/native-bindings) page for details.                                  |
-| `bootnode`  | Stripped down version of our QRL client implementation that only takes part in the network node discovery protocol, but does not run any of the higher level application protocols. It can be used as a lightweight bootstrap node to aid in finding peers in private networks.                                                                                                                                                                                                                                               |
 |   `qrvm`     | Developer utility version of the QRVM (Quantum Resistant Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode. Its purpose is to allow isolated, fine-grained debugging of QRVM opcodes (e.g. `qrvm --code 60ff60ff --debug run`).                                                                                                                                                                                                                                               |
 | `rlpdump`   | Developer utility tool to convert binary RLP ([Recursive Length Prefix](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp)) dumps (data encoding used by the QRL protocol both network as well as consensus wise) to user-friendlier hierarchical representation (e.g. `rlpdump --hex CE0183FFFFFFC4C304050583616263`).                                                                                                                                                                                |
 
@@ -162,89 +161,6 @@ transport before doing so! Hackers on the internet are actively trying to subver
 QRL nodes with exposed APIs! Further, all browser tabs can access locally
 running web servers, so malicious web pages could try to subvert locally available
 APIs!**
-
-### Operating a private network
-
-Maintaining your own private network is more involved as a lot of configurations taken for
-granted in the official networks need to be manually set up.
-
-#### Defining the private genesis state
-
-First, you'll need to create the genesis state of your networks, which all nodes need to be
-aware of and agree upon. This consists of a small JSON file (e.g. call it `genesis.json`):
-
-```json
-{
-  "config": {
-    "chainId": <arbitrary positive integer>
-  },
-  "alloc": {},
-  "coinbase": "Q0000000000000000000000000000000000000000",
-  "extraData": "",
-  "gasLimit": "0x2fefd8",
-  "mixhash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
-  "timestamp": "0x00"
-}
-```
-
-The above fields should be fine for most purposes, although we'd recommend changing
-the `nonce` to some random value so you prevent unknown remote nodes from being able
-to connect to you. If you'd like to pre-fund some accounts for easier testing, create
-the accounts and populate the `alloc` field with their addresses.
-
-```json
-"alloc": {
-  "Q0000000000000000000000000000000000000001": {
-    "balance": "111111111"
-  },
-  "Q0000000000000000000000000000000000000002": {
-    "balance": "222222222"
-  }
-}
-```
-
-With the genesis state defined in the above JSON file, you'll need to initialize **every**
-`gzond` node with it prior to starting it up to ensure all blockchain parameters are correctly
-set:
-
-```shell
-$ gzond init path/to/genesis.json
-```
-
-#### Creating the rendezvous point
-
-With all nodes that you want to run initialized to the desired genesis state, you'll need to
-start a bootstrap node that others can use to find each other in your network and/or over
-the internet. The clean way is to configure and run a dedicated bootnode:
-
-```shell
-$ bootnode --genkey=boot.key
-$ bootnode --nodekey=boot.key
-```
-
-With the bootnode online, it will display an [`qnode` URL](https://ethereum.org/en/developers/docs/networking-layer/network-addresses/#enode)
-that other nodes can use to connect to it and exchange peer information. Make sure to
-replace the displayed IP address information (most probably `[::]`) with your externally
-accessible IP to get the actual `qnode` URL.
-
-*Note: You could also use a full-fledged `gzond` node as a bootnode, but it's the less
-recommended way.*
-
-#### Starting up your member nodes
-
-With the bootnode operational and externally reachable (you can try
-`telnet <ip> <port>` to ensure it's indeed reachable), start every subsequent `gzond`
-node pointed to the bootnode for peer discovery via the `--bootnodes` flag. It will
-probably also be desirable to keep the data directory of your private network separated, so
-do also specify a custom `--datadir` flag.
-
-```shell
-$ gzond --datadir=path/to/custom/data/folder --bootnodes=<bootnode-qnode-url-from-above>
-```
-
-*Note: Since your network will be completely cut off from the main and test networks, you'll
-also need to configure a miner to process transactions and create new blocks for you.*
 
 ## Contribution
 

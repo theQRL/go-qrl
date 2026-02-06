@@ -22,11 +22,10 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/cmd/utils"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,7 +36,7 @@ type outputGenerate struct {
 var (
 	seedFlag = &cli.StringFlag{
 		Name:  "seed",
-		Usage: "file containing a raw private key seed to encrypt",
+		Usage: "file containing a wallet seed to encrypt",
 	}
 	lightKDFFlag = &cli.BoolFlag{
 		Name:  "lightkdf",
@@ -52,8 +51,8 @@ var commandGenerate = &cli.Command{
 	Description: `
 Generate a new keyfile.
 
-If you want to encrypt an existing private key seed, it can be specified by setting
---seed with the location of the file containing the private key.
+If you want to encrypt an existing wallet seed, it can be specified by setting
+--seed with the location of the file containing the seed.
 `,
 	Flags: []cli.Flag{
 		passphraseFlag,
@@ -73,19 +72,19 @@ If you want to encrypt an existing private key seed, it can be specified by sett
 			utils.Fatalf("Error checking if keyfile exists: %v", err)
 		}
 
-		var wallet *walletmldsa87.Wallet
+		var w wallet.Wallet
 		var err error
 		if file := ctx.String(seedFlag.Name); file != "" {
-			// Load private key seed from file.
-			wallet, err = pqcrypto.LoadWallet(file)
+			// Restore wallet from file.
+			w, err = wallet.RestoreFromFile(file)
 			if err != nil {
-				utils.Fatalf("Can't load private key seed: %v", err)
+				utils.Fatalf("Can't restore wallet from file: %v", err)
 			}
 		} else {
 			// If not loaded, generate random.
-			wallet, err = pqcrypto.GenerateWalletKey()
+			w, err = wallet.Generate(wallet.ML_DSA_87)
 			if err != nil {
-				utils.Fatalf("Failed to generate random private key: %v", err)
+				utils.Fatalf("Failed to generate random wallet: %v", err)
 			}
 		}
 
@@ -96,8 +95,8 @@ If you want to encrypt an existing private key seed, it can be specified by sett
 		}
 		key := &keystore.Key{
 			Id:      UUID,
-			Address: common.Address(wallet.GetAddress()),
-			Wallet:  wallet,
+			Address: common.Address(w.GetAddress()),
+			Wallet:  w,
 		}
 
 		// Encrypt key with passphrase.

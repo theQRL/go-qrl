@@ -549,7 +549,7 @@ func (pool *LegacyPool) Pending(filter txpool.PendingFilter) map[common.Address]
 		}
 		if len(txs) > 0 {
 			lazies := make([]*txpool.LazyTransaction, len(txs))
-			for i := 0; i < len(txs); i++ {
+			for i := range txs {
 				lazies[i] = &txpool.LazyTransaction{
 					Pool:      pool,
 					Hash:      txs[i].Hash(),

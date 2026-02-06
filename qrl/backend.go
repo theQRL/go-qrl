@@ -38,6 +38,7 @@ import (
 	"github.com/theQRL/go-zond/event"
 	"github.com/theQRL/go-zond/internal/qrlapi"
 	"github.com/theQRL/go-zond/internal/shutdowncheck"
+	"github.com/theQRL/go-zond/internal/version"
 	"github.com/theQRL/go-zond/log"
 	"github.com/theQRL/go-zond/miner"
 	"github.com/theQRL/go-zond/node"
@@ -53,6 +54,7 @@ import (
 	"github.com/theQRL/go-zond/qrldb"
 	"github.com/theQRL/go-zond/rlp"
 	"github.com/theQRL/go-zond/rpc"
+	gzondversion "github.com/theQRL/go-zond/version"
 )
 
 // QRL implements the QRL full node service.
@@ -158,7 +160,7 @@ func New(stack *node.Node, config *qrlconfig.Config) (*QRL, error) {
 
 	if !config.SkipBcVersionCheck {
 		if bcVersion != nil && *bcVersion > core.BlockChainVersion {
-			return nil, fmt.Errorf("database version is v%d, Gzond %s only supports v%d", *bcVersion, params.VersionWithMeta, core.BlockChainVersion)
+			return nil, fmt.Errorf("database version is v%d, Gzond %s only supports v%d", *bcVersion, version.WithMeta, core.BlockChainVersion)
 		} else if bcVersion == nil || *bcVersion < core.BlockChainVersion {
 			if bcVersion != nil { // only print warning on upgrade, not on init
 				log.Warn("Upgrade blockchain database version", "from", dbVer, "to", core.BlockChainVersion)
@@ -251,8 +253,8 @@ func New(stack *node.Node, config *qrlconfig.Config) (*QRL, error) {
 func makeExtraData(extra []byte) []byte {
 	if len(extra) == 0 {
 		// create default extradata
-		extra, _ = rlp.EncodeToBytes([]interface{}{
-			uint(params.VersionMajor<<16 | params.VersionMinor<<8 | params.VersionPatch),
+		extra, _ = rlp.EncodeToBytes([]any{
+			uint(gzondversion.Major<<16 | gzondversion.Minor<<8 | gzondversion.Patch),
 			"gzond",
 			runtime.Version(),
 			runtime.GOOS,

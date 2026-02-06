@@ -146,7 +146,7 @@ func TestAddressHexChecksum(t *testing.T) {
 
 func BenchmarkAddressHex(b *testing.B) {
 	testAddr, _ := NewAddressFromString("Q5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		testAddr.Hex()
 	}
 }
@@ -214,7 +214,7 @@ func TestMixedcaseAccount_Address(t *testing.T) {
 
 func TestHash_Scan(t *testing.T) {
 	type args struct {
-		src interface{}
+		src any
 	}
 	tests := []struct {
 		name    string
@@ -305,7 +305,7 @@ func TestHash_Value(t *testing.T) {
 
 func TestAddress_Scan(t *testing.T) {
 	type args struct {
-		src interface{}
+		src any
 	}
 	tests := []struct {
 		name    string
@@ -557,8 +557,7 @@ func BenchmarkPrettyDuration(b *testing.B) {
 	var x = PrettyDuration(time.Duration(int64(1203123912312)))
 	b.Logf("Pre %s", time.Duration(x).String())
 	var a string
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		a = x.String()
 	}
 	b.Logf("Post %s", a)

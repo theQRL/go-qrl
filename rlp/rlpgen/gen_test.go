@@ -47,11 +47,10 @@ func init() {
 	}
 }
 
-var tests = []string{"uints", "nil", "rawvalue", "optional", "bigint", "uint256"}
+var tests = []string{"uints", "nil", "rawvalue", "optional", "bigint", "uint256", "pkgclash"}
 
 func TestOutput(t *testing.T) {
 	for _, test := range tests {
-		test := test
 		t.Run(test, func(t *testing.T) {
 			inputFile := filepath.Join("testdata", test+".in.txt")
 			outputFile := filepath.Join("testdata", test+".out.txt")

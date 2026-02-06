@@ -32,6 +32,8 @@ import (
 	"github.com/theQRL/go-zond/qrldb"
 	"github.com/theQRL/go-zond/qrldb/leveldb"
 	"github.com/theQRL/go-zond/qrldb/memorydb"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 // freezerdb is a database wrapper that enabled freezer data retrievals.
@@ -284,11 +286,9 @@ func NewDatabaseWithFreezer(db qrldb.KeyValueStore, ancient string, namespace st
 	}
 	// Freezer is consistent with the key-value database, permit combining the two
 	if !frdb.readonly {
-		frdb.wg.Add(1)
-		go func() {
+		frdb.wg.Go(func() {
 			frdb.freeze(db)
-			frdb.wg.Done()
-		}()
+		})
 	}
 	return &freezerdb{
 		ancientRoot:   ancient,
@@ -594,11 +594,12 @@ func InspectDatabase(db qrldb.Database, keyPrefix, keyStart []byte) error {
 	if err != nil {
 		return err
 	}
+	caser := cases.Title(language.English)
 	for _, ancient := range ancients {
 		for _, table := range ancient.sizes {
 			stats = append(stats, []string{
-				fmt.Sprintf("Ancient store (%s)", strings.Title(ancient.name)),
-				strings.Title(table.name),
+				fmt.Sprintf("Ancient store (%s)", caser.String(ancient.name)),
+				caser.String(table.name),
 				table.size.String(),
 				fmt.Sprintf("%d", ancient.count()),
 			})

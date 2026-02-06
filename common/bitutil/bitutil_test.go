@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-// Adapted from: https://golang.org/src/crypto/cipher/xor_test.go
+// Adapted from: https://go.dev/src/crypto/subtle/xor_test.go
 
 package bitutil
 
@@ -11,45 +11,18 @@ import (
 	"testing"
 )
 
-// Tests that bitwise XOR works for various alignments.
-func TestXOR(t *testing.T) {
-	for alignP := 0; alignP < 2; alignP++ {
-		for alignQ := 0; alignQ < 2; alignQ++ {
-			for alignD := 0; alignD < 2; alignD++ {
-				p := make([]byte, 1023)[alignP:]
-				q := make([]byte, 1023)[alignQ:]
-
-				for i := 0; i < len(p); i++ {
-					p[i] = byte(i)
-				}
-				for i := 0; i < len(q); i++ {
-					q[i] = byte(len(q) - i)
-				}
-				d1 := make([]byte, 1023+alignD)[alignD:]
-				d2 := make([]byte, 1023+alignD)[alignD:]
-
-				XORBytes(d1, p, q)
-				safeXORBytes(d2, p, q)
-				if !bytes.Equal(d1, d2) {
-					t.Error("not equal", d1, d2)
-				}
-			}
-		}
-	}
-}
-
 // Tests that bitwise AND works for various alignments.
 func TestAND(t *testing.T) {
-	for alignP := 0; alignP < 2; alignP++ {
-		for alignQ := 0; alignQ < 2; alignQ++ {
-			for alignD := 0; alignD < 2; alignD++ {
+	for alignP := range 2 {
+		for alignQ := range 2 {
+			for alignD := range 2 {
 				p := make([]byte, 1023)[alignP:]
 				q := make([]byte, 1023)[alignQ:]
 
-				for i := 0; i < len(p); i++ {
+				for i := range p {
 					p[i] = byte(i)
 				}
-				for i := 0; i < len(q); i++ {
+				for i := range q {
 					q[i] = byte(len(q) - i)
 				}
 				d1 := make([]byte, 1023+alignD)[alignD:]
@@ -67,16 +40,16 @@ func TestAND(t *testing.T) {
 
 // Tests that bitwise OR works for various alignments.
 func TestOR(t *testing.T) {
-	for alignP := 0; alignP < 2; alignP++ {
-		for alignQ := 0; alignQ < 2; alignQ++ {
-			for alignD := 0; alignD < 2; alignD++ {
+	for alignP := range 2 {
+		for alignQ := range 2 {
+			for alignD := range 2 {
 				p := make([]byte, 1023)[alignP:]
 				q := make([]byte, 1023)[alignQ:]
 
-				for i := 0; i < len(p); i++ {
+				for i := range p {
 					p[i] = byte(i)
 				}
-				for i := 0; i < len(q); i++ {
+				for i := range q {
 					q[i] = byte(len(q) - i)
 				}
 				d1 := make([]byte, 1023+alignD)[alignD:]
@@ -94,7 +67,7 @@ func TestOR(t *testing.T) {
 
 // Tests that bit testing works for various alignments.
 func TestTest(t *testing.T) {
-	for align := 0; align < 2; align++ {
+	for align := range 2 {
 		// Test for bits set in the bulk part
 		p := make([]byte, 1023)[align:]
 		p[100] = 1
@@ -112,32 +85,6 @@ func TestTest(t *testing.T) {
 	}
 }
 
-// Benchmarks the potentially optimized XOR performance.
-func BenchmarkFastXOR1KB(b *testing.B) { benchmarkFastXOR(b, 1024) }
-func BenchmarkFastXOR2KB(b *testing.B) { benchmarkFastXOR(b, 2048) }
-func BenchmarkFastXOR4KB(b *testing.B) { benchmarkFastXOR(b, 4096) }
-
-func benchmarkFastXOR(b *testing.B, size int) {
-	p, q := make([]byte, size), make([]byte, size)
-
-	for i := 0; i < b.N; i++ {
-		XORBytes(p, p, q)
-	}
-}
-
-// Benchmarks the baseline XOR performance.
-func BenchmarkBaseXOR1KB(b *testing.B) { benchmarkBaseXOR(b, 1024) }
-func BenchmarkBaseXOR2KB(b *testing.B) { benchmarkBaseXOR(b, 2048) }
-func BenchmarkBaseXOR4KB(b *testing.B) { benchmarkBaseXOR(b, 4096) }
-
-func benchmarkBaseXOR(b *testing.B, size int) {
-	p, q := make([]byte, size), make([]byte, size)
-
-	for i := 0; i < b.N; i++ {
-		safeXORBytes(p, p, q)
-	}
-}
-
 // Benchmarks the potentially optimized AND performance.
 func BenchmarkFastAND1KB(b *testing.B) { benchmarkFastAND(b, 1024) }
 func BenchmarkFastAND2KB(b *testing.B) { benchmarkFastAND(b, 2048) }
@@ -146,7 +93,7 @@ func BenchmarkFastAND4KB(b *testing.B) { benchmarkFastAND(b, 4096) }
 func benchmarkFastAND(b *testing.B, size int) {
 	p, q := make([]byte, size), make([]byte, size)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		ANDBytes(p, p, q)
 	}
 }
@@ -159,7 +106,7 @@ func BenchmarkBaseAND4KB(b *testing.B) { benchmarkBaseAND(b, 4096) }
 func benchmarkBaseAND(b *testing.B, size int) {
 	p, q := make([]byte, size), make([]byte, size)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		safeANDBytes(p, p, q)
 	}
 }
@@ -172,7 +119,7 @@ func BenchmarkFastOR4KB(b *testing.B) { benchmarkFastOR(b, 4096) }
 func benchmarkFastOR(b *testing.B, size int) {
 	p, q := make([]byte, size), make([]byte, size)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		ORBytes(p, p, q)
 	}
 }
@@ -185,7 +132,7 @@ func BenchmarkBaseOR4KB(b *testing.B) { benchmarkBaseOR(b, 4096) }
 func benchmarkBaseOR(b *testing.B, size int) {
 	p, q := make([]byte, size), make([]byte, size)
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		safeORBytes(p, p, q)
 	}
 }
@@ -200,7 +147,7 @@ func BenchmarkFastTest4KB(b *testing.B) { benchmarkFastTest(b, 4096) }
 func benchmarkFastTest(b *testing.B, size int) {
 	p := make([]byte, size)
 	a := false
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		a = a != TestBytes(p)
 	}
 	GloBool = a // Use of benchmark "result" to prevent total dead code elimination.
@@ -214,7 +161,7 @@ func BenchmarkBaseTest4KB(b *testing.B) { benchmarkBaseTest(b, 4096) }
 func benchmarkBaseTest(b *testing.B, size int) {
 	p := make([]byte, size)
 	a := false
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		a = a != safeTestBytes(p)
 	}
 	GloBool = a // Use of benchmark "result" to prevent total dead code elimination.

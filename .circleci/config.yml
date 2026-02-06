@@ -46,7 +46,7 @@ commands:
 jobs:
   publish-linux-amd64-gzond-binary:
     docker:
-      - image: cimg/go:1.22
+      - image: cimg/go:1.25
     steps:
       - checkout
       - *restore_go_cache

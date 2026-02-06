@@ -30,11 +30,11 @@ import (
 	"sync"
 	"time"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/core/types"
 	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-zond/event"
 )
 
@@ -49,7 +49,7 @@ var (
 )
 
 // KeyStoreType is the reflect type of a keystore backend.
-var KeyStoreType = reflect.TypeOf(&KeyStore{})
+var KeyStoreType = reflect.TypeFor[*KeyStore]()
 
 // KeyStoreScheme is the protocol scheme prefixing account and wallet URLs.
 const KeyStoreScheme = "keystore"
@@ -98,13 +98,14 @@ func (ks *KeyStore) init(keydir string) {
 	// TODO: In order for this finalizer to work, there must be no references
 	// to ks. addressCache doesn't keep a reference but unlocked keys do,
 	// so the finalizer will not trigger until all timed unlocks have expired.
-	runtime.SetFinalizer(ks, func(m *KeyStore) {
-		m.cache.close()
-	})
+	runtime.AddCleanup(ks, func(c *accountCache) {
+		c.close()
+	}, ks.cache)
+
 	// Create the initial list of wallets from the cache
 	accs := ks.cache.accounts()
 	ks.wallets = make([]accounts.Wallet, len(accs))
-	for i := 0; i < len(accs); i++ {
+	for i := range accs {
 		ks.wallets[i] = &keystoreWallet{account: accs[i], keystore: ks}
 	}
 }
@@ -194,11 +195,14 @@ func (ks *KeyStore) Subscribe(sink chan<- accounts.WalletEvent) event.Subscripti
 // forces a manual refresh (only triggers for systems where the filesystem notifier
 // is not running).
 func (ks *KeyStore) updater() {
+	ticker := time.NewTicker(walletRefreshCycle)
+	defer ticker.Stop()
+
 	for {
 		// Wait for an account update or a refresh timeout
 		select {
 		case <-ks.changes:
-		case <-time.After(walletRefreshCycle):
+		case <-ticker.C:
 		}
 		// Run the wallet refresher
 		ks.refreshWallets()
@@ -232,7 +236,7 @@ func (ks *KeyStore) Delete(a accounts.Account, passphrase string) error {
 	// immediately afterwards.
 	a, key, err := ks.getDecryptedKey(a, passphrase)
 	if key != nil {
-		key.Wallet = nil
+		zeroWallet(&key.Wallet)
 	}
 	if err != nil {
 		return err
@@ -316,7 +320,7 @@ func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string
 	if err != nil {
 		return nil, err
 	}
-	defer zeroKey(&key.Wallet)
+	defer zeroWallet(&key.Wallet)
 	return pqcrypto.Sign(hash, key.Wallet)
 }
 
@@ -327,7 +331,7 @@ func (ks *KeyStore) SignTxWithPassphrase(a accounts.Account, passphrase string, 
 	if err != nil {
 		return nil, err
 	}
-	defer zeroKey(&key.Wallet)
+	defer zeroWallet(&key.Wallet)
 	// Depending on the presence of the chain ID, sign with or without replay protection.
 	signer := types.LatestSignerForChainID(chainID)
 	return types.SignTx(tx, signer, key.Wallet)
@@ -341,11 +345,10 @@ func (ks *KeyStore) Unlock(a accounts.Account, passphrase string) error {
 // Lock removes the private key with the given address from memory.
 func (ks *KeyStore) Lock(addr common.Address) error {
 	ks.mu.Lock()
-	if unl, found := ks.unlocked[addr]; found {
-		ks.mu.Unlock()
+	unl, found := ks.unlocked[addr]
+	ks.mu.Unlock()
+	if found {
 		ks.expire(addr, unl, time.Duration(0)*time.Nanosecond)
-	} else {
-		ks.mu.Unlock()
 	}
 	return nil
 }
@@ -370,7 +373,7 @@ func (ks *KeyStore) TimedUnlock(a accounts.Account, passphrase string, timeout t
 		if u.abort == nil {
 			// The address was unlocked indefinitely, so unlocking
 			// it with a timeout would be confusing.
-			zeroKey(&key.Wallet)
+			zeroWallet(&key.Wallet)
 			return nil
 		}
 		// Terminate the expire goroutine and replace it below.
@@ -417,7 +420,7 @@ func (ks *KeyStore) expire(addr common.Address, u *unlocked, timeout time.Durati
 		// because the map stores a new pointer every time the key is
 		// unlocked.
 		if ks.unlocked[addr] == u {
-			zeroKey(&u.Wallet)
+			zeroWallet(&u.Wallet)
 			delete(ks.unlocked, addr)
 		}
 		ks.mu.Unlock()
@@ -461,7 +464,7 @@ func (ks *KeyStore) Export(a accounts.Account, passphrase, newPassphrase string)
 func (ks *KeyStore) Import(keyJSON []byte, passphrase, newPassphrase string) (accounts.Account, error) {
 	key, err := DecryptKey(keyJSON, passphrase)
 	if key != nil && key.Wallet != nil {
-		defer zeroKey(&key.Wallet)
+		defer zeroWallet(&key.Wallet)
 	}
 	if err != nil {
 		return accounts.Account{}, err
@@ -477,12 +480,12 @@ func (ks *KeyStore) Import(keyJSON []byte, passphrase, newPassphrase string) (ac
 	return ks.importKey(key, newPassphrase)
 }
 
-// ImportMLDSA87 stores the given key into the key directory, encrypting it with the passphrase.
-func (ks *KeyStore) ImportMLDSA87(w *walletmldsa87.Wallet, passphrase string) (accounts.Account, error) {
+// ImportWallet stores the given wallet seed into the key directory, encrypting it with the passphrase.
+func (ks *KeyStore) ImportWallet(w wallet.Wallet, passphrase string) (accounts.Account, error) {
 	ks.importMu.Lock()
 	defer ks.importMu.Unlock()
 
-	key := newKeyFromMLDSA87(w)
+	key := newKeyFromWallet(w)
 	if ks.cache.hasAddress(key.Address) {
 		return accounts.Account{
 			Address: key.Address,
@@ -507,6 +510,7 @@ func (ks *KeyStore) Update(a accounts.Account, passphrase, newPassphrase string)
 	if err != nil {
 		return err
 	}
+	defer zeroWallet(&key.Wallet)
 	return ks.storage.StoreKey(a.URL.Path, key, newPassphrase)
 }
 
@@ -518,7 +522,6 @@ func (ks *KeyStore) isUpdating() bool {
 	return ks.updating
 }
 
-// zeroKey nil to ML-DSA-87 key in memory.
-func zeroKey(k **walletmldsa87.Wallet) {
+func zeroWallet(k *wallet.Wallet) {
 	*k = nil
 }

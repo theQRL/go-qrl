@@ -22,11 +22,9 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
 	"github.com/theQRL/go-zond/cmd/utils"
 	"github.com/theQRL/go-zond/common"
 	"github.com/theQRL/go-zond/console/prompt"
@@ -54,14 +52,11 @@ var (
 	// flags that configure the node
 	nodeFlags = flags.Merge([]cli.Flag{
 		utils.IdentityFlag,
-		utils.UnlockedAccountFlag,
 		utils.PasswordFileFlag,
 		utils.BootnodesFlag,
 		utils.MinFreeDiskSpaceFlag,
 		utils.KeyStoreDirFlag,
 		utils.ExternalSignerFlag,
-		// TODO(now.youtrack.cloud/issue/TGZ-4)
-		// utils.USBFlag,
 		utils.TxPoolLocalsFlag,
 		utils.TxPoolNoLocalsFlag,
 		utils.TxPoolJournalFlag,
@@ -147,7 +142,6 @@ var (
 		utils.WSPathPrefixFlag,
 		utils.IPCDisabledFlag,
 		utils.IPCPathFlag,
-		utils.InsecureUnlockAllowedFlag,
 		utils.RPCGlobalGasCapFlag,
 		utils.RPCGlobalQRVMTimeoutFlag,
 		utils.RPCGlobalTxFeeCapFlag,
@@ -312,9 +306,6 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	// Start up the node itself
 	utils.StartNode(ctx, stack, isConsole)
 
-	// Unlock any account specifically requested
-	unlockAccounts(ctx, stack)
-
 	// Register wallet event handlers to open and auto-derive wallets
 	events := make(chan accounts.WalletEvent, 16)
 	stack.AccountManager().Subscribe(events)
@@ -378,35 +369,5 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 				}
 			}
 		}()
-	}
-}
-
-// unlockAccounts unlocks any account specifically requested.
-func unlockAccounts(ctx *cli.Context, stack *node.Node) {
-	var unlocks []string
-	inputs := strings.Split(ctx.String(utils.UnlockedAccountFlag.Name), ",")
-	for _, input := range inputs {
-		if trimmed := strings.TrimSpace(input); trimmed != "" {
-			unlocks = append(unlocks, trimmed)
-		}
-	}
-	// Short circuit if there is no account to unlock.
-	if len(unlocks) == 0 {
-		return
-	}
-	// If insecure account unlocking is not allowed if node's APIs are exposed to external.
-	// Print warning log to user and skip unlocking.
-	if !stack.Config().InsecureUnlockAllowed && stack.Config().ExtRPCEnabled() {
-		utils.Fatalf("Account unlock with HTTP access is forbidden!")
-	}
-	backends := stack.AccountManager().Backends(keystore.KeyStoreType)
-	if len(backends) == 0 {
-		log.Warn("Failed to unlock accounts, keystore is not available")
-		return
-	}
-	ks := backends[0].(*keystore.KeyStore)
-	passwords := utils.MakePasswordList(ctx)
-	for i, account := range unlocks {
-		unlockAccount(ks, account, i, passwords)
 	}
 }

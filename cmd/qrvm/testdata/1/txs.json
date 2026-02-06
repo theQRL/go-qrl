@@ -8,10 +8,11 @@
     "hash": "0x0557bacce3375c98d806609b8d5043072f0b6a8bae45ae5a67a00d3a1a18d673",
     "input": "0x",
     "nonce": "0x0",
+    "descriptor": "0x",
+    "extraParams": "0x",
     "signature": "0x",
     "publicKey": "0x",
-    "descriptor": "0x",
-    "seed" : "0x41f6e321b31e72173f8ff2e292359e1862f24fba42fe6f97efaf641980eff29862f24fba42fe6f97efaf641980eff298",
+    "seed" : "0x01000041f6e321b31e72173f8ff2e292359e1862f24fba42fe6f97efaf641980eff29862f24fba42fe6f97efaf641980eff298",
     "to": "Q23b66A9C42ab8fF57b2A7216470f682D7A9a0d94",
     "value": "0x1"
   },
@@ -24,10 +25,11 @@
     "hash": "0x0557bacce3375c98d806609b8d5043072f0b6a8bae45ae5a67a00d3a1a18d673",
     "input": "0x",
     "nonce": "0x0",
+    "descriptor": "0x",
+    "extraParams": "0x",
     "signature": "0x",
     "publicKey": "0x",
-    "descriptor": "0x",
-    "seed" : "0x41f6e321b31e72173f8ff2e292359e1862f24fba42fe6f97efaf641980eff29862f24fba42fe6f97efaf641980eff298",
+    "seed" : "0x01000041f6e321b31e72173f8ff2e292359e1862f24fba42fe6f97efaf641980eff29862f24fba42fe6f97efaf641980eff298",
     "to": "Q23b66A9C42ab8fF57b2A7216470f682D7A9a0d94",
     "value": "0x1"
   }

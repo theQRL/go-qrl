@@ -18,6 +18,7 @@ package rlp
 
 import (
 	"fmt"
+	"maps"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -90,10 +91,7 @@ func (c *typeCache) generate(typ reflect.Type, tags rlpstruct.Tags) *typeinfo {
 	}
 
 	// Copy cur to next.
-	c.next = make(map[typekey]*typeinfo, len(cur)+1)
-	for k, v := range cur {
-		c.next[k] = v
-	}
+	c.next = maps.Clone(cur)
 
 	// Generate.
 	info := c.infoWhileGenerating(typ, tags)
@@ -128,7 +126,7 @@ type field struct {
 func structFields(typ reflect.Type) (fields []field, err error) {
 	// Convert fields to rlpstruct.Field.
 	var allStructFields []rlpstruct.Field
-	for i := 0; i < typ.NumField(); i++ {
+	for i := range typ.NumField() {
 		rf := typ.Field(i)
 		allStructFields = append(allStructFields, rlpstruct.Field{
 			Name:     rf.Name,

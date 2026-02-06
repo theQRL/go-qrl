@@ -952,7 +952,7 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 			// The peer delivered junk, or at least not the subchain we are
 			// syncing to. Free up the scratch space and assignment, reassign
 			// and drop the original peer.
-			for i := 0; i < requestHeaders; i++ {
+			for i := range requestHeaders {
 				s.scratchSpace[i] = nil
 			}
 			s.drop(s.scratchOwners[0])
@@ -1024,7 +1024,7 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 				// the syncer's internal state is corrupted. Do try to fix it, but
 				// be very vocal about the fault.
 				default:
-					var context []interface{}
+					var context []any
 
 					for i := range s.progress.Subchains[1:] {
 						context = append(context, fmt.Sprintf("stale_head_%d", i+1))
@@ -1048,7 +1048,7 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 		}
 		// Batch of headers consumed, shift the download window forward
 		copy(s.scratchSpace, s.scratchSpace[requestHeaders:])
-		for i := 0; i < requestHeaders; i++ {
+		for i := range requestHeaders {
 			s.scratchSpace[scratchHeaders-i-1] = nil
 		}
 		copy(s.scratchOwners, s.scratchOwners[1:])

@@ -24,10 +24,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
 	"github.com/theQRL/go-zond/accounts"
 	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 const (
@@ -38,9 +37,9 @@ type Key struct {
 	Id uuid.UUID // Version 4 "random" for unique id not derived from key data
 	// to simplify lookups we also store the address
 	Address common.Address
-	// we only store seed as pubkey/address & private key can be derived from it
-	// seed in this struct is always in plaintext
-	Wallet *walletmldsa87.Wallet
+	// we only store the seed, as pubkey/address & private key can be derived
+	// from it. Seed in this struct is always in plaintext
+	Wallet wallet.Wallet
 }
 
 type keyStore interface {
@@ -67,11 +66,11 @@ type encryptedKeyJSONV1 struct {
 }
 
 type CryptoJSON struct {
-	Cipher       string                 `json:"cipher"`
-	CipherText   string                 `json:"ciphertext"`
-	CipherParams cipherparamsJSON       `json:"cipherparams"`
-	KDF          string                 `json:"kdf"`
-	KDFParams    map[string]interface{} `json:"kdfparams"`
+	Cipher       string           `json:"cipher"`
+	CipherText   string           `json:"ciphertext"`
+	CipherParams cipherparamsJSON `json:"cipherparams"`
+	KDF          string           `json:"kdf"`
+	KDFParams    map[string]any   `json:"kdfparams"`
 }
 
 type cipherparamsJSON struct {
@@ -109,7 +108,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	}
 
 	k.Address = addr
-	k.Wallet, err = pqcrypto.HexToWallet(keyJSON.HexSeed)
+	k.Wallet, err = wallet.RestoreFromSeedHex(keyJSON.HexSeed)
 	if err != nil {
 		return err
 	}
@@ -117,7 +116,7 @@ func (k *Key) UnmarshalJSON(j []byte) (err error) {
 	return nil
 }
 
-func newKeyFromMLDSA87(w *walletmldsa87.Wallet) *Key {
+func newKeyFromWallet(w wallet.Wallet) *Key {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		panic(fmt.Sprintf("Could not create random uuid: %v", err))
@@ -131,11 +130,11 @@ func newKeyFromMLDSA87(w *walletmldsa87.Wallet) *Key {
 }
 
 func newKey() (*Key, error) {
-	d, err := walletmldsa87.NewWallet()
+	w, err := wallet.Generate(wallet.ML_DSA_87)
 	if err != nil {
 		return nil, err
 	}
-	return newKeyFromMLDSA87(d), nil
+	return newKeyFromWallet(w), nil
 }
 
 func storeNewKey(ks keyStore, auth string) (*Key, accounts.Account, error) {
@@ -148,7 +147,7 @@ func storeNewKey(ks keyStore, auth string) (*Key, accounts.Account, error) {
 		URL:     accounts.URL{Scheme: KeyStoreScheme, Path: ks.JoinPath(keyFileName(key.Address))},
 	}
 	if err := ks.StoreKey(a.URL.Path, key, auth); err != nil {
-		zeroKey(&key.Wallet)
+		zeroWallet(&key.Wallet)
 		return nil, a, err
 	}
 	return key, a, err

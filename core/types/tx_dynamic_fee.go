@@ -57,10 +57,10 @@ type DynamicFeeTx struct {
 	Data       []byte
 	AccessList AccessList
 
-	// Public Key, Signature & Descriptor values
-	PublicKey  []byte
-	Signature  []byte
-	Descriptor []byte
+	Descriptor  [3]byte
+	ExtraParams []byte
+	Signature   []byte
+	PublicKey   []byte
 }
 
 // copy creates a deep copy of the transaction data and initializes all fields.
@@ -71,14 +71,15 @@ func (tx *DynamicFeeTx) copy() TxData {
 		Data:  common.CopyBytes(tx.Data),
 		Gas:   tx.Gas,
 		// These are copied below.
-		AccessList: make(AccessList, len(tx.AccessList)),
-		Value:      new(big.Int),
-		ChainID:    new(big.Int),
-		GasTipCap:  new(big.Int),
-		GasFeeCap:  new(big.Int),
-		PublicKey:  make([]byte, pqcrypto.MLDSA87PublicKeyLength),
-		Signature:  make([]byte, pqcrypto.MLDSA87SignatureLength),
-		Descriptor: make([]byte, pqcrypto.DescriptorSize),
+		AccessList:  make(AccessList, len(tx.AccessList)),
+		Value:       new(big.Int),
+		ChainID:     new(big.Int),
+		GasTipCap:   new(big.Int),
+		GasFeeCap:   new(big.Int),
+		Descriptor:  tx.Descriptor,
+		ExtraParams: common.CopyBytes(tx.ExtraParams),
+		PublicKey:   make([]byte, pqcrypto.MLDSA87PublicKeyLength),
+		Signature:   make([]byte, pqcrypto.MLDSA87SignatureLength),
 	}
 	copy(cpy.AccessList, tx.AccessList)
 	if tx.Value != nil {
@@ -98,9 +99,6 @@ func (tx *DynamicFeeTx) copy() TxData {
 	}
 	if tx.Signature != nil {
 		copy(cpy.Signature[:pqcrypto.MLDSA87SignatureLength], tx.Signature)
-	}
-	if tx.Descriptor != nil {
-		copy(cpy.Descriptor[:pqcrypto.DescriptorSize], tx.Descriptor)
 	}
 	return cpy
 }
@@ -129,20 +127,28 @@ func (tx *DynamicFeeTx) effectiveGasPrice(dst *big.Int, baseFee *big.Int) *big.I
 	return tip.Add(tip, baseFee)
 }
 
-func (tx *DynamicFeeTx) rawSignatureValue() (signature []byte) {
+func (tx *DynamicFeeTx) rawSignatureValue() []byte {
 	return tx.Signature
 }
 
-func (tx *DynamicFeeTx) rawPublicKeyValue() (publicKey []byte) {
+func (tx *DynamicFeeTx) rawPublicKeyValue() []byte {
 	return tx.PublicKey
 }
 
-func (tx *DynamicFeeTx) rawDescriptorValue() (descriptor []byte) {
-	return tx.Descriptor
+func (tx *DynamicFeeTx) descriptor() []byte {
+	return tx.Descriptor[:]
 }
 
-func (tx *DynamicFeeTx) setSignaturePublicKeyAndDescriptorValues(chainID *big.Int, signature, publicKey, descriptor []byte) {
-	tx.ChainID, tx.PublicKey, tx.Signature, tx.Descriptor = chainID, publicKey, signature, descriptor
+func (tx *DynamicFeeTx) extraParams() []byte {
+	return tx.ExtraParams
+}
+
+func (tx *DynamicFeeTx) setAuthValues(chainID *big.Int, sig, pk, desc, extraParams []byte) {
+	tx.ChainID = chainID
+	copy(tx.Descriptor[:], desc)
+	tx.ExtraParams = extraParams
+	tx.PublicKey = pk
+	tx.Signature = sig
 }
 
 func (tx *DynamicFeeTx) encode(b *bytes.Buffer) error {

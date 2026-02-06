@@ -19,9 +19,9 @@ package rpc
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/theQRL/go-zond/common"
@@ -30,9 +30,9 @@ import (
 
 // API describes the set of methods offered over the RPC interface
 type API struct {
-	Namespace     string      // namespace under which the rpc methods of Service are exposed
-	Service       interface{} // receiver instance which holds the methods
-	Authenticated bool        // whether the api should only be available behind authentication.
+	Namespace     string // namespace under which the rpc methods of Service are exposed
+	Service       any    // receiver instance which holds the methods
+	Authenticated bool   // whether the api should only be available behind authentication.
 }
 
 // ServerCodec implements reading, parsing and writing RPC messages for the server side of
@@ -50,10 +50,10 @@ type ServerCodec interface {
 // Implementations must be safe for concurrent use.
 type jsonWriter interface {
 	// writeJSON writes a message to the connection.
-	writeJSON(ctx context.Context, msg interface{}, isError bool) error
+	writeJSON(ctx context.Context, msg any, isError bool) error
 
 	// Closed returns a channel which is closed when the connection is closed.
-	closed() <-chan interface{}
+	closed() <-chan any
 	// RemoteAddr returns the peer address of the connection.
 	remoteAddr() string
 }
@@ -103,7 +103,7 @@ func (bn *BlockNumber) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	if blckNum > math.MaxInt64 {
-		return fmt.Errorf("block number larger than int64")
+		return errors.New("block number larger than int64")
 	}
 	*bn = BlockNumber(blckNum)
 	return nil
@@ -153,7 +153,7 @@ func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
 	err := json.Unmarshal(data, &e)
 	if err == nil {
 		if e.BlockNumber != nil && e.BlockHash != nil {
-			return fmt.Errorf("cannot specify both BlockHash and BlockNumber, choose one or the other")
+			return errors.New("cannot specify both BlockHash and BlockNumber, choose one or the other")
 		}
 		bnh.BlockNumber = e.BlockNumber
 		bnh.BlockHash = e.BlockHash
@@ -201,7 +201,7 @@ func (bnh *BlockNumberOrHash) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			if blckNum > math.MaxInt64 {
-				return fmt.Errorf("blocknumber too high")
+				return errors.New("blocknumber too high")
 			}
 			bn := BlockNumber(blckNum)
 			bnh.BlockNumber = &bn
@@ -219,7 +219,7 @@ func (bnh *BlockNumberOrHash) Number() (BlockNumber, bool) {
 
 func (bnh *BlockNumberOrHash) String() string {
 	if bnh.BlockNumber != nil {
-		return strconv.Itoa(int(*bnh.BlockNumber))
+		return bnh.BlockNumber.String()
 	}
 	if bnh.BlockHash != nil {
 		return bnh.BlockHash.String()

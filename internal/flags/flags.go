@@ -91,7 +91,7 @@ func (f *DirectoryFlag) Apply(set *flag.FlagSet) error {
 		}
 	}
 	eachName(f, func(name string) {
-		set.Var(&f.Value, f.Name, f.Usage)
+		set.Var(&f.Value, name, f.Usage)
 	})
 	return nil
 }

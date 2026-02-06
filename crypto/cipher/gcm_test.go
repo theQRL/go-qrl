@@ -43,7 +43,6 @@ func TestEncryptDecryptGCM(t *testing.T) {
 
 	for _, tc := range testCases {
 		require := require.New(t)
-		tc := tc
 		t.Run("", func(t *testing.T) {
 			ciphertext, err := EncryptGCM(nil, tc.key, tc.iv, tc.plainText, nil)
 			require.NoError(err)

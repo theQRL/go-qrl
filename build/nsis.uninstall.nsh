@@ -22,7 +22,7 @@ Section "Uninstall"
   SimpleFC::AdvRemoveRule "Gzond UDP discovery (UDP:30303)"
 
   # Remove IPC endpoint (https://github.com/ethereum/EIPs/issues/147)
-  ${un.EnvVarUpdate} $0 "GZOND_SOCKET" "R" "HKLM" "\\.\pipe\gzond.ipc"
+  ${un.EnvVarUpdate} $0 "QRL_SOCKET" "R" "HKLM" "\\.\pipe\gzond.ipc"
 
   # Remove install directory from PATH
   Push "$INSTDIR"
