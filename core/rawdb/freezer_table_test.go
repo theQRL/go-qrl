@@ -29,7 +29,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 // TestFreezerBasics test initializing a freezertable from scratch, writing to the table,

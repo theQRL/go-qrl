@@ -19,7 +19,7 @@ package netutil
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
+	"github.com/theQRL/go-qrl/common/mclock"
 )
 
 // IPTracker predicts the external endpoint, i.e. IP address and port, of the local host

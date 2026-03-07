@@ -16,7 +16,7 @@
 
 package pathdb
 
-import "github.com/theQRL/go-zond/metrics"
+import "github.com/theQRL/go-qrl/metrics"
 
 var (
 	cleanHitMeter   = metrics.NewRegisteredMeter("pathdb/clean/hit", nil)

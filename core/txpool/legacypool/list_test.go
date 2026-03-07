@@ -21,8 +21,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 )
 
 // Tests that transactions can be added to strict lists and list contents and

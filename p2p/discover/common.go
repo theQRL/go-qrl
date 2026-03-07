@@ -21,11 +21,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 // UDPConn is a network connection on which discovery can operate.

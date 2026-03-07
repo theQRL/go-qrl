@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/theQRL/go-qrl/common"
 	walletcommon "github.com/theQRL/go-qrllib/wallet/common"
 	"github.com/theQRL/go-qrllib/wallet/common/descriptor"
 	"github.com/theQRL/go-qrllib/wallet/common/wallettype"
 	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
-	"github.com/theQRL/go-zond/common"
 )
 
 const (

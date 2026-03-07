@@ -19,9 +19,9 @@ package trie
 import (
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // preimageStore is the store for caching preimages of node key.

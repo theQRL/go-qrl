@@ -22,7 +22,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // Tests that batched bloom bits are correctly rotated from the input bloom

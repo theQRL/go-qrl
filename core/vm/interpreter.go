@@ -17,10 +17,10 @@
 package vm
 
 import (
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // Config are the configuration options for the Interpreter

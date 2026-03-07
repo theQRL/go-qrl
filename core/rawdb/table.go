@@ -17,7 +17,7 @@
 package rawdb
 
 import (
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // table is a wrapper around a database that prefixes each key access with a pre-

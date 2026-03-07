@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/internal/utesting"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/internal/utesting"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // var faucetAddr, _ = common.NewAddressFromString("Q71562b71999873DB5b286dF957af199Ec94617F7")

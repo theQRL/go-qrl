@@ -32,7 +32,7 @@ func (t *testHandler) ServeHTTP(out http.ResponseWriter, in *http.Request) {
 	t.body(out, in)
 }
 
-// TestAttachWithHeaders tests that 'gzond attach' with custom headers works, i.e
+// TestAttachWithHeaders tests that 'gqrl attach' with custom headers works, i.e
 // that custom headers are forwarded to the target.
 func TestAttachWithHeaders(t *testing.T) {
 	t.Parallel()
@@ -48,7 +48,7 @@ func TestAttachWithHeaders(t *testing.T) {
 	// This is fixed in a follow-up PR.
 }
 
-// TestAttachWithHeaders tests that 'gzond db --remotedb' with custom headers works, i.e
+// TestAttachWithHeaders tests that 'gqrl db --remotedb' with custom headers works, i.e
 // that custom headers are forwarded to the target.
 func TestRemoteDbWithHeaders(t *testing.T) {
 	t.Parallel()
@@ -60,7 +60,7 @@ func TestRemoteDbWithHeaders(t *testing.T) {
 	testReceiveHeaders(t, ln, "db", "metadata", "--remotedb", fmt.Sprintf("http://localhost:%d", port), "-H", "first: one", "-H", "second: two")
 }
 
-func testReceiveHeaders(t *testing.T, ln net.Listener, gzondArgs ...string) {
+func testReceiveHeaders(t *testing.T, ln net.Listener, gqrlArgs ...string) {
 	var ok atomic.Uint32
 	server := &http.Server{
 		Addr: "localhost:0",
@@ -76,7 +76,7 @@ func testReceiveHeaders(t *testing.T, ln net.Listener, gzondArgs ...string) {
 		}}}
 	go server.Serve(ln)
 	defer server.Close()
-	runGzond(t, gzondArgs...).WaitExit()
+	runGqrl(t, gqrlArgs...).WaitExit()
 	if ok.Load() != 1 {
 		t.Fatal("Test fail, expected invocation to succeed")
 	}

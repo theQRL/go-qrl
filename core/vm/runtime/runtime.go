@@ -20,13 +20,13 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // Config is a basic type specifying certain configuration flags for running

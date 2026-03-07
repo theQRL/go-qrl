@@ -23,8 +23,8 @@ import (
 
 	"github.com/cockroachdb/pebble"
 	"github.com/cockroachdb/pebble/vfs"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/dbtest"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/dbtest"
 )
 
 func TestPebbleDB(t *testing.T) {

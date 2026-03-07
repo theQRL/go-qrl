@@ -21,8 +21,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/theQRL/go-zond/internal/cmdtest"
-	"github.com/theQRL/go-zond/internal/reexec"
+	"github.com/theQRL/go-qrl/internal/cmdtest"
+	"github.com/theQRL/go-qrl/internal/reexec"
 )
 
 type testQRLkey struct {

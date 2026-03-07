@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 func TestReadNodes(t *testing.T) {

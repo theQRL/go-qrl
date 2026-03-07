@@ -20,9 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
 )
 
 func toHexBig(h string) hexutil.Big {

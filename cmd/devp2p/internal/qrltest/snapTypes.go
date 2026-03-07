@@ -18,7 +18,7 @@ package qrltest
 
 // TODO(now.youtrack.cloud/issue/TGZ-6)
 /*
-import "github.com/theQRL/go-zond/qrl/protocols/snap"
+import "github.com/theQRL/go-qrl/qrl/protocols/snap"
 
 // GetAccountRange represents an account range query.
 type GetAccountRange snap.GetAccountRangePacket

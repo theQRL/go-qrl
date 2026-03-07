@@ -24,11 +24,11 @@ import (
 	"strings"
 
 	"github.com/dop251/goja"
-	"github.com/theQRL/go-zond/internal/jsre/deps"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/signer/core"
-	"github.com/theQRL/go-zond/signer/storage"
+	"github.com/theQRL/go-qrl/internal/jsre/deps"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/signer/core"
+	"github.com/theQRL/go-qrl/signer/storage"
 )
 
 // consoleOutput is an override for the console.log and console.error methods to

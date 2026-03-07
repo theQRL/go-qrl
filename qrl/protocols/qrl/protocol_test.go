@@ -21,9 +21,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // Tests that the custom union field encoder and decoder works correctly.

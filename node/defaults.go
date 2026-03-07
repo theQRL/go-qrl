@@ -22,10 +22,10 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/nat"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/nat"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 const (

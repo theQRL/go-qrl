@@ -3,8 +3,8 @@
 package test
 
 import (
-       qrl1 "github.com/theQRL/go-zond/qrl"
-       qrl2 "github.com/theQRL/go-zond/qrl/protocols/qrl"
+       qrl1 "github.com/theQRL/go-qrl/qrl"
+       qrl2 "github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 type Test struct {

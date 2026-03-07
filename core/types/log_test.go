@@ -23,8 +23,8 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 var address, _ = common.NewAddressFromString("Qecf8f87f810ecf450940c9f60066b4a7a501d6a7")

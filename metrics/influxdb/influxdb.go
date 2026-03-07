@@ -3,7 +3,7 @@ package influxdb
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 func readMeter(namespace, name string, i any) (string, map[string]any) {

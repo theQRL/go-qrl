@@ -23,10 +23,10 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/qrl/fetcher"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/qrl/fetcher"
 )
 
 var (

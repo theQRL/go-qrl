@@ -33,43 +33,43 @@ import (
 	"time"
 
 	gopsutil "github.com/shirou/gopsutil/mem"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/fdlimit"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/txpool/legacypool"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/graphql"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/exp"
-	"github.com/theQRL/go-zond/metrics/influxdb"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/nat"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/catalyst"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/filters"
-	"github.com/theQRL/go-zond/qrl/gasprice"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/remotedb"
-	"github.com/theQRL/go-zond/qrlstats"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/fdlimit"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/txpool/legacypool"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/graphql"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/exp"
+	"github.com/theQRL/go-qrl/metrics/influxdb"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/nat"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/catalyst"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/filters"
+	"github.com/theQRL/go-qrl/qrl/gasprice"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/remotedb"
+	"github.com/theQRL/go-qrl/qrlstats"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 	"github.com/urfave/cli/v2"
 )
 
@@ -690,7 +690,7 @@ var (
 	HttpHeaderFlag = &cli.StringSliceFlag{
 		Name:     "header",
 		Aliases:  []string{"H"},
-		Usage:    "Pass custom headers to the RPC server when using --" + RemoteDBFlag.Name + " or the gzond attach console. This flag can be given multiple times.",
+		Usage:    "Pass custom headers to the RPC server when using --" + RemoteDBFlag.Name + " or the gqrl attach console. This flag can be given multiple times.",
 		Category: flags.APICategory,
 	}
 
@@ -1083,7 +1083,7 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 }
 
 // MakeDatabaseHandles raises out the number of allowed file handles per process
-// for Gzond and returns half of the allowance to assign to the database.
+// for Gqrl and returns half of the allowance to assign to the database.
 func MakeDatabaseHandles(max int) int {
 	limit, err := fdlimit.Maximum()
 	if err != nil {
@@ -1124,7 +1124,7 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	log.Warn("-------------------------------------------------------------------")
 	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
 	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `gzond account list`)")
+	log.Warn("Please use explicit addresses! (can search via `gqrl account list`)")
 	log.Warn("-------------------------------------------------------------------")
 
 	accs := ks.Accounts()
@@ -1713,13 +1713,13 @@ func SetupMetrics(ctx *cli.Context) {
 
 			log.Info("Enabling metrics export to InfluxDB")
 
-			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "gzond.", tagsMap)
+			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "gqrl.", tagsMap)
 		} else if enableExportV2 {
 			tagsMap := SplitTagsFlag(ctx.String(MetricsInfluxDBTagsFlag.Name))
 
 			log.Info("Enabling metrics export to InfluxDB (v2)")
 
-			go influxdb.InfluxDBV2WithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, token, bucket, organization, "gzond.", tagsMap)
+			go influxdb.InfluxDBV2WithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, token, bucket, organization, "gqrl.", tagsMap)
 		}
 
 		if ctx.IsSet(MetricsHTTPFlag.Name) {
@@ -1802,7 +1802,7 @@ func DialRPCWithHeaders(endpoint string, headers []string) (*rpc.Client, error) 
 		return nil, errors.New("endpoint must be specified")
 	}
 	if strings.HasPrefix(endpoint, "rpc:") || strings.HasPrefix(endpoint, "ipc:") {
-		// Backwards compatibility with gzond < 1.5 which required
+		// Backwards compatibility with gqrl < 1.5 which required
 		// these prefixes.
 		endpoint = endpoint[4:]
 	}

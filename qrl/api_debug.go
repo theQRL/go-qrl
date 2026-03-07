@@ -22,17 +22,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // DebugAPI is the collection of QRL full node APIs for debugging the

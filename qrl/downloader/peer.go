@@ -24,11 +24,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/msgrate"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/msgrate"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 const (

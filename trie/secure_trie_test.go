@@ -23,11 +23,11 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/trie/trienode"
 )
 
 func newEmptySecure() *StateTrie {

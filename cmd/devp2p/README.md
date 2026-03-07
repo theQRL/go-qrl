@@ -109,14 +109,14 @@ The QRL Protocol test suite is a conformance test suite for the qrl protocol.
 
 To run the qrl protocol test suite against your implementation, the node needs to be initialized as such:
 
-1. initialize the gzond node with the `genesis.json` file contained in the `testdata` directory
+1. initialize the gqrl node with the `genesis.json` file contained in the `testdata` directory
 2. import the `halfchain.rlp` file in the `testdata` directory
-3. run gzond with the following flags:
+3. run gqrl with the following flags:
 ```
-gzond --datadir <datadir> --nodiscover --nat=none --networkid 19763 --verbosity 5
+gqrl --datadir <datadir> --nodiscover --nat=none --networkid 19763 --verbosity 5
 ```
 
-Then, run the following command, replacing `<qnode>` with the qnode of the gzond node:
+Then, run the following command, replacing `<qnode>` with the qnode of the gqrl node:
  ```
  devp2p rlpx qrl-test <qnode> cmd/devp2p/internal/qrltest/testdata/chain.rlp cmd/devp2p/internal/qrltest/testdata/genesis.json
 ```

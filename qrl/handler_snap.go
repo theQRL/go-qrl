@@ -17,9 +17,9 @@
 package qrl
 
 import (
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
 )
 
 // snapHandler implements the snap.Backend interface to handle the various network

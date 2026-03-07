@@ -21,7 +21,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // This example configures a HTTP-based RPC client with two options - one setting the

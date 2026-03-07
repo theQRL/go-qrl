@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/theQRL/go-zond/node"
+	"github.com/theQRL/go-qrl/node"
 )
 
 // SampleLifecycle is a trivial network service that can be attached to a node for

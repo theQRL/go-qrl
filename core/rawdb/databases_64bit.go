@@ -19,8 +19,8 @@
 package rawdb
 
 import (
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/pebble"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/pebble"
 )
 
 // Pebble is unsuported on 32bit architecture

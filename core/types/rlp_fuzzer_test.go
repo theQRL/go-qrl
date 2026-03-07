@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 func decodeEncode(input []byte, val any) error {

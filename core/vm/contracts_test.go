@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // precompiledTest defines the input/output pairs for precompiled contract tests.

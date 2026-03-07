@@ -22,14 +22,14 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/consensus/misc/eip1559"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/consensus/misc/eip1559"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // Various error messages to mark blocks invalid. These should be private to

@@ -24,10 +24,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/core/txpool"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/core/txpool"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 var (

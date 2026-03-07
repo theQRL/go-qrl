@@ -25,13 +25,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var (

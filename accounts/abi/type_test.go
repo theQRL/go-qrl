@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // typeWithoutStringer is an alias for the Type type which simply doesn't implement

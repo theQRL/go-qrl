@@ -19,7 +19,7 @@ package p2p
 import (
 	"container/heap"
 
-	"github.com/theQRL/go-zond/common/mclock"
+	"github.com/theQRL/go-qrl/common/mclock"
 )
 
 // expHeap tracks strings and their expiry time.

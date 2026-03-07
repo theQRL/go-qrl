@@ -23,38 +23,38 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state/pruner"
-	"github.com/theQRL/go-zond/core/txpool"
-	"github.com/theQRL/go-zond/core/txpool/legacypool"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/internal/shutdowncheck"
-	"github.com/theQRL/go-zond/internal/version"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/dnsdisc"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/gasprice"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/rpc"
-	gzondversion "github.com/theQRL/go-zond/version"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state/pruner"
+	"github.com/theQRL/go-qrl/core/txpool"
+	"github.com/theQRL/go-qrl/core/txpool/legacypool"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/internal/shutdowncheck"
+	"github.com/theQRL/go-qrl/internal/version"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/dnsdisc"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/gasprice"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/rpc"
+	gqrlversion "github.com/theQRL/go-qrl/version"
 )
 
 // QRL implements the QRL full node service.
@@ -160,7 +160,7 @@ func New(stack *node.Node, config *qrlconfig.Config) (*QRL, error) {
 
 	if !config.SkipBcVersionCheck {
 		if bcVersion != nil && *bcVersion > core.BlockChainVersion {
-			return nil, fmt.Errorf("database version is v%d, Gzond %s only supports v%d", *bcVersion, version.WithMeta, core.BlockChainVersion)
+			return nil, fmt.Errorf("database version is v%d, Gqrl %s only supports v%d", *bcVersion, version.WithMeta, core.BlockChainVersion)
 		} else if bcVersion == nil || *bcVersion < core.BlockChainVersion {
 			if bcVersion != nil { // only print warning on upgrade, not on init
 				log.Warn("Upgrade blockchain database version", "from", dbVer, "to", core.BlockChainVersion)
@@ -254,8 +254,8 @@ func makeExtraData(extra []byte) []byte {
 	if len(extra) == 0 {
 		// create default extradata
 		extra, _ = rlp.EncodeToBytes([]any{
-			uint(gzondversion.Major<<16 | gzondversion.Minor<<8 | gzondversion.Patch),
-			"gzond",
+			uint(gqrlversion.Major<<16 | gqrlversion.Minor<<8 | gqrlversion.Patch),
+			"gqrl",
 			runtime.Version(),
 			runtime.GOOS,
 		})

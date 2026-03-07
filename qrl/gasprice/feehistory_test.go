@@ -20,7 +20,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 func TestFeeHistory(t *testing.T) {

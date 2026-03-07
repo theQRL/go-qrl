@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const pathOfPackageRLP = "github.com/theQRL/go-zond/rlp"
+const pathOfPackageRLP = "github.com/theQRL/go-qrl/rlp"
 
 func main() {
 	var (

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/p2p"
+	"github.com/theQRL/go-qrl/p2p"
 )
 
 var (

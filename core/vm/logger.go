@@ -19,7 +19,7 @@ package vm
 import (
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // QRVMLogger is used to collect execution traces from a QRVM transaction

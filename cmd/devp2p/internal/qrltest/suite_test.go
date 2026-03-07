@@ -21,10 +21,10 @@ package qrltest
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
 )
 
 var (
@@ -36,13 +36,13 @@ var (
 TODO(now.youtrack.cloud/issue/TGZ-6)
 /*
 func TestQRLSuite(t *testing.T) {
-	gzond, err := runGzond()
+	gqrl, err := runGqrl()
 	if err != nil {
-		t.Fatalf("could not run gzond: %v", err)
+		t.Fatalf("could not run gqrl: %v", err)
 	}
-	defer gzond.Close()
+	defer gqrl.Close()
 
-	suite, err := NewSuite(gzond.Server().Self(), fullchainFile, genesisFile)
+	suite, err := NewSuite(gqrl.Server().Self(), fullchainFile, genesisFile)
 	if err != nil {
 		t.Fatalf("could not create new test suite: %v", err)
 	}
@@ -57,13 +57,13 @@ func TestQRLSuite(t *testing.T) {
 }
 
 func TestSnapSuite(t *testing.T) {
-	gzond, err := runGzond()
+	gqrl, err := runGqrl()
 	if err != nil {
-		t.Fatalf("could not run gzond: %v", err)
+		t.Fatalf("could not run gqrl: %v", err)
 	}
-	defer gzond.Close()
+	defer gqrl.Close()
 
-	suite, err := NewSuite(gzond.Server().Self(), fullchainFile, genesisFile)
+	suite, err := NewSuite(gqrl.Server().Self(), fullchainFile, genesisFile)
 	if err != nil {
 		t.Fatalf("could not create new test suite: %v", err)
 	}
@@ -77,8 +77,8 @@ func TestSnapSuite(t *testing.T) {
 	}
 }
 
-// runGzond creates and starts a gzond node
-func runGzond() (*node.Node, error) {
+// runGqrl creates and starts a gqrl node
+func runGqrl() (*node.Node, error) {
 	stack, err := node.New(&node.Config{
 		P2P: p2p.Config{
 			ListenAddr:  "127.0.0.1:0",
@@ -91,7 +91,7 @@ func runGzond() (*node.Node, error) {
 		return nil, err
 	}
 
-	err = setupGzond(stack)
+	err = setupGqrl(stack)
 	if err != nil {
 		stack.Close()
 		return nil, err
@@ -103,7 +103,7 @@ func runGzond() (*node.Node, error) {
 	return stack, nil
 }
 
-func setupGzond(stack *node.Node) error {
+func setupGqrl(stack *node.Node) error {
 	chain, err := loadChain(halfchainFile, genesisFile)
 	if err != nil {
 		return err

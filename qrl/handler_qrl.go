@@ -19,9 +19,9 @@ package qrl
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 // qrlHandler implements the qrl.Backend interface to handle the various network

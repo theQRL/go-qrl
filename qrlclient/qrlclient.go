@@ -24,11 +24,11 @@ import (
 	"fmt"
 	"math/big"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Client defines typed wrappers for the QRL RPC API.

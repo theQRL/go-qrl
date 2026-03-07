@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 	cryptomldsa87 "github.com/theQRL/go-qrllib/crypto/ml_dsa_87"
 	libwallet "github.com/theQRL/go-qrllib/wallet"
 	"github.com/theQRL/go-qrllib/wallet/common/descriptor"
 	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
 )
 
 const (

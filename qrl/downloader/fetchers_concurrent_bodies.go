@@ -19,9 +19,9 @@ package downloader
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 // bodyQueue implements typedQueue and is a type adapter between the generic

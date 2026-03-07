@@ -24,17 +24,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/trie"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 var (
@@ -134,7 +134,7 @@ type Downloader struct {
 	chainInsertHook  func([]*fetchResult)  // Method to call upon inserting a chain of blocks (possibly in multiple invocations)
 
 	// Progress reporting metrics
-	syncStartBlock uint64    // Head snap block when Gzond was started
+	syncStartBlock uint64    // Head snap block when Gqrl was started
 	syncStartTime  time.Time // Time instance when chain sync started
 	syncLogTime    time.Time // Time instance when status was last reported
 }

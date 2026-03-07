@@ -16,7 +16,7 @@
 
 package trie
 
-import "github.com/theQRL/go-zond/common"
+import "github.com/theQRL/go-qrl/common"
 
 // ID is the identifier for uniquely identifying a trie.
 type ID struct {

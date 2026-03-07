@@ -25,14 +25,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/rlp"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 func mockSign(addr common.Address, tx *types.Transaction) (*types.Transaction, error) { return tx, nil }

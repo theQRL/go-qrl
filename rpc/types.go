@@ -24,8 +24,8 @@ import (
 	"math"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // API describes the set of methods offered over the RPC interface

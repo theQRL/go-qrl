@@ -20,10 +20,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // ProofSet stores a set of trie nodes. It implements trie.Database and can also

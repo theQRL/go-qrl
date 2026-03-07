@@ -21,8 +21,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // txJSON is the JSON representation of transactions.

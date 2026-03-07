@@ -22,7 +22,7 @@ package core
 import (
 	"testing"
 
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // TODO(now.youtrack.cloud/issue/TGZ-10)

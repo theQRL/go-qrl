@@ -19,9 +19,9 @@ package downloader
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 // fetchHeadersByHash is a blocking version of Peer.RequestHeadersByHash which

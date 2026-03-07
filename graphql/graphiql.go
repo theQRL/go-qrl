@@ -27,8 +27,8 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/theQRL/go-zond/graphql/internal/graphiql"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/graphql/internal/graphiql"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // GraphiQL is an in-browser IDE for exploring GraphiQL APIs.

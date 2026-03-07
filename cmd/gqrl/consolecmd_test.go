@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/internal/version"
+	"github.com/theQRL/go-qrl/internal/version"
 )
 
 const (
@@ -34,41 +34,41 @@ const (
 	httpAPIs = "net:1.0 qrl:1.0 rpc:1.0 web3:1.0"
 )
 
-// spawns gzond with the given command line args, using a set of flags to minimise
+// spawns gqrl with the given command line args, using a set of flags to minimise
 // memory and disk IO. If the args don't set --datadir, the
 // child g gets a temporary data directory.
-func runMinimalGzond(t *testing.T, args ...string) *testgzond {
+func runMinimalGqrl(t *testing.T, args ...string) *testgqrl {
 	// --networkid=1337 to avoid cache bump
 	// --syncmode=full to avoid allocating fast sync bloom
 	allArgs := []string{"--networkid", "1337", "--authrpc.port", "0", "--syncmode=full", "--port", "0",
 		"--nat", "none", "--nodiscover", "--maxpeers", "0", "--cache", "64",
 		"--datadir.minfreedisk", "0"}
-	return runGzond(t, append(allArgs, args...)...)
+	return runGqrl(t, append(allArgs, args...)...)
 }
 
 // Tests that a node embedded within a console can be started up properly and
 // then terminated by closing the input stream.
 func TestConsoleWelcome(t *testing.T) {
-	// Start a gzond console, make sure it's cleaned up and terminate the console
-	gzond := runMinimalGzond(t, "console")
+	// Start a gqrl console, make sure it's cleaned up and terminate the console
+	gqrl := runMinimalGqrl(t, "console")
 
 	// Gather all the infos the welcome message needs to contain
-	gzond.SetTemplateFunc("goos", func() string { return runtime.GOOS })
-	gzond.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
-	gzond.SetTemplateFunc("gover", runtime.Version)
-	gzond.SetTemplateFunc("gzondver", func() string { return version.WithCommit("", "") })
-	gzond.SetTemplateFunc("niltime", func() string {
+	gqrl.SetTemplateFunc("goos", func() string { return runtime.GOOS })
+	gqrl.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
+	gqrl.SetTemplateFunc("gover", runtime.Version)
+	gqrl.SetTemplateFunc("gqrlver", func() string { return version.WithCommit("", "") })
+	gqrl.SetTemplateFunc("niltime", func() string {
 		// TODO(now.youtrack.cloud/issue/TGZ-16): we need to change the time based on the chain config selected
 		// return time.Unix(1548854791, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 		return time.Unix(0, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 	})
-	gzond.SetTemplateFunc("apis", func() string { return ipcAPIs })
+	gqrl.SetTemplateFunc("apis", func() string { return ipcAPIs })
 
 	// Verify the actual welcome message to the required template
-	gzond.Expect(`
+	gqrl.Expect(`
 Welcome to the QRL JavaScript console!
 
-instance: Gzond/v{{gzondver}}/{{goos}}-{{goarch}}/{{gover}}
+instance: Gqrl/v{{gqrlver}}/{{goos}}-{{goarch}}/{{gover}}
 at block: 0 ({{niltime}})
  datadir: {{.Datadir}}
  modules: {{apis}}
@@ -76,7 +76,7 @@ at block: 0 ({{niltime}})
 To exit, press ctrl-d or type exit
 > {{.InputLine "exit"}}
 `)
-	gzond.ExpectExit()
+	gqrl.ExpectExit()
 }
 
 // Tests that a console can be attached to a running node via various means.
@@ -88,38 +88,38 @@ func TestAttachWelcome(t *testing.T) {
 	)
 	// Configure the instance for IPC attachment
 	if runtime.GOOS == "windows" {
-		ipc = `\\.\pipe\gzond` + strconv.Itoa(trulyRandInt(100000, 999999))
+		ipc = `\\.\pipe\gqrl` + strconv.Itoa(trulyRandInt(100000, 999999))
 	} else {
-		ipc = filepath.Join(t.TempDir(), "gzond.ipc")
+		ipc = filepath.Join(t.TempDir(), "gqrl.ipc")
 	}
 	// And HTTP + WS attachment
 	p := trulyRandInt(1024, 65533) // Yeah, sometimes this will fail, sorry :P
 	httpPort = strconv.Itoa(p)
 	wsPort = strconv.Itoa(p + 1)
-	gzond := runMinimalGzond(t,
+	gqrl := runMinimalGqrl(t,
 		"--ipcpath", ipc,
 		"--http", "--http.port", httpPort,
 		"--ws", "--ws.port", wsPort)
 	t.Run("ipc", func(t *testing.T) {
 		waitForEndpoint(t, ipc, 3*time.Second)
-		testAttachWelcome(t, gzond, "ipc:"+ipc, ipcAPIs)
+		testAttachWelcome(t, gqrl, "ipc:"+ipc, ipcAPIs)
 	})
 	t.Run("http", func(t *testing.T) {
 		endpoint := "http://127.0.0.1:" + httpPort
 		waitForEndpoint(t, endpoint, 3*time.Second)
-		testAttachWelcome(t, gzond, endpoint, httpAPIs)
+		testAttachWelcome(t, gqrl, endpoint, httpAPIs)
 	})
 	t.Run("ws", func(t *testing.T) {
 		endpoint := "ws://127.0.0.1:" + wsPort
 		waitForEndpoint(t, endpoint, 3*time.Second)
-		testAttachWelcome(t, gzond, endpoint, httpAPIs)
+		testAttachWelcome(t, gqrl, endpoint, httpAPIs)
 	})
-	gzond.Kill()
+	gqrl.Kill()
 }
 
-func testAttachWelcome(t *testing.T, gzond *testgzond, endpoint, apis string) {
-	// Attach to a running gzond node and terminate immediately
-	attach := runGzond(t, "attach", endpoint)
+func testAttachWelcome(t *testing.T, gqrl *testgqrl, endpoint, apis string) {
+	// Attach to a running gqrl node and terminate immediately
+	attach := runGqrl(t, "attach", endpoint)
 	defer attach.ExpectExit()
 	attach.CloseStdin()
 
@@ -127,21 +127,21 @@ func testAttachWelcome(t *testing.T, gzond *testgzond, endpoint, apis string) {
 	attach.SetTemplateFunc("goos", func() string { return runtime.GOOS })
 	attach.SetTemplateFunc("goarch", func() string { return runtime.GOARCH })
 	attach.SetTemplateFunc("gover", runtime.Version)
-	attach.SetTemplateFunc("gzondver", func() string { return version.WithCommit("", "") })
+	attach.SetTemplateFunc("gqrlver", func() string { return version.WithCommit("", "") })
 	attach.SetTemplateFunc("niltime", func() string {
 		// TODO(now.youtrack.cloud/issue/TGZ-16): we need to change the time based on the chain config selected
 		// return time.Unix(1548854791, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 		return time.Unix(0, 0).Format("Mon Jan 02 2006 15:04:05 GMT-0700 (MST)")
 	})
 	attach.SetTemplateFunc("ipc", func() bool { return strings.HasPrefix(endpoint, "ipc") })
-	attach.SetTemplateFunc("datadir", func() string { return gzond.Datadir })
+	attach.SetTemplateFunc("datadir", func() string { return gqrl.Datadir })
 	attach.SetTemplateFunc("apis", func() string { return apis })
 
 	// Verify the actual welcome message to the required template
 	attach.Expect(`
 Welcome to the QRL JavaScript console!
 
-instance: Gzond/v{{gzondver}}/{{goos}}-{{goarch}}/{{gover}}
+instance: Gqrl/v{{gqrlver}}/{{goos}}-{{goarch}}/{{gover}}
 at block: 0 ({{niltime}}){{if ipc}}
  datadir: {{datadir}}{{end}}
  modules: {{apis}}

@@ -22,7 +22,7 @@ import (
 	"io"
 	"net"
 
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // Entry is implemented by known node record entry types.

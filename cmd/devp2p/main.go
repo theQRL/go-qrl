@@ -20,13 +20,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/theQRL/go-zond/internal/debug"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/internal/debug"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/urfave/cli/v2"
 )
 
-var app = flags.NewApp("go-zond devp2p tool")
+var app = flags.NewApp("go-qrl devp2p tool")
 
 func init() {
 	app.Flags = append(app.Flags, debug.Flags...)

@@ -30,7 +30,7 @@ import (
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/gorilla/websocket"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 const (

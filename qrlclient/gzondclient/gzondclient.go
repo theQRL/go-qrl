@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package gzondclient provides an RPC client for gzond-specific APIs.
-package gzondclient
+// Package gqrlclient provides an RPC client for gqrl-specific APIs.
+package gqrlclient
 
 import (
 	"context"
@@ -25,15 +25,15 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
-// Client is a wrapper around rpc.Client that implements gzond-specific functionality.
+// Client is a wrapper around rpc.Client that implements gqrl-specific functionality.
 //
 // If you want to use the standardized QRL RPC functionality, use qrlclient.Client instead.
 type Client struct {
@@ -169,14 +169,14 @@ func (qc *Client) CallContractWithBlockOverrides(ctx context.Context, msg qrl.Ca
 	return hex, err
 }
 
-// GCStats retrieves the current garbage collection stats from a gzond node.
+// GCStats retrieves the current garbage collection stats from a gqrl node.
 func (qc *Client) GCStats(ctx context.Context) (*debug.GCStats, error) {
 	var result debug.GCStats
 	err := qc.c.CallContext(ctx, &result, "debug_gcStats")
 	return &result, err
 }
 
-// MemStats retrieves the current memory stats from a gzond node.
+// MemStats retrieves the current memory stats from a gqrl node.
 func (qc *Client) MemStats(ctx context.Context) (*runtime.MemStats, error) {
 	var result runtime.MemStats
 	err := qc.c.CallContext(ctx, &result, "debug_memStats")
@@ -190,7 +190,7 @@ func (qc *Client) SetHead(ctx context.Context, number *big.Int) error {
 	return qc.c.CallContext(ctx, nil, "debug_setHead", toBlockNumArg(number))
 }
 
-// GetNodeInfo retrieves the node info of a gzond node.
+// GetNodeInfo retrieves the node info of a gqrl node.
 func (qc *Client) GetNodeInfo(ctx context.Context) (*p2p.NodeInfo, error) {
 	var result p2p.NodeInfo
 	err := qc.c.CallContext(ctx, &result, "admin_nodeInfo")

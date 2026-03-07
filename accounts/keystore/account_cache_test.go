@@ -29,8 +29,8 @@ import (
 
 	"github.com/cespare/cp"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
 )
 
 var (

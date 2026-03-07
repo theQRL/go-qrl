@@ -23,12 +23,12 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 func TestSetupGenesis(t *testing.T) {

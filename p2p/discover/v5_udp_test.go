@@ -29,12 +29,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/internal/testlog"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/discover/v5wire"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/internal/testlog"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/discover/v5wire"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // Real sockets, real crypto: this test checks end-to-end connectivity for UDPv5.

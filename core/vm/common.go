@@ -20,7 +20,7 @@ import (
 	"math"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // calcMemSize64 calculates the required memory size, and returns

@@ -22,11 +22,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
 )
 
 var loopInterruptTests = []string{

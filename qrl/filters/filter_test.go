@@ -24,17 +24,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 func makeReceipt(addr common.Address) *types.Receipt {

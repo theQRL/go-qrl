@@ -25,10 +25,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 const (
@@ -45,7 +45,7 @@ const (
 // all registered services.
 type Config struct {
 	// Name sets the instance name of the node. It must not contain the / character and is
-	// used in the devp2p node identifier. The instance name of gzond is "gzond". If no
+	// used in the devp2p node identifier. The instance name of gqrl is "gqrl". If no
 	// value is specified, the basename of the current executable is used.
 	Name string `toml:"-"`
 
@@ -275,9 +275,9 @@ func (c *Config) ExtRPCEnabled() bool {
 // NodeName returns the devp2p node identifier.
 func (c *Config) NodeName() string {
 	name := c.name()
-	// Backwards compatibility: previous versions used title-cased "Gzond", keep that.
-	if name == "gzond" || name == "gzond-testnet" {
-		name = "Gzond"
+	// Backwards compatibility: previous versions used title-cased "Gqrl", keep that.
+	if name == "gqrl" || name == "gqrl-testnet" {
+		name = "Gqrl"
 	}
 	if c.UserIdent != "" {
 		name += "/" + c.UserIdent

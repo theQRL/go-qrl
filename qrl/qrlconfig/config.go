@@ -20,16 +20,16 @@ package qrlconfig
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/txpool/legacypool"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/gasprice"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/txpool/legacypool"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/gasprice"
 )
 
 // FullNodeGPO contains default gasprice oracle settings for full node.
@@ -93,7 +93,7 @@ type Config struct {
 	StateScheme string `toml:",omitempty"`
 
 	// RequiredBlocks is a set of block number -> hash mappings which must be in the
-	// canonical chain of all remote peers. Setting the option makes gzond verify the
+	// canonical chain of all remote peers. Setting the option makes gqrl verify the
 	// presence of these blocks for every new peer connection.
 	RequiredBlocks map[uint64]common.Hash `toml:"-"`
 

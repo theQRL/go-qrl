@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // TestExport does basic sanity checks on the export/import functionality

@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers/logger"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers/logger"
+	"github.com/theQRL/go-qrl/tests"
 	"github.com/urfave/cli/v2"
 )
 

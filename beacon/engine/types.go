@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 //go:generate go run github.com/fjl/gencodec -type PayloadAttributes -field-override payloadAttributesMarshaling -out gen_blockparams.go

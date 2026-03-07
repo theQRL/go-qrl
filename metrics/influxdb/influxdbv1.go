@@ -6,8 +6,8 @@ import (
 	"time"
 
 	client "github.com/influxdata/influxdb1-client/v2"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 type reporter struct {

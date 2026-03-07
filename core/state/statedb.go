@@ -24,17 +24,17 @@ import (
 	"sort"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/trienode"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/trienode"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 const (
@@ -649,7 +649,7 @@ func (s *StateDB) Copy() *StateDB {
 	}
 	// Copy the dirty states, logs, and preimages
 	for addr := range s.journal.dirties {
-		// As documented [here](https://github.com/theQRL/go-zond/pull/16485#issuecomment-380438527),
+		// As documented [here](https://github.com/theQRL/go-qrl/pull/16485#issuecomment-380438527),
 		// and in the Finalise-method, there is a case where an object is in the journal but not
 		// in the stateObjects: OOG after touch on ripeMD prior to Byzantium. Thus, we need to check for
 		// nil
@@ -1024,7 +1024,7 @@ func (s *StateDB) deleteStorage(addr common.Address, addrHash common.Hash, root 
 // In case (d), **original** account along with its storages should be deleted,
 // with their values be tracked as original value.
 func (s *StateDB) handleDestruction(nodes *trienode.MergedNodeSet) (map[common.Address]struct{}, error) {
-	// Short circuit if gzond is running with hash mode. This procedure can consume
+	// Short circuit if gqrl is running with hash mode. This procedure can consume
 	// considerable time and storage deletion isn't supported in hash mode, thus
 	// preemptively avoiding unnecessary expenses.
 	incomplete := make(map[common.Address]struct{})

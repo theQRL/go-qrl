@@ -22,13 +22,13 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/external"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/external"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 )
 
 // ErrNoChainID is returned whenever the user failed to specify a chain id.

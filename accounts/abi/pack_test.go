@@ -27,7 +27,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // TestPack tests the general pack/unpack tests in packing_test.go

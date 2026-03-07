@@ -14,17 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-// Package remotedb implements the key-value database layer based on a remote gzond
+// Package remotedb implements the key-value database layer based on a remote gqrl
 // node. Under the hood, it utilises the `debug_dbGet` method to implement a
 // read-only database.
-// There really are no guarantees in this database, since the local gzond does not
+// There really are no guarantees in this database, since the local gqrl does not
 // exclusive access, but it can be used for basic diagnostics of a remote node.
 package remotedb
 
 import (
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Database is a key-value lookup for a remote database via debug_dbGet.

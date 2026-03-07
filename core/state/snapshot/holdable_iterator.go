@@ -17,8 +17,8 @@
 package snapshot
 
 import (
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // holdableIterator is a wrapper of underlying database iterator. It extends

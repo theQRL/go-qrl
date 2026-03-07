@@ -23,20 +23,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/qrl/tracers/logger"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/qrl/tracers/logger"
 
 	// force-load js tracers to trigger registration
-	_ "github.com/theQRL/go-zond/qrl/tracers/js"
+	_ "github.com/theQRL/go-qrl/qrl/tracers/js"
 )
 
 func TestDefaults(t *testing.T) {
@@ -570,7 +570,7 @@ func TestEip2929Cases(t *testing.T) {
 
 // TestColdAccountAccessCost test that the cold account access cost is reported
 // correctly
-// see: https://github.com/theQRL/go-zond/issues/22649
+// see: https://github.com/theQRL/go-qrl/issues/22649
 func TestColdAccountAccessCost(t *testing.T) {
 	for i, tc := range []struct {
 		code []byte

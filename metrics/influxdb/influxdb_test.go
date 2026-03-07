@@ -28,8 +28,8 @@ import (
 	"testing"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/internal"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/internal"
 )
 
 func TestMain(m *testing.M) {

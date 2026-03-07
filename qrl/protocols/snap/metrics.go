@@ -17,7 +17,7 @@
 package snap
 
 import (
-	metrics "github.com/theQRL/go-zond/metrics"
+	metrics "github.com/theQRL/go-qrl/metrics"
 )
 
 var (

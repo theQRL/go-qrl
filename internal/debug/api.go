@@ -36,7 +36,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/go-bexpr"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // Handler is the global debugging handler.

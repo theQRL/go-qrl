@@ -27,9 +27,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
 )
 
 var (

@@ -20,9 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // copyConfig does a _shallow_ copy of a given config. Safe to set new values, but

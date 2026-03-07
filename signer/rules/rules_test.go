@@ -22,14 +22,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/signer/core"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/storage"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/signer/core"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/storage"
 )
 
 const JS = `

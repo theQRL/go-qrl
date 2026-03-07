@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 // FunctionType represents different types of functions a contract might have.

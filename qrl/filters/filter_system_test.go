@@ -26,17 +26,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 type testBackend struct {

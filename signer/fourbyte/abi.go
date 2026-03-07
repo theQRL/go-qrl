@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // decodedCallData is an internal type to represent a method call parsed according

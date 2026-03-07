@@ -49,10 +49,10 @@ import (
 	"strings"
 
 	"github.com/cespare/cp"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/internal/build"
-	"github.com/theQRL/go-zond/internal/download"
-	"github.com/theQRL/go-zond/internal/version"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/internal/build"
+	"github.com/theQRL/go-qrl/internal/download"
+	"github.com/theQRL/go-qrl/internal/version"
 )
 
 var (
@@ -60,12 +60,12 @@ var (
 		".",
 	}
 
-	// Files that end up in the gzond-alltools*.zip archive.
+	// Files that end up in the gqrl-alltools*.zip archive.
 	allToolsArchiveFiles = []string{
 		"COPYING",
 		executablePath("abigen"),
 		executablePath("qrvm"),
-		executablePath("gzond"),
+		executablePath("gqrl"),
 		executablePath("rlpdump"),
 		executablePath("clef"),
 	}
@@ -156,8 +156,8 @@ func buildFlags(env build.Environment, staticLinking bool, buildTags []string) (
 	// cgo-linker further down.
 	ld = append(ld, "--buildid=none")
 	if env.Commit != "" {
-		ld = append(ld, "-X", "github.com/theQRL/go-zond/internal/version.gitCommit="+env.Commit)
-		ld = append(ld, "-X", "github.com/theQRL/go-zond/internal/version.gitDate="+env.Date)
+		ld = append(ld, "-X", "github.com/theQRL/go-qrl/internal/version.gitCommit="+env.Commit)
+		ld = append(ld, "-X", "github.com/theQRL/go-qrl/internal/version.gitDate="+env.Date)
 	}
 	// Strip DWARF on darwin. This used to be required for certain things,
 	// and there is no downside to this, so we just keep doing it.
@@ -350,7 +350,7 @@ func maybeSkipArchive(env build.Environment) {
 func doDockerBuildx(cmdline []string) {
 	var (
 		platform = flag.String("platform", "", `Push a multi-arch docker image for the specified architectures (usually "linux/amd64,linux/arm64")`)
-		hubImage = flag.String("hub", "qrledger/go-zond", `Where to upload the docker image`)
+		hubImage = flag.String("hub", "qrledger/go-qrl", `Where to upload the docker image`)
 		upload   = flag.Bool("upload", false, `Whether to trigger upload`)
 	)
 	flag.CommandLine.Parse(cmdline)
@@ -369,14 +369,14 @@ func doDockerBuildx(cmdline []string) {
 		build.MustRun(auther)
 	}
 	// Retrieve the version infos to build and push to the following paths:
-	//  - theqrl/gzond:latest                            - Pushes to the main branch, Gzond only
-	//  - theqrl/gzond:stable                            - Version tag publish on GitHub, Gzond only
-	//  - theqrl/gzond:alltools-latest                   - Pushes to the main branch, Gzond & tools
-	//  - theqrl/gzond:alltools-stable                   - Version tag publish on GitHub, Gzond & tools
-	//  - theqrl/gzond:release-<major>.<minor>           - Version tag publish on GitHub, Gzond only
-	//  - theqrl/gzond:alltools-release-<major>.<minor>  - Version tag publish on GitHub, Gzond & tools
-	//  - theqrl/gzond:v<major>.<minor>.<patch>          - Version tag publish on GitHub, Gzond only
-	//  - theqrl/gzond:alltools-v<major>.<minor>.<patch> - Version tag publish on GitHub, Gzond & tools
+	//  - theqrl/gqrl:latest                            - Pushes to the main branch, Gqrl only
+	//  - theqrl/gqrl:stable                            - Version tag publish on GitHub, Gqrl only
+	//  - theqrl/gqrl:alltools-latest                   - Pushes to the main branch, Gqrl & tools
+	//  - theqrl/gqrl:alltools-stable                   - Version tag publish on GitHub, Gqrl & tools
+	//  - theqrl/gqrl:release-<major>.<minor>           - Version tag publish on GitHub, Gqrl only
+	//  - theqrl/gqrl:alltools-release-<major>.<minor>  - Version tag publish on GitHub, Gqrl & tools
+	//  - theqrl/gqrl:v<major>.<minor>.<patch>          - Version tag publish on GitHub, Gqrl only
+	//  - theqrl/gqrl:alltools-v<major>.<minor>.<patch> - Version tag publish on GitHub, Gqrl & tools
 	var tags []string
 
 	switch {
@@ -399,12 +399,12 @@ func doDockerBuildx(cmdline []string) {
 		{file: "Dockerfile.alltools", base: fmt.Sprintf("%s:alltools-", *hubImage)},
 	} {
 		for _, tag := range tags { // latest, stable etc
-			gzondImage := fmt.Sprintf("%s%s", spec.base, tag)
+			gqrlImage := fmt.Sprintf("%s%s", spec.base, tag)
 			cmd := exec.Command("docker", "buildx", "build",
 				"--build-arg", "COMMIT="+env.Commit,
 				"--build-arg", "VERSION="+version.WithMeta,
 				"--build-arg", "BUILDNUM="+env.Buildnum,
-				"--tag", gzondImage,
+				"--tag", gqrlImage,
 				"--platform", *platform,
 				"--file", spec.file,
 			)
@@ -430,7 +430,7 @@ func makeWorkdir(wdflag string) string {
 	if wdflag != "" {
 		err = os.MkdirAll(wdflag, 0744)
 	} else {
-		wdflag, err = os.MkdirTemp("", "gzond-build-")
+		wdflag, err = os.MkdirTemp("", "gqrl-build-")
 	}
 	if err != nil {
 		log.Fatal(err)
@@ -452,30 +452,30 @@ func doWindowsInstaller(cmdline []string) {
 
 	// Aggregate binaries that are included in the installer
 	var (
-		devTools  []string
-		allTools  []string
-		gzondTool string
+		devTools []string
+		allTools []string
+		gqrlTool string
 	)
 	for _, file := range allToolsArchiveFiles {
 		if file == "COPYING" { // license, copied later
 			continue
 		}
 		allTools = append(allTools, filepath.Base(file))
-		if filepath.Base(file) == "gzond.exe" {
-			gzondTool = file
+		if filepath.Base(file) == "gqrl.exe" {
+			gqrlTool = file
 		} else {
 			devTools = append(devTools, file)
 		}
 	}
 
 	// Render NSIS scripts: Installer NSIS contains two installer sections,
-	// first section contains the gzond binary, second section holds the dev tools.
+	// first section contains the gqrl binary, second section holds the dev tools.
 	templateData := map[string]any{
 		"License":  "COPYING",
-		"Gzond":    gzondTool,
+		"Gqrl":     gqrlTool,
 		"DevTools": devTools,
 	}
-	build.Render("build/nsis.gzond.nsi", filepath.Join(*workdir, "gzond.nsi"), 0644, nil)
+	build.Render("build/nsis.gqrl.nsi", filepath.Join(*workdir, "gqrl.nsi"), 0644, nil)
 	build.Render("build/nsis.install.nsh", filepath.Join(*workdir, "install.nsh"), 0644, templateData)
 	build.Render("build/nsis.uninstall.nsh", filepath.Join(*workdir, "uninstall.nsh"), 0644, allTools)
 	build.Render("build/nsis.pathupdate.nsh", filepath.Join(*workdir, "PathUpdate.nsh"), 0644, nil)
@@ -493,7 +493,7 @@ func doWindowsInstaller(cmdline []string) {
 	if env.Commit != "" {
 		ver[2] += "-" + env.Commit[:8]
 	}
-	installer, err := filepath.Abs("gzond-" + archiveBasename(*arch, version.Archive(env.Commit)) + ".exe")
+	installer, err := filepath.Abs("gqrl-" + archiveBasename(*arch, version.Archive(env.Commit)) + ".exe")
 	if err != nil {
 		log.Fatalf("Failed to convert installer file path: %v", err)
 	}
@@ -503,6 +503,6 @@ func doWindowsInstaller(cmdline []string) {
 		"/DMINORVERSION="+ver[1],
 		"/DBUILDVERSION="+ver[2],
 		"/DARCH="+*arch,
-		filepath.Join(*workdir, "gzond.nsi"),
+		filepath.Join(*workdir, "gqrl.nsi"),
 	)
 }

@@ -24,9 +24,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // node represents a host on the network.

@@ -22,7 +22,7 @@ import (
 	metrics2 "runtime/metrics"
 	"time"
 
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 // ExampleMetrics returns an ordered registry populated with a sample of metrics.

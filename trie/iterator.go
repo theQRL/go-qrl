@@ -21,8 +21,8 @@ import (
 	"container/heap"
 	"errors"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // NodeResolver is used for looking up trie nodes before reaching into the real
@@ -122,7 +122,7 @@ type NodeIterator interface {
 	// reading from disk. In those cases, this resolver allows short circuiting
 	// accesses and returning them from memory.
 	//
-	// Before adding a similar mechanism to any other place in Gzond, consider
+	// Before adding a similar mechanism to any other place in Gqrl, consider
 	// making trie.Database an interface and wrapping at that level. It's a huge
 	// refactor, but it could be worth it if another occurrence arises.
 	AddResolver(NodeResolver)

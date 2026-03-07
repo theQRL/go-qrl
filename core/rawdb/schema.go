@@ -21,9 +21,9 @@ import (
 	"bytes"
 	"encoding/binary"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 // The fields below define the low level database schema prefixing.

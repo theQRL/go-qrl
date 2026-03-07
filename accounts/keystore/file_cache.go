@@ -24,7 +24,7 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // fileCache is a cache of files seen during scan of keystore.

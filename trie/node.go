@@ -21,8 +21,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var indices = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f", "[17]"}

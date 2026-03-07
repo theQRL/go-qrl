@@ -20,11 +20,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // BlockValidator is responsible for validating block headers and

@@ -23,7 +23,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 var (

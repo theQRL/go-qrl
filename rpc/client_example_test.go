@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // In this example, our client wishes to track the latest 'block number'

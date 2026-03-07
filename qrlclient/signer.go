@@ -20,8 +20,8 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // senderFromServer is a types.Signer that remembers the sender address returned by the RPC

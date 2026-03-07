@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
+	"github.com/theQRL/go-qrl/common/mclock"
 )
 
 // Subscription represents a stream of events. The carrier of the events is typically a

@@ -30,8 +30,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var (

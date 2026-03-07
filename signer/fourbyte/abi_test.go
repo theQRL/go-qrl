@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func verify(t *testing.T, jsondata, calldata string, exp []any) {

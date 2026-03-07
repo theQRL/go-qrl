@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 func newLocalNodeForTesting() (*LocalNode, *DB) {

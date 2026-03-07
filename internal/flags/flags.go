@@ -28,7 +28,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/theQRL/go-zond/common/math"
+	"github.com/theQRL/go-qrl/common/math"
 	"github.com/urfave/cli/v2"
 )
 

@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
 )
 
 // Tests that snap sync is disabled after a successful sync cycle.

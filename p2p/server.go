@@ -29,16 +29,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/discover"
-	"github.com/theQRL/go-zond/p2p/nat"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/discover"
+	"github.com/theQRL/go-qrl/p2p/nat"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 const (

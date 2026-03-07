@@ -26,15 +26,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 const (
@@ -551,7 +551,7 @@ func (hc *HeaderChain) setHead(headBlock uint64, headTime uint64, updateFn Updat
 		}
 		parentHash = parent.Hash()
 
-		// Notably, since gzond has the possibility for setting the head to a low
+		// Notably, since gqrl has the possibility for setting the head to a low
 		// height which is even lower than ancient head.
 		// In order to ensure that the head is always no higher than the data in
 		// the database (ancient store or active store), we need to update head

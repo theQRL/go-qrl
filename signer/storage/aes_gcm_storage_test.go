@@ -25,8 +25,8 @@ import (
 	"testing"
 
 	"github.com/mattn/go-colorable"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
 )
 
 func TestFileStorage(t *testing.T) {

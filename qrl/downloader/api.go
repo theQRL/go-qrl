@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // DownloaderAPI provides an API which gives information about the current

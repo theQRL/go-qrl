@@ -23,8 +23,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p"
 )
 
 // Tests that datadirs can be successfully created, be them manually configured
@@ -79,15 +79,15 @@ func TestIPCPathResolution(t *testing.T) {
 	}{
 		{"", "", false, ""},
 		{"data", "", false, ""},
-		{"", "gzond.ipc", false, filepath.Join(os.TempDir(), "gzond.ipc")},
-		{"data", "gzond.ipc", false, "data/gzond.ipc"},
-		{"data", "./gzond.ipc", false, "./gzond.ipc"},
-		{"data", "/gzond.ipc", false, "/gzond.ipc"},
+		{"", "gqrl.ipc", false, filepath.Join(os.TempDir(), "gqrl.ipc")},
+		{"data", "gqrl.ipc", false, "data/gqrl.ipc"},
+		{"data", "./gqrl.ipc", false, "./gqrl.ipc"},
+		{"data", "/gqrl.ipc", false, "/gqrl.ipc"},
 		{"", "", true, ``},
 		{"data", "", true, ``},
-		{"", "gzond.ipc", true, `\\.\pipe\gzond.ipc`},
-		{"data", "gzond.ipc", true, `\\.\pipe\gzond.ipc`},
-		{"data", `\\.\pipe\gzond.ipc`, true, `\\.\pipe\gzond.ipc`},
+		{"", "gqrl.ipc", true, `\\.\pipe\gqrl.ipc`},
+		{"data", "gqrl.ipc", true, `\\.\pipe\gqrl.ipc`},
+		{"data", `\\.\pipe\gqrl.ipc`, true, `\\.\pipe\gqrl.ipc`},
 	}
 	for i, test := range tests {
 		// Only run when platform/test match

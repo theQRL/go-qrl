@@ -27,8 +27,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 var jsonEventTransfer = []byte(`{

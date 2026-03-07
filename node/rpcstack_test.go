@@ -31,9 +31,9 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/internal/testlog"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/internal/testlog"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 const testMethod = "rpc_modules"

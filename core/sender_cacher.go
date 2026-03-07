@@ -19,7 +19,7 @@ package core
 import (
 	"runtime"
 
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // SenderCacher is a concurrent transaction sender recoverer and cacher.

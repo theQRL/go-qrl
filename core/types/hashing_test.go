@@ -24,13 +24,13 @@ import (
 	mrand "math/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 func TestDeriveSha(t *testing.T) {

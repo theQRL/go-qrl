@@ -28,9 +28,9 @@ import (
 	"sync/atomic"
 
 	"github.com/golang/snappy"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 var (

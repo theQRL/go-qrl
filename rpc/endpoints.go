@@ -20,7 +20,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // StartIPCEndpoint starts an IPC endpoint.

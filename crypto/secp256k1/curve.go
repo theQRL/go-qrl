@@ -36,7 +36,7 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common/math"
+	"github.com/theQRL/go-qrl/common/math"
 )
 
 // This code is from https://github.com/ThePiachu/GoBit and implements

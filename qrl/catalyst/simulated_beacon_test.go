@@ -21,17 +21,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
 )
 
 func startSimulatedBeaconQRLService(t *testing.T, genesis *core.Genesis) (*node.Node, *qrl.QRL, *SimulatedBeacon) {

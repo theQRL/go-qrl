@@ -23,8 +23,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 var (

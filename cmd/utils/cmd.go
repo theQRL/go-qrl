@@ -30,17 +30,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/debug"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/debug"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -131,11 +131,11 @@ func monitorFreeDiskSpace(sigc chan os.Signal, path string, freeDiskSpaceCritica
 			break
 		}
 		if freeSpace < freeDiskSpaceCritical {
-			log.Error("Low disk space. Gracefully shutting down Gzond to prevent database corruption.", "available", common.StorageSize(freeSpace), "path", path)
+			log.Error("Low disk space. Gracefully shutting down Gqrl to prevent database corruption.", "available", common.StorageSize(freeSpace), "path", path)
 			sigc <- syscall.SIGTERM
 			break
 		} else if freeSpace < 2*freeDiskSpaceCritical {
-			log.Warn("Disk space is running low. Gzond will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical), "path", path)
+			log.Warn("Disk space is running low. Gqrl will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical), "path", path)
 		}
 		time.Sleep(30 * time.Second)
 	}
@@ -383,13 +383,13 @@ func ExportPreimages(db qrldb.Database, fn string) error {
 // should be bumped.
 // If the importer sees a higher version, it should reject the import.
 type exportHeader struct {
-	Magic    string // Always set to 'gzonddbdump' for disambiguation
+	Magic    string // Always set to 'gqrldbdump' for disambiguation
 	Version  uint64
 	Kind     string
 	UnixTime uint64
 }
 
-const exportMagic = "gzonddbdump"
+const exportMagic = "gqrldbdump"
 const (
 	OpBatchAdd = 0
 	OpBatchDel = 1

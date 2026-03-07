@@ -29,12 +29,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 var typedDataReferenceTypeRegexp = regexp.MustCompile(`^[A-Za-z](\w*)(\[\])?$`)
@@ -91,7 +91,7 @@ type SendTxArgs struct {
 
 	// We accept "data" and "input" for backwards-compatibility reasons.
 	// "input" is the newer name and should be preferred by clients.
-	// Issue detail: https://github.com/theQRL/go-zond/issues/15628
+	// Issue detail: https://github.com/theQRL/go-qrl/issues/15628
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input,omitempty"`
 

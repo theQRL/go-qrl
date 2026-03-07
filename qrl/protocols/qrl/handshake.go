@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/forkid"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/p2p"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/forkid"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/p2p"
 )
 
 const (

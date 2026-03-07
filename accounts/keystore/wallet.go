@@ -19,10 +19,10 @@ package keystore
 import (
 	"math/big"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 // keystoreWallet implements the accounts.Wallet interface for the original

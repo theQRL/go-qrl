@@ -24,13 +24,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/tests"
 	"github.com/urfave/cli/v2"
 )
 

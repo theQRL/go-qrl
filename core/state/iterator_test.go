@@ -19,9 +19,9 @@ package state
 import (
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 // Tests that the node iterator indeed walks over the entire database contents.

@@ -37,25 +37,25 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/signer/core"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/fourbyte"
-	"github.com/theQRL/go-zond/signer/rules"
-	"github.com/theQRL/go-zond/signer/storage"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/signer/core"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/fourbyte"
+	"github.com/theQRL/go-qrl/signer/rules"
+	"github.com/theQRL/go-qrl/signer/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -881,7 +881,7 @@ func checkFile(filename string) error {
 	}
 	// Check the unix permission bits
 	// However, on windows, we cannot use the unix perm-bits, see
-	// https://github.com/theQRL/go-zond/issues/20123
+	// https://github.com/theQRL/go-qrl/issues/20123
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0377 != 0 {
 		return fmt.Errorf("file (%v) has insecure file permissions (%v)", filename, info.Mode().String())
 	}

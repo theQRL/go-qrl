@@ -25,9 +25,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var (

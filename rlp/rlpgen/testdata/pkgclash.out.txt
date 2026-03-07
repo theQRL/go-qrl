@@ -1,10 +1,10 @@
 package test
 
-import "github.com/theQRL/go-zond/common"
-import "github.com/theQRL/go-zond/qrl"
-import "github.com/theQRL/go-zond/rlp"
+import "github.com/theQRL/go-qrl/common"
+import "github.com/theQRL/go-qrl/qrl"
+import "github.com/theQRL/go-qrl/rlp"
 import "io"
-import qrl1 "github.com/theQRL/go-zond/qrl/protocols/qrl"
+import qrl1 "github.com/theQRL/go-qrl/qrl/protocols/qrl"
 
 func (obj *Test) EncodeRLP(_w io.Writer) error {
 	w := rlp.NewEncoderBuffer(_w)

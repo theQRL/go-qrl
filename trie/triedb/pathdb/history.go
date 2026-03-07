@@ -24,11 +24,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 // State history records the state changes involved in executing a block. The

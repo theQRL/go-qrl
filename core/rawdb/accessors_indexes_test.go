@@ -21,11 +21,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/internal/blocktest"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/internal/blocktest"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 var newTestHasher = blocktest.NewHasher

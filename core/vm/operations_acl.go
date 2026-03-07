@@ -19,9 +19,9 @@ package vm
 import (
 	"errors"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/params"
 )
 
 func makeGasSStoreFunc(clearingRefund uint64) gasFunc {

@@ -40,7 +40,7 @@ import (
 	"io"
 	"sort"
 
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 const SizeLimit = 300 // maximum encoded size of a node record in bytes

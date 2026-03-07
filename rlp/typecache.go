@@ -23,7 +23,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/theQRL/go-zond/rlp/internal/rlpstruct"
+	"github.com/theQRL/go-qrl/rlp/internal/rlpstruct"
 )
 
 // typeinfo is an entry in the type cache.

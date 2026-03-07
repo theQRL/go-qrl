@@ -23,9 +23,9 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // testPeer is a simulated peer to allow testing direct network calls.

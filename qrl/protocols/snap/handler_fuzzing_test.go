@@ -25,15 +25,15 @@ import (
 	"time"
 
 	fuzz "github.com/google/gofuzz"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 func FuzzARange(f *testing.F) {

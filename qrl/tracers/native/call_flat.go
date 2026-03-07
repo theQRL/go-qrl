@@ -24,10 +24,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers"
 )
 
 //go:generate go run github.com/fjl/gencodec -type flatCallAction -field-override flatCallActionMarshaling -out gen_flatcallaction_json.go

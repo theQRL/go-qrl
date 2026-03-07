@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 const testSectionSize = 4096
@@ -85,7 +85,7 @@ func TestMatcherRandom(t *testing.T) {
 
 // Tests that the matcher can properly find matches if the starting block is
 // shifter from a multiple of 8. This is needed to cover an optimisation with
-// bitset matching https://github.com/theQRL/go-zond/issues/15309.
+// bitset matching https://github.com/theQRL/go-qrl/issues/15309.
 func TestMatcherShifted(t *testing.T) {
 	t.Parallel()
 	// Block 0 always matches in the tests, skip ahead of first 8 blocks with the

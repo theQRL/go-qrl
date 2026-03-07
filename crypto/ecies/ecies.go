@@ -41,7 +41,7 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 var (

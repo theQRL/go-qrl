@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/theQRL/go-zond/rlp/internal/rlpstruct"
+	"github.com/theQRL/go-qrl/rlp/internal/rlpstruct"
 	"golang.org/x/tools/go/packages"
 )
 

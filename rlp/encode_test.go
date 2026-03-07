@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/common/math"
+	"github.com/theQRL/go-qrl/common/math"
 )
 
 type testEncoder struct {

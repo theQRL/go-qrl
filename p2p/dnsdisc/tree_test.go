@@ -21,8 +21,8 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 func TestParseRoot(t *testing.T) {

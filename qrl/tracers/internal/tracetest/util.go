@@ -5,12 +5,12 @@ import (
 	"unicode"
 
 	// Force-load native and js packages, to trigger registration
-	_ "github.com/theQRL/go-zond/qrl/tracers/js"
-	_ "github.com/theQRL/go-zond/qrl/tracers/native"
+	_ "github.com/theQRL/go-qrl/qrl/tracers/js"
+	_ "github.com/theQRL/go-qrl/qrl/tracers/native"
 )
 
 // To generate a new callTracer test, copy paste the makeTest method below into
-// a Gzond console and call it with a transaction hash you which to export.
+// a Gqrl console and call it with a transaction hash you which to export.
 
 /*
 // makeTest generates a callTracer test by running a prestate reassembled and a

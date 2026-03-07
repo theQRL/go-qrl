@@ -22,7 +22,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // Tests that data bitset encoding and decoding works and is bijective.

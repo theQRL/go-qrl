@@ -23,7 +23,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/p2p"
+	"github.com/theQRL/go-qrl/p2p"
 )
 
 // TestEthProtocolNegotiation tests whether the test suite

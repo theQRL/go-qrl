@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/theQRL/go-zond/event"
+	"github.com/theQRL/go-qrl/event"
 )
 
 // This example demonstrates how SubscriptionScope can be used to control the lifetime of

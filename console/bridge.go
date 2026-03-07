@@ -25,10 +25,10 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/internal/jsre"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/internal/jsre"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // bridge is a collection of JavaScript utility methods to bride the .js runtime

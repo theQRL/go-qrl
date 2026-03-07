@@ -23,17 +23,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/beacon/engine"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/beacon/engine"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Register adds the engine API to the full node.
@@ -94,14 +94,14 @@ type ConsensusAPI struct {
 	//
 	// There are a few important caveats in this mechanism:
 	//   - The bad block tracking is ephemeral, in-memory only. We must never
-	//     persist any bad block information to disk as a bug in Gzond could end
-	//     up blocking a valid chain, even if a later Gzond update would accept
+	//     persist any bad block information to disk as a bug in Gqrl could end
+	//     up blocking a valid chain, even if a later Gqrl update would accept
 	//     it.
 	//   - Bad blocks will get forgotten after a certain threshold of import
 	//     attempts and will be retried. The rationale is that if the network
 	//     really-really-really tries to feed us a block, we should give it a
 	//     new chance, perhaps us being racey instead of the block being legit
-	//     bad (this happened in Gzond at a point with import vs. pending race).
+	//     bad (this happened in Gqrl at a point with import vs. pending race).
 	//   - Tracking all the blocks built on top of the bad one could be a bit
 	//     problematic, so we will only track the head chain segment of a bad
 	//     chain to allow discarding progressing bad chains and side chains,
@@ -110,7 +110,7 @@ type ConsensusAPI struct {
 	invalidTipsets    map[common.Hash]*types.Header // Ephemeral cache to track invalid tipsets and their bad ancestor
 	invalidLock       sync.Mutex                    // Protects the invalid maps from concurrent access
 
-	// Gzond can appear to be stuck or do strange things if the beacon client is
+	// Gqrl can appear to be stuck or do strange things if the beacon client is
 	// offline or is sending us strange data. Stash some update stats away so
 	// that we can warn the user and not have them open issues on our tracker.
 	lastTransitionUpdate time.Time

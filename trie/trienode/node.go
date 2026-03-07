@@ -21,7 +21,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // Node is a wrapper which contains the encoded blob of the trie node and its

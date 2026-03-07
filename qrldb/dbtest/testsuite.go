@@ -23,7 +23,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // TestDatabaseSuite runs a suite of tests against a KeyValueStore database

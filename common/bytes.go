@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"errors"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // FromHex returns the bytes represented by the hexadecimal string s.

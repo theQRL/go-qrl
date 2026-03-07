@@ -26,7 +26,7 @@ import (
 	"bytes"
 	"hash"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"golang.org/x/crypto/sha3"
 )
 

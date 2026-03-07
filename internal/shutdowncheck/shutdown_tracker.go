@@ -19,10 +19,10 @@ package shutdowncheck
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // ShutdownTracker is a service that reports previous unclean shutdowns

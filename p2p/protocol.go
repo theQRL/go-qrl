@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 // Protocol represents a P2P subprotocol implementation.

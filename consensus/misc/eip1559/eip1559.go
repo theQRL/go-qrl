@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/misc"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/misc"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // VerifyEIP1559Header verifies some header attributes which were changed in EIP-1559,

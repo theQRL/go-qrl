@@ -24,8 +24,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 func init() {

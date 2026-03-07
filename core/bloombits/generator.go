@@ -19,7 +19,7 @@ package bloombits
 import (
 	"errors"
 
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 var (

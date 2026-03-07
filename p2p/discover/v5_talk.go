@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/discover/v5wire"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/discover/v5wire"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // This is a limit for the number of concurrent talk requests.

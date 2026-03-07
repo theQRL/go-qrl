@@ -26,14 +26,14 @@ import (
 	"testing"
 	"time"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/params"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/params"
 )
 
 func TestSimulatedBackend(t *testing.T) {

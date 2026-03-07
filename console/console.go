@@ -32,12 +32,12 @@ import (
 	"github.com/dop251/goja"
 	"github.com/mattn/go-colorable"
 	"github.com/peterh/liner"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/internal/jsre"
-	"github.com/theQRL/go-zond/internal/jsre/deps"
-	"github.com/theQRL/go-zond/internal/web3ext"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/internal/jsre"
+	"github.com/theQRL/go-qrl/internal/jsre/deps"
+	"github.com/theQRL/go-qrl/internal/web3ext"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 var (
@@ -292,12 +292,12 @@ func (c *Console) AutoCompleteInput(line string, pos int) (string, []string, str
 	return line[:start], c.jsre.CompleteKeywords(line[start:pos]), line[pos:]
 }
 
-// Welcome show summary of current Gzond instance and some metadata about the
+// Welcome show summary of current Gqrl instance and some metadata about the
 // console's available modules.
 func (c *Console) Welcome() {
 	message := "Welcome to the QRL JavaScript console!\n\n"
 
-	// Print some generic Gzond metadata
+	// Print some generic Gqrl metadata
 	if res, err := c.jsre.Run(`
 		var message = "instance: " + web3.version.node + "\n";
 		message += "at block: " + qrl.blockNumber + " (" + new Date(1000 * qrl.getBlock(qrl.blockNumber).timestamp) + ")\n";

@@ -16,7 +16,7 @@
 
 package params
 
-import "github.com/theQRL/go-zond/common"
+import "github.com/theQRL/go-qrl/common"
 
 // TODO(now.youtrack.cloud/issue/TGZ-14)
 // MainnetBootnodes are the qnode URLs of the P2P bootstrap nodes running on

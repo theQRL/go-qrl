@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	dcred_secp256k1 "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/theQRL/go-zond/crypto/secp256k1"
+	"github.com/theQRL/go-qrl/crypto/secp256k1"
 )
 
 func TestFuzzer(t *testing.T) {

@@ -30,15 +30,15 @@ import (
 	"sync"
 
 	"github.com/gofrs/flock"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Node is a container on which services can be registered.
@@ -127,7 +127,7 @@ func New(conf *Config) (*Node, error) {
 	}
 	node.keyDir = keyDir
 	node.keyDirTemp = isEphem
-	// Creates an empty AccountManager with no backends. Callers (e.g. cmd/gzond)
+	// Creates an empty AccountManager with no backends. Callers (e.g. cmd/gqrl)
 	// are required to add the backends later on.
 	node.accman = accounts.NewManager()
 

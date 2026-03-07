@@ -22,7 +22,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func TestBlockNumberJSONUnmarshal(t *testing.T) {

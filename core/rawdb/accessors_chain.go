@@ -24,13 +24,13 @@ import (
 	"math/big"
 	"slices"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // ReadCanonicalHash retrieves the hash assigned to a canonical block number.

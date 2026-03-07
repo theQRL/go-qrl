@@ -19,7 +19,7 @@ package qrlapi
 import (
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 type AddrLocker struct {

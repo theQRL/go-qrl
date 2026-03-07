@@ -28,11 +28,11 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	zcipher "github.com/theQRL/go-zond/crypto/cipher"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common/mclock"
+	zcipher "github.com/theQRL/go-qrl/crypto/cipher"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // TODO concurrent WHOAREYOU tie-breaker

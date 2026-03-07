@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/fourbyte"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/fourbyte"
 )
 
 func init() {

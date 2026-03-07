@@ -26,13 +26,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // makeChain creates a chain of n blocks starting at and including parent.

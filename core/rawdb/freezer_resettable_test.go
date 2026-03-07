@@ -21,7 +21,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 func TestResetFreezer(t *testing.T) {

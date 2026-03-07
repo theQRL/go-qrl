@@ -26,17 +26,17 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 //go:generate go run github.com/fjl/gencodec -type Genesis -field-override genesisSpecMarshaling -out gen_genesis.go
@@ -511,7 +511,7 @@ func DefaultTestnetGenesisBlock() *Genesis {
 	}
 }
 
-// DeveloperGenesisBlock returns the 'gzond --dev' genesis block.
+// DeveloperGenesisBlock returns the 'gqrl --dev' genesis block.
 func DeveloperGenesisBlock(gasLimit uint64, faucet common.Address) *Genesis {
 	// Override the default period to the user requested one
 	config := *params.AllDevChainProtocolChanges

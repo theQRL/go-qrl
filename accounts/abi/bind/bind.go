@@ -29,8 +29,8 @@ import (
 	"text/template"
 	"unicode"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/log"
 )
 
 var (

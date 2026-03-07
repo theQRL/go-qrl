@@ -24,12 +24,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common/compiler"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common/compiler"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/log"
 	"github.com/urfave/cli/v2"
 )
 

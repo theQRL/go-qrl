@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/internal"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/internal"
 )
 
 func TestMain(m *testing.M) {

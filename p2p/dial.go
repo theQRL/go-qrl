@@ -27,10 +27,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 const (

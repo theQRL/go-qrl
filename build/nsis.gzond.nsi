@@ -6,11 +6,11 @@
 # - BUILDVERSION, build id version
 #
 # The created installer executes the following steps:
-# 1. install gzond for all users
+# 1. install gqrl for all users
 # 2. install optional development tools such as abigen
 # 3. create an uninstaller
-# 4. configures the Windows firewall for gzond
-# 5. create gzond, attach and uninstall start menu entries
+# 4. configures the Windows firewall for gqrl
+# 5. create gqrl, attach and uninstall start menu entries
 # 6. configures the registry that allows Windows to manage the package through its platform tools
 # 7. adds the environment system wide variable QRL_SOCKET
 # 8. adds the install directory to %PATH%
@@ -30,7 +30,7 @@
 CRCCheck on
 
 !define GROUPNAME "QRL"
-!define APPNAME "Gzond"
+!define APPNAME "Gqrl"
 !define DESCRIPTION "Official Go implementation of the QRL protocol"
 !addplugindir .\
 
@@ -55,7 +55,7 @@ ${EndIf}
 !macroend
 
 function .onInit
-  # make vars are global for all users since gzond is installed global
+  # make vars are global for all users since gqrl is installed global
   setShellVarContext all
   !insertmacro VerifyUserIsAdmin
 

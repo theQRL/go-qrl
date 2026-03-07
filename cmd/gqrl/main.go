@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
 
-// gzond is the official command-line client for QRL.
+// gqrl is the official command-line client for QRL.
 package main
 
 import (
@@ -24,28 +24,28 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/internal/debug"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrlclient"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/internal/debug"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrlclient"
 
 	// Force-load the tracer engines to trigger registration
-	_ "github.com/theQRL/go-zond/qrl/tracers/js"
-	_ "github.com/theQRL/go-zond/qrl/tracers/native"
+	_ "github.com/theQRL/go-qrl/qrl/tracers/js"
+	_ "github.com/theQRL/go-qrl/qrl/tracers/native"
 	"go.uber.org/automaxprocs/maxprocs"
 
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	clientIdentifier = "gzond" // Client identifier to advertise over the network
+	clientIdentifier = "gqrl" // Client identifier to advertise over the network
 )
 
 var (
@@ -167,12 +167,12 @@ var (
 	}
 )
 
-var app = flags.NewApp("the go-zond command line interface")
+var app = flags.NewApp("the go-qrl command line interface")
 
 func init() {
-	// Initialize the CLI app and start Gzond
-	app.Action = gzond
-	app.Copyright = "Copyright 2013-2023 The go-zond Authors"
+	// Initialize the CLI app and start Gqrl
+	app.Action = gqrl
+	app.Copyright = "Copyright 2013-2023 The go-qrl Authors"
 	app.Commands = []*cli.Command{
 		// See chaincmd.go:
 		initCommand,
@@ -208,7 +208,7 @@ func init() {
 		debug.Flags,
 		metricsFlags,
 	)
-	flags.AutoEnvVars(app.Flags, "GZOND")
+	flags.AutoEnvVars(app.Flags, "GQRL")
 
 	app.Before = func(ctx *cli.Context) error {
 		maxprocs.Set() // Automatically set GOMAXPROCS to match Linux container CPU quota.
@@ -216,7 +216,7 @@ func init() {
 		if err := debug.Setup(ctx); err != nil {
 			return err
 		}
-		flags.CheckEnvVars(ctx, app.Flags, "GZOND")
+		flags.CheckEnvVars(ctx, app.Flags, "GQRL")
 		return nil
 	}
 	app.After = func(ctx *cli.Context) error {
@@ -239,14 +239,14 @@ func prepare(ctx *cli.Context) {
 	// If we're running a known preset, log it for convenience.
 	switch {
 	case ctx.IsSet(utils.BetaNetFlag.Name):
-		log.Info("Starting Gzond on BetaNet testnet...")
+		log.Info("Starting Gqrl on BetaNet testnet...")
 
 	case ctx.IsSet(utils.TestnetFlag.Name):
-		log.Info("Starting Gzond on Testnet 1...")
+		log.Info("Starting Gqrl on Testnet 1...")
 
 	case ctx.IsSet(utils.DeveloperFlag.Name):
-		log.Info("Starting Gzond in ephemeral dev mode...")
-		log.Warn(`You are running Gzond in --dev mode. Please note the following:
+		log.Info("Starting Gqrl in ephemeral dev mode...")
+		log.Warn(`You are running Gqrl in --dev mode. Please note the following:
 
   1. This mode is only intended for fast, iterative development without assumptions on
      security or persistence.
@@ -263,7 +263,7 @@ func prepare(ctx *cli.Context) {
 `)
 
 	case !ctx.IsSet(utils.NetworkIdFlag.Name):
-		log.Info("Starting Gzond on QRL mainnet...")
+		log.Info("Starting Gqrl on QRL mainnet...")
 	}
 	// If we're a full node on mainnet without --cache specified, bump default cache allowance
 	if !ctx.IsSet(utils.CacheFlag.Name) && !ctx.IsSet(utils.NetworkIdFlag.Name) {
@@ -282,10 +282,10 @@ func prepare(ctx *cli.Context) {
 	go metrics.CollectProcessMetrics(3 * time.Second)
 }
 
-// gzond is the main entry point into the system if no special subcommand is run.
+// gqrl is the main entry point into the system if no special subcommand is run.
 // It creates a default node based on the command line arguments and runs it in
 // blocking mode, waiting for it to be shut down.
-func gzond(ctx *cli.Context) error {
+func gqrl(ctx *cli.Context) error {
 	if args := ctx.Args().Slice(); len(args) > 0 {
 		return fmt.Errorf("invalid command: %q", args[0])
 	}
@@ -310,7 +310,7 @@ func startNode(ctx *cli.Context, stack *node.Node, isConsole bool) {
 	events := make(chan accounts.WalletEvent, 16)
 	stack.AccountManager().Subscribe(events)
 
-	// Create a client to interact with local gzond node.
+	// Create a client to interact with local gqrl node.
 	rpcClient := stack.Attach()
 	qrlClient := qrlclient.NewClient(rpcClient)
 

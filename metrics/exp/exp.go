@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/prometheus"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/prometheus"
 )
 
 type exp struct {

@@ -23,12 +23,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/internal/cmdtest"
-	"github.com/theQRL/go-zond/internal/reexec"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/internal/cmdtest"
+	"github.com/theQRL/go-qrl/internal/reexec"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
-type testgzond struct {
+type testgqrl struct {
 	*cmdtest.TestCmd
 
 	// template variables for expect
@@ -36,8 +36,8 @@ type testgzond struct {
 }
 
 func init() {
-	// Run the app if we've been exec'd as "gzond-test" in runGzond.
-	reexec.Register("gzond-test", func() {
+	// Run the app if we've been exec'd as "gqrl-test" in runGqrl.
+	reexec.Register("gqrl-test", func() {
 		if err := app.Run(os.Args); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -54,10 +54,10 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// spawns gzond with the given command line args. If the args don't set --datadir, the
+// spawns gqrl with the given command line args. If the args don't set --datadir, the
 // child g gets a temporary data directory.
-func runGzond(t *testing.T, args ...string) *testgzond {
-	tt := &testgzond{}
+func runGqrl(t *testing.T, args ...string) *testgqrl {
+	tt := &testgqrl{}
 	tt.TestCmd = cmdtest.NewTestCmd(t, tt)
 	for i, arg := range args {
 		switch arg {
@@ -73,9 +73,9 @@ func runGzond(t *testing.T, args ...string) *testgzond {
 		args = append([]string{"--datadir", tt.Datadir}, args...)
 	}
 
-	// Boot "gzond". This actually runs the test binary but the TestMain
+	// Boot "gqrl". This actually runs the test binary but the TestMain
 	// function will prevent any tests from running.
-	tt.Run("gzond-test", args...)
+	tt.Run("gqrl-test", args...)
 
 	return tt
 }

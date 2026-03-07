@@ -25,10 +25,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type CommandlineUI struct {

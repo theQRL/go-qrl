@@ -25,19 +25,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/tracers/logger"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/tracers/logger"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // So we can deterministically seed different blockchains
@@ -1444,7 +1444,7 @@ func testEIP161AccountRemoval(t *testing.T, scheme string) {
 // tests that under weird reorg conditions the blockchain and its internal header-
 // chain return the same latest block/header.
 //
-// https://github.com/theQRL/go-zond/pull/15941
+// https://github.com/theQRL/go-qrl/pull/15941
 func TestBlockchainHeaderchainReorgConsistency(t *testing.T) {
 	testBlockchainHeaderchainReorgConsistency(t, rawdb.HashScheme)
 	testBlockchainHeaderchainReorgConsistency(t, rawdb.PathScheme)

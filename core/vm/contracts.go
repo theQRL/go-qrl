@@ -25,9 +25,9 @@ import (
 
 	pkgerrors "github.com/pkg/errors"
 	ssz "github.com/prysmaticlabs/fastssz"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation

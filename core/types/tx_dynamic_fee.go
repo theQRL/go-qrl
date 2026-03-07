@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 //go:generate go run github.com/fjl/gencodec -type AccessTuple -out gen_access_tuple.go

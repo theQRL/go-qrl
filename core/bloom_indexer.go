@@ -20,12 +20,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/bitutil"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/bitutil"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 const (

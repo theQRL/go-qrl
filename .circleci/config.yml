@@ -32,19 +32,19 @@ commands:
         default: ""
     steps:
       - run: |
-          cp build/bin/gzond<< parameters.file_extension >> /tmp/gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          cp build/bin/gqrl<< parameters.file_extension >> /tmp/gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
 
-          (cd /tmp && sha256sum gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
+          (cd /tmp && sha256sum gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >> > gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256)
 
           echo -n "$GPG_KEY" | base64 --decode | gpg --import
-          gpg -o /tmp/gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          gpg -o /tmp/gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
 
-          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=go-zond tag=${CIRCLE_TAG} filename=/tmp/gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
-          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=go-zond tag=${CIRCLE_TAG} filename=/tmp/gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
-          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=go-zond tag=${CIRCLE_TAG} filename=/tmp/gzond-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=go-qrl tag=${CIRCLE_TAG} filename=/tmp/gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=go-qrl tag=${CIRCLE_TAG} filename=/tmp/gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sha256
+          ./hack/upload-github-release-asset.sh github_api_token=$GITHUB_TOKEN owner=theQRL repo=go-qrl tag=${CIRCLE_TAG} filename=/tmp/gqrl-${CIRCLE_TAG}-<< parameters.platform >><< parameters.file_extension >>.sig
 
 jobs:
-  publish-linux-amd64-gzond-binary:
+  publish-linux-amd64-gqrl-binary:
     docker:
       - image: cimg/go:1.25
     steps:
@@ -54,11 +54,11 @@ jobs:
           command: go mod download
       - *save_go_cache
       - run: |
-          go run build/ci.go install ./cmd/gzond
+          go run build/ci.go install ./cmd/gqrl
       - prepare-publish-artifacts:
           platform: "linux-amd64"
   
-  publish-linux-arm64-gzond-binary:
+  publish-linux-arm64-gqrl-binary:
     machine:
       image: ubuntu-2204:2024.11.1
     resource_class: arm.medium
@@ -69,11 +69,11 @@ jobs:
           command: go mod download
       - *save_go_cache
       - run: |
-          go run build/ci.go install ./cmd/gzond
+          go run build/ci.go install ./cmd/gqrl
       - prepare-publish-artifacts:
           platform: "linux-arm64"
 
-  publish-darwin-amd64-gzond-binary:
+  publish-darwin-amd64-gqrl-binary:
     macos:
       xcode: 14.2.0
     resource_class: macos.m1.medium.gen1
@@ -91,7 +91,7 @@ jobs:
           command: go mod download
       - *save_go_cache
       - run: 
-          command: go run build/ci.go install ./cmd/gzond
+          command: go run build/ci.go install ./cmd/gqrl
       - prepare-publish-artifacts:
           platform: "darwin-amd64"
 
@@ -102,18 +102,18 @@ jobs:
       - run:
           name: Build and Deploy Docker Images
           command: |
-            go run build/ci.go dockerx -platform linux/amd64,linux/arm64 -hub qrledger/go-zond -upload true
+            go run build/ci.go dockerx -platform linux/amd64,linux/arm64 -hub qrledger/go-qrl -upload true
 
 workflows:
   release:
     jobs:
-      - publish-linux-amd64-gzond-binary:
+      - publish-linux-amd64-gqrl-binary:
           filters:
             <<: *filters-release
-      - publish-linux-arm64-gzond-binary:
+      - publish-linux-arm64-gqrl-binary:
           filters:
             <<: *filters-release
-      - publish-darwin-amd64-gzond-binary:
+      - publish-darwin-amd64-gqrl-binary:
           filters:
             <<: *filters-release
       - build-and-deploy-docker-images:

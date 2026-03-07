@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type mockT struct {

@@ -1,6 +1,6 @@
 ---
 name: Report a bug
-about: Something with go-zond is not working as expected
+about: Something with go-qrl is not working as expected
 title: ''
 labels: 'type:bug'
 assignees: ''
@@ -8,7 +8,7 @@ assignees: ''
 
 #### System information
 
-gzond version: `gzond version`
+gqrl version: `gqrl version`
 CL client & version: e.g. qrysm@v1.0.0
 OS & Version: Windows/Linux/OSX
 Commit hash : (if applicable)

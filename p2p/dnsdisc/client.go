@@ -27,12 +27,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/time/rate"
 )

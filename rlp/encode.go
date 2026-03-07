@@ -25,7 +25,7 @@ import (
 	"reflect"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/rlp/internal/rlpstruct"
+	"github.com/theQRL/go-qrl/rlp/internal/rlpstruct"
 )
 
 var (

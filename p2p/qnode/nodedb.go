@@ -32,7 +32,7 @@ import (
 	"github.com/syndtr/goleveldb/leveldb/opt"
 	"github.com/syndtr/goleveldb/leveldb/storage"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // Keys in the node database.

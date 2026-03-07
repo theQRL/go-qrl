@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type watcher struct {

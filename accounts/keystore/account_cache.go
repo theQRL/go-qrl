@@ -29,9 +29,9 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // Minimum amount of time between cache reloads. This limit applies if the platform does

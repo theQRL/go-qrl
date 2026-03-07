@@ -22,25 +22,25 @@ import (
 	"os"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
-func initGzond(t *testing.T) string {
+func initGqrl(t *testing.T) string {
 	args := []string{"--networkid=42", "init", "./testdata/genesis.json"}
-	t.Logf("Initializing gzond: %v ", args)
-	g := runGzond(t, args...)
+	t.Logf("Initializing gqrl: %v ", args)
+	g := runGqrl(t, args...)
 	datadir := g.Datadir
 	g.WaitExit()
 	return datadir
 }
 
-// TestExport does a basic test of "gzond export", exporting the test-genesis.
+// TestExport does a basic test of "gqrl export", exporting the test-genesis.
 func TestExport(t *testing.T) {
 	outfile := fmt.Sprintf("%v/testExport.out", t.TempDir())
 	defer os.Remove(outfile)
-	gzond := runGzond(t, "--datadir", initGzond(t), "export", outfile)
-	gzond.WaitExit()
-	if have, want := gzond.ExitStatus(), 0; have != want {
+	gqrl := runGqrl(t, "--datadir", initGqrl(t), "export", outfile)
+	gqrl.WaitExit()
+	if have, want := gqrl.ExitStatus(), 0; have != want {
 		t.Errorf("exit error, have %d want %d", have, want)
 	}
 	have, err := os.ReadFile(outfile)

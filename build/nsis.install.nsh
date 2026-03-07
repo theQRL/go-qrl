@@ -1,41 +1,41 @@
-Name "gzond ${MAJORVERSION}.${MINORVERSION}.${BUILDVERSION}" # VERSION variables set through command line arguments
+Name "gqrl ${MAJORVERSION}.${MINORVERSION}.${BUILDVERSION}" # VERSION variables set through command line arguments
 InstallDir "$InstDir"
 OutFile "${OUTPUTFILE}" # set through command line arguments
 
 # Links for "Add/Remove Programs"
-!define HELPURL "https://github.com/theQRL/go-zond/issues"
-!define UPDATEURL "https://github.com/theQRL/go-zond/releases"
-!define ABOUTURL "https://github.com/theQRL/go-zond#ethereum-go"
+!define HELPURL "https://github.com/theQRL/go-qrl/issues"
+!define UPDATEURL "https://github.com/theQRL/go-qrl/releases"
+!define ABOUTURL "https://github.com/theQRL/go-qrl#ethereum-go"
 !define /date NOW "%Y%m%d"
 
 PageEx license
   LicenseData {{.License}}
 PageExEnd
 
-# Install gzond binary
-Section "Gzond" GZOND_IDX
+# Install gqrl binary
+Section "Gqrl" GQRL_IDX
   SetOutPath $INSTDIR
-  file {{.Gzond}}
+  file {{.Gqrl}}
 
   # Create start menu launcher
   createDirectory "$SMPROGRAMS\${APPNAME}"
-  createShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\gzond.exe"
-  createShortCut "$SMPROGRAMS\${APPNAME}\Attach.lnk" "$INSTDIR\gzond.exe" "attach"
+  createShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\gqrl.exe"
+  createShortCut "$SMPROGRAMS\${APPNAME}\Attach.lnk" "$INSTDIR\gqrl.exe" "attach"
   createShortCut "$SMPROGRAMS\${APPNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 
   # Firewall - remove rules (if exists)
-  SimpleFC::AdvRemoveRule "Gzond incoming peers (TCP:30303)"
-  SimpleFC::AdvRemoveRule "Gzond outgoing peers (TCP:30303)"
-  SimpleFC::AdvRemoveRule "Gzond UDP discovery (UDP:30303)"
+  SimpleFC::AdvRemoveRule "Gqrl incoming peers (TCP:30303)"
+  SimpleFC::AdvRemoveRule "Gqrl outgoing peers (TCP:30303)"
+  SimpleFC::AdvRemoveRule "Gqrl UDP discovery (UDP:30303)"
 
   # Firewall - add rules
-  SimpleFC::AdvAddRule "Gzond incoming peers (TCP:30303)" ""  6 1 1 2147483647 1 "$INSTDIR\gzond.exe" "" "" "QRL" 30303 "" "" ""
-  SimpleFC::AdvAddRule "Gzond outgoing peers (TCP:30303)" ""  6 2 1 2147483647 1 "$INSTDIR\gzond.exe" "" "" "QRL" "" 30303 "" ""
-  SimpleFC::AdvAddRule "Gzond UDP discovery (UDP:30303)" "" 17 2 1 2147483647 1 "$INSTDIR\gzond.exe" "" "" "QRL" "" 30303 "" ""
+  SimpleFC::AdvAddRule "Gqrl incoming peers (TCP:30303)" ""  6 1 1 2147483647 1 "$INSTDIR\gqrl.exe" "" "" "QRL" 30303 "" "" ""
+  SimpleFC::AdvAddRule "Gqrl outgoing peers (TCP:30303)" ""  6 2 1 2147483647 1 "$INSTDIR\gqrl.exe" "" "" "QRL" "" 30303 "" ""
+  SimpleFC::AdvAddRule "Gqrl UDP discovery (UDP:30303)" "" 17 2 1 2147483647 1 "$INSTDIR\gqrl.exe" "" "" "QRL" "" 30303 "" ""
 
   # Set default IPC endpoint (https://github.com/ethereum/EIPs/issues/147)
-  ${EnvVarUpdate} $0 "QRL_SOCKET" "R" "HKLM" "\\.\pipe\gzond.ipc"
-  ${EnvVarUpdate} $0 "QRL_SOCKET" "A" "HKLM" "\\.\pipe\gzond.ipc"
+  ${EnvVarUpdate} $0 "QRL_SOCKET" "R" "HKLM" "\\.\pipe\gqrl.ipc"
+  ${EnvVarUpdate} $0 "QRL_SOCKET" "A" "HKLM" "\\.\pipe\gqrl.ipc"
 
   # Add instdir to PATH
   Push "$INSTDIR"
@@ -54,8 +54,8 @@ Var GetInstalledSize.total
 Function GetInstalledSize
   StrCpy $GetInstalledSize.total 0
 
-  ${if} ${SectionIsSelected} ${GZOND_IDX}
-    SectionGetSize ${GZOND_IDX} $0
+  ${if} ${SectionIsSelected} ${GQRL_IDX}
+    SectionGetSize ${GQRL_IDX} $0
     IntOp $GetInstalledSize.total $GetInstalledSize.total + $0
   ${endif}
 

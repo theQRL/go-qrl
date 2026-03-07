@@ -1,6 +1,6 @@
 # Clef
 
-Clef can be used to sign transactions and data and is meant as a(n eventual) replacement for Gzond's account management. This allows DApps to not depend on Gzond's account management. When a DApp wants to sign data (or a transaction), it can send the content to Clef, which will then provide the user with context and asks for permission to sign the content. If the users grants the signing request, Clef will send the signature back to the DApp.
+Clef can be used to sign transactions and data and is meant as a(n eventual) replacement for Gqrl's account management. This allows DApps to not depend on Gqrl's account management. When a DApp wants to sign data (or a transaction), it can send the content to Clef, which will then provide the user with context and asks for permission to sign the content. If the users grants the signing request, Clef will send the signature back to the DApp.
 
 This setup allows a DApp to connect to a remote QRL node and send transactions that are locally signed. This can help in situations when a DApp is connected to an untrusted remote QRL node, because a local one is not available, not synchronized with the chain, or is a node that has no built-in (or limited) account management.
 
@@ -65,10 +65,10 @@ The security model of Clef is as follows:
 * Clef also communicates with whatever process that invoked the binary, via stdin/stdout.
   * This channel is considered 'trusted'. Over this channel, approvals and passwords are communicated.
 
-The general flow for signing a transaction using e.g. Gzond is as follows:
+The general flow for signing a transaction using e.g. Gqrl is as follows:
 ![image](sign_flow.png)
 
-In this case, `gzond` would be started with `--signer http://localhost:8550` and would relay requests to `qrl.sendTransaction`.
+In this case, `gqrl` would be started with `--signer http://localhost:8550` and would relay requests to `qrl.sendTransaction`.
 
 ## TODOs
 
@@ -92,17 +92,17 @@ Some snags and todos
       * the total amount
       * the number of unique recipients
 
-* Gzond todos
+* Gqrl todos
     - The signer should pass the `Origin` header as call-info to the UI. As of right now, the way that info about the request is put together is a bit of a hack into the HTTP server. This could probably be greatly improved.
-    - Relay: Gzond should be started in `gzond --signer localhost:8550`.
-    - Currently, the Gzond APIs use `common.Address` in the arguments to transaction submission (e.g `to` field). This type is 20 `bytes`, and is incapable of carrying checksum information. The signer uses `common.MixedcaseAddress`, which retains the original input.
-    - The Gzond API should switch to use the same type, and relay `to`-account verbatim to the external API.
+    - Relay: Gqrl should be started in `gqrl --signer localhost:8550`.
+    - Currently, the Gqrl APIs use `common.Address` in the arguments to transaction submission (e.g `to` field). This type is 20 `bytes`, and is incapable of carrying checksum information. The signer uses `common.MixedcaseAddress`, which retains the original input.
+    - The Gqrl API should switch to use the same type, and relay `to`-account verbatim to the external API.
 * [x] Storage
     * [x] An encrypted key-value storage should be implemented.
     * See [rules.md](rules.md) for more info about this.
 * Another potential thing to introduce is pairing.
   * To prevent spurious requests which users just accept, implement a way to "pair" the caller with the signer (external API).
-  * Thus Gzond/cpp would cryptographically handshake and afterwards the caller would be allowed to make signing requests.
+  * Thus Gqrl/cpp would cryptographically handshake and afterwards the caller would be allowed to make signing requests.
   * This feature would make the addition of rules less dangerous.
 
 * Wallets / accounts. Add API methods for wallets.
@@ -111,7 +111,7 @@ Some snags and todos
 
 ### External API
 
-Clef listens to HTTP requests on `http.addr`:`http.port` (or to IPC on `ipcpath`), with the same JSON-RPC standard as Gzond. The messages are expected to be [JSON-RPC 2.0 standard](https://www.jsonrpc.org/specification).
+Clef listens to HTTP requests on `http.addr`:`http.port` (or to IPC on `ipcpath`), with the same JSON-RPC standard as Gqrl. The messages are expected to be [JSON-RPC 2.0 standard](https://www.jsonrpc.org/specification).
 
 Some of these calls can require user interaction. Clients must be aware that responses may be delayed significantly or may never be received if a user decides to ignore the confirmation request.
 

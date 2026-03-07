@@ -17,7 +17,7 @@
 package vm
 
 import (
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/params"
 )
 
 func minSwapStack(n int) int {

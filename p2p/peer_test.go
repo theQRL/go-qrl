@@ -28,9 +28,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 var discard = Protocol{

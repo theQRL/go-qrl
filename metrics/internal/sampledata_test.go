@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 func TestCollectRuntimeMetrics(t *testing.T) {

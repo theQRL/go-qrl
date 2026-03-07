@@ -21,10 +21,10 @@ import (
 	"sort"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/prque"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/prque"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 // timeoutGracePeriod is the amount of time to allow for a peer to deliver a

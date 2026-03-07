@@ -43,8 +43,8 @@ func tmpDatadirWithKeystore(t *testing.T) string {
 
 func TestAccountListEmpty(t *testing.T) {
 	t.Parallel()
-	gzond := runGzond(t, "account", "list")
-	gzond.ExpectExit()
+	gqrl := runGqrl(t, "account", "list")
+	gqrl.ExpectExit()
 }
 
 func TestAccountList(t *testing.T) {
@@ -63,22 +63,22 @@ Account #2: {Q2d9b972ef8219246c73363fd7c048cef81456f9d} keystore://{{.Datadir}}\
 `
 	}
 	{
-		gzond := runGzond(t, "account", "list", "--datadir", datadir)
-		gzond.Expect(want)
-		gzond.ExpectExit()
+		gqrl := runGqrl(t, "account", "list", "--datadir", datadir)
+		gqrl.Expect(want)
+		gqrl.ExpectExit()
 	}
 	{
-		gzond := runGzond(t, "--datadir", datadir, "account", "list")
-		gzond.Expect(want)
-		gzond.ExpectExit()
+		gqrl := runGqrl(t, "--datadir", datadir, "account", "list")
+		gqrl.Expect(want)
+		gqrl.ExpectExit()
 	}
 }
 
 func TestAccountNew(t *testing.T) {
 	t.Parallel()
-	gzond := runGzond(t, "account", "new", "--lightkdf")
-	defer gzond.ExpectExit()
-	gzond.Expect(`
+	gqrl := runGqrl(t, "account", "new", "--lightkdf")
+	defer gqrl.ExpectExit()
+	gqrl.Expect(`
 Your new account is locked with a password. Please give a password. Do not forget this password.
 !! Unsupported terminal, password will be echoed.
 Password: {{.InputLine "foobar"}}
@@ -86,7 +86,7 @@ Repeat password: {{.InputLine "foobar"}}
 
 Your new key was generated
 `)
-	gzond.ExpectRegexp(`
+	gqrl.ExpectRegexp(`
 Public address of the key:   Q[0-9a-fA-F]{40}
 Path of the secret key file: .*UTC--.+--Q[0-9a-f]{40}
 
@@ -121,15 +121,15 @@ func TestAccountImport(t *testing.T) {
 
 func TestAccountHelp(t *testing.T) {
 	t.Parallel()
-	gzond := runGzond(t, "account", "-h")
-	gzond.WaitExit()
-	if have, want := gzond.ExitStatus(), 0; have != want {
+	gqrl := runGqrl(t, "account", "-h")
+	gqrl.WaitExit()
+	if have, want := gqrl.ExitStatus(), 0; have != want {
 		t.Errorf("exit error, have %d want %d", have, want)
 	}
 
-	gzond = runGzond(t, "account", "import", "-h")
-	gzond.WaitExit()
-	if have, want := gzond.ExitStatus(), 0; have != want {
+	gqrl = runGqrl(t, "account", "import", "-h")
+	gqrl.WaitExit()
+	if have, want := gqrl.ExitStatus(), 0; have != want {
 		t.Errorf("exit error, have %d want %d", have, want)
 	}
 }
@@ -144,16 +144,16 @@ func importAccountWithExpect(t *testing.T, seed string, expected string) {
 	if err := os.WriteFile(passwordFile, []byte("foobar"), 0600); err != nil {
 		t.Error(err)
 	}
-	gzond := runGzond(t, "--lightkdf", "account", "import", "-password", passwordFile, seedfile)
-	defer gzond.ExpectExit()
-	gzond.Expect(expected)
+	gqrl := runGqrl(t, "--lightkdf", "account", "import", "-password", passwordFile, seedfile)
+	defer gqrl.ExpectExit()
+	gqrl.Expect(expected)
 }
 
 func TestAccountNewBadRepeat(t *testing.T) {
 	t.Parallel()
-	gzond := runGzond(t, "account", "new", "--lightkdf")
-	defer gzond.ExpectExit()
-	gzond.Expect(`
+	gqrl := runGqrl(t, "account", "new", "--lightkdf")
+	defer gqrl.ExpectExit()
+	gqrl.Expect(`
 Your new account is locked with a password. Please give a password. Do not forget this password.
 !! Unsupported terminal, password will be echoed.
 Password: {{.InputLine "something"}}
@@ -165,11 +165,11 @@ Fatal: Passwords do not match
 func TestAccountUpdate(t *testing.T) {
 	t.Parallel()
 	datadir := tmpDatadirWithKeystore(t)
-	gzond := runGzond(t, "account", "update",
+	gqrl := runGqrl(t, "account", "update",
 		"--datadir", datadir, "--lightkdf",
 		"Q2d9b972ef8219246c73363fd7c048cef81456f9d")
-	defer gzond.ExpectExit()
-	gzond.Expect(`
+	defer gqrl.ExpectExit()
+	gqrl.Expect(`
 Please give a NEW password. Do not forget this password.
 !! Unsupported terminal, password will be echoed.
 Password: {{.InputLine "foobar"}}

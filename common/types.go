@@ -28,7 +28,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 	"golang.org/x/crypto/sha3"
 )
 

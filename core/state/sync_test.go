@@ -21,15 +21,15 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 // testAccount is the data associated with an account used by the state tests.

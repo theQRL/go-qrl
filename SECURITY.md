@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-Please see [Releases](https://github.com/theQRL/go-zond/releases). We recommend using the [most recently released version](https://github.com/theQRL/go-zond/releases/latest).
+Please see [Releases](https://github.com/theQRL/go-qrl/releases). We recommend using the [most recently released version](https://github.com/theQRL/go-qrl/releases/latest).
 
 ## Reporting a Vulnerability
 

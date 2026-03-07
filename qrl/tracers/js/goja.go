@@ -25,17 +25,17 @@ import (
 
 	"github.com/dop251/goja"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	jsassets "github.com/theQRL/go-zond/qrl/tracers/js/internal/tracers"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	jsassets "github.com/theQRL/go-qrl/qrl/tracers/js/internal/tracers"
 )
 
 var assetTracers = make(map[string]string)
 
-// init retrieves the JavaScript transaction tracers included in go-zond.
+// init retrieves the JavaScript transaction tracers included in go-qrl.
 func init() {
 	var err error
 	assetTracers, err = jsassets.Load()

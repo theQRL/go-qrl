@@ -23,10 +23,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/internal/utesting"
-	"github.com/theQRL/go-zond/p2p/discover/v5wire"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/internal/utesting"
+	"github.com/theQRL/go-qrl/p2p/discover/v5wire"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // Suite is the discv5 test suite.

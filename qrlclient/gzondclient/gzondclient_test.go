@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package gzondclient
+package gqrlclient
 
 import (
 	"bytes"
@@ -22,20 +22,20 @@ import (
 	"math/big"
 	"testing"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/params"
-	qrlsvc "github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/filters"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/qrlclient"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/params"
+	qrlsvc "github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/filters"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/qrlclient"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 var (
@@ -99,7 +99,7 @@ func generateTestChain() (*core.Genesis, []*types.Block) {
 	return genesis, blocks
 }
 
-func TestGzondClient(t *testing.T) {
+func TestGqrlClient(t *testing.T) {
 	backend, _ := newTestBackend(t)
 	client := backend.Attach()
 	defer backend.Close()

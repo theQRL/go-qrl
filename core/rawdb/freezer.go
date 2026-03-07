@@ -27,10 +27,10 @@ import (
 	"time"
 
 	"github.com/gofrs/flock"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 var (
@@ -60,7 +60,7 @@ const freezerTableSize = 2 * 1000 * 1000 * 1000
 //   - The append-only nature ensures that disk writes are minimized.
 //   - The memory mapping ensures we can max out system memory for caching without
 //     reserving it for go-ethereum. This would also reduce the memory requirements
-//     of Gzond, and thus also GC overhead.
+//     of Gqrl, and thus also GC overhead.
 type Freezer struct {
 	frozen atomic.Uint64 // Number of blocks already frozen
 	tail   atomic.Uint64 // Number of the first stored item in the freezer

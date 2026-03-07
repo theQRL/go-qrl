@@ -21,7 +21,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/theQRL/go-zond/internal/version"
+	"github.com/theQRL/go-qrl/internal/version"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -55,7 +55,7 @@ The output of this command is supposed to be machine-readable.
 			VersionCheckVersionFlag,
 		},
 		Name:      "version-check",
-		Usage:     "Checks (online) for known Gzond security vulnerabilities",
+		Usage:     "Checks (online) for known Gqrl security vulnerabilities",
 		ArgsUsage: "<versionstring (optional)>",
 		Description: `
 The version-check command fetches vulnerability-information from https://geth.ethereum.org/docs/vulnerabilities/vulnerabilities.json, 
@@ -92,17 +92,17 @@ func printVersion(ctx *cli.Context) error {
 }
 
 func license(_ *cli.Context) error {
-	fmt.Println(`Gzond is free software: you can redistribute it and/or modify
+	fmt.Println(`Gqrl is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-Gzond is distributed in the hope that it will be useful,
+Gqrl is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with gzond. If not, see <http://www.gnu.org/licenses/>.`)
+along with gqrl. If not, see <http://www.gnu.org/licenses/>.`)
 	return nil
 }

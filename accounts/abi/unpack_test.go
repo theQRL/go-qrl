@@ -28,7 +28,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func BenchmarkUnpack(b *testing.B) {

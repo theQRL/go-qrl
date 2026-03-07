@@ -20,7 +20,7 @@ package utils
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/console/prompt"
+	"github.com/theQRL/go-qrl/console/prompt"
 )
 
 // GetPassPhrase displays the given text(prompt) to the user and requests some textual

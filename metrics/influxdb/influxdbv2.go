@@ -6,8 +6,8 @@ import (
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/influxdata/influxdb-client-go/v2/api"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 type v2Reporter struct {

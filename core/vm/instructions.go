@@ -20,10 +20,10 @@ import (
 	"math"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/params"
 )
 
 func opAdd(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {

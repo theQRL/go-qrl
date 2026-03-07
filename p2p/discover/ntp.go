@@ -25,7 +25,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 const (

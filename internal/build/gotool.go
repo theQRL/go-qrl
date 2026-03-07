@@ -25,7 +25,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/theQRL/go-zond/internal/download"
+	"github.com/theQRL/go-qrl/internal/download"
 )
 
 type GoToolchain struct {
@@ -119,7 +119,7 @@ func DownloadGo(csdb *download.ChecksumDB) string {
 		log.Fatal(err)
 	}
 
-	godir := filepath.Join(ucache, fmt.Sprintf("gzond-go-%s-%s-%s", version, os, arch))
+	godir := filepath.Join(ucache, fmt.Sprintf("gqrl-go-%s-%s-%s", version, os, arch))
 	if err := ExtractArchive(dst, godir); err != nil {
 		log.Fatal(err)
 	}

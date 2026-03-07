@@ -19,7 +19,7 @@ package qrl
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/p2p/tracker"
+	"github.com/theQRL/go-qrl/p2p/tracker"
 )
 
 // requestTracker is a singleton tracker for qrl/1 and newer request times.

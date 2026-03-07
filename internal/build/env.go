@@ -79,7 +79,7 @@ func Env() Environment {
 
 // LocalEnv returns build environment metadata gathered from git.
 func LocalEnv() Environment {
-	env := applyEnvFlags(Environment{Name: "local", Repo: "theQRL/go-zond"})
+	env := applyEnvFlags(Environment{Name: "local", Repo: "theQRL/go-qrl"})
 
 	head := readGitFile("HEAD")
 	if fields := strings.Fields(head); len(fields) == 2 {

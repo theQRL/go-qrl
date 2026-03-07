@@ -25,7 +25,7 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 var (

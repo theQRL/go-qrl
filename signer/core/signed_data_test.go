@@ -25,13 +25,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/signer/core"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/signer/core"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
 )
 
 var typesStandard = apitypes.Types{

@@ -20,9 +20,9 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers"
 )
 
 func init() {

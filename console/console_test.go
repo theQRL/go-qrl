@@ -25,14 +25,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/internal/jsre"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/internal/jsre"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
 )
 
 const (

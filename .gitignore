@@ -21,14 +21,14 @@
 /build/_workspace/
 /build/cache/
 /build/bin/
-/gzond*.zip
+/gqrl*.zip
 
 # used by the build/ci.go archive + upload tool
-/gzond*.tar.gz
-/gzond*.tar.gz.sig
-/gzond*.tar.gz.asc
-/gzond*.zip.sig
-/gzond*.zip.asc
+/gqrl*.tar.gz
+/gqrl*.tar.gz.sig
+/gqrl*.tar.gz.asc
+/gqrl*.zip.sig
+/gqrl*.zip.asc
 
 # IdeaIDE
 .idea
@@ -42,7 +42,7 @@ cmd/abidump/abidump
 cmd/abigen/abigen
 cmd/clef/clef
 cmd/devp2p/devp2p
-cmd/gzond/gzond
+cmd/gqrl/gqrl
 cmd/p2psim/p2psim
 cmd/qrlkey/qrlkey
 cmd/qrvm/qrvm

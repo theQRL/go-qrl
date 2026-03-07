@@ -17,7 +17,7 @@
 package snap
 
 import (
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // qnrEntry is the QNR entry which advertises `snap` protocol on the discovery.

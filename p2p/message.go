@@ -24,9 +24,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // Msg defines the structure of a p2p message.

@@ -21,7 +21,7 @@ import (
 	"math"
 
 	"github.com/golang/snappy"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // This is the maximum amount of data that will be buffered in memory

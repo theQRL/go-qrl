@@ -19,7 +19,7 @@ package event_test
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/event"
+	"github.com/theQRL/go-qrl/event"
 )
 
 func ExampleFeed_acknowledgedEvents() {

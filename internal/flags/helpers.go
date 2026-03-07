@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
-	"github.com/theQRL/go-zond/internal/version"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/internal/version"
+	"github.com/theQRL/go-qrl/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -40,7 +40,7 @@ func NewApp(usage string) *cli.App {
 	app.EnableBashCompletion = true
 	app.Version = version.WithCommit(git.Commit, git.Date)
 	app.Usage = usage
-	app.Copyright = "Copyright 2013-2025 The go-zond Authors"
+	app.Copyright = "Copyright 2013-2025 The go-qrl Authors"
 	app.Before = func(ctx *cli.Context) error {
 		MigrateGlobalFlags(ctx)
 		return nil
@@ -64,11 +64,11 @@ var migrationApplied = map[*cli.Command]struct{}{}
 //
 // Example:
 //
-//	gzond account new --keystore /tmp/mykeystore --lightkdf
+//	gqrl account new --keystore /tmp/mykeystore --lightkdf
 //
 // is equivalent after calling this method with:
 //
-//	gzond --keystore /tmp/mykeystore --lightkdf account new
+//	gqrl --keystore /tmp/mykeystore --lightkdf account new
 //
 // i.e. in the subcommand Action function of 'account new', ctx.Bool("lightkdf)
 // will return true even if --lightkdf is set as a global option.

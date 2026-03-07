@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // This test uses the admin_startRPC and admin_startWS APIs,

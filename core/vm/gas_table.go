@@ -17,9 +17,9 @@
 package vm
 
 import (
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // memoryGasCost calculates the quadratic gas for memory expansion. It does so

@@ -27,11 +27,11 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/leveldb"
-	"github.com/theQRL/go-zond/qrldb/memorydb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/leveldb"
+	"github.com/theQRL/go-qrl/qrldb/memorydb"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )

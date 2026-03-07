@@ -32,8 +32,8 @@ import (
 	"time"
 
 	"github.com/rs/cors"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // httpConfig is the JSON-RPC/HTTP configuration.

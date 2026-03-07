@@ -28,9 +28,9 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // SignatureLength indicates the byte length required to carry a signature with recovery id.

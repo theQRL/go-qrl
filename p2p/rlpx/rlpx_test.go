@@ -30,10 +30,10 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/ecies"
-	"github.com/theQRL/go-zond/p2p/pipes"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/ecies"
+	"github.com/theQRL/go-qrl/p2p/pipes"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 type message struct {

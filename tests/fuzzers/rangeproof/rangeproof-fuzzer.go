@@ -23,10 +23,10 @@ import (
 	"io"
 	"slices"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/qrldb/memorydb"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/qrldb/memorydb"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 type kv struct {

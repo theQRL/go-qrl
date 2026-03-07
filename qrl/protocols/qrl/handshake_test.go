@@ -20,10 +20,10 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/forkid"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/forkid"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // Tests that handshake failures are detected and reported correctly.

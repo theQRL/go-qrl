@@ -20,7 +20,7 @@ package metrics
 
 import (
 	"github.com/shirou/gopsutil/cpu"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // ReadCPUStats retrieves the current CPU stats.

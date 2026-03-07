@@ -24,13 +24,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/tests"
 )
 
 // testcase defines a single test to check the stateDiff tracer against.

@@ -17,10 +17,10 @@
 package qrl
 
 import (
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/forkid"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/forkid"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // qnrEntry is the QNR entry which advertises `qrl` protocol on the discovery.

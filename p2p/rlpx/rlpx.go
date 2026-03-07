@@ -35,9 +35,9 @@ import (
 	"time"
 
 	"github.com/golang/snappy"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/ecies"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/ecies"
+	"github.com/theQRL/go-qrl/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

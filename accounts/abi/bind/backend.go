@@ -21,9 +21,9 @@ import (
 	"errors"
 	"math/big"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 var (

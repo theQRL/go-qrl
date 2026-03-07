@@ -17,8 +17,8 @@
 package runtime
 
 import (
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/vm"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/vm"
 )
 
 func NewEnv(cfg *Config) *vm.QRVM {

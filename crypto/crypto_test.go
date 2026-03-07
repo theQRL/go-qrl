@@ -26,8 +26,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 var testAddr, _ = common.NewAddressFromString("Q970e8128ab834e8eac17ab8e3812f010678cf791")
@@ -302,7 +302,7 @@ func TestPythonIntegration(t *testing.T) {
 
 // goos: darwin
 // goarch: arm64
-// pkg: github.com/theQRL/go-zond/crypto
+// pkg: github.com/theQRL/go-qrl/crypto
 // cpu: Apple M1 Pro
 // BenchmarkKeccak256Hash
 // BenchmarkKeccak256Hash-8   	  931095	      1270 ns/op	      32 B/op	       1 allocs/op
@@ -318,7 +318,7 @@ func BenchmarkKeccak256Hash(b *testing.B) {
 
 // goos: darwin
 // goarch: arm64
-// pkg: github.com/theQRL/go-zond/crypto
+// pkg: github.com/theQRL/go-qrl/crypto
 // cpu: Apple M1 Pro
 // BenchmarkHashData
 // BenchmarkHashData-8   	  793386	      1278 ns/op	      32 B/op	       1 allocs/op

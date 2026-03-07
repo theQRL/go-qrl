@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // Tests that all the selectors contained in the 4byte database are valid.

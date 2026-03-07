@@ -22,7 +22,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/cmd/utils"
+	"github.com/theQRL/go-qrl/cmd/utils"
 	"github.com/urfave/cli/v2"
 )
 

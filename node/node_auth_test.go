@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 type helloRPC string
@@ -96,7 +96,7 @@ func TestAuthEndpoints(t *testing.T) {
 	if _, err := crand.Read(secret[:]); err != nil {
 		t.Fatalf("failed to create jwt secret: %v", err)
 	}
-	// Gzond must read it from a file, and does not support in-memory JWT secrets, so we create a temporary file.
+	// Gqrl must read it from a file, and does not support in-memory JWT secrets, so we create a temporary file.
 	jwtPath := filepath.Join(t.TempDir(), "jwt_secret")
 	if err := os.WriteFile(jwtPath, []byte(hexutil.Encode(secret[:])), 0600); err != nil {
 		t.Fatalf("failed to prepare jwt secret file: %v", err)

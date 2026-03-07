@@ -22,11 +22,11 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rlp"
 	"github.com/urfave/cli/v2"
 )
 

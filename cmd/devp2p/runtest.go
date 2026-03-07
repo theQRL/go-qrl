@@ -19,10 +19,10 @@ package main
 import (
 	"os"
 
-	"github.com/theQRL/go-zond/cmd/devp2p/internal/v4test"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/internal/utesting"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/cmd/devp2p/internal/v4test"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/internal/utesting"
+	"github.com/theQRL/go-qrl/log"
 	"github.com/urfave/cli/v2"
 )
 

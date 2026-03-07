@@ -28,8 +28,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var freezerTestTableDef = map[string]bool{"test": true}

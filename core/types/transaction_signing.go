@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrllib/wallet/common/wallettype"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/params"
 )
 
 var ErrInvalidChainId = errors.New("invalid chain id for signer")

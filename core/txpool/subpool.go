@@ -20,10 +20,10 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
 )
 
 // LazyTransaction contains a small subset of the transaction properties that is

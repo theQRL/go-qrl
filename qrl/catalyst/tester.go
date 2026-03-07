@@ -20,14 +20,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/downloader"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/downloader"
 )
 
-// FullSyncTester is an auxiliary service that allows Gzond to perform full sync
+// FullSyncTester is an auxiliary service that allows Gqrl to perform full sync
 // alone without consensus-layer attached. Users must specify a valid block hash
 // as the sync target.
 //

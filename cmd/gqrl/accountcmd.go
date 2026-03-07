@@ -22,11 +22,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 	"github.com/urfave/cli/v2"
 )
 
@@ -77,7 +77,7 @@ Print a short summary of all accounts`,
 					utils.LightKDFFlag,
 				},
 				Description: `
-    gzond account new
+    gqrl account new
 
 Creates a new account and prints the address.
 
@@ -102,7 +102,7 @@ password to file or expose in any other way.
 					utils.LightKDFFlag,
 				},
 				Description: `
-    gzond account update <address>
+    gqrl account update <address>
 
 Update an existing account.
 
@@ -114,7 +114,7 @@ format to the newest format or change the password for an account.
 
 For non-interactive use the password can be specified with the --password flag:
 
-    gzond account update [options] <address>
+    gqrl account update [options] <address>
 
 Since only one password can be given, only format update can be performed,
 changing your password is only possible interactively.
@@ -132,7 +132,7 @@ changing your password is only possible interactively.
 				},
 				ArgsUsage: "<keyFile>",
 				Description: `
-    gzond account import <keyfile>
+    gqrl account import <keyfile>
 
 Imports an unencrypted private key from <keyfile> and creates a new account.
 Prints the address.
@@ -145,7 +145,7 @@ You must remember this password to unlock your account in the future.
 
 For non-interactive use the password can be specified with the -password flag:
 
-    gzond account import [options] <keyfile>
+    gqrl account import [options] <keyfile>
 
 Note:
 As you can directly copy your encrypted accounts to another qrl instance,

@@ -19,7 +19,7 @@ package state
 import (
 	"maps"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 type accessList struct {

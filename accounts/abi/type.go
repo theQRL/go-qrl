@@ -26,7 +26,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // Type enumerator

@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 func TestRoundtrip(t *testing.T) {

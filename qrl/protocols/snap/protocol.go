@@ -20,9 +20,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // Constants to match up protocol versions and messages

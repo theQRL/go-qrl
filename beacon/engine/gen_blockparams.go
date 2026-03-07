@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 var _ = (*payloadAttributesMarshaling)(nil)

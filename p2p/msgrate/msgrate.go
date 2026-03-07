@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // measurementImpact is the impact a single measurement has on a peer's final

@@ -19,8 +19,8 @@ package qrl
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common/bitutil"
-	"github.com/theQRL/go-zond/core/rawdb"
+	"github.com/theQRL/go-qrl/common/bitutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
 )
 
 const (

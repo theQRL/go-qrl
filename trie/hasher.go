@@ -19,8 +19,8 @@ package trie
 import (
 	"sync"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

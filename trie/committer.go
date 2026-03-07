@@ -19,8 +19,8 @@ package trie
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/trie/trienode"
 )
 
 // committer is the tool used for the trie Commit operation. The committer will

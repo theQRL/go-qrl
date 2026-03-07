@@ -20,8 +20,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // BeaconDevSync is a development helper to test synchronization by providing

@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 func TestTextHash(t *testing.T) {

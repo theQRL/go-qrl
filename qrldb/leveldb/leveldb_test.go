@@ -21,8 +21,8 @@ import (
 
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/storage"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/dbtest"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/dbtest"
 )
 
 func TestLevelDB(t *testing.T) {

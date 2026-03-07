@@ -6,10 +6,10 @@ import (
 	"encoding/json"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/vm"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/vm"
 )
 
 var _ = (*structLogMarshaling)(nil)

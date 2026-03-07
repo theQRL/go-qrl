@@ -25,17 +25,17 @@ import (
 	"testing"
 	"time"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/params"
-	qrlsvc "github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/params"
+	qrlsvc "github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Verify that Client implements the qrl interfaces.

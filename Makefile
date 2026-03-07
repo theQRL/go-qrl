@@ -2,17 +2,17 @@
 # with Go source code. If you know what GOPATH is then you probably
 # don't need to bother with make.
 
-.PHONY: gzond qrvm all test lint fmt clean devtools help
+.PHONY: gqrl qrvm all test lint fmt clean devtools help
 
 GOBIN = ./build/bin
 GO ?= latest
 GORUN = go run
 
-#? gzond: Build gzond.
-gzond:
-	$(GORUN) build/ci.go install ./cmd/gzond
+#? gqrl: Build gqrl.
+gqrl:
+	$(GORUN) build/ci.go install ./cmd/gqrl
 	@echo "Done building."
-	@echo "Run \"$(GOBIN)/gzond\" to launch gzond."
+	@echo "Run \"$(GOBIN)/gqrl\" to launch gqrl."
 
 #? qrvm: Build qrvm.
 qrvm:

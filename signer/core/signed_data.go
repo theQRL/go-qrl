@@ -23,11 +23,11 @@ import (
 	"fmt"
 	"mime"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
 )
 
 // sign receives a request and produces a signature

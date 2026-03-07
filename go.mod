@@ -1,4 +1,4 @@
-module github.com/theQRL/go-zond
+module github.com/theQRL/go-qrl
 
 go 1.25.5
 

@@ -27,20 +27,20 @@ import (
 	"unicode"
 
 	"github.com/naoina/toml"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/external"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/internal/version"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl/catalyst"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/external"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/internal/version"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl/catalyst"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
 	"github.com/urfave/cli/v2"
 )
 
@@ -87,14 +87,14 @@ type qrlstatsConfig struct {
 	URL string `toml:",omitempty"`
 }
 
-type gzondConfig struct {
+type gqrlConfig struct {
 	QRL      qrlconfig.Config
 	Node     node.Config
 	QRLstats qrlstatsConfig
 	Metrics  metrics.Config
 }
 
-func loadConfig(file string, cfg *gzondConfig) error {
+func loadConfig(file string, cfg *gqrlConfig) error {
 	f, err := os.Open(file)
 	if err != nil {
 		return err
@@ -116,15 +116,15 @@ func defaultNodeConfig() node.Config {
 	cfg.Version = version.WithCommit(git.Commit, git.Date)
 	cfg.HTTPModules = append(cfg.HTTPModules, "qrl")
 	cfg.WSModules = append(cfg.WSModules, "qrl")
-	cfg.IPCPath = "gzond.ipc"
+	cfg.IPCPath = "gqrl.ipc"
 	return cfg
 }
 
-// loadBaseConfig loads the gzondConfig based on the given command line
+// loadBaseConfig loads the gqrlConfig based on the given command line
 // parameters and config file.
-func loadBaseConfig(ctx *cli.Context) gzondConfig {
+func loadBaseConfig(ctx *cli.Context) gqrlConfig {
 	// Load defaults.
-	cfg := gzondConfig{
+	cfg := gqrlConfig{
 		QRL:     qrlconfig.Defaults,
 		Node:    defaultNodeConfig(),
 		Metrics: metrics.DefaultConfig,
@@ -142,8 +142,8 @@ func loadBaseConfig(ctx *cli.Context) gzondConfig {
 	return cfg
 }
 
-// makeConfigNode loads gzond configuration and creates a blank node instance.
-func makeConfigNode(ctx *cli.Context) (*node.Node, gzondConfig) {
+// makeConfigNode loads gqrl configuration and creates a blank node instance.
+func makeConfigNode(ctx *cli.Context) (*node.Node, gqrlConfig) {
 	cfg := loadBaseConfig(ctx)
 	stack, err := node.New(&cfg.Node)
 	if err != nil {
@@ -163,18 +163,18 @@ func makeConfigNode(ctx *cli.Context) (*node.Node, gzondConfig) {
 	return stack, cfg
 }
 
-// makeFullNode loads gzond configuration and creates the QRL backend.
+// makeFullNode loads gqrl configuration and creates the QRL backend.
 func makeFullNode(ctx *cli.Context) (*node.Node, qrlapi.Backend) {
 	stack, cfg := makeConfigNode(ctx)
 	backend, qrl := utils.RegisterQRLService(stack, &cfg.QRL)
 
-	// Create gauge with gzond system and build information
+	// Create gauge with gqrl system and build information
 	if qrl != nil {
 		var protos []string
 		for _, p := range qrl.Protocols() {
 			protos = append(protos, fmt.Sprintf("%v/%d", p.Name, p.Version))
 		}
-		metrics.NewRegisteredGaugeInfo("gzond/info", nil).Update(metrics.GaugeInfoValue{
+		metrics.NewRegisteredGaugeInfo("gqrl/info", nil).Update(metrics.GaugeInfoValue{
 			"arch":      runtime.GOARCH,
 			"os":        runtime.GOOS,
 			"version":   cfg.Node.Version,
@@ -251,7 +251,7 @@ func dumpConfig(ctx *cli.Context) error {
 	return nil
 }
 
-func applyMetricConfig(ctx *cli.Context, cfg *gzondConfig) {
+func applyMetricConfig(ctx *cli.Context, cfg *gqrlConfig) {
 	if ctx.IsSet(utils.MetricsEnabledFlag.Name) {
 		cfg.Metrics.Enabled = ctx.Bool(utils.MetricsEnabledFlag.Name)
 	}

@@ -21,8 +21,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/event"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/event"
 )
 
 // managerSubBufferSize determines how many incoming wallet events
@@ -94,7 +94,7 @@ func (am *Manager) Close() error {
 }
 
 // AddBackend starts the tracking of an additional backend for wallet updates.
-// cmd/gzond assumes once this func returns the backends have been already integrated.
+// cmd/gqrl assumes once this func returns the backends have been already integrated.
 func (am *Manager) AddBackend(backend Backend) {
 	done := make(chan struct{})
 	am.newBackends <- newBackendEvent{backend, done}

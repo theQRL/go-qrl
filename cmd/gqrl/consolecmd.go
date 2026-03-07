@@ -19,9 +19,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/console"
-	"github.com/theQRL/go-zond/internal/flags"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/console"
+	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/urfave/cli/v2"
 )
 
@@ -34,7 +34,7 @@ var (
 		Usage:  "Start an interactive JavaScript environment",
 		Flags:  flags.Merge(nodeFlags, rpcFlags, consoleFlags),
 		Description: `
-The Gzond console is an interactive shell for the JavaScript runtime environment
+The Gqrl console is an interactive shell for the JavaScript runtime environment
 which exposes a node admin interface as well as the Ðapp JavaScript API.
 See https://geth.ethereum.org/docs/interacting-with-geth/javascript-console.`,
 	}
@@ -46,14 +46,14 @@ See https://geth.ethereum.org/docs/interacting-with-geth/javascript-console.`,
 		ArgsUsage: "[endpoint]",
 		Flags:     flags.Merge([]cli.Flag{utils.DataDirFlag, utils.HttpHeaderFlag}, consoleFlags),
 		Description: `
-The Gzond console is an interactive shell for the JavaScript runtime environment
+The Gqrl console is an interactive shell for the JavaScript runtime environment
 which exposes a node admin interface as well as the Ðapp JavaScript API.
 See https://geth.ethereum.org/docs/interacting-with-geth/javascript-console.
-This command allows to open a console on a running gzond node.`,
+This command allows to open a console on a running gqrl node.`,
 	}
 )
 
-// localConsole starts a new gzond node, attaching a JavaScript console to it at the
+// localConsole starts a new gqrl node, attaching a JavaScript console to it at the
 // same time.
 func localConsole(ctx *cli.Context) error {
 	// Create and start the node based on the CLI flags
@@ -95,7 +95,7 @@ func localConsole(ctx *cli.Context) error {
 	return nil
 }
 
-// remoteConsole will connect to a remote gzond instance, attaching a JavaScript
+// remoteConsole will connect to a remote gqrl instance, attaching a JavaScript
 // console to it.
 func remoteConsole(ctx *cli.Context) error {
 	if ctx.Args().Len() > 1 {
@@ -109,7 +109,7 @@ func remoteConsole(ctx *cli.Context) error {
 	}
 	client, err := utils.DialRPCWithHeaders(endpoint, ctx.StringSlice(utils.HttpHeaderFlag.Name))
 	if err != nil {
-		utils.Fatalf("Unable to attach to remote gzond: %v", err)
+		utils.Fatalf("Unable to attach to remote gqrl: %v", err)
 	}
 	config := console.Config{
 		DataDir: utils.MakeDataDir(ctx),

@@ -27,27 +27,27 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/common/prque"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/internal/syncx"
-	"github.com/theQRL/go-zond/internal/version"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/common/prque"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/syncx"
+	"github.com/theQRL/go-qrl/internal/version"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 var (
@@ -313,7 +313,7 @@ func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	// Update chain info data metrics
 	chainInfoGauge.Update(metrics.GaugeInfoValue{"chain_id": bc.chainConfig.ChainID.String()})
 
-	// If Gzond is initialized with an external ancient store, re-initialize the
+	// If Gqrl is initialized with an external ancient store, re-initialize the
 	// missing chain indexes and chain flags. This procedure can survive crash
 	// and can be resumed in next restart since chain flags are updated in last step.
 	if bc.empty() {
@@ -1126,7 +1126,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		// * If block number is large enough to be regarded as a recent block
 		// It means blocks below the ancientLimit-txlookupLimit won't be indexed.
 		//
-		// But if the `TxIndexTail` is not nil, e.g. Gzond is initialized with
+		// But if the `TxIndexTail` is not nil, e.g. Gqrl is initialized with
 		// an external ancient database, during the setup, blockchain will start
 		// a background routine to re-indexed all indices in [ancients - txlookupLimit, ancients)
 		// range. In this case, all tx indices of newly imported blocks should be
@@ -2139,7 +2139,7 @@ func (bc *BlockChain) indexBlocks(tail *uint64, head uint64, done chan struct{})
 // all tx indices will be reserved.
 //
 // The user can adjust the txlookuplimit value for each launch after sync,
-// Gzond will automatically construct the missing indices or delete the extra
+// Gqrl will automatically construct the missing indices or delete the extra
 // indices.
 func (bc *BlockChain) maintainTxIndex() {
 	defer bc.wg.Done()

@@ -16,7 +16,7 @@
 
 package state
 
-import "github.com/theQRL/go-zond/metrics"
+import "github.com/theQRL/go-qrl/metrics"
 
 var (
 	accountUpdatedMeter      = metrics.NewRegisteredMeter("state/update/account", nil)

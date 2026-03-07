@@ -14,7 +14,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // Enabled is checked by the constructor functions for all of the
@@ -33,13 +33,13 @@ var EnabledExpensive = false
 var enablerFlags = []string{"metrics"}
 
 // enablerEnvVars is the env var names to use to enable metrics collections.
-var enablerEnvVars = []string{"GZOND_METRICS"}
+var enablerEnvVars = []string{"GQRL_METRICS"}
 
 // expensiveEnablerFlags is the CLI flag names to use to enable metrics collections.
 var expensiveEnablerFlags = []string{"metrics.expensive"}
 
 // expensiveEnablerEnvVars is the env var names to use to enable metrics collections.
-var expensiveEnablerEnvVars = []string{"GZOND_METRICS_EXPENSIVE"}
+var expensiveEnablerEnvVars = []string{"GQRL_METRICS_EXPENSIVE"}
 
 // Init enables or disables the metrics system. Since we need this to run before
 // any other code gets to create meters and timers, we'll actually do an ugly hack

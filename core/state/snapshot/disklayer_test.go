@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/qrldb/memorydb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/qrldb/memorydb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // reverse reverses the contents of a byte slice. It's used to update random accs

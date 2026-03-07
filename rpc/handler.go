@@ -28,7 +28,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // handler handles JSON-RPC messages. There is one handler per connection. Note that

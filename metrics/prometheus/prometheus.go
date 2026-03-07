@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 // Handler returns an HTTP handler which dump metrics in Prometheus format.

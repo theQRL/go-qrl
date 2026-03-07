@@ -22,12 +22,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
 )
 
 type dummyContractRef struct {
@@ -80,7 +80,7 @@ func TestStoreCapture(t *testing.T) {
 }
 
 // Tests that blank fields don't appear in logs when JSON marshalled, to reduce
-// logs bloat and confusion. See https://github.com/theQRL/go-zond/issues/24487
+// logs bloat and confusion. See https://github.com/theQRL/go-qrl/issues/24487
 func TestStructLogMarshalingOmitEmpty(t *testing.T) {
 	tests := []struct {
 		name string

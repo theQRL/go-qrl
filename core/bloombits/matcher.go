@@ -26,8 +26,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common/bitutil"
-	"github.com/theQRL/go-zond/crypto"
+	"github.com/theQRL/go-qrl/common/bitutil"
+	"github.com/theQRL/go-qrl/crypto"
 )
 
 // bloomIndexes represents the bit indexes inside the bloom filter that belong

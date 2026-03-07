@@ -23,14 +23,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/txpool"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/txpool"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // Backend wraps all methods required for mining. Only full node is capable
@@ -56,7 +56,7 @@ var DefaultConfig = Config{
 
 	// The default recommit time is chosen as two seconds since
 	// consensus-layer usually will wait a half slot of time(30s)
-	// for payload generation. It should be enough for Gzond to
+	// for payload generation. It should be enough for Gqrl to
 	// run 3 rounds.
 	Recommit: 10 * time.Second,
 }

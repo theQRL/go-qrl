@@ -35,10 +35,10 @@ import (
 	"path/filepath"
 
 	"github.com/google/uuid"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto/cipher"
-	"github.com/theQRL/go-zond/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto/cipher"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 	"golang.org/x/crypto/argon2"
 )
 
@@ -126,7 +126,7 @@ func (ks keyStorePassphrase) StoreKey(filename string, key *Key, auth string) er
 				"This indicates that the keystore is corrupted. \n" +
 				"The corrupted file is stored at \n%v\n" +
 				"Please file a ticket at:\n\n" +
-				"https://github.com/theQRL/go-zond/issues." +
+				"https://github.com/theQRL/go-qrl/issues." +
 				"The error was : %s"
 			//lint:ignore ST1005 This is a message for the user
 			return fmt.Errorf(msg, tmpName, err)

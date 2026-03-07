@@ -29,10 +29,10 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/exp"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/exp"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -184,11 +184,11 @@ func Setup(ctx *cli.Context) error {
 	}
 	if rotation {
 		// Lumberjack uses <processname>-lumberjack.log in is.TempDir() if empty.
-		// so typically /tmp/gzond-lumberjack.log on linux
+		// so typically /tmp/gqrl-lumberjack.log on linux
 		if len(logFile) > 0 {
 			context = append(context, "location", logFile)
 		} else {
-			context = append(context, "location", filepath.Join(os.TempDir(), "gzond-lumberjack.log"))
+			context = append(context, "location", filepath.Join(os.TempDir(), "gqrl-lumberjack.log"))
 		}
 		logOutputFile = &lumberjack.Logger{
 			Filename:   logFile,

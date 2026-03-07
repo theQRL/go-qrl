@@ -22,8 +22,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 type crawler struct {

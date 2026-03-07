@@ -19,7 +19,7 @@ package vm
 import (
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func FuzzPrecompiledContracts(f *testing.F) {

@@ -17,8 +17,8 @@
 package qrl
 
 import (
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
 )
 
 // qrlPeerInfo represents a short summary of the `qrl` sub-protocol metadata known
