@@ -24,13 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/theQRL/go-zond/cmd/devp2p/internal/v4test"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/p2p/discover"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/cmd/devp2p/internal/v4test"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/p2p/discover"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/params"
 	"github.com/urfave/cli/v2"
 )
 

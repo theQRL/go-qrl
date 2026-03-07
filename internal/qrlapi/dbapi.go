@@ -17,8 +17,8 @@
 package qrlapi
 
 import (
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // DbGet returns the raw value of a key stored in the database.

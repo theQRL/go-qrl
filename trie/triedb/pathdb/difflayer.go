@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/trie/trienode"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/trie/trienode"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 // diffLayer represents a collection of modifications made to the in-memory tries

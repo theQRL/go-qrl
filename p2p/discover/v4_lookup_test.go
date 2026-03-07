@@ -23,10 +23,10 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/discover/v4wire"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/discover/v4wire"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 func TestUDPv4_Lookup(t *testing.T) {
@@ -285,7 +285,7 @@ func (tn *preminedTestnet) neighborsAtDistances(base *qnode.Node, distances []ui
 		for i := range lookupTestnet.dists[d] {
 			n := lookupTestnet.node(d, i)
 			d := qnode.LogDist(base.ID(), n.ID())
-			if containsUint(uint(d), distances) {
+			if slices.Contains(distances, uint(d)) {
 				result = append(result, n)
 				if len(result) >= elems {
 					return result

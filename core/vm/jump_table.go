@@ -19,7 +19,7 @@ package vm
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/params"
 )
 
 type (

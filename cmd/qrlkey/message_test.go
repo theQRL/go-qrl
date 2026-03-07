@@ -21,12 +21,13 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func TestMessageSignVerify(t *testing.T) {
+	t.Parallel()
 	tmpdir := t.TempDir()
 
 	keyfile := filepath.Join(tmpdir, "the-keyfile")

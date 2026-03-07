@@ -20,10 +20,10 @@ import (
 	"container/heap"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/txpool"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/txpool"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // txWithMinerFee wraps a transaction with its gas price or effective miner gasTipCap
@@ -67,11 +67,11 @@ func (s txByPriceAndTime) Less(i, j int) bool {
 }
 func (s txByPriceAndTime) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
-func (s *txByPriceAndTime) Push(x interface{}) {
+func (s *txByPriceAndTime) Push(x any) {
 	*s = append(*s, x.(*txWithMinerFee))
 }
 
-func (s *txByPriceAndTime) Pop() interface{} {
+func (s *txByPriceAndTime) Pop() any {
 	old := *s
 	n := len(old)
 	x := old[n-1]

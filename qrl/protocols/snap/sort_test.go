@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func hexToNibbles(s string) []byte {
@@ -67,7 +67,7 @@ func TestRequestSorting(t *testing.T) {
 	_, _, syncPaths, pathsets := sortByAccountPath(paths, hashes)
 	{
 		var b = new(bytes.Buffer)
-		for i := 0; i < len(syncPaths); i++ {
+		for i := range syncPaths {
 			fmt.Fprintf(b, "\n%d. paths %x", i, syncPaths[i])
 		}
 		want := `
@@ -87,7 +87,7 @@ func TestRequestSorting(t *testing.T) {
 	}
 	{
 		var b = new(bytes.Buffer)
-		for i := 0; i < len(pathsets); i++ {
+		for i := range pathsets {
 			fmt.Fprintf(b, "\n%d. pathset %x", i, pathsets[i])
 		}
 		want := `

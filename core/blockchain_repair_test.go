@@ -28,11 +28,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // Tests a recovery for a short canonical chain where a recent block was already
@@ -968,7 +968,7 @@ func testRepairWithScheme(t *testing.T, tt *rewindTest, snapshots bool, scheme s
 	}
 }
 
-// TestIssue23496 tests scenario described in https://github.com/theQRL/go-zond/pull/23496#issuecomment-926393893
+// TestIssue23496 tests scenario described in https://github.com/theQRL/go-qrl/pull/23496#issuecomment-926393893
 // Credits to @zzyalbert for finding the issue.
 //
 // Local chain owns these blocks:

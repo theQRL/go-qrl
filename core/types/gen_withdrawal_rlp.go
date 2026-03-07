@@ -2,7 +2,7 @@
 
 package types
 
-import "github.com/theQRL/go-zond/rlp"
+import "github.com/theQRL/go-qrl/rlp"
 import "io"
 
 func (obj *Withdrawal) EncodeRLP(_w io.Writer) error {

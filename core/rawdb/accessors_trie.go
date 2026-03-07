@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrldb"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -50,7 +50,7 @@ const PathScheme = "path"
 type hasher struct{ sha crypto.KeccakState }
 
 var hasherPool = sync.Pool{
-	New: func() interface{} { return &hasher{sha: sha3.NewLegacyKeccak256().(crypto.KeccakState)} },
+	New: func() any { return &hasher{sha: sha3.NewLegacyKeccak256().(crypto.KeccakState)} },
 }
 
 func newHasher() *hasher {

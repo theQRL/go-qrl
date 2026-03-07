@@ -23,10 +23,10 @@ import (
 	"fmt"
 	"hash"
 
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/crypto/cipher"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/cipher"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 	"golang.org/x/crypto/hkdf"
 )
 
@@ -127,9 +127,7 @@ func deriveKeys(hash hashFn, priv *ecdsa.PrivateKey, pub *ecdsa.PublicKey, n1, n
 	sec := session{writeKey: make([]byte, aesKeySize), readKey: make([]byte, aesKeySize)}
 	kdf.Read(sec.writeKey)
 	kdf.Read(sec.readKey)
-	for i := range eph {
-		eph[i] = 0
-	}
+	clear(eph)
 	return &sec
 }
 

@@ -19,15 +19,16 @@ package txpool
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"math/big"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 // TxStatus is the current status of a transaction as seen by the pool.
@@ -357,9 +358,7 @@ func (p *TxPool) Add(txs []*types.Transaction, local bool, sync bool) []error {
 func (p *TxPool) Pending(filter PendingFilter) map[common.Address][]*LazyTransaction {
 	txs := make(map[common.Address][]*LazyTransaction)
 	for _, subpool := range p.subpools {
-		for addr, set := range subpool.Pending(filter) {
-			txs[addr] = set
-		}
+		maps.Copy(txs, subpool.Pending(filter))
 	}
 	return txs
 }
@@ -412,12 +411,8 @@ func (p *TxPool) Content() (map[common.Address][]*types.Transaction, map[common.
 	for _, subpool := range p.subpools {
 		run, block := subpool.Content()
 
-		for addr, txs := range run {
-			runnable[addr] = txs
-		}
-		for addr, txs := range block {
-			blocked[addr] = txs
-		}
+		maps.Copy(runnable, run)
+		maps.Copy(blocked, block)
 	}
 	return runnable, blocked
 }

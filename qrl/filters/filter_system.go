@@ -25,17 +25,17 @@ import (
 	"sync/atomic"
 	"time"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Config represents the configuration of the filter system.
@@ -406,7 +406,7 @@ func (es *EventSystem) eventLoop() {
 	}()
 
 	index := make(filterIndex)
-	for i := UnknownSubscription; i < LastIndexSubscription; i++ {
+	for i := range LastIndexSubscription {
 		index[i] = make(map[rpc.ID]*subscription)
 	}
 

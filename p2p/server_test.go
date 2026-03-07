@@ -29,12 +29,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/testlog"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/p2p/rlpx"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/testlog"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/p2p/rlpx"
 )
 
 type testTransport struct {
@@ -271,7 +271,7 @@ func TestServerAtCap(t *testing.T) {
 	}
 
 	// Inject a few connections to fill up the peer set.
-	for i := 0; i < 10; i++ {
+	for i := range 10 {
 		c := newconn(randomID())
 		if err := srv.checkpoint(c, srv.checkpointAddPeer); err != nil {
 			t.Fatalf("could not add conn %d: %v", i, err)

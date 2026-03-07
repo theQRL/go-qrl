@@ -25,11 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/forkid"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/forkid"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -72,7 +72,7 @@ func nodesetInfo(ctx *cli.Context) error {
 // showAttributeCounts prints the distribution of QNR attributes in a node set.
 func showAttributeCounts(ns nodeSet) {
 	attrcount := make(map[string]int)
-	var attrlist []interface{}
+	var attrlist []any
 	for _, n := range ns {
 		r := n.N.Record()
 		attrlist = r.AppendElements(attrlist[:0])[1:]

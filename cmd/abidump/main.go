@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/fourbyte"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/fourbyte"
 )
 
 func init() {
@@ -68,7 +68,7 @@ func main() {
 	}
 }
 
-func die(args ...interface{}) {
+func die(args ...any) {
 	fmt.Fprintln(os.Stderr, args...)
 	os.Exit(1)
 }

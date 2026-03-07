@@ -20,11 +20,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // Tests that simple header verification works, for both good and bad blocks.
@@ -47,7 +47,7 @@ func testHeaderVerification(t *testing.T, scheme string) {
 	chain, _ := NewBlockChain(rawdb.NewMemoryDatabase(), DefaultCacheConfigWithScheme(scheme), gspec, beacon.NewFaker(), vm.Config{}, nil)
 	defer chain.Stop()
 
-	for i := 0; i < len(blocks); i++ {
+	for i := range blocks {
 		for j, valid := range []bool{true, false} {
 			var results <-chan error
 

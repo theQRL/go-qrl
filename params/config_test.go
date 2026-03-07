@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 func TestCheckCompatible(t *testing.T) {

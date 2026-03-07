@@ -146,9 +146,8 @@ func BenchmarkRuntimeHistogramSnapshotRead(b *testing.B) {
 		return &res
 	}
 	latency := RuntimeHistogramFromData(float64(time.Second), dserialize(sLatency))
-	b.ResetTimer()
 	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		snap := latency.Snapshot()
 		// These are the fields that influxdb accesses
 		_ = snap.Count()

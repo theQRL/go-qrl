@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/vm"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/vm"
 )
 
 // Context contains some contextual infos for a transaction execution that is not

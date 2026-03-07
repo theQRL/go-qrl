@@ -22,7 +22,6 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
-	"math"
 	"math/big"
 	"net"
 	"net/http"
@@ -33,45 +32,44 @@ import (
 	"strings"
 	"time"
 
-	pcsclite "github.com/gballet/go-libpcsclite"
 	gopsutil "github.com/shirou/gopsutil/mem"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/fdlimit"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/txpool/legacypool"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/graphql"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/exp"
-	"github.com/theQRL/go-zond/metrics/influxdb"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/nat"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/catalyst"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/filters"
-	"github.com/theQRL/go-zond/qrl/gasprice"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/remotedb"
-	"github.com/theQRL/go-zond/qrlstats"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/fdlimit"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/txpool/legacypool"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/graphql"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/exp"
+	"github.com/theQRL/go-qrl/metrics/influxdb"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/nat"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/catalyst"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/filters"
+	"github.com/theQRL/go-qrl/qrl/gasprice"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/remotedb"
+	"github.com/theQRL/go-qrl/qrlstats"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 	"github.com/urfave/cli/v2"
 )
 
@@ -114,17 +112,6 @@ var (
 	KeyStoreDirFlag = &flags.DirectoryFlag{
 		Name:     "keystore",
 		Usage:    "Directory for the keystore (default = inside the datadir)",
-		Category: flags.AccountCategory,
-	}
-	USBFlag = &cli.BoolFlag{
-		Name:     "usb",
-		Usage:    "Enable monitoring and management of USB hardware wallets",
-		Category: flags.AccountCategory,
-	}
-	SmartCardDaemonPathFlag = &cli.StringFlag{
-		Name:     "pcscdpath",
-		Usage:    "Path to the smartcard daemon (pcscd) socket file",
-		Value:    pcsclite.PCSCDSockName,
 		Category: flags.AccountCategory,
 	}
 	NetworkIdFlag = &cli.Uint64Flag{
@@ -170,12 +157,6 @@ var (
 		Name:     "identity",
 		Usage:    "Custom node name",
 		Category: flags.NetworkingCategory,
-	}
-	DocRootFlag = &flags.DirectoryFlag{
-		Name:     "docroot",
-		Usage:    "Document Root for HTTPClient file scheme",
-		Value:    flags.DirectoryString(flags.HomeDir()),
-		Category: flags.APICategory,
 	}
 	ExitWhenSyncedFlag = &cli.BoolFlag{
 		Name:     "exitwhensynced",
@@ -243,7 +224,7 @@ var (
 	}
 	GCModeFlag = &cli.StringFlag{
 		Name:     "gcmode",
-		Usage:    `Blockchain garbage collection mode, only relevant in state.scheme=hash ("full", "archive")`,
+		Usage:    `Blockchain garbage collection mode ("full", "archive")`,
 		Value:    "full",
 		Category: flags.StateCategory,
 	}
@@ -413,12 +394,6 @@ var (
 	}
 
 	// Account settings
-	UnlockedAccountFlag = &cli.StringFlag{
-		Name:     "unlock",
-		Usage:    "Comma separated list of accounts to unlock",
-		Value:    "",
-		Category: flags.AccountCategory,
-	}
 	PasswordFileFlag = &cli.PathFlag{
 		Name:      "password",
 		Usage:     "Password file to use for non-interactive password input",
@@ -431,12 +406,6 @@ var (
 		Value:    "",
 		Category: flags.AccountCategory,
 	}
-	InsecureUnlockAllowedFlag = &cli.BoolFlag{
-		Name:     "allow-insecure-unlock",
-		Usage:    "Allow insecure account unlocking when account-related RPCs are exposed by http",
-		Category: flags.AccountCategory,
-	}
-
 	// QRVM settings
 	VMEnableDebugFlag = &cli.BoolFlag{
 		Name:     "vmdebug",
@@ -501,9 +470,9 @@ var (
 	}
 
 	// MISC settings
-	SyncTargetFlag = &cli.PathFlag{
+	SyncTargetFlag = &cli.StringFlag{
 		Name:      "synctarget",
-		Usage:     `File for containing the hex-encoded block-rlp as sync target(dev feature)`,
+		Usage:     `Hash of the block to full sync to (dev testing feature)`,
 		TakesFile: true,
 		Category:  flags.MiscCategory,
 	}
@@ -721,7 +690,7 @@ var (
 	HttpHeaderFlag = &cli.StringSliceFlag{
 		Name:     "header",
 		Aliases:  []string{"H"},
-		Usage:    "Pass custom headers to the RPC server when using --" + RemoteDBFlag.Name + " or the gzond attach console. This flag can be given multiple times.",
+		Usage:    "Pass custom headers to the RPC server when using --" + RemoteDBFlag.Name + " or the gqrl attach console. This flag can be given multiple times.",
 		Category: flags.APICategory,
 	}
 
@@ -889,7 +858,7 @@ func MakeDataDir(ctx *cli.Context) string {
 
 // setNodeKey creates a node key from set command line flags, either loading it
 // from a file or as a specified hex value. If neither flags were provided, this
-// method returns nil and an emphemeral key is to be generated.
+// method returns nil and an ephemeral key is to be generated.
 func setNodeKey(ctx *cli.Context, cfg *p2p.Config) {
 	var (
 		hex  = ctx.String(NodeKeyHexFlag.Name)
@@ -1000,8 +969,8 @@ func setNAT(ctx *cli.Context, cfg *p2p.Config) {
 // SplitAndTrim splits input separated by a comma
 // and trims excessive white space from the substrings.
 func SplitAndTrim(input string) (ret []string) {
-	l := strings.Split(input, ",")
-	for _, r := range l {
+	l := strings.SplitSeq(input, ",")
+	for r := range l {
 		if r = strings.TrimSpace(r); r != "" {
 			ret = append(ret, r)
 		}
@@ -1012,8 +981,10 @@ func SplitAndTrim(input string) (ret []string) {
 // setHTTP creates the HTTP RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setHTTP(ctx *cli.Context, cfg *node.Config) {
-	if ctx.Bool(HTTPEnabledFlag.Name) && cfg.HTTPHost == "" {
-		cfg.HTTPHost = "127.0.0.1"
+	if ctx.Bool(HTTPEnabledFlag.Name) {
+		if cfg.HTTPHost == "" {
+			cfg.HTTPHost = "127.0.0.1"
+		}
 		if ctx.IsSet(HTTPListenAddrFlag.Name) {
 			cfg.HTTPHost = ctx.String(HTTPListenAddrFlag.Name)
 		}
@@ -1074,8 +1045,10 @@ func setGraphQL(ctx *cli.Context, cfg *node.Config) {
 // setWS creates the WebSocket RPC listener interface string from the set
 // command line flags, returning empty if the HTTP endpoint is disabled.
 func setWS(ctx *cli.Context, cfg *node.Config) {
-	if ctx.Bool(WSEnabledFlag.Name) && cfg.WSHost == "" {
-		cfg.WSHost = "127.0.0.1"
+	if ctx.Bool(WSEnabledFlag.Name) {
+		if cfg.WSHost == "" {
+			cfg.WSHost = "127.0.0.1"
+		}
 		if ctx.IsSet(WSListenAddrFlag.Name) {
 			cfg.WSHost = ctx.String(WSListenAddrFlag.Name)
 		}
@@ -1110,7 +1083,7 @@ func setIPC(ctx *cli.Context, cfg *node.Config) {
 }
 
 // MakeDatabaseHandles raises out the number of allowed file handles per process
-// for Gzond and returns half of the allowance to assign to the database.
+// for Gqrl and returns half of the allowance to assign to the database.
 func MakeDatabaseHandles(max int) int {
 	limit, err := fdlimit.Maximum()
 	if err != nil {
@@ -1151,7 +1124,7 @@ func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error
 	log.Warn("-------------------------------------------------------------------")
 	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
 	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `gzond account list`)")
+	log.Warn("Please use explicit addresses! (can search via `gqrl account list`)")
 	log.Warn("-------------------------------------------------------------------")
 
 	accs := ks.Accounts()
@@ -1210,7 +1183,7 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 		cfg.MaxPendingPeers = ctx.Int(MaxPendingPeersFlag.Name)
 	}
 	if ctx.IsSet(NoDiscoverFlag.Name) {
-		cfg.NoDiscovery = true
+		cfg.NoDiscovery = ctx.Bool(NoDiscoverFlag.Name)
 	}
 
 	CheckExclusive(ctx, DiscoveryV4Flag, NoDiscoverFlag)
@@ -1245,7 +1218,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 	setWS(ctx, cfg)
 	setNodeUserIdent(ctx, cfg)
 	SetDataDir(ctx, cfg)
-	setSmartCard(ctx, cfg)
 
 	if ctx.IsSet(JWTSecretFlag.Name) {
 		cfg.JWTSecret = ctx.String(JWTSecretFlag.Name)
@@ -1259,16 +1231,10 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		cfg.KeyStoreDir = ctx.String(KeyStoreDirFlag.Name)
 	}
 	if ctx.IsSet(DeveloperFlag.Name) {
-		cfg.UseLightweightKDF = true
+		cfg.UseLightweightKDF = ctx.Bool(DeveloperFlag.Name)
 	}
 	if ctx.IsSet(LightKDFFlag.Name) {
 		cfg.UseLightweightKDF = ctx.Bool(LightKDFFlag.Name)
-	}
-	if ctx.IsSet(USBFlag.Name) {
-		cfg.USB = ctx.Bool(USBFlag.Name)
-	}
-	if ctx.IsSet(InsecureUnlockAllowedFlag.Name) {
-		cfg.InsecureUnlockAllowed = ctx.Bool(InsecureUnlockAllowedFlag.Name)
 	}
 	if ctx.IsSet(DBEngineFlag.Name) {
 		dbEngine := ctx.String(DBEngineFlag.Name)
@@ -1278,26 +1244,6 @@ func SetNodeConfig(ctx *cli.Context, cfg *node.Config) {
 		log.Info(fmt.Sprintf("Using %s as db engine", dbEngine))
 		cfg.DBEngine = dbEngine
 	}
-}
-
-func setSmartCard(ctx *cli.Context, cfg *node.Config) {
-	// Skip enabling smartcards if no path is set
-	path := ctx.String(SmartCardDaemonPathFlag.Name)
-	if path == "" {
-		return
-	}
-	// Sanity check that the smartcard path is valid
-	fi, err := os.Stat(path)
-	if err != nil {
-		log.Info("Smartcard socket not found, disabling", "err", err)
-		return
-	}
-	if fi.Mode()&os.ModeType != os.ModeSocket {
-		log.Error("Invalid smartcard daemon path", "path", path, "type", fi.Mode().String())
-		return
-	}
-	// Smartcard daemon path exists and is a socket, enable it
-	cfg.SmartCardDaemonPath = path
 }
 
 func SetDataDir(ctx *cli.Context, cfg *node.Config) {
@@ -1330,8 +1276,8 @@ func setGPO(ctx *cli.Context, cfg *gasprice.Config) {
 
 func setTxPool(ctx *cli.Context, cfg *legacypool.Config) {
 	if ctx.IsSet(TxPoolLocalsFlag.Name) {
-		locals := strings.Split(ctx.String(TxPoolLocalsFlag.Name), ",")
-		for _, account := range locals {
+		locals := strings.SplitSeq(ctx.String(TxPoolLocalsFlag.Name), ",")
+		for account := range locals {
 			trimmed := strings.TrimSpace(account)
 			addr, err := common.NewAddressFromString(trimmed)
 			if err != nil {
@@ -1393,7 +1339,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 		return
 	}
 	cfg.RequiredBlocks = make(map[uint64]common.Hash)
-	for _, entry := range strings.Split(requiredBlocks, ",") {
+	for entry := range strings.SplitSeq(requiredBlocks, ",") {
 		parts := strings.Split(entry, "=")
 		if len(parts) != 2 {
 			Fatalf("Invalid required block entry: %s", entry)
@@ -1413,7 +1359,7 @@ func setRequiredBlocks(ctx *cli.Context, cfg *qrlconfig.Config) {
 // CheckExclusive verifies that only a single instance of the provided flags was
 // set by the user. Each flag might optionally be followed by a string type to
 // specialize it further.
-func CheckExclusive(ctx *cli.Context, args ...interface{}) {
+func CheckExclusive(ctx *cli.Context, args ...any) {
 	set := make([]string, 0, 1)
 	for i := 0; i < len(args); i++ {
 		// Make sure the next argument is a flag and skip if not set
@@ -1479,7 +1425,7 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 	}
 	// Ensure Go's GC ignores the database cache for trigger percentage
 	cache := ctx.Int(CacheFlag.Name)
-	gogc := math.Max(20, math.Min(100, 100/(float64(cache)/1024)))
+	gogc := max(20, min(100, 100/(float64(cache)/1024)))
 
 	log.Debug("Sanitizing Go's GC trigger", "percent", int(gogc))
 	godebug.SetGCPercent(int(gogc))
@@ -1552,9 +1498,6 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 			cfg.TrieCleanCache += cfg.SnapshotCache
 			cfg.SnapshotCache = 0 // Disabled
 		}
-	}
-	if ctx.IsSet(DocRootFlag.Name) {
-		cfg.DocRoot = ctx.String(DocRootFlag.Name)
 	}
 	if ctx.IsSet(VMEnableDebugFlag.Name) {
 		// TODO(fjl): force-enable this in --dev mode
@@ -1770,13 +1713,13 @@ func SetupMetrics(ctx *cli.Context) {
 
 			log.Info("Enabling metrics export to InfluxDB")
 
-			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "gzond.", tagsMap)
+			go influxdb.InfluxDBWithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, database, username, password, "gqrl.", tagsMap)
 		} else if enableExportV2 {
 			tagsMap := SplitTagsFlag(ctx.String(MetricsInfluxDBTagsFlag.Name))
 
 			log.Info("Enabling metrics export to InfluxDB (v2)")
 
-			go influxdb.InfluxDBV2WithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, token, bucket, organization, "gzond.", tagsMap)
+			go influxdb.InfluxDBV2WithTags(metrics.DefaultRegistry, 10*time.Second, endpoint, token, bucket, organization, "gqrl.", tagsMap)
 		}
 
 		if ctx.IsSet(MetricsHTTPFlag.Name) {
@@ -1859,7 +1802,7 @@ func DialRPCWithHeaders(endpoint string, headers []string) (*rpc.Client, error) 
 		return nil, errors.New("endpoint must be specified")
 	}
 	if strings.HasPrefix(endpoint, "rpc:") || strings.HasPrefix(endpoint, "ipc:") {
-		// Backwards compatibility with gzond < 1.5 which required
+		// Backwards compatibility with gqrl < 1.5 which required
 		// these prefixes.
 		endpoint = endpoint[4:]
 	}
@@ -1956,7 +1899,7 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 	// Otherwise resolve absolute paths and return them
 	var preloads []string
 
-	for _, file := range strings.Split(ctx.String(PreloadJSFlag.Name), ",") {
+	for file := range strings.SplitSeq(ctx.String(PreloadJSFlag.Name), ",") {
 		preloads = append(preloads, strings.TrimSpace(file))
 	}
 	return preloads
@@ -1967,7 +1910,7 @@ func MakeConsolePreloads(ctx *cli.Context) []string {
 // will be returned.
 //
 //   - none: use the scheme consistent with persistent state, or fallback
-//     to hash-based scheme if state is empty.
+//     to path-based scheme if state is empty.
 //   - hash: use hash-based scheme or error out if not compatible with
 //     persistent state scheme.
 //   - path: use path-based scheme or error out if not compatible with
@@ -1979,10 +1922,8 @@ func ParseStateScheme(ctx *cli.Context, disk qrldb.Database) (string, error) {
 	stored := rawdb.ReadStateScheme(disk)
 	if !ctx.IsSet(StateSchemeFlag.Name) {
 		if stored == "" {
-			// use default scheme for empty database, flip it when
-			// path mode is chosen as default
-			log.Info("State schema set to default", "scheme", "hash")
-			return rawdb.HashScheme, nil
+			log.Info("State schema set to default", "scheme", "path")
+			return rawdb.PathScheme, nil
 		}
 		log.Info("State scheme set to already existing", "scheme", stored)
 		return stored, nil // reuse scheme of persistent scheme

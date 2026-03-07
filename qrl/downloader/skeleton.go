@@ -24,12 +24,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // scratchHeaders is the number of headers to store in a scratch space to allow
@@ -65,7 +65,7 @@ var errSyncMerged = errors.New("sync merged")
 var errSyncReorged = errors.New("sync reorged")
 
 // errTerminated is returned if the sync mechanism was terminated for this run of
-// the process. This is usually the case when Gzond is shutting down and some events
+// the process. This is usually the case when Gqrl is shutting down and some events
 // might still be propagating.
 var errTerminated = errors.New("terminated")
 
@@ -257,7 +257,7 @@ func (s *skeleton) startup() {
 	for {
 		select {
 		case errc := <-s.terminate:
-			// No head was announced but Gzond is shutting down
+			// No head was announced but Gqrl is shutting down
 			errc <- nil
 			return
 
@@ -303,7 +303,7 @@ func (s *skeleton) startup() {
 
 				default:
 					// Sync either successfully terminated or failed with an unhandled
-					// error. Abort and wait until Gzond requests a termination.
+					// error. Abort and wait until Gqrl requests a termination.
 					errc := <-s.terminate
 					errc <- err
 					return
@@ -952,7 +952,7 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 			// The peer delivered junk, or at least not the subchain we are
 			// syncing to. Free up the scratch space and assignment, reassign
 			// and drop the original peer.
-			for i := 0; i < requestHeaders; i++ {
+			for i := range requestHeaders {
 				s.scratchSpace[i] = nil
 			}
 			s.drop(s.scratchOwners[0])
@@ -1024,7 +1024,7 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 				// the syncer's internal state is corrupted. Do try to fix it, but
 				// be very vocal about the fault.
 				default:
-					var context []interface{}
+					var context []any
 
 					for i := range s.progress.Subchains[1:] {
 						context = append(context, fmt.Sprintf("stale_head_%d", i+1))
@@ -1048,7 +1048,7 @@ func (s *skeleton) processResponse(res *headerResponse) (linked bool, merged boo
 		}
 		// Batch of headers consumed, shift the download window forward
 		copy(s.scratchSpace, s.scratchSpace[requestHeaders:])
-		for i := 0; i < requestHeaders; i++ {
+		for i := range requestHeaders {
 			s.scratchSpace[scratchHeaders-i-1] = nil
 		}
 		copy(s.scratchOwners, s.scratchOwners[1:])

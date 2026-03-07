@@ -21,11 +21,11 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	cmath "github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	cmath "github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // ExecutionResult includes all output after executing given qrvm
@@ -393,10 +393,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 func (st *StateTransition) refundGas(refundQuotient uint64) {
 	// Apply refund counter, capped to a refund quotient
-	refund := st.gasUsed() / refundQuotient
-	if refund > st.state.GetRefund() {
-		refund = st.state.GetRefund()
-	}
+	refund := min(st.gasUsed()/refundQuotient, st.state.GetRefund())
 	st.gasRemaining += refund
 
 	// Return QRL for remaining gas, exchanged at the original rate.

@@ -29,19 +29,19 @@ import (
 
 	"github.com/cespare/cp"
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
 )
 
 var (
-	address1, _       = common.NewAddressFromString("Q2068da65aa0167e1d55fd692786cf87117fcf3fc")
-	address2, _       = common.NewAddressFromString("Q208f56097044fc0302ee090d7f410df6a6897392")
-	address3, _       = common.NewAddressFromString("Q2061d4bb7a03eddcab945a5cfc7b5b32eac2284e")
+	address1, _       = common.NewAddressFromString("Q31fec69ece96b8cdac5814ff9dd92759e7c6018b")
+	address2, _       = common.NewAddressFromString("Q4cce0507B955D0c7e6b79269B66ed498c670Bb0a")
+	address3, _       = common.NewAddressFromString("Q2d9b972ef8219246c73363fd7c048cef81456f9d")
 	cachetestDir, _   = filepath.Abs(filepath.Join("testdata", "keystore"))
 	cachetestAccounts = []accounts.Account{
 		{
 			Address: address1,
-			URL:     accounts.URL{Scheme: KeyStoreScheme, Path: filepath.Join(cachetestDir, "UTC--2024-05-27T07-48-33.872599000Z--Q2068da65aa0167e1d55fd692786cf87117fcf3fc")},
+			URL:     accounts.URL{Scheme: KeyStoreScheme, Path: filepath.Join(cachetestDir, "UTC--2025-11-06T07-34-54.273240000Z--Q31fec69ece96b8cdac5814ff9dd92759e7c6018b")},
 		},
 		{
 			Address: address2,
@@ -54,7 +54,7 @@ var (
 	}
 )
 
-// waitWatcherStarts waits up to 1s for the keystore watcher to start.
+// waitWatcherStart waits up to 1s for the keystore watcher to start.
 func waitWatcherStart(ks *KeyStore) bool {
 	// On systems where file watch is not supported, just return "ok".
 	if !ks.cache.watcher.enabled() {
@@ -117,7 +117,7 @@ func TestWatchNewFile(t *testing.T) {
 func TestWatchNoDir(t *testing.T) {
 	t.Parallel()
 	// Create ks but not the directory that it watches.
-	dir := filepath.Join(os.TempDir(), fmt.Sprintf("qrl-keystore-watchnodir-test-%d-%d", os.Getpid(), rand.Int()))
+	dir := filepath.Join(t.TempDir(), fmt.Sprintf("qrl-keystore-watchnodir-test-%d-%d", os.Getpid(), rand.Int()))
 	ks := NewKeyStore(dir, LightArgon2idT, LightArgon2idM, LightArgon2idP)
 	list := ks.Accounts()
 	if len(list) > 0 {
@@ -129,7 +129,6 @@ func TestWatchNoDir(t *testing.T) {
 	}
 	// Create the directory and copy a key file into it.
 	os.MkdirAll(dir, 0700)
-	defer os.RemoveAll(dir)
 	file := filepath.Join(dir, "aaa")
 	if err := cp.CopyFile(file, cachetestAccounts[0].URL.Path); err != nil {
 		t.Fatal(err)
@@ -155,6 +154,7 @@ func TestWatchNoDir(t *testing.T) {
 }
 
 func TestCacheInitialReload(t *testing.T) {
+	t.Parallel()
 	cache, _ := newAccountCache(cachetestDir)
 	accounts := cache.accounts()
 	if !reflect.DeepEqual(accounts, cachetestAccounts) {
@@ -163,6 +163,7 @@ func TestCacheInitialReload(t *testing.T) {
 }
 
 func TestCacheAddDeleteOrder(t *testing.T) {
+	t.Parallel()
 	cache, _ := newAccountCache("testdata/no-such-dir")
 	cache.watcher.running = true // prevent unexpected reloads
 
@@ -223,7 +224,7 @@ func TestCacheAddDeleteOrder(t *testing.T) {
 			t.Errorf("expected hasAccount(%x) to return true", a.Address)
 		}
 	}
-	address, _ := common.NewAddressFromString("Q20769b85de2678a06231c5debf5facc9e0e7e89a")
+	address, _ := common.NewAddressFromString("Qbb81a0496aa34a64f96c2bcd28793165e1e6c08a")
 	if cache.hasAddress(address) {
 		t.Errorf("expected hasAccount(%x) to return false", address)
 	}
@@ -255,6 +256,7 @@ func TestCacheAddDeleteOrder(t *testing.T) {
 }
 
 func TestCacheFind(t *testing.T) {
+	t.Parallel()
 	dir := filepath.Join("testdata", "dir")
 	cache, _ := newAccountCache(dir)
 	cache.watcher.running = true // prevent unexpected reloads
@@ -337,7 +339,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	t.Parallel()
 
 	// Create a temporary keystore to test with
-	dir := filepath.Join(os.TempDir(), fmt.Sprintf("qrl-keystore-updatedkeyfilecontents-test-%d-%d", os.Getpid(), rand.Int()))
+	dir := t.TempDir()
 	ks := NewKeyStore(dir, LightArgon2idT, LightArgon2idM, LightArgon2idP)
 
 	list := ks.Accounts()
@@ -347,9 +349,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	if !waitWatcherStart(ks) {
 		t.Fatal("keystore watcher didn't start in time")
 	}
-	// Create the directory and copy a key file into it.
-	os.MkdirAll(dir, 0700)
-	defer os.RemoveAll(dir)
+	// Copy a key file into it
 	file := filepath.Join(dir, "aaa")
 
 	// Place one of our testfiles in there
@@ -365,7 +365,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 		return
 	}
 	// needed so that modTime of `file` is different to its current value after forceCopyFile
-	time.Sleep(time.Second)
+	os.Chtimes(file, time.Now().Add(-time.Second), time.Now().Add(-time.Second))
 
 	// Now replace file contents
 	if err := forceCopyFile(file, cachetestAccounts[1].URL.Path); err != nil {
@@ -381,7 +381,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	}
 
 	// needed so that modTime of `file` is different to its current value after forceCopyFile
-	time.Sleep(time.Second)
+	os.Chtimes(file, time.Now().Add(-time.Second), time.Now().Add(-time.Second))
 
 	// Now replace file contents again
 	if err := forceCopyFile(file, cachetestAccounts[2].URL.Path); err != nil {
@@ -397,7 +397,7 @@ func TestUpdatedKeyfileContents(t *testing.T) {
 	}
 
 	// needed so that modTime of `file` is different to its current value after os.WriteFile
-	time.Sleep(time.Second)
+	os.Chtimes(file, time.Now().Add(-time.Second), time.Now().Add(-time.Second))
 
 	// Now replace file contents with crap
 	if err := os.WriteFile(file, []byte("foo"), 0600); err != nil {

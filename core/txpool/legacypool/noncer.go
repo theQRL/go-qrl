@@ -19,8 +19,8 @@ package legacypool
 import (
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/state"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/state"
 )
 
 // noncer is a tiny virtual state database to manage the executable nonces of

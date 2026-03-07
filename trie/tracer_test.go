@@ -20,10 +20,10 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/trie/trienode"
 )
 
 var (
@@ -164,7 +164,7 @@ func testAccessList(t *testing.T, vals []struct{ k, v string }) {
 	trie, _ = New(TrieID(root), db)
 	orig = trie.Copy()
 	var keys []string
-	for i := 0; i < 30; i++ {
+	for range 30 {
 		key := randBytes(32)
 		keys = append(keys, string(key))
 		trie.MustUpdate(key, randBytes(32))

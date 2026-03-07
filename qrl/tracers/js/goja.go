@@ -21,20 +21,21 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 
 	"github.com/dop251/goja"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	jsassets "github.com/theQRL/go-zond/qrl/tracers/js/internal/tracers"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	jsassets "github.com/theQRL/go-qrl/qrl/tracers/js/internal/tracers"
 )
 
 var assetTracers = make(map[string]string)
 
-// init retrieves the JavaScript transaction tracers included in go-zond.
+// init retrieves the JavaScript transaction tracers included in go-qrl.
 func init() {
 	var err error
 	assetTracers, err = jsassets.Load()
@@ -463,12 +464,7 @@ func (t *jsTracer) setBuiltinFunctions() {
 			return false
 		}
 		addr := common.BytesToAddress(a)
-		for _, p := range t.activePrecompiles {
-			if p == addr {
-				return true
-			}
-		}
-		return false
+		return slices.Contains(t.activePrecompiles, addr)
 	})
 	vm.Set("slice", func(slice goja.Value, start, end int) goja.Value {
 		b, err := t.fromBuf(vm, slice, false)
@@ -610,11 +606,11 @@ func (mo *memoryObj) Length() int {
 	return mo.memory.Len()
 }
 
-func (m *memoryObj) setupObject() *goja.Object {
-	o := m.vm.NewObject()
-	o.Set("slice", m.vm.ToValue(m.Slice))
-	o.Set("getUint", m.vm.ToValue(m.GetUint))
-	o.Set("length", m.vm.ToValue(m.Length))
+func (mo *memoryObj) setupObject() *goja.Object {
+	o := mo.vm.NewObject()
+	o.Set("slice", mo.vm.ToValue(mo.Slice))
+	o.Set("getUint", mo.vm.ToValue(mo.GetUint))
+	o.Set("length", mo.vm.ToValue(mo.Length))
 	return o
 }
 
@@ -796,12 +792,12 @@ func (co *contractObj) GetInput() goja.Value {
 	return res
 }
 
-func (c *contractObj) setupObject() *goja.Object {
-	o := c.vm.NewObject()
-	o.Set("getCaller", c.vm.ToValue(c.GetCaller))
-	o.Set("getAddress", c.vm.ToValue(c.GetAddress))
-	o.Set("getValue", c.vm.ToValue(c.GetValue))
-	o.Set("getInput", c.vm.ToValue(c.GetInput))
+func (co *contractObj) setupObject() *goja.Object {
+	o := co.vm.NewObject()
+	o.Set("getCaller", co.vm.ToValue(co.GetCaller))
+	o.Set("getAddress", co.vm.ToValue(co.GetAddress))
+	o.Set("getValue", co.vm.ToValue(co.GetValue))
+	o.Set("getInput", co.vm.ToValue(co.GetInput))
 	return o
 }
 

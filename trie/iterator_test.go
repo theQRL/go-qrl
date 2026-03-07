@@ -22,11 +22,11 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/trie/trienode"
 )
 
 func TestEmptyIterator(t *testing.T) {
@@ -89,7 +89,7 @@ func TestIteratorLargeData(t *testing.T) {
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	vals := make(map[string]*kv)
 
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		value := &kv{common.LeftPadBytes([]byte{i}, 32), []byte{i}, false}
 		value2 := &kv{common.LeftPadBytes([]byte{10, i}, 32), []byte{i}, false}
 		trie.MustUpdate(value.k, value.v)
@@ -393,7 +393,7 @@ func testIteratorContinueAfterError(t *testing.T, memonly bool, scheme string) {
 		}
 		it.Release()
 	}
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		// Create trie that will load all nodes from DB.
 		tr, _ := New(TrieID(tr.Hash()), tdb)
 

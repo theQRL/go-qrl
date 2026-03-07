@@ -24,14 +24,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/tests"
 	"github.com/urfave/cli/v2"
 )
 
@@ -65,17 +64,10 @@ func (r *result) MarshalJSON() ([]byte, error) {
 }
 
 func Transaction(ctx *cli.Context) error {
-	// Configure the go-ethereum logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
-
-	var (
-		err error
-	)
 	// We need to load the transactions. May be either in stdin input or in files.
 	// Check if anything needs to be read from stdin
 	var (
+		err         error
 		txStr       = ctx.String(InputTxsFlag.Name)
 		inputData   = &input{}
 		chainConfig *params.ChainConfig
@@ -88,11 +80,12 @@ func Transaction(ctx *cli.Context) error {
 	}
 	// Set the chain id
 	chainConfig.ChainID = big.NewInt(ctx.Int64(ChainIDFlag.Name))
+
 	var body hexutil.Bytes
 	if txStr == stdinSelector {
 		decoder := json.NewDecoder(os.Stdin)
 		if err := decoder.Decode(inputData); err != nil {
-			return NewError(ErrorJson, fmt.Errorf("failed unmarshaling stdin: %v", err))
+			return NewError(ErrorJson, fmt.Errorf("failed unmarshalling stdin: %v", err))
 		}
 		// Decode the body of already signed transactions
 		body = common.FromHex(inputData.TxRlp)

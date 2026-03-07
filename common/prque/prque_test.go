@@ -18,14 +18,14 @@ func TestPrque(t *testing.T) {
 	size := 16 * blockSize
 	prio := rand.Perm(size)
 	data := make([]int, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		data[i] = rand.Int()
 	}
 	queue := New[int, int](nil)
 
-	for rep := 0; rep < 2; rep++ {
+	for range 2 {
 		// Fill a priority queue with the above data
-		for i := 0; i < size; i++ {
+		for i := range size {
 			queue.Push(data[i], prio[i])
 			if queue.Size() != i+1 {
 				t.Errorf("queue size mismatch: have %v, want %v.", queue.Size(), i+1)
@@ -33,7 +33,7 @@ func TestPrque(t *testing.T) {
 		}
 		// Create a map the values to the priorities for easier verification
 		dict := make(map[int]int)
-		for i := 0; i < size; i++ {
+		for i := range size {
 			dict[prio[i]] = data[i]
 		}
 
@@ -58,14 +58,14 @@ func TestReset(t *testing.T) {
 	size := 16 * blockSize
 	prio := rand.Perm(size)
 	data := make([]int, size)
-	for i := 0; i < size; i++ {
+	for i := range size {
 		data[i] = rand.Int()
 	}
 	queue := New[int, int](nil)
 
-	for rep := 0; rep < 2; rep++ {
+	for range 2 {
 		// Fill a priority queue with the above data
-		for i := 0; i < size; i++ {
+		for i := range size {
 			queue.Push(data[i], prio[i])
 			if queue.Size() != i+1 {
 				t.Errorf("queue size mismatch: have %v, want %v.", queue.Size(), i+1)
@@ -73,12 +73,12 @@ func TestReset(t *testing.T) {
 		}
 		// Create a map the values to the priorities for easier verification
 		dict := make(map[int]int)
-		for i := 0; i < size; i++ {
+		for i := range size {
 			dict[prio[i]] = data[i]
 		}
 		// Pop out half the elements in priority order and verify them
 		prevPrio := size + 1
-		for i := 0; i < size/2; i++ {
+		for range size / 2 {
 			val, prio := queue.Pop()
 			if prio > prevPrio {
 				t.Errorf("invalid priority order: %v after %v.", prio, prevPrio)
@@ -101,14 +101,14 @@ func BenchmarkPush(b *testing.B) {
 	// Create some initial data
 	data := make([]int, b.N)
 	prio := make([]int64, b.N)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		data[i] = rand.Int()
 		prio[i] = rand.Int63()
 	}
 	// Execute the benchmark
 	b.ResetTimer()
 	queue := New[int64, int](nil)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		queue.Push(data[i], prio[i])
 	}
 }
@@ -117,12 +117,12 @@ func BenchmarkPop(b *testing.B) {
 	// Create some initial data
 	data := make([]int, b.N)
 	prio := make([]int64, b.N)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		data[i] = rand.Int()
 		prio[i] = rand.Int63()
 	}
 	queue := New[int64, int](nil)
-	for i := 0; i < len(data); i++ {
+	for i := range data {
 		queue.Push(data[i], prio[i])
 	}
 	// Execute the benchmark

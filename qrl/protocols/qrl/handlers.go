@@ -20,12 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 func handleGetBlockHeaders(backend Backend, msg Decoder, peer *Peer) error {
@@ -139,10 +139,7 @@ func serviceNonContiguousBlockHeaderQuery(chain *core.BlockChain, query *GetBloc
 }
 
 func serviceContiguousBlockHeaderQuery(chain *core.BlockChain, query *GetBlockHeadersRequest) []rlp.RawValue {
-	count := query.Amount
-	if count > maxHeadersServe {
-		count = maxHeadersServe
-	}
+	count := min(query.Amount, maxHeadersServe)
 	if query.Origin.Hash == (common.Hash{}) {
 		// Number mode, just return the canon chain segment. The backend
 		// delivers in [N, N-1, N-2..] descending order, so we need to
@@ -279,7 +276,7 @@ func handleBlockHeaders(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(res); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	metadata := func() interface{} {
+	metadata := func() any {
 		hashes := make([]common.Hash, len(res.BlockHeadersRequest))
 		for i, header := range res.BlockHeadersRequest {
 			hashes[i] = header.Hash()
@@ -299,7 +296,7 @@ func handleBlockBodies(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(res); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	metadata := func() interface{} {
+	metadata := func() any {
 		var (
 			txsHashes        = make([]common.Hash, len(res.BlockBodiesResponse))
 			withdrawalHashes = make([]common.Hash, len(res.BlockBodiesResponse))
@@ -326,7 +323,7 @@ func handleReceipts(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(res); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	metadata := func() interface{} {
+	metadata := func() any {
 		hasher := trie.NewStackTrie(nil)
 		hashes := make([]common.Hash, len(res.ReceiptsResponse))
 		for i, receipt := range res.ReceiptsResponse {

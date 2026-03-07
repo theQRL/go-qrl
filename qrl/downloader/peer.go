@@ -24,11 +24,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/msgrate"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/msgrate"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 const (
@@ -103,30 +103,21 @@ func (p *peerConnection) UpdateReceiptRate(delivered int, elapsed time.Duration)
 // HeaderCapacity retrieves the peer's header download allowance based on its
 // previously discovered throughput.
 func (p *peerConnection) HeaderCapacity(targetRTT time.Duration) int {
-	cap := p.rates.Capacity(qrl.BlockHeadersMsg, targetRTT)
-	if cap > MaxHeaderFetch {
-		cap = MaxHeaderFetch
-	}
+	cap := min(p.rates.Capacity(qrl.BlockHeadersMsg, targetRTT), MaxHeaderFetch)
 	return cap
 }
 
 // BodyCapacity retrieves the peer's body download allowance based on its
 // previously discovered throughput.
 func (p *peerConnection) BodyCapacity(targetRTT time.Duration) int {
-	cap := p.rates.Capacity(qrl.BlockBodiesMsg, targetRTT)
-	if cap > MaxBlockFetch {
-		cap = MaxBlockFetch
-	}
+	cap := min(p.rates.Capacity(qrl.BlockBodiesMsg, targetRTT), MaxBlockFetch)
 	return cap
 }
 
 // ReceiptCapacity retrieves the peers receipt download allowance based on its
 // previously discovered throughput.
 func (p *peerConnection) ReceiptCapacity(targetRTT time.Duration) int {
-	cap := p.rates.Capacity(qrl.ReceiptsMsg, targetRTT)
-	if cap > MaxReceiptFetch {
-		cap = MaxReceiptFetch
-	}
+	cap := min(p.rates.Capacity(qrl.ReceiptsMsg, targetRTT), MaxReceiptFetch)
 	return cap
 }
 

@@ -22,14 +22,13 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrl/tracers/logger"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers/logger"
+	"github.com/theQRL/go-qrl/tests"
 	"github.com/urfave/cli/v2"
 )
 
@@ -52,11 +51,6 @@ type StatetestResult struct {
 }
 
 func stateTestCmd(ctx *cli.Context) error {
-	// Configure the go-zond logger
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
-
 	// Configure the QRVM logger
 	config := &logger.Config{
 		EnableMemory:     !ctx.Bool(DisableMemoryFlag.Name),

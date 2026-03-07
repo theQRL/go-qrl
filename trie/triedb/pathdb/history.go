@@ -24,11 +24,11 @@ import (
 	"slices"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 // State history records the state changes involved in executing a block. The
@@ -551,10 +551,7 @@ func writeHistory(db qrldb.KeyValueStore, freezer *rawdb.ResettableFreezer, dl *
 // and performs the callback on each item.
 func checkHistories(freezer *rawdb.ResettableFreezer, start, count uint64, check func(*meta) error) error {
 	for count > 0 {
-		number := count
-		if number > 10000 {
-			number = 10000 // split the big read into small chunks
-		}
+		number := min(count, 10000) // split the big read into small chunks
 		blobs, err := rawdb.ReadStateHistoryMetaList(freezer, start, number)
 		if err != nil {
 			return err

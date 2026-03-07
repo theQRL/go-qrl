@@ -16,7 +16,7 @@
 
 package snapshot
 
-import "github.com/theQRL/go-zond/metrics"
+import "github.com/theQRL/go-qrl/metrics"
 
 // Metrics in generation
 var (

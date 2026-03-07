@@ -25,9 +25,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 func TestVector_ECDH(t *testing.T) {

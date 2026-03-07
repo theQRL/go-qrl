@@ -21,7 +21,7 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 const tmpSuffix = ".tmp"

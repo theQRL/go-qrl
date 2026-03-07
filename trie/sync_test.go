@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/memorydb"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/memorydb"
+	"github.com/theQRL/go-qrl/trie/trienode"
 )
 
 // makeTestTrie create a sample test trie to test node-wise reconstruction.
@@ -39,7 +39,7 @@ func makeTestTrie(scheme string) (qrldb.Database, *Database, *StateTrie, map[str
 
 	// Fill it with some arbitrary data
 	content := make(map[string][]byte)
-	for i := byte(0); i < 255; i++ {
+	for i := range byte(255) {
 		// Map the same data under multiple keys
 		key, val := common.LeftPadBytes([]byte{1, i}, 32), []byte{i}
 		content[string(key)] = val
@@ -732,7 +732,7 @@ func testSyncMovingTarget(t *testing.T, scheme string) {
 		preRoot = srcTrie.Hash()
 		diff    = make(map[string][]byte)
 	)
-	for i := byte(0); i < 10; i++ {
+	for range 10 {
 		key, val := randBytes(32), randBytes(32)
 		srcTrie.MustUpdate(key, val)
 		diff[string(key)] = val

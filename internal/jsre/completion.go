@@ -46,7 +46,7 @@ func getCompletions(vm *goja.Runtime, line string) (results []string) {
 	// Find the right-most fully named object in the line. e.g. if line = "x.y.z"
 	// and "x.y" is an object, obj will reference "x.y".
 	obj := vm.GlobalObject()
-	for i := 0; i < len(parts)-1; i++ {
+	for i := range len(parts) - 1 {
 		if numerical.MatchString(parts[i]) {
 			return nil
 		}
@@ -76,7 +76,7 @@ func getCompletions(vm *goja.Runtime, line string) (results []string) {
 	if len(results) == 1 && results[0] == line {
 		// Accessing the property will cause it to be evaluated.
 		// This can cause an error, e.g. in case of web3.qrl.protocolVersion
-		// which has been dropped from gzond. Ignore the error for autocompletion
+		// which has been dropped from gqrl. Ignore the error for autocompletion
 		// purposes.
 		obj := SafeGet(obj, parts[len(parts)-1])
 		if obj != nil {

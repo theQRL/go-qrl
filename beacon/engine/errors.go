@@ -17,11 +17,11 @@
 package engine
 
 import (
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // EngineAPIError is a standardized error message between consensus and execution
-// clients, also containing any custom error message Gzond might include.
+// clients, also containing any custom error message Gqrl might include.
 type EngineAPIError struct {
 	code int
 	msg  string
@@ -30,7 +30,7 @@ type EngineAPIError struct {
 
 func (e *EngineAPIError) ErrorCode() int { return e.code }
 func (e *EngineAPIError) Error() string  { return e.msg }
-func (e *EngineAPIError) ErrorData() interface{} {
+func (e *EngineAPIError) ErrorData() any {
 	if e.err == nil {
 		return nil
 	}

@@ -22,13 +22,13 @@ import (
 	"io"
 	"math/big"
 
-	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/external"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto/pqcrypto"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/external"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 )
 
 // ErrNoChainID is returned whenever the user failed to specify a chain id.
@@ -64,7 +64,12 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 			if address != account.Address {
 				return nil, ErrNotAuthorized
 			}
-			signature, err := keystore.SignHash(account, signer.Hash(tx).Bytes())
+			desc, err := keystore.GetDescriptor(account)
+			if err != nil {
+				return nil, err
+			}
+			extraParams := []byte{}
+			signature, err := keystore.SignHash(account, signer.Hash(tx, desc, extraParams).Bytes())
 			if err != nil {
 				return nil, err
 			}
@@ -72,19 +77,15 @@ func NewKeyStoreTransactorWithChainID(keystore *keystore.KeyStore, account accou
 			if err != nil {
 				return nil, err
 			}
-			desc, err := keystore.GetDescriptor(account)
-			if err != nil {
-				return nil, err
-			}
-			return tx.WithSignaturePublicKeyAndDescriptor(signer, signature, pk, desc)
+			return tx.WithAuthValues(signer, signature, pk, desc, extraParams)
 		},
 		Context: context.Background(),
 	}, nil
 }
 
 // NewKeyedTransactorWithChainID is a utility method to easily create a transaction signer
-// from a single private key.
-func NewKeyedTransactorWithChainID(w *walletmldsa87.Wallet, chainID *big.Int) (*TransactOpts, error) {
+// from a single wallet.
+func NewKeyedTransactorWithChainID(w wallet.Wallet, chainID *big.Int) (*TransactOpts, error) {
 	keyAddr := w.GetAddress()
 	if chainID == nil {
 		return nil, ErrNoChainID
@@ -96,13 +97,14 @@ func NewKeyedTransactorWithChainID(w *walletmldsa87.Wallet, chainID *big.Int) (*
 			if address != keyAddr {
 				return nil, ErrNotAuthorized
 			}
-			signature, err := pqcrypto.Sign(signer.Hash(tx).Bytes(), w)
+			desc := w.GetDescriptor().ToBytes()
+			extraParams := []byte{}
+			signature, err := pqcrypto.Sign(signer.Hash(tx, desc, extraParams).Bytes(), w)
 			if err != nil {
 				return nil, err
 			}
 			pk := w.GetPK()
-			desc := w.GetDescriptor().ToDescriptor().ToBytes()
-			return tx.WithSignaturePublicKeyAndDescriptor(signer, signature, pk[:], desc)
+			return tx.WithAuthValues(signer, signature, pk[:], desc, extraParams)
 		},
 		Context: context.Background(),
 	}, nil

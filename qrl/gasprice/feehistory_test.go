@@ -17,11 +17,10 @@
 package gasprice
 
 import (
-	"context"
 	"errors"
 	"testing"
 
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 func TestFeeHistory(t *testing.T) {
@@ -60,7 +59,7 @@ func TestFeeHistory(t *testing.T) {
 		backend := newTestBackend(t, c.pending)
 		oracle := NewOracle(backend, config)
 
-		first, reward, baseFee, ratio, err := oracle.FeeHistory(context.Background(), c.count, c.last, c.percent)
+		first, reward, baseFee, ratio, err := oracle.FeeHistory(t.Context(), c.count, c.last, c.percent)
 		backend.teardown()
 		expReward := c.expCount
 		if len(c.percent) == 0 {

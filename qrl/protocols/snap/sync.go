@@ -29,19 +29,19 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/msgrate"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/msgrate"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/trienode"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -730,8 +730,6 @@ func (s *Syncer) loadSyncStatus() {
 			}
 			s.tasks = progress.Tasks
 			for _, task := range s.tasks {
-				task := task // closure for task.genBatch in the stacktrie writer callback
-
 				task.genBatch = qrldb.HookedBatch{
 					Batch: s.db.NewBatch(),
 					OnPut: func(key []byte, value []byte) {
@@ -743,8 +741,6 @@ func (s *Syncer) loadSyncStatus() {
 				})
 				for accountHash, subtasks := range task.SubTasks {
 					for _, subtask := range subtasks {
-						subtask := subtask // closure for subtask.genBatch in the stacktrie writer callback
-
 						subtask.genBatch = qrldb.HookedBatch{
 							Batch: s.db.NewBatch(),
 							OnPut: func(key []byte, value []byte) {
@@ -793,7 +789,7 @@ func (s *Syncer) loadSyncStatus() {
 			big.NewInt(int64(accountConcurrency)),
 		), common.Big1,
 	)
-	for i := 0; i < accountConcurrency; i++ {
+	for i := range accountConcurrency {
 		last := common.BigToHash(new(big.Int).Add(next.Big(), step))
 		if i == accountConcurrency-1 {
 			// Make sure we don't overflow if the step is not a proper divisor
@@ -1112,16 +1108,13 @@ func (s *Syncer) assignBytecodeTasks(success chan *bytecodeResponse, fail chan *
 		s.bytecodeReqs[reqid] = req
 		delete(s.bytecodeIdlers, idle)
 
-		s.pend.Add(1)
-		go func() {
-			defer s.pend.Done()
-
+		s.pend.Go(func() {
 			// Attempt to send the remote request and revert if it fails
 			if err := peer.RequestByteCodes(reqid, hashes, maxRequestSize); err != nil {
 				log.Debug("Failed to request bytecodes", "err", err)
 				s.scheduleRevertBytecodeRequest(req)
 			}
-		}()
+		})
 	}
 }
 
@@ -1512,16 +1505,13 @@ func (s *Syncer) assignBytecodeHealTasks(success chan *bytecodeHealResponse, fai
 		s.bytecodeHealReqs[reqid] = req
 		delete(s.bytecodeHealIdlers, idle)
 
-		s.pend.Add(1)
-		go func() {
-			defer s.pend.Done()
-
+		s.pend.Go(func() {
 			// Attempt to send the remote request and revert if it fails
 			if err := peer.RequestByteCodes(reqid, hashes, maxRequestSize); err != nil {
 				log.Debug("Failed to request bytecode healers", "err", err)
 				s.scheduleRevertBytecodeHealRequest(req)
 			}
-		}()
+		})
 	}
 }
 
@@ -2179,7 +2169,7 @@ func (s *Syncer) processTrienodeHealResponse(res *trienodeHealResponse) {
 	//
 	// Naively, that would be:
 	//
-	//   for i:=0; i<fills; i++ {
+	//   for i:= range fills {
 	//     healRate = (1-measurementImpact)*oldRate + measurementImpact*newRate
 	//   }
 	//

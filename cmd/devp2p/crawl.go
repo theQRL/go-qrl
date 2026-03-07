@@ -17,12 +17,13 @@
 package main
 
 import (
+	"maps"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 type crawler struct {
@@ -64,9 +65,7 @@ func newCrawler(input nodeSet, disc resolver, iters ...qnode.Iterator) *crawler 
 	c.iters = append(c.iters, c.inputIter)
 	// Copy input to output initially. Any nodes that fail validation
 	// will be dropped from output during the run.
-	for id, n := range input {
-		c.output[id] = n
-	}
+	maps.Copy(c.output, input)
 	return c
 }
 
@@ -95,7 +94,7 @@ func (c *crawler) run(timeout time.Duration, nthreads int) nodeSet {
 		wg      sync.WaitGroup
 	)
 	wg.Add(nthreads)
-	for i := 0; i < nthreads; i++ {
+	for range nthreads {
 		go func() {
 			defer wg.Done()
 			for {

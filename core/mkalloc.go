@@ -15,7 +15,6 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 //go:build none
-// +build none
 
 /*
 The mkalloc tool creates the genesis allocation constants in genesis_alloc.go
@@ -33,9 +32,9 @@ import (
 	"slices"
 	"strconv"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 type allocItem struct {

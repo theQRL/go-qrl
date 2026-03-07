@@ -21,10 +21,10 @@ import (
 	"testing"
 
 	"github.com/VictoriaMetrics/fastcache"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/qrldb/memorydb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/qrldb/memorydb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // reverse reverses the contents of a byte slice. It's used to update random accs
@@ -217,7 +217,7 @@ func TestDiskMerge(t *testing.T) {
 func TestDiskPartialMerge(t *testing.T) {
 	// Iterate the test a few times to ensure we pick various internal orderings
 	// for the data slots as well as the progress marker.
-	for i := 0; i < 1024; i++ {
+	for i := range 1024 {
 		// Create some accounts in the disk layer
 		db := memorydb.New()
 

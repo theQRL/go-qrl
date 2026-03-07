@@ -26,15 +26,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 const (
@@ -331,18 +331,18 @@ func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, start time.Time)
 		return 0, err
 	}
 	// Report some public statistics so the user has a clue what's going on
-	context := []interface{}{
+	context := []any{
 		"count", res.imported,
 		"elapsed", common.PrettyDuration(time.Since(start)),
 	}
 	if last := res.lastHeader; last != nil {
 		context = append(context, "number", last.Number, "hash", res.lastHash)
 		if timestamp := time.Unix(int64(last.Time), 0); time.Since(timestamp) > time.Minute {
-			context = append(context, []interface{}{"age", common.PrettyAge(timestamp)}...)
+			context = append(context, []any{"age", common.PrettyAge(timestamp)}...)
 		}
 	}
 	if res.ignored > 0 {
-		context = append(context, []interface{}{"ignored", res.ignored}...)
+		context = append(context, []any{"ignored", res.ignored}...)
 	}
 	log.Debug("Imported new block headers", context...)
 	return res.status, err
@@ -551,7 +551,7 @@ func (hc *HeaderChain) setHead(headBlock uint64, headTime uint64, updateFn Updat
 		}
 		parentHash = parent.Hash()
 
-		// Notably, since gzond has the possibility for setting the head to a low
+		// Notably, since gqrl has the possibility for setting the head to a low
 		// height which is even lower than ancient head.
 		// In order to ensure that the head is always no higher than the data in
 		// the database (ancient store or active store), we need to update head

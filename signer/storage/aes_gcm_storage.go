@@ -22,8 +22,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/theQRL/go-zond/crypto/cipher"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/crypto/cipher"
+	"github.com/theQRL/go-qrl/log"
 )
 
 type storedCredential struct {

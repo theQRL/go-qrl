@@ -19,8 +19,8 @@ package runtime_test
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/vm/runtime"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/vm/runtime"
 )
 
 func ExampleExecute() {

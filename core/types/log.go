@@ -17,8 +17,8 @@
 package types
 
 import (
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 //go:generate go run ../../rlp/rlpgen -type Log -out gen_log_rlp.go

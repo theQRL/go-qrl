@@ -16,7 +16,7 @@
 
 package qrl
 
-import "github.com/theQRL/go-zond/metrics"
+import "github.com/theQRL/go-qrl/metrics"
 
 // meters stores ingress and egress handshake meters.
 var meters bidirectionalMeters

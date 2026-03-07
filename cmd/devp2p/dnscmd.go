@@ -25,9 +25,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/p2p/dnsdisc"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/p2p/dnsdisc"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/urfave/cli/v2"
 )
 

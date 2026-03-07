@@ -30,17 +30,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/debug"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/debug"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 	"github.com/urfave/cli/v2"
 )
 
@@ -48,13 +48,16 @@ const (
 	importBatchSize = 2500
 )
 
+// ErrImportInterrupted is returned when the user interrupts the import process.
+var ErrImportInterrupted = errors.New("interrupted")
+
 // Fatalf formats a message to standard error and exits the program.
 // The message is also printed to standard output if standard error
 // is redirected to a different file.
-func Fatalf(format string, args ...interface{}) {
+func Fatalf(format string, args ...any) {
 	w := io.MultiWriter(os.Stdout, os.Stderr)
-	if runtime.GOOS == "windows" {
-		// The SameFile check below doesn't work on Windows.
+	if runtime.GOOS == "windows" || runtime.GOOS == "openbsd" {
+		// The SameFile check below doesn't work on Windows neither OpenBSD.
 		// stdout is unlikely to get redirected though, so just print there.
 		w = os.Stdout
 	} else {
@@ -128,11 +131,11 @@ func monitorFreeDiskSpace(sigc chan os.Signal, path string, freeDiskSpaceCritica
 			break
 		}
 		if freeSpace < freeDiskSpaceCritical {
-			log.Error("Low disk space. Gracefully shutting down Gzond to prevent database corruption.", "available", common.StorageSize(freeSpace), "path", path)
+			log.Error("Low disk space. Gracefully shutting down Gqrl to prevent database corruption.", "available", common.StorageSize(freeSpace), "path", path)
 			sigc <- syscall.SIGTERM
 			break
 		} else if freeSpace < 2*freeDiskSpaceCritical {
-			log.Warn("Disk space is running low. Gzond will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical), "path", path)
+			log.Warn("Disk space is running low. Gqrl will shutdown if disk space runs below critical level.", "available", common.StorageSize(freeSpace), "critical_level", common.StorageSize(freeDiskSpaceCritical), "path", path)
 		}
 		time.Sleep(30 * time.Second)
 	}
@@ -184,7 +187,7 @@ func ImportChain(chain *core.BlockChain, fn string) error {
 	for batch := 0; ; batch++ {
 		// Load a batch of RLP blocks.
 		if checkInterrupt() {
-			return errors.New("interrupted")
+			return ErrImportInterrupted
 		}
 		i := 0
 		for ; i < importBatchSize; i++ {
@@ -380,13 +383,13 @@ func ExportPreimages(db qrldb.Database, fn string) error {
 // should be bumped.
 // If the importer sees a higher version, it should reject the import.
 type exportHeader struct {
-	Magic    string // Always set to 'gzonddbdump' for disambiguation
+	Magic    string // Always set to 'gqrldbdump' for disambiguation
 	Version  uint64
 	Kind     string
 	UnixTime uint64
 }
 
-const exportMagic = "gzonddbdump"
+const exportMagic = "gqrldbdump"
 const (
 	OpBatchAdd = 0
 	OpBatchDel = 1
@@ -460,7 +463,7 @@ func ImportLDBData(db qrldb.Database, f string, startIndex int64, interrupt chan
 		case OpBatchAdd:
 			batch.Put(key, val)
 		default:
-			return fmt.Errorf("unknown op %d\n", op)
+			return fmt.Errorf("unknown op %d", op)
 		}
 		if batch.ValueSize() > qrldb.IdealBatchSize {
 			if err := batch.Write(); err != nil {

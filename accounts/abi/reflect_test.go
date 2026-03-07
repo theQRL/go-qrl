@@ -25,7 +25,7 @@ import (
 type reflectTest struct {
 	name  string
 	args  []string
-	struc interface{}
+	struc any
 	want  map[string]string
 	err   string
 }
@@ -170,8 +170,10 @@ var reflectTests = []reflectTest{
 }
 
 func TestReflectNameToStruct(t *testing.T) {
+	t.Parallel()
 	for _, test := range reflectTests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			m, err := mapArgNamesToStructFields(test.args, reflect.ValueOf(test.struc))
 			if len(test.err) > 0 {
 				if err == nil || err.Error() != test.err {
@@ -192,6 +194,7 @@ func TestReflectNameToStruct(t *testing.T) {
 }
 
 func TestConvertType(t *testing.T) {
+	t.Parallel()
 	// Test Basic Struct
 	type T struct {
 		X *big.Int
@@ -201,12 +204,12 @@ func TestConvertType(t *testing.T) {
 	var fields []reflect.StructField
 	fields = append(fields, reflect.StructField{
 		Name: "X",
-		Type: reflect.TypeOf(new(big.Int)),
+		Type: reflect.TypeFor[*big.Int](),
 		Tag:  "json:\"" + "x" + "\"",
 	})
 	fields = append(fields, reflect.StructField{
 		Name: "Y",
-		Type: reflect.TypeOf(new(big.Int)),
+		Type: reflect.TypeFor[*big.Int](),
 		Tag:  "json:\"" + "y" + "\"",
 	})
 	val := reflect.New(reflect.StructOf(fields))

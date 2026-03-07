@@ -22,10 +22,10 @@ import (
 	"math/big"
 	"slices"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // Filter can be used to retrieve and filter logs.

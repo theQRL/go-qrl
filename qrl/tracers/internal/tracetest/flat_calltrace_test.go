@@ -10,18 +10,18 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/tests"
 
 	// Force-load the native, to trigger registration
-	"github.com/theQRL/go-zond/qrl/tracers"
+	"github.com/theQRL/go-qrl/qrl/tracers"
 )
 
 // flatCallTrace is the result of a callTracerParity run.
@@ -165,7 +165,6 @@ func testFlatCallTracer(tracerName string, dirPath string, t *testing.T) {
 		if !strings.HasSuffix(file.Name(), ".json") {
 			continue
 		}
-		file := file // capture range variable
 		t.Run(camel(strings.TrimSuffix(file.Name(), ".json")), func(t *testing.T) {
 			t.Parallel()
 
@@ -179,7 +178,7 @@ func testFlatCallTracer(tracerName string, dirPath string, t *testing.T) {
 
 // jsonEqual is similar to reflect.DeepEqual, but does a 'bounce' via json prior to
 // comparison
-func jsonEqualFlat(x, y interface{}) bool {
+func jsonEqualFlat(x, y any) bool {
 	xTrace := new([]flatCallTrace)
 	yTrace := new([]flatCallTrace)
 	if xj, err := json.Marshal(x); err == nil {

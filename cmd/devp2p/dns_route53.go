@@ -30,8 +30,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/route53"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/dnsdisc"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/dnsdisc"
 	"github.com/urfave/cli/v2"
 )
 
@@ -420,10 +420,7 @@ func isSubdomain(name, domain string) bool {
 func splitTXT(value string) string {
 	var result strings.Builder
 	for len(value) > 0 {
-		rlen := len(value)
-		if rlen > 253 {
-			rlen = 253
-		}
+		rlen := min(len(value), 253)
 		result.WriteString(strconv.Quote(value[:rlen]))
 		value = value[rlen:]
 	}

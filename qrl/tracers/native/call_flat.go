@@ -21,12 +21,13 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"strings"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers"
 )
 
 //go:generate go run github.com/fjl/gencodec -type flatCallAction -field-override flatCallActionMarshaling -out gen_flatcallaction_json.go
@@ -214,12 +215,7 @@ func (t *flatCallTracer) Stop(err error) {
 
 // isPrecompiled returns whether the addr is a precompile.
 func (t *flatCallTracer) isPrecompiled(addr common.Address) bool {
-	for _, p := range t.activePrecompiles {
-		if p == addr {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(t.activePrecompiles, addr)
 }
 
 func flatFromNested(input *callFrame, traceAddress []int, ctx *tracers.Context) (output []flatCallFrame, err error) {

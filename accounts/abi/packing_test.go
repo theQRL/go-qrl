@@ -19,12 +19,12 @@ package abi
 import (
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 type packUnpackTest struct {
 	def      string
-	unpacked interface{}
+	unpacked any
 	packed   string
 }
 

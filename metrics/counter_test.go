@@ -4,8 +4,7 @@ import "testing"
 
 func BenchmarkCounter(b *testing.B) {
 	c := NewCounter()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		c.Inc(1)
 	}
 }

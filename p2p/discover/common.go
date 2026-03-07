@@ -21,11 +21,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 // UDPConn is a network connection on which discovery can operate.
@@ -91,11 +91,4 @@ func ListenUDP(c UDPConn, ln *qnode.LocalNode, cfg Config) (*UDPv4, error) {
 type ReadPacket struct {
 	Data []byte
 	Addr *net.UDPAddr
-}
-
-func min(x, y int) int {
-	if x > y {
-		return y
-	}
-	return x
 }

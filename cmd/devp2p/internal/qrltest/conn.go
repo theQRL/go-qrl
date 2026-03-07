@@ -11,12 +11,12 @@ import (
 	"time"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/p2p/rlpx"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/p2p/rlpx"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 var (

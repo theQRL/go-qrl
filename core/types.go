@@ -19,9 +19,9 @@ package core
 import (
 	"sync/atomic"
 
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
 )
 
 // Validator is an interface which defines the standard for block validation. It

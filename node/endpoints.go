@@ -21,8 +21,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // StartHTTPEndpoint starts the HTTP RPC endpoint.

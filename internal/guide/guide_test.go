@@ -15,7 +15,7 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // This file contains the code snippets from the developer's guide embedded into
-// Go tests. This ensures that any code published in out guides will not break
+// Go tests. This ensures that any code published in our guides will not break
 // accidentally via some code update. If some API changes nonetheless that needs
 // modifying this file, please port any modification over into the developer's
 // guide wiki pages too!
@@ -28,13 +28,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // Tests that the account management snippets work correctly.
 func TestAccountManagement(t *testing.T) {
+	t.Parallel()
+
 	// Create a temporary folder to work with
 	workdir := t.TempDir()
 

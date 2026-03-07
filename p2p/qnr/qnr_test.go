@@ -26,7 +26,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -286,7 +286,7 @@ func TestSignEncodeAndDecodeRandom(t *testing.T) {
 
 	// random key/value pairs for testing
 	pairs := map[string]uint32{}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		key := randomString(7)
 		value := rnd.Uint32()
 		pairs[key] = value

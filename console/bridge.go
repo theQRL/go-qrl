@@ -25,10 +25,10 @@ import (
 	"time"
 
 	"github.com/dop251/goja"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/internal/jsre"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/internal/jsre"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // bridge is a collection of JavaScript utility methods to bride the .js runtime
@@ -113,7 +113,7 @@ func (b *bridge) SleepBlocks(call jsre.Call) (goja.Value, error) {
 type jsonrpcCall struct {
 	ID     int64
 	Method string
-	Params []interface{}
+	Params []any
 }
 
 // Send implements the web3 provider "send" method.
@@ -168,7 +168,7 @@ func (b *bridge) Send(call jsre.Call) (goja.Value, error) {
 			}
 		} else {
 			code := -32603
-			var data interface{}
+			var data any
 			if err, ok := err.(rpc.Error); ok {
 				code = err.ErrorCode()
 			}
@@ -194,8 +194,8 @@ func (b *bridge) Send(call jsre.Call) (goja.Value, error) {
 	return result, nil
 }
 
-func setError(resp *goja.Object, code int, msg string, data interface{}) {
-	err := make(map[string]interface{})
+func setError(resp *goja.Object, code int, msg string, data any) {
+	err := make(map[string]any)
 	err["code"] = code
 	err["message"] = msg
 	if data != nil {

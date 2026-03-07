@@ -7,8 +7,7 @@ import (
 
 func BenchmarkMeter(b *testing.B) {
 	m := NewMeter()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		m.Mark(1)
 	}
 }
@@ -74,13 +73,13 @@ func TestMeterZero(t *testing.T) {
 
 func TestMeterRepeat(t *testing.T) {
 	m := NewMeter()
-	for i := 0; i < 101; i++ {
+	for i := range 101 {
 		m.Mark(int64(i))
 	}
 	if count := m.Snapshot().Count(); count != 5050 {
 		t.Errorf("m.Count(): 5050 != %v\n", count)
 	}
-	for i := 0; i < 101; i++ {
+	for i := range 101 {
 		m.Mark(int64(i))
 	}
 	if count := m.Snapshot().Count(); count != 10100 {

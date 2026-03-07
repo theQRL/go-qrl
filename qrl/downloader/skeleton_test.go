@@ -26,12 +26,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // hookedBackfiller is a tester backfiller with all interface methods mocked and
@@ -151,7 +151,7 @@ func (p *skeletonTestPeer) RequestHeadersByNumber(origin uint64, amount int, ski
 	if headers == nil {
 		headers = make([]*types.Header, 0, amount)
 		if len(p.headers) > int(origin) { // Don't serve headers if we're missing the origin
-			for i := 0; i < amount; i++ {
+			for i := range amount {
 				// Consider nil headers as a form of attack and withhold them. Nil
 				// cannot be decoded from RLP, so it's not possible to produce an
 				// attack by sending/receiving those over qrl.

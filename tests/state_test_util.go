@@ -25,24 +25,24 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 	walletcommon "github.com/theQRL/go-qrllib/wallet/common"
 	walletmldsa87 "github.com/theQRL/go-qrllib/wallet/ml_dsa_87"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -93,15 +93,6 @@ type stEnv struct {
 	BaseFee   *big.Int       `json:"currentBaseFee"    gencodec:"optional"`
 }
 
-type stEnvMarshaling struct {
-	Coinbase  common.Address
-	Random    *math.HexOrDecimal256
-	GasLimit  math.HexOrDecimal64
-	Number    math.HexOrDecimal64
-	Timestamp math.HexOrDecimal64
-	BaseFee   *math.HexOrDecimal256
-}
-
 //go:generate go run github.com/fjl/gencodec -type stTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
 
 type stTransaction struct {
@@ -116,15 +107,6 @@ type stTransaction struct {
 	Value                []string            `json:"value"`
 	Seed                 string              `json:"seed"`
 	Sender               *common.Address     `json:"sender"`
-}
-
-type stTransactionMarshaling struct {
-	GasPrice             *math.HexOrDecimal256
-	MaxFeePerGas         *math.HexOrDecimal256
-	MaxPriorityFeePerGas *math.HexOrDecimal256
-	Nonce                math.HexOrDecimal64
-	GasLimit             []math.HexOrDecimal64
-	Seed                 hexutil.Bytes
 }
 
 // GetChainConfig takes a fork definition and returns a chain config.
@@ -294,10 +276,6 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 	return triedb, snaps, statedb, root, err
 }
 
-func (t *StateTest) gasLimit(subtest StateSubtest) uint64 {
-	return t.json.Tx.GasLimit[t.json.Post[subtest.Fork][subtest.Index].Indexes.Gas]
-}
-
 func MakePreState(db qrldb.Database, accounts core.GenesisAlloc, snapshotter bool, scheme string) (*trie.Database, *snapshot.Tree, *state.StateDB) {
 	tconf := &trie.Config{Preimages: true}
 	if scheme == rawdb.HashScheme {
@@ -439,7 +417,7 @@ func (tx *stTransaction) toMessage(ps stPostState, baseFee *big.Int) (*core.Mess
 	return msg, nil
 }
 
-func rlpHash(x interface{}) (h common.Hash) {
+func rlpHash(x any) (h common.Hash) {
 	hw := sha3.NewLegacyKeccak256()
 	rlp.Encode(hw, x)
 	hw.Sum(h[:0])

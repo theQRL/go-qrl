@@ -19,17 +19,18 @@ package crypto
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"crypto/rand"
 	"encoding/hex"
 	"math/big"
 	"os"
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
-var testAddr, _ = common.NewAddressFromString("Q00000000970e8128ab834e8eac17ab8e3812f010678cf791")
+var testAddr, _ = common.NewAddressFromString("Q970e8128ab834e8eac17ab8e3812f010678cf791")
 var testPrivHex = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
 
 // These tests are sanity checks.
@@ -59,7 +60,7 @@ func TestToECDSAErrors(t *testing.T) {
 
 func BenchmarkSha3(b *testing.B) {
 	a := []byte("hello world")
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		Keccak256(a)
 	}
 }
@@ -138,9 +139,9 @@ func TestNewContractAddress(t *testing.T) {
 	caddr0 := CreateAddress(testAddr, 0)
 	caddr1 := CreateAddress(testAddr, 1)
 	caddr2 := CreateAddress(testAddr, 2)
-	addr0, _ := common.NewAddressFromString("Qc250506dc4213c68334ddf207b99dc8562665076635dc073")
-	addr1, _ := common.NewAddressFromString("Qacc379bf330289ea8e0753154ffd35282792337072b1b8da")
-	addr2, _ := common.NewAddressFromString("Qe289c2fe317924061e1a790733504371c82b584594551cc5")
+	addr0, _ := common.NewAddressFromString("Q333c3310824b7c685133f2bedb2ca4b8b4df633d")
+	addr1, _ := common.NewAddressFromString("Q8bda78331c916a08481428e4b07c96d3e916d165")
+	addr2, _ := common.NewAddressFromString("Qc9ddedf451bc62ce88bf9292afb13df35b670699")
 	checkAddr(t, addr0, caddr0)
 	checkAddr(t, addr1, caddr1)
 	checkAddr(t, addr2, caddr2)
@@ -182,7 +183,7 @@ func TestLoadECDSA(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		f, err := os.CreateTemp("", "loadecdsa_test.*.txt")
+		f, err := os.CreateTemp(t.TempDir(), "loadecdsa_test.*.txt")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -203,7 +204,7 @@ func TestLoadECDSA(t *testing.T) {
 }
 
 func TestSaveECDSA(t *testing.T) {
-	f, err := os.CreateTemp("", "saveecdsa_test.*.txt")
+	f, err := os.CreateTemp(t.TempDir(), "saveecdsa_test.*.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -297,4 +298,39 @@ func TestPythonIntegration(t *testing.T) {
 
 	t.Logf("msg: %x, privkey: %s sig: %x\n", msg0, kh, sig0)
 	t.Logf("msg: %x, privkey: %s sig: %x\n", msg1, kh, sig1)
+}
+
+// goos: darwin
+// goarch: arm64
+// pkg: github.com/theQRL/go-qrl/crypto
+// cpu: Apple M1 Pro
+// BenchmarkKeccak256Hash
+// BenchmarkKeccak256Hash-8   	  931095	      1270 ns/op	      32 B/op	       1 allocs/op
+func BenchmarkKeccak256Hash(b *testing.B) {
+	var input [512]byte
+	rand.Read(input[:])
+
+	b.ReportAllocs()
+	for b.Loop() {
+		Keccak256Hash(input[:])
+	}
+}
+
+// goos: darwin
+// goarch: arm64
+// pkg: github.com/theQRL/go-qrl/crypto
+// cpu: Apple M1 Pro
+// BenchmarkHashData
+// BenchmarkHashData-8   	  793386	      1278 ns/op	      32 B/op	       1 allocs/op
+func BenchmarkHashData(b *testing.B) {
+	var (
+		input  [512]byte
+		buffer = NewKeccakState()
+	)
+	rand.Read(input[:])
+
+	b.ReportAllocs()
+	for b.Loop() {
+		HashData(buffer, input[:])
+	}
 }

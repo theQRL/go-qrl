@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/trie/trienode"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/trie/trienode"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 // layerTree is a group of state layers identified by the state root.

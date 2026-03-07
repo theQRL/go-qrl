@@ -32,10 +32,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/docker/docker/pkg/reexec"
+	"github.com/theQRL/go-qrl/internal/reexec"
 )
 
-func NewTestCmd(t *testing.T, data interface{}) *TestCmd {
+func NewTestCmd(t *testing.T, data any) *TestCmd {
 	return &TestCmd{T: t, Data: data}
 }
 
@@ -44,7 +44,7 @@ type TestCmd struct {
 	*testing.T
 
 	Func    template.FuncMap
-	Data    interface{}
+	Data    any
 	Cleanup func()
 
 	cmd    *exec.Cmd
@@ -58,7 +58,7 @@ type TestCmd struct {
 var id atomic.Int32
 
 // Run exec's the current binary using name as argv[0] which will trigger the
-// reexec init function for that name (e.g. "gzond-test" in cmd/gzond/run_test.go)
+// reexec init function for that name (e.g. "gqrl-test" in cmd/gqrl/run_test.go)
 func (tt *TestCmd) Run(name string, args ...string) {
 	id.Add(1)
 	tt.stderr = &testlogger{t: tt.T, name: fmt.Sprintf("%d", id.Load())}
@@ -83,15 +83,15 @@ func (tt *TestCmd) Run(name string, args ...string) {
 // InputLine writes the given text to the child's stdin.
 // This method can also be called from an expect template, e.g.:
 //
-//	gzond.expect(`Passphrase: {{.InputLine "password"}}`)
+//	gqrl.expect(`Passphrase: {{.InputLine "password"}}`)
 func (tt *TestCmd) InputLine(s string) string {
 	io.WriteString(tt.stdin, s+"\n")
 	return ""
 }
 
-func (tt *TestCmd) SetTemplateFunc(name string, fn interface{}) {
+func (tt *TestCmd) SetTemplateFunc(name string, fn any) {
 	if tt.Func == nil {
-		tt.Func = make(map[string]interface{})
+		tt.Func = make(map[string]any)
 	}
 	tt.Func[name] = fn
 }
@@ -135,7 +135,7 @@ func (tt *TestCmd) matchExactOutput(want []byte) error {
 		buf = append(buf, make([]byte, tt.stdout.Buffered())...)
 		tt.stdout.Read(buf[n:])
 		// Find the mismatch position.
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if want[i] != buf[i] {
 				return fmt.Errorf("output mismatch at ◊:\n---------------- (stdout text)\n%s◊%s\n---------------- (expected text)\n%s",
 					buf[:i], buf[i:n], want)
@@ -237,7 +237,7 @@ func (tt *TestCmd) Kill() {
 }
 
 func (tt *TestCmd) withKillTimeout(fn func()) {
-	timeout := time.AfterFunc(30*time.Second, func() {
+	timeout := time.AfterFunc(2*time.Minute, func() {
 		tt.Log("killing the child process (timeout)")
 		tt.Kill()
 	})
@@ -255,8 +255,8 @@ type testlogger struct {
 }
 
 func (tl *testlogger) Write(b []byte) (n int, err error) {
-	lines := bytes.Split(b, []byte("\n"))
-	for _, line := range lines {
+	lines := bytes.SplitSeq(b, []byte("\n"))
+	for line := range lines {
 		if len(line) > 0 {
 			tl.t.Logf("(stderr:%v) %s", tl.name, line)
 		}

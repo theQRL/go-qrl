@@ -24,24 +24,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/tests"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/tests"
 )
-
-// prestateTrace is the result of a prestateTrace run.
-type prestateTrace = map[common.Address]*account
-
-type account struct {
-	Balance string                      `json:"balance"`
-	Code    string                      `json:"code"`
-	Nonce   uint64                      `json:"nonce"`
-	Storage map[common.Hash]common.Hash `json:"storage"`
-}
 
 // testcase defines a single test to check the stateDiff tracer against.
 type testcase struct {
@@ -49,7 +39,7 @@ type testcase struct {
 	Context      *callContext    `json:"context"`
 	Input        string          `json:"input"`
 	TracerConfig json.RawMessage `json:"tracerConfig"`
-	Result       interface{}     `json:"result"`
+	Result       any             `json:"result"`
 }
 
 func TestPrestateTracer(t *testing.T) {
@@ -70,7 +60,6 @@ func testPrestateDiffTracer(tracerName string, dirPath string, t *testing.T) {
 		if !strings.HasSuffix(file.Name(), ".json") {
 			continue
 		}
-		file := file // capture range variable
 		t.Run(camel(strings.TrimSuffix(file.Name(), ".json")), func(t *testing.T) {
 			t.Parallel()
 

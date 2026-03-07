@@ -21,8 +21,8 @@ import (
 	"container/heap"
 	"errors"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
 )
 
 // NodeResolver is used for looking up trie nodes before reaching into the real
@@ -122,7 +122,7 @@ type NodeIterator interface {
 	// reading from disk. In those cases, this resolver allows short circuiting
 	// accesses and returning them from memory.
 	//
-	// Before adding a similar mechanism to any other place in Gzond, consider
+	// Before adding a similar mechanism to any other place in Gqrl, consider
 	// making trie.Database an interface and wrapping at that level. It's a huge
 	// refactor, but it could be worth it if another occurrence arises.
 	AddResolver(NodeResolver)
@@ -658,11 +658,11 @@ func (it *differenceIterator) Error() error {
 
 type nodeIteratorHeap []NodeIterator
 
-func (h nodeIteratorHeap) Len() int            { return len(h) }
-func (h nodeIteratorHeap) Less(i, j int) bool  { return compareNodes(h[i], h[j]) < 0 }
-func (h nodeIteratorHeap) Swap(i, j int)       { h[i], h[j] = h[j], h[i] }
-func (h *nodeIteratorHeap) Push(x interface{}) { *h = append(*h, x.(NodeIterator)) }
-func (h *nodeIteratorHeap) Pop() interface{} {
+func (h nodeIteratorHeap) Len() int           { return len(h) }
+func (h nodeIteratorHeap) Less(i, j int) bool { return compareNodes(h[i], h[j]) < 0 }
+func (h nodeIteratorHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *nodeIteratorHeap) Push(x any)        { *h = append(*h, x.(NodeIterator)) }
+func (h *nodeIteratorHeap) Pop() any {
 	n := len(*h)
 	x := (*h)[n-1]
 	*h = (*h)[0 : n-1]

@@ -20,11 +20,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // BlockValidator is responsible for validating block headers and
@@ -123,17 +123,11 @@ func CalcGasLimit(parentGasLimit, desiredLimit uint64) uint64 {
 	}
 	// If we're outside our allowed gas range, we try to hone towards them
 	if limit < desiredLimit {
-		limit = parentGasLimit + delta
-		if limit > desiredLimit {
-			limit = desiredLimit
-		}
+		limit = min(parentGasLimit+delta, desiredLimit)
 		return limit
 	}
 	if limit > desiredLimit {
-		limit = parentGasLimit - delta
-		if limit < desiredLimit {
-			limit = desiredLimit
-		}
+		limit = max(parentGasLimit-delta, desiredLimit)
 	}
 	return limit
 }

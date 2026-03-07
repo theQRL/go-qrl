@@ -15,14 +15,13 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 //go:build !windows && !js
-// +build !windows,!js
 
 package metrics
 
 import (
 	syscall "golang.org/x/sys/unix"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // getProcessCPUTime retrieves the process' CPU time since program startup.

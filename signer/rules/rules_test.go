@@ -22,14 +22,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/signer/core"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/storage"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/signer/core"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/storage"
 )
 
 const JS = `
@@ -124,6 +124,7 @@ func initRuleEngine(js string) (*rulesetUI, error) {
 }
 
 func TestListRequest(t *testing.T) {
+	t.Parallel()
 	accs := make([]accounts.Account, 5)
 
 	for i := range accs {
@@ -152,14 +153,15 @@ func TestListRequest(t *testing.T) {
 }
 
 func TestSignTxRequest(t *testing.T) {
+	t.Parallel()
 	js := `
 	function ApproveTx(r){
 		console.log("transaction.from", r.transaction.from);
 		console.log("transaction.to", r.transaction.to);
 		console.log("transaction.value", r.transaction.value);
 		console.log("transaction.nonce", r.transaction.nonce);
-		if(r.transaction.from.toLowerCase()=="q000000000000000000000000000000000000000000001337"){ return "Approve"}
-		if(r.transaction.from.toLowerCase()=="q00000000000000000000000000000000000000000000dead"){ return "Reject"}
+		if(r.transaction.from.toLowerCase()=="q0000000000000000000000000000000000001337"){ return "Approve"}
+		if(r.transaction.from.toLowerCase()=="q000000000000000000000000000000000000dead"){ return "Reject"}
 	}`
 
 	r, err := initRuleEngine(js)
@@ -167,12 +169,12 @@ func TestSignTxRequest(t *testing.T) {
 		t.Errorf("Couldn't create evaluator %v", err)
 		return
 	}
-	to, err := mixAddr("Q00000000000000000000000000000000000000000000dead")
+	to, err := mixAddr("Q000000000000000000000000000000000000dead")
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	from, err := mixAddr("Q000000000000000000000000000000000000000000001337")
+	from, err := mixAddr("Q0000000000000000000000000000000000001337")
 
 	if err != nil {
 		t.Error(err)
@@ -244,6 +246,7 @@ func (d *dummyUI) OnSignerStartup(info core.StartupInfo) {
 
 // TestForwarding tests that the rule-engine correctly dispatches requests to the next caller
 func TestForwarding(t *testing.T) {
+	t.Parallel()
 	js := ""
 	ui := &dummyUI{make([]string, 0)}
 	jsBackend := storage.NewEphemeralStorage()
@@ -271,6 +274,7 @@ func TestForwarding(t *testing.T) {
 }
 
 func TestMissingFunc(t *testing.T) {
+	t.Parallel()
 	r, err := initRuleEngine(JS)
 	if err != nil {
 		t.Errorf("Couldn't create evaluator %v", err)
@@ -293,6 +297,7 @@ func TestMissingFunc(t *testing.T) {
 	t.Logf("Err %v", err)
 }
 func TestStorage(t *testing.T) {
+	t.Parallel()
 	js := `
 	function testStorage(){
 		storage.put("mykey", "myvalue")
@@ -418,8 +423,8 @@ const ExampleTxWindow = `
 `
 
 func dummyTx(value hexutil.Big) *core.SignTxRequest {
-	to, _ := mixAddr("Q00000000000000000000000000000000000000000000dead")
-	from, _ := mixAddr("Q00000000000000000000000000000000000000000000dead")
+	to, _ := mixAddr("Q000000000000000000000000000000000000dead")
+	from, _ := mixAddr("Q000000000000000000000000000000000000dead")
 	n := hexutil.Uint64(3)
 	gas := hexutil.Uint64(21000)
 	maxFeePerGas := hexutil.Big(*big.NewInt(2000000))
@@ -447,7 +452,7 @@ func dummyTxWithV(value uint64) *core.SignTxRequest {
 }
 
 func dummySigned(value *big.Int) *types.Transaction {
-	to, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000dead")
+	to, _ := common.NewAddressFromString("Q000000000000000000000000000000000000dead")
 	gas := uint64(21000)
 	gasFeeCap := big.NewInt(2000000)
 	data := make([]byte, 0)
@@ -462,6 +467,7 @@ func dummySigned(value *big.Int) *types.Transaction {
 }
 
 func TestLimitWindow(t *testing.T) {
+	t.Parallel()
 	r, err := initRuleEngine(ExampleTxWindow)
 	if err != nil {
 		t.Errorf("Couldn't create evaluator %v", err)
@@ -471,7 +477,7 @@ func TestLimitWindow(t *testing.T) {
 	v := new(big.Int).SetBytes(common.Hex2Bytes("0429D069189E0000"))
 	h := hexutil.Big(*v)
 	// The first three should succeed
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		unsigned := dummyTx(h)
 		resp, err := r.ApproveTx(unsigned)
 		if err != nil {
@@ -547,6 +553,7 @@ func (d *dontCallMe) OnApprovedTx(tx qrlapi.SignTransactionResult) {
 // if it does, that would be bad since developers may rely on that to store data,
 // instead of using the disk-based data storage
 func TestContextIsCleared(t *testing.T) {
+	t.Parallel()
 	js := `
 	function ApproveTx(){
 		if (typeof foobar == 'undefined') {
@@ -578,11 +585,12 @@ func TestContextIsCleared(t *testing.T) {
 }
 
 func TestSignData(t *testing.T) {
+	t.Parallel()
 	js := `function ApproveListing(){
     return "Approve"
 }
 function ApproveSignData(r){
-    if( r.address.toLowerCase() == "q00000000694267f14675d7e1b9494fd8d72fefe1755710fa")
+    if( r.address.toLowerCase() == "q694267f14675d7e1b9494fd8d72fefe1755710fa")
     {
         if(r.messages[0].value.indexOf("bazonk") >= 0){
             return "Approve"
@@ -598,7 +606,7 @@ function ApproveSignData(r){
 	}
 	message := "baz bazonk foo"
 	hash, rawdata := accounts.TextAndHash([]byte(message))
-	addr, _ := mixAddr("Q00000000694267f14675d7e1b9494fd8d72fefe1755710fa")
+	addr, _ := mixAddr("Q694267f14675d7e1b9494fd8d72fefe1755710fa")
 
 	t.Logf("address %v %v\n", addr.String(), addr.Original())
 

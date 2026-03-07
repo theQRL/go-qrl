@@ -20,10 +20,10 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
-	"github.com/theQRL/go-zond/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
 )
 
 var (

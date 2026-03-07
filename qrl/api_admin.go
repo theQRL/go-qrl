@@ -24,9 +24,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // AdminAPI is the collection of QRL full node related APIs for node

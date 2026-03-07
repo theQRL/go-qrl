@@ -22,8 +22,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/internal"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/internal"
 )
 
 func TestMain(m *testing.M) {
@@ -36,7 +36,7 @@ func TestCollector(t *testing.T) {
 		c    = newCollector()
 		want string
 	)
-	internal.ExampleMetrics().Each(func(name string, i interface{}) {
+	internal.ExampleMetrics().Each(func(name string, i any) {
 		c.Add(name, i)
 	})
 	if wantB, err := os.ReadFile("./testdata/prometheus.want"); err != nil {

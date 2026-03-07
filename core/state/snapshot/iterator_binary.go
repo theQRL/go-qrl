@@ -19,7 +19,7 @@ package snapshot
 import (
 	"bytes"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // binaryIterator is a simplistic iterator to step over the accounts or storage

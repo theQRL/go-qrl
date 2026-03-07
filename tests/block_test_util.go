@@ -26,20 +26,19 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 // A BlockTest checks handling of entire blocks.
@@ -86,15 +85,6 @@ type btHeader struct {
 	Timestamp        uint64
 	BaseFeePerGas    *big.Int
 	WithdrawalsRoot  *common.Hash
-}
-
-type btHeaderMarshaling struct {
-	ExtraData     hexutil.Bytes
-	Number        *math.HexOrDecimal256
-	GasLimit      math.HexOrDecimal64
-	GasUsed       math.HexOrDecimal64
-	Timestamp     math.HexOrDecimal64
-	BaseFeePerGas *math.HexOrDecimal256
 }
 
 func (t *BlockTest) Run(snapshotter bool, scheme string, tracer vm.QRVMLogger) error {

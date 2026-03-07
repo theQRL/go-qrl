@@ -19,7 +19,7 @@ package rlp
 import (
 	"testing"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // TestIterator tests some basic things about the ListIterator. A more

@@ -25,10 +25,10 @@ import (
 	"testing"
 
 	"github.com/holiman/uint256"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/params"
 )
 
 type TwoOperandTestcase struct {
@@ -45,14 +45,6 @@ type twoOperandParams struct {
 var alphabetSoup = "ABCDEF090807060504030201ffffffffffffffffffffffffffffffffffffffff"
 var commonParams []*twoOperandParams
 var twoOpMethods map[string]executionFunc
-
-type contractRef struct {
-	addr common.Address
-}
-
-func (c contractRef) Address() common.Address {
-	return c.addr
-}
 
 func init() {
 	// Params is a list of common edgecases that should be used for some common tests
@@ -302,15 +294,13 @@ func opBenchmark(bench *testing.B, op executionFunc, args ...string) {
 		intArgs[i] = new(uint256.Int).SetBytes(common.Hex2Bytes(arg))
 	}
 	pc := uint64(0)
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
+	for bench.Loop() {
 		for _, arg := range intArgs {
 			stack.push(arg)
 		}
 		op(&pc, qrvmInterpreter, scope)
 		stack.pop()
 	}
-	bench.StopTimer()
 
 	for i, arg := range args {
 		want := new(uint256.Int).SetBytes(common.Hex2Bytes(arg))
@@ -568,8 +558,7 @@ func BenchmarkOpMstore(bench *testing.B) {
 	memStart := new(uint256.Int)
 	value := new(uint256.Int).SetUint64(0x1337)
 
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
+	for bench.Loop() {
 		stack.push(value)
 		stack.push(memStart)
 		opMstore(&pc, qrvmInterpreter, &ScopeContext{mem, stack, nil})
@@ -588,8 +577,7 @@ func BenchmarkOpKeccak256(bench *testing.B) {
 	pc := uint64(0)
 	start := new(uint256.Int)
 
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
+	for bench.Loop() {
 		stack.push(uint256.NewInt(32))
 		stack.push(start)
 		opKeccak256(&pc, qrvmInterpreter, &ScopeContext{mem, stack, nil})
@@ -606,46 +594,46 @@ func TestCreate2Addresses(t *testing.T) {
 
 	for i, tt := range []testcase{
 		{
-			origin:   "Q000000000000000000000000000000000000000000000000",
+			origin:   "Q0000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0x00",
-			expected: "QA58B4B9bd797A6E711e0FF2AF1644ABA7e6F51d3B0D4E812",
+			expected: "Q4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38",
 		},
 		{
-			origin:   "Qdeadbeef0000000000000000000000000000000000000000",
+			origin:   "Qdeadbeef00000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0x00",
-			expected: "Q2DCad6c777828a3dbffF3aa29d69e5BaaC225311FE9C5e33",
+			expected: "QB928f69Bb1D91Cd65274e3c79d8986362984fDA3",
 		},
 		{
-			origin:   "Qdeadbeef0000000000000000000000000000000000000000",
+			origin:   "Qdeadbeef00000000000000000000000000000000",
 			salt:     "0xfeed000000000000000000000000000000000000",
 			code:     "0x00",
-			expected: "Q6A2F2E54B2dc1004B23A1c769Fbfc0A1B8024B71860731fD",
+			expected: "QD04116cDd17beBE565EB2422F2497E06cC1C9833",
 		},
 		{
-			origin:   "Q000000000000000000000000000000000000000000000000",
+			origin:   "Q0000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0xdeadbeef",
-			expected: "Q096026b120d53A42BbC258F5b50aa5646A143B4Bda67282F",
+			expected: "Q70f2b2914A2a4b783FaEFb75f459A580616Fcb5e",
 		},
 		{
-			origin:   "Q0000000000000000000000000000000000000000deadbeef",
+			origin:   "Q00000000000000000000000000000000deadbeef",
 			salt:     "0xcafebabe",
 			code:     "0xdeadbeef",
-			expected: "Q8e1456cF6C74322AAE4c582F66A41B9F68253714E0B30e04",
+			expected: "Q60f3f640a8508fC6a86d45DF051962668E1e8AC7",
 		},
 		{
-			origin:   "Q0000000000000000000000000000000000000000deadbeef",
+			origin:   "Q00000000000000000000000000000000deadbeef",
 			salt:     "0xcafebabe",
 			code:     "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-			expected: "Qe7B2B2c5b91bCeeb86d41B1Df6ED0c48C2d82EFCBBC89d89",
+			expected: "Q1d8bfDC5D46DC4f61D6b6115972536eBE6A8854C",
 		},
 		{
-			origin:   "Q000000000000000000000000000000000000000000000000",
+			origin:   "Q0000000000000000000000000000000000000000",
 			salt:     "0x0000000000000000000000000000000000000000",
 			code:     "0x",
-			expected: "Q3fF7334E1C900Fc48f4d100DD4A3dB230315C50C0A734985",
+			expected: "QE33C0C7F7df4809055C3ebA6c09CFe4BaF1BD9e0",
 		},
 	} {
 		origin, _ := common.NewAddressFromString(tt.origin)

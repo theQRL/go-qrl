@@ -28,21 +28,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/cmd/qrvm/internal/compiler"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/core/vm/runtime"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/tracers/logger"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/core/vm/runtime"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/tracers/logger"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
 	"github.com/urfave/cli/v2"
 )
 
@@ -84,7 +82,7 @@ type execStats struct {
 func timedExec(bench bool, execFunc func() ([]byte, uint64, error)) (output []byte, gasLeft uint64, stats execStats, err error) {
 	if bench {
 		result := testing.Benchmark(func(b *testing.B) {
-			for i := 0; i < b.N; i++ {
+			for b.Loop() {
 				output, gasLeft, err = execFunc()
 			}
 		})
@@ -109,9 +107,6 @@ func timedExec(bench bool, execFunc func() ([]byte, uint64, error)) (output []by
 }
 
 func runCmd(ctx *cli.Context) error {
-	glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(false)))
-	glogger.Verbosity(log.Lvl(ctx.Int(VerbosityFlag.Name)))
-	log.Root().SetHandler(glogger)
 	logconfig := &logger.Config{
 		EnableMemory:     !ctx.Bool(DisableMemoryFlag.Name),
 		DisableStack:     ctx.Bool(DisableStackFlag.Name),
@@ -210,17 +205,6 @@ func runCmd(ctx *cli.Context) error {
 			os.Exit(1)
 		}
 		code = common.FromHex(string(hexcode))
-	} else if fn := ctx.Args().First(); len(fn) > 0 {
-		// EASM-file to compile
-		src, err := os.ReadFile(fn)
-		if err != nil {
-			return err
-		}
-		bin, err := compiler.Compile(fn, src, false)
-		if err != nil {
-			return err
-		}
-		code = common.Hex2Bytes(bin)
 	}
 	initialGas := ctx.Uint64(GasFlag.Name)
 	if genesisConfig.GasLimit != 0 {

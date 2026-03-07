@@ -21,15 +21,15 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 // testAccount is the data associated with an account used by the state tests.
@@ -56,7 +56,7 @@ func makeTestState(scheme string) (qrldb.Database, Database, *trie.Database, com
 
 	// Fill it with some arbitrary data
 	var accounts []*testAccount
-	for i := byte(0); i < 96; i++ {
+	for i := range byte(96) {
 		obj := state.GetOrNewStateObject(common.BytesToAddress([]byte{i}))
 		acc := &testAccount{address: common.BytesToAddress([]byte{i})}
 
@@ -71,7 +71,7 @@ func makeTestState(scheme string) (qrldb.Database, Database, *trie.Database, com
 			acc.code = []byte{i, i, i, i, i}
 		}
 		if i%5 == 0 {
-			for j := byte(0); j < 5; j++ {
+			for j := range byte(5) {
 				hash := crypto.Keccak256Hash([]byte{i, i, i, i, i, j, j})
 				obj.SetState(hash, hash)
 			}

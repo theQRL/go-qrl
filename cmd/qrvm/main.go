@@ -22,8 +22,8 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/theQRL/go-zond/cmd/qrvm/internal/t8ntool"
-	"github.com/theQRL/go-zond/internal/flags"
+	"github.com/theQRL/go-qrl/cmd/qrvm/internal/t8ntool"
+	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/urfave/cli/v2"
 )
 
@@ -207,8 +207,6 @@ func init() {
 		DisableReturnDataFlag,
 	}
 	app.Commands = []*cli.Command{
-		compileCommand,
-		disasmCommand,
 		runCommand,
 		blockTestCommand,
 		stateTestCommand,

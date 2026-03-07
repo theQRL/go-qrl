@@ -17,7 +17,7 @@
 package vm
 
 import (
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // LookupInstructionSet returns the instructionset for the fork configured by

@@ -16,7 +16,7 @@
 
 package downloader
 
-import "github.com/theQRL/go-zond/core/types"
+import "github.com/theQRL/go-qrl/core/types"
 
 type DoneEvent struct {
 	Latest *types.Header

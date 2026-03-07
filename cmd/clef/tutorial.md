@@ -49,8 +49,6 @@ $ clef --keystore ~/.qrl/rinkeby/keystore --chainid 4
 INFO [07-01|11:00:46.385] Starting signer                          chainid=4 keystore=$HOME/.qrl/rinkeby/keystore light-kdf=false advanced=false
 DEBUG[07-01|11:00:46.389] FS scan times                            list=3.521941ms set=9.017µs diff=4.112µs
 DEBUG[07-01|11:00:46.391] Ledger support enabled
-DEBUG[07-01|11:00:46.391] Trezor support enabled via HID
-DEBUG[07-01|11:00:46.391] Trezor support enabled via WebUSB
 INFO [07-01|11:00:46.391] Audit logs configured                    file=audit.log
 DEBUG[07-01|11:00:46.392] IPC registered                           namespace=account
 INFO [07-01|11:00:46.392] IPC endpoint opened                      url=$HOME/.clef/clef.ipc
@@ -100,9 +98,9 @@ or
 {"jsonrpc":"2.0","id":1,"error":{"code":-32000,"message":"Request denied"}}
 ```
 
-Apart from listing accounts, you can also *request* creating a new account and signing transactions and data. You can find the available methods in the Clef [External API Spec](https://github.com/theQRL/go-zond/tree/master/cmd/clef#external-api-1) and the [External API Changelog](https://github.com/theQRL/go-zond/blob/master/cmd/clef/extapi_changelog.md).
+Apart from listing accounts, you can also *request* creating a new account and signing transactions and data. You can find the available methods in the Clef [External API Spec](https://github.com/theQRL/go-qrl/tree/master/cmd/clef#external-api-1) and the [External API Changelog](https://github.com/theQRL/go-qrl/blob/master/cmd/clef/extapi_changelog.md).
 
-*Note, the number of things you can do from the External API is deliberately small, since we want to limit the power of remote calls by as much as possible! Clef has an [Internal API](https://github.com/theQRL/go-zond/tree/master/cmd/clef#ui-api-1) too for the UI (User Interface) which is much richer and can support custom interfaces on top. But that's out of scope here.*
+*Note, the number of things you can do from the External API is deliberately small, since we want to limit the power of remote calls by as much as possible! Clef has an [Internal API](https://github.com/theQRL/go-qrl/tree/master/cmd/clef#ui-api-1) too for the UI (User Interface) which is much richer and can support custom interfaces on top. But that's out of scope here.*
 
 ## Automatic rules
 
@@ -137,8 +135,6 @@ INFO [07-01|13:39:49.726] Rule engine configured                   file=rules.js
 INFO [07-01|13:39:49.726] Starting signer                          chainid=4 keystore=$HOME/.qrl/rinkeby/keystore light-kdf=false advanced=false
 DEBUG[07-01|13:39:49.726] FS scan times                            list=35.15µs set=4.251µs diff=2.766µs
 DEBUG[07-01|13:39:49.727] Ledger support enabled
-DEBUG[07-01|13:39:49.727] Trezor support enabled via HID
-DEBUG[07-01|13:39:49.727] Trezor support enabled via WebUSB
 INFO [07-01|13:39:49.728] Audit logs configured                    file=audit.log
 DEBUG[07-01|13:39:49.728] IPC registered                           namespace=account
 INFO [07-01|13:39:49.728] IPC endpoint opened                      url=$HOME/.clef/clef.ipc
@@ -227,7 +223,7 @@ In this example:
     - Auto-rejected if the message does not contain `bazonk`,
 - Any other requests will be passed along for manual confirmation.
 
-*Note, to make this example work, please use you own accounts. You can create a new account either via Clef or the traditional account CLI tools. If the latter was chosen, make sure both Clef and Gzond use the same keystore by specifying `--keystore path/to/your/keystore` when running Clef.*
+*Note, to make this example work, please use you own accounts. You can create a new account either via Clef or the traditional account CLI tools. If the latter was chosen, make sure both Clef and Gqrl use the same keystore by specifying `--keystore path/to/your/keystore` when running Clef.*
 
 Attest the new rule file so that Clef will accept loading it:
 
@@ -250,8 +246,6 @@ INFO [07-01|14:12:41.636] Rule engine configured                   file=rules.js
 INFO [07-01|14:12:41.636] Starting signer                          chainid=4 keystore=$HOME/.qrl/rinkeby/keystore light-kdf=false advanced=false
 DEBUG[07-01|14:12:41.636] FS scan times                            list=46.722µs set=4.47µs diff=2.157µs
 DEBUG[07-01|14:12:41.637] Ledger support enabled
-DEBUG[07-01|14:12:41.637] Trezor support enabled via HID
-DEBUG[07-01|14:12:41.638] Trezor support enabled via WebUSB
 INFO [07-01|14:12:41.638] Audit logs configured                    file=audit.log
 DEBUG[07-01|14:12:41.638] IPC registered                           namespace=account
 INFO [07-01|14:12:41.638] IPC endpoint opened                      url=$HOME/.clef/clef.ipc
@@ -288,24 +282,24 @@ t=2019-07-01T15:52:23+0300 lvl=info msg=SignData   api=signer type=request  meta
 t=2019-07-01T15:52:23+0300 lvl=info msg=SignData   api=signer type=response data=                                     error="Request denied"
 ```
 
-For more details on writing automatic rules, please see the [rules spec](https://github.com/theQRL/go-zond/blob/master/cmd/clef/rules.md).
+For more details on writing automatic rules, please see the [rules spec](https://github.com/theQRL/go-qrl/blob/master/cmd/clef/rules.md).
 
-## Gzond integration
+## Gqrl integration
 
 Of course, as awesome as Clef is, it's not feasible to interact with it via JSON RPC by hand. Long term, we're hoping to convince the general Ethereum community to support Clef as a general signer (it's only 3-5 methods), thus allowing your favorite DApp, Metamask, MyCrypto, etc to request signatures directly.
 
-Until then however, we're trying to pave the way via Gzond. Gzond v1.9.0 has built in support via `--signer <API endpoint>` for using a local or remote Clef instance as an account backend!
+Until then however, we're trying to pave the way via Gqrl. Gqrl v1.9.0 has built in support via `--signer <API endpoint>` for using a local or remote Clef instance as an account backend!
 
-We can try this by running Clef with our previous rules on Rinkeby (for now it's a good idea to allow auto-listing accounts, since Gzond likes to retrieve them once in a while).
+We can try this by running Clef with our previous rules on Rinkeby (for now it's a good idea to allow auto-listing accounts, since Gqrl likes to retrieve them once in a while).
 
 ```text
 $ clef --keystore ~/.qrl/rinkeby/keystore --chainid 4 --rules rules.js
 ```
 
-In a different window we can start Gzond, list our accounts, even list our wallets to see where the accounts originate from:
+In a different window we can start Gqrl, list our accounts, even list our wallets to see where the accounts originate from:
 
 ```text
-$ gzond --rinkeby --signer=~/.clef/clef.ipc console
+$ gqrl --rinkeby --signer=~/.clef/clef.ipc console
 
 > qrl.accounts
 ["Qd9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3", "Q086278a6c067775f71d6b2bb1856db6e28c30418"]
@@ -351,4 +345,4 @@ Approve? [y/N]:
 
 :boom:
 
-*Note, if you enable the external signer backend in Gzond, all other account management is disabled. This is because long term we want to remove account management from Gzond.*
+*Note, if you enable the external signer backend in Gqrl, all other account management is disabled. This is because long term we want to remove account management from Gqrl.*

@@ -22,13 +22,13 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie/testutil"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie/testutil"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 // randomStateSet generates a random state change set.
@@ -37,10 +37,10 @@ func randomStateSet(n int) *triestate.Set {
 		accounts = make(map[common.Address][]byte)
 		storages = make(map[common.Address]map[common.Hash][]byte)
 	)
-	for i := 0; i < n; i++ {
+	for range n {
 		addr := testutil.RandomAddress()
 		storages[addr] = make(map[common.Hash][]byte)
-		for j := 0; j < 3; j++ {
+		for range 3 {
 			v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(testutil.RandBytes(32)))
 			storages[addr][testutil.RandomHash()] = v
 		}
@@ -59,7 +59,7 @@ func makeHistories(n int) []*history {
 		parent = types.EmptyRootHash
 		result []*history
 	)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		root := testutil.RandomHash()
 		h := newHistory(root, parent, uint64(i), randomStateSet(3))
 		parent = root
@@ -133,7 +133,7 @@ func TestTruncateHeadHistory(t *testing.T) {
 	)
 	defer freezer.Close()
 
-	for i := 0; i < len(hs); i++ {
+	for i := range hs {
 		accountData, storageData, accountIndex, storageIndex := hs[i].encode()
 		rawdb.WriteStateHistory(freezer, uint64(i+1), hs[i].meta.encode(), accountIndex, storageIndex, accountData, storageData)
 		rawdb.WriteStateID(db, hs[i].meta.root, uint64(i+1))
@@ -161,7 +161,7 @@ func TestTruncateTailHistory(t *testing.T) {
 	)
 	defer freezer.Close()
 
-	for i := 0; i < len(hs); i++ {
+	for i := range hs {
 		accountData, storageData, accountIndex, storageIndex := hs[i].encode()
 		rawdb.WriteStateHistory(freezer, uint64(i+1), hs[i].meta.encode(), accountIndex, storageIndex, accountData, storageData)
 		rawdb.WriteStateID(db, hs[i].meta.root, uint64(i+1))
@@ -204,7 +204,7 @@ func TestTruncateTailHistories(t *testing.T) {
 		)
 		defer freezer.Close()
 
-		for i := 0; i < len(hs); i++ {
+		for i := range hs {
 			accountData, storageData, accountIndex, storageIndex := hs[i].encode()
 			rawdb.WriteStateHistory(freezer, uint64(i+1), hs[i].meta.encode(), accountIndex, storageIndex, accountData, storageData)
 			rawdb.WriteStateID(db, hs[i].meta.root, uint64(i+1))
@@ -249,7 +249,7 @@ func compareList[k comparable](a, b []k) bool {
 	if len(a) != len(b) {
 		return false
 	}
-	for i := 0; i < len(a); i++ {
+	for i := range a {
 		if a[i] != b[i] {
 			return false
 		}

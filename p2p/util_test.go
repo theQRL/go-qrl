@@ -20,7 +20,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
+	"github.com/theQRL/go-qrl/common/mclock"
 )
 
 func TestExpHeap(t *testing.T) {

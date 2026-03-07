@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // This test uses the admin_startRPC and admin_startWS APIs,
@@ -244,7 +244,6 @@ func TestStartRPC(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 

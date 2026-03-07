@@ -26,15 +26,15 @@ import (
 	// "math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/params"
 
-	// "github.com/theQRL/go-zond/core"
-	// "github.com/theQRL/go-zond/core/types"
-	// "github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
+	// "github.com/theQRL/go-qrl/core"
+	// "github.com/theQRL/go-qrl/core/types"
+	// "github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // TestCreation tests that different genesis and fork rule combinations result in
@@ -55,7 +55,7 @@ func TestCreation(t *testing.T) {
 			params.MainnetChainConfig,
 			core.DefaultGenesisBlock().ToBlock(),
 			[]testcase{
-				{0, 0, ID{Hash: checksumToBytes(0x1dc04dfb), Next: 0}},
+				{0, 0, ID{Hash: checksumToBytes(0x6170f487), Next: 0}},
 				// NOTE(rgeraldes24): revisit upon new fork
 				/*
 					{0, 0, ID{Hash: checksumToBytes(0xfc64ec04), Next: 1150000}},                    // Unsynced

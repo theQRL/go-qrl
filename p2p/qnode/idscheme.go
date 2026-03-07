@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnr"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnr"
+	"github.com/theQRL/go-qrl/rlp"
 	"golang.org/x/crypto/sha3"
 )
 

@@ -29,9 +29,9 @@ import (
 	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // Minimum amount of time between cache reloads. This limit applies if the platform does
@@ -44,22 +44,21 @@ func byURL(a, b accounts.Account) int {
 	return a.URL.Cmp(b.URL)
 }
 
-// AmbiguousAddrError is returned when attempting to unlock
-// an address for which more than one file exists.
+// AmbiguousAddrError is returned when an address matches multiple files.
 type AmbiguousAddrError struct {
 	Addr    common.Address
 	Matches []accounts.Account
 }
 
 func (err *AmbiguousAddrError) Error() string {
-	files := ""
+	var files strings.Builder
 	for i, a := range err.Matches {
-		files += a.URL.Path
+		files.WriteString(a.URL.Path)
 		if i < len(err.Matches)-1 {
-			files += ", "
+			files.WriteString(", ")
 		}
 	}
-	return fmt.Sprintf("multiple keys match address (%s)", files)
+	return fmt.Sprintf("multiple keys match address (%s)", files.String())
 }
 
 // accountCache is a live index of all accounts in the keystore.

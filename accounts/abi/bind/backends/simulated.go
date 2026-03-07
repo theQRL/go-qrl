@@ -20,29 +20,30 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	gomath "math"
 	"math/big"
 	"sync"
 	"time"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/accounts/abi/bind"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/filters"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/accounts/abi/bind"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/filters"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // This nil assignment ensures at compile time that SimulatedBackend implements bind.ContractBackend.
@@ -428,7 +429,7 @@ func (e *revertError) ErrorCode() int {
 }
 
 // ErrorData returns the hex encoded revert reason.
-func (e *revertError) ErrorData() interface{} {
+func (e *revertError) ErrorData() any {
 	return e.reason
 }
 
@@ -647,7 +648,7 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call qrl.CallMsg, h
 	txContext := core.NewQRVMTxContext(msg)
 	qrvmContext := core.NewQRVMBlockContext(header, b.blockchain, nil)
 	vmEnv := vm.NewQRVM(qrvmContext, txContext, stateDB, b.config, vm.Config{NoBaseFee: true})
-	gasPool := new(core.GasPool).AddGas(math.MaxUint64)
+	gasPool := new(core.GasPool).AddGas(gomath.MaxUint64)
 
 	return core.ApplyMessage(vmEnv, msg, gasPool)
 }

@@ -20,15 +20,15 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // TODO(now.youtrack.cloud/issue/TGZ-16)
 // Genesis hashes to enforce below configs on.
 var (
-	MainnetGenesisHash = common.HexToHash("0xe2f812bafa94979396ec39bd8da470ef727d44bc33fabae3c522aed81cdb886b")
-	BetaNetGenesisHash = common.HexToHash("0x3651892d864aac91e85a0a7c0c8ac626853ce5f9772bf13d6bc1570de0a0f919")
-	TestnetGenesisHash = common.HexToHash("0x4a638396fbb203958c0c02bbef68e390a545a6315ed0dce924a5fe404b16c6e0")
+	MainnetGenesisHash = common.HexToHash("0xb3de630542cf9acf842e24f428c7c21b7824b38a7718a632e424b58ba0f562c6")
+	BetaNetGenesisHash = common.HexToHash("0xab0c2cf4bd9bc1d3bad049a5ae94725177bf2b95f45115415e9941f218c661b1")
+	TestnetGenesisHash = common.HexToHash("0x117f3b8032b4ba0efa6cbd48445578bd721b4238e91724e47ce19cde1a8a4dbf")
 )
 
 // NOTE(rgeraldes24): unused atm
@@ -130,7 +130,7 @@ func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, time u
 	return lasterr
 }
 
-// CheckConfigForkOrder checks that we don't "skip" any forks, gzond isn't pluggable enough
+// CheckConfigForkOrder checks that we don't "skip" any forks, gqrl isn't pluggable enough
 // to guarantee that forks can be implemented in a different order than on official networks
 func (c *ChainConfig) CheckConfigForkOrder() error {
 	type fork struct {
@@ -196,22 +196,6 @@ func (c *ChainConfig) ElasticityMultiplier() uint64 {
 	return DefaultElasticityMultiplier
 }
 
-// isForkBlockIncompatible returns true if a fork scheduled at block s1 cannot be
-// rescheduled to block s2 because head is already past the fork.
-func isForkBlockIncompatible(s1, s2, head *big.Int) bool {
-	return (isBlockForked(s1, head) || isBlockForked(s2, head)) && !configBlockEqual(s1, s2)
-}
-
-// isBlockForked returns whether a fork scheduled at block s is active at the
-// given head block. Whilst this method is the same as isTimestampForked, they
-// are explicitly separate for clearer reading.
-func isBlockForked(s, head *big.Int) bool {
-	if s == nil || head == nil {
-		return false
-	}
-	return s.Cmp(head) <= 0
-}
-
 func configBlockEqual(x, y *big.Int) bool {
 	if x == nil {
 		return y == nil
@@ -220,32 +204,6 @@ func configBlockEqual(x, y *big.Int) bool {
 		return x == nil
 	}
 	return x.Cmp(y) == 0
-}
-
-// isForkTimestampIncompatible returns true if a fork scheduled at timestamp s1
-// cannot be rescheduled to timestamp s2 because head is already past the fork.
-func isForkTimestampIncompatible(s1, s2 *uint64, head uint64) bool {
-	return (isTimestampForked(s1, head) || isTimestampForked(s2, head)) && !configTimestampEqual(s1, s2)
-}
-
-// isTimestampForked returns whether a fork scheduled at timestamp s is active
-// at the given head timestamp. Whilst this method is the same as isBlockForked,
-// they are explicitly separate for clearer reading.
-func isTimestampForked(s *uint64, head uint64) bool {
-	if s == nil {
-		return false
-	}
-	return *s <= head
-}
-
-func configTimestampEqual(x, y *uint64) bool {
-	if x == nil {
-		return y == nil
-	}
-	if y == nil {
-		return x == nil
-	}
-	return *x == *y
 }
 
 // ConfigCompatError is raised if the locally-stored blockchain is initialised with a
@@ -284,28 +242,6 @@ func newBlockCompatError(what string, storedblock, newblock *big.Int) *ConfigCom
 	}
 	if rew != nil && rew.Sign() > 0 {
 		err.RewindToBlock = rew.Uint64() - 1
-	}
-	return err
-}
-
-func newTimestampCompatError(what string, storedtime, newtime *uint64) *ConfigCompatError {
-	var rew *uint64
-	switch {
-	case storedtime == nil:
-		rew = newtime
-	case newtime == nil || *storedtime < *newtime:
-		rew = storedtime
-	default:
-		rew = newtime
-	}
-	err := &ConfigCompatError{
-		What:         what,
-		StoredTime:   storedtime,
-		NewTime:      newtime,
-		RewindToTime: 0,
-	}
-	if rew != nil {
-		err.RewindToTime = *rew - 1
 	}
 	return err
 }

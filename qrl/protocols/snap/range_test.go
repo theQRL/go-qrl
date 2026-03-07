@@ -19,7 +19,7 @@ package snap
 import (
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // Tests that given a starting hash and a density, the hash ranger can correctly

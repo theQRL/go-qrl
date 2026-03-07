@@ -19,7 +19,7 @@ package state
 import (
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // journalEntry is a modification entry in the state change journal that can be

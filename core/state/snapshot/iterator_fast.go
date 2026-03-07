@@ -22,7 +22,7 @@ import (
 	"slices"
 	"sort"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // weightedIterator is a iterator with an assigned weight. It is used to prioritise

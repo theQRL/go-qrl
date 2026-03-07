@@ -17,47 +17,43 @@ const epsilonPercentile = .00000000001
 func BenchmarkCompute1000(b *testing.B) {
 	s := make([]int64, 1000)
 	var sum int64
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 		sum += int64(i)
 	}
 	mean := float64(sum) / float64(len(s))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		SampleVariance(mean, s)
 	}
 }
 func BenchmarkCompute1000000(b *testing.B) {
 	s := make([]int64, 1000000)
 	var sum int64
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 		sum += int64(i)
 	}
 	mean := float64(sum) / float64(len(s))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		SampleVariance(mean, s)
 	}
 }
 func BenchmarkCopy1000(b *testing.B) {
 	s := make([]int64, 1000)
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sCopy := make([]int64, len(s))
 		copy(sCopy, s)
 	}
 }
 func BenchmarkCopy1000000(b *testing.B) {
 	s := make([]int64, 1000000)
-	for i := 0; i < len(s); i++ {
+	for i := range s {
 		s[i] = int64(i)
 	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		sCopy := make([]int64, len(s))
 		copy(sCopy, s)
 	}
@@ -87,13 +83,6 @@ func BenchmarkUniformSample1028(b *testing.B) {
 	benchmarkSample(b, NewUniformSample(1028))
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 func TestExpDecaySample(t *testing.T) {
 	for _, tc := range []struct {
 		reservoirSize int
@@ -105,7 +94,7 @@ func TestExpDecaySample(t *testing.T) {
 		{100, 0.99, 1000},
 	} {
 		sample := NewExpDecaySample(tc.reservoirSize, tc.alpha)
-		for i := 0; i < tc.updates; i++ {
+		for i := range tc.updates {
 			sample.Update(int64(i))
 		}
 		snap := sample.Snapshot()
@@ -133,17 +122,17 @@ func TestExpDecaySample(t *testing.T) {
 // effectively freezing the set of samples until a rescale step happens.
 func TestExpDecaySampleNanosecondRegression(t *testing.T) {
 	sw := NewExpDecaySample(100, 0.99)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		sw.Update(10)
 	}
 	time.Sleep(1 * time.Millisecond)
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		sw.Update(20)
 	}
 	s := sw.Snapshot()
 	v := s.(*sampleSnapshot).values
 	avg := float64(0)
-	for i := 0; i < len(v); i++ {
+	for i := range v {
 		avg += float64(v[i])
 	}
 	avg /= float64(len(v))
@@ -185,7 +174,7 @@ func TestExpDecaySampleStatistics(t *testing.T) {
 
 func TestUniformSample(t *testing.T) {
 	sw := NewUniformSample(100)
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		sw.Update(int64(i))
 	}
 	s := sw.Snapshot()
@@ -210,14 +199,14 @@ func TestUniformSample(t *testing.T) {
 func TestUniformSampleIncludesTail(t *testing.T) {
 	sw := NewUniformSample(100)
 	max := 100
-	for i := 0; i < max; i++ {
+	for i := range max {
 		sw.Update(int64(i))
 	}
 	s := sw.Snapshot()
 	v := s.(*sampleSnapshot).values
 	sum := 0
 	exp := (max - 1) * max / 2
-	for i := 0; i < len(v); i++ {
+	for i := range v {
 		sum += int(v[i])
 	}
 	if exp != sum {
@@ -247,11 +236,9 @@ func benchmarkSample(b *testing.B, s Sample) {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 	pauseTotalNs := memStats.PauseTotalNs
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		s.Update(1)
 	}
-	b.StopTimer()
 	runtime.GC()
 	runtime.ReadMemStats(&memStats)
 	b.Logf("GC cost: %d ns/op", int(memStats.PauseTotalNs-pauseTotalNs)/b.N)
@@ -321,7 +308,7 @@ func TestUniformSampleConcurrentUpdateCount(t *testing.T) {
 		t.Skip("skipping in short mode")
 	}
 	s := NewUniformSample(100)
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		s.Update(int64(i))
 	}
 	quit := make(chan struct{})
@@ -338,7 +325,7 @@ func TestUniformSampleConcurrentUpdateCount(t *testing.T) {
 			}
 		}
 	}()
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		s.Snapshot().Count()
 		time.Sleep(5 * time.Millisecond)
 	}
@@ -348,12 +335,11 @@ func TestUniformSampleConcurrentUpdateCount(t *testing.T) {
 func BenchmarkCalculatePercentiles(b *testing.B) {
 	pss := []float64{0.5, 0.75, 0.95, 0.99, 0.999, 0.9999}
 	var vals []int64
-	for i := 0; i < 1000; i++ {
+	for range 1000 {
 		vals = append(vals, int64(rand.Int31()))
 	}
 	v := make([]int64, len(vals))
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		copy(v, vals)
 		_ = CalculatePercentiles(v, pss)
 	}

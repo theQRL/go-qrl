@@ -19,21 +19,22 @@ package state
 
 import (
 	"fmt"
+	"maps"
 	"math/big"
 	"sort"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/trienode"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/trienode"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 const (
@@ -648,7 +649,7 @@ func (s *StateDB) Copy() *StateDB {
 	}
 	// Copy the dirty states, logs, and preimages
 	for addr := range s.journal.dirties {
-		// As documented [here](https://github.com/theQRL/go-zond/pull/16485#issuecomment-380438527),
+		// As documented [here](https://github.com/theQRL/go-qrl/pull/16485#issuecomment-380438527),
 		// and in the Finalise-method, there is a case where an object is in the journal but not
 		// in the stateObjects: OOG after touch on ripeMD prior to Byzantium. Thus, we need to check for
 		// nil
@@ -679,9 +680,7 @@ func (s *StateDB) Copy() *StateDB {
 		state.stateObjectsDirty[addr] = struct{}{}
 	}
 	// Deep copy the destruction markers.
-	for addr, value := range s.stateObjectsDestruct {
-		state.stateObjectsDestruct[addr] = value
-	}
+	maps.Copy(state.stateObjectsDestruct, s.stateObjectsDestruct)
 	// Deep copy the state changes made in the scope of block
 	// along with their original values.
 	state.accounts = copySet(s.accounts)
@@ -699,9 +698,7 @@ func (s *StateDB) Copy() *StateDB {
 		state.logs[hash] = cpy
 	}
 	// Deep copy the preimages occurred in the scope of block
-	for hash, preimage := range s.preimages {
-		state.preimages[hash] = preimage
-	}
+	maps.Copy(state.preimages, s.preimages)
 	// Do we need to copy the access list?
 	// In practice: No. At the start of a transaction, these two lists are empty.
 	// In practice, we only ever copy state _between_ transactions/blocks, never
@@ -1027,7 +1024,7 @@ func (s *StateDB) deleteStorage(addr common.Address, addrHash common.Hash, root 
 // In case (d), **original** account along with its storages should be deleted,
 // with their values be tracked as original value.
 func (s *StateDB) handleDestruction(nodes *trienode.MergedNodeSet) (map[common.Address]struct{}, error) {
-	// Short circuit if gzond is running with hash mode. This procedure can consume
+	// Short circuit if gqrl is running with hash mode. This procedure can consume
 	// considerable time and storage deletion isn't supported in hash mode, thus
 	// preemptively avoiding unnecessary expenses.
 	incomplete := make(map[common.Address]struct{})
@@ -1073,9 +1070,7 @@ func (s *StateDB) handleDestruction(nodes *trienode.MergedNodeSet) (map[common.A
 		} else {
 			// It can overwrite the data in s.storagesOrigin[addrHash] set by
 			// 'object.updateTrie'.
-			for key, val := range slots {
-				s.storagesOrigin[addr][key] = val
-			}
+			maps.Copy(s.storagesOrigin[addr], slots)
 		}
 		if err := nodes.Merge(set); err != nil {
 			return nil, err

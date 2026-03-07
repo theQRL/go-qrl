@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // ValidationOptions define certain differences between transaction validation
@@ -80,7 +80,7 @@ func ValidateTransaction(tx *types.Transaction, head *types.Header, signer types
 	}
 	// Make sure the transaction is signed properly
 	if _, err := types.Sender(signer, tx); err != nil {
-		return ErrInvalidSender
+		return fmt.Errorf("%w: %v", ErrInvalidSender, err)
 	}
 	// Ensure the transaction has more gas than the bare minimum needed to cover
 	// the transaction metadata

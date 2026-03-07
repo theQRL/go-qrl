@@ -17,9 +17,9 @@
 package qrl
 
 import (
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/txpool"
-	"github.com/theQRL/go-zond/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/txpool"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
 // syncTransactions starts sending all currently pending transactions to the given peer.

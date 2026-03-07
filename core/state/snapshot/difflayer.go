@@ -19,6 +19,7 @@ package snapshot
 import (
 	"encoding/binary"
 	"fmt"
+	"maps"
 	"math"
 	"math/rand"
 	"slices"
@@ -27,9 +28,9 @@ import (
 	"time"
 
 	bloomfilter "github.com/holiman/bloomfilter/v2"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var (
@@ -469,9 +470,7 @@ func (dl *diffLayer) flatten() snapshot {
 		delete(parent.accountData, hash)
 		delete(parent.storageData, hash)
 	}
-	for hash, data := range dl.accountData {
-		parent.accountData[hash] = data
-	}
+	maps.Copy(parent.accountData, dl.accountData)
 	// Overwrite all the updated storage slots (individually)
 	for accountHash, storage := range dl.storageData {
 		// If storage didn't exist (or was deleted) in the parent, overwrite blindly
@@ -481,9 +480,7 @@ func (dl *diffLayer) flatten() snapshot {
 		}
 		// Storage exists in both parent and child, merge the slots
 		comboData := parent.storageData[accountHash]
-		for storageHash, data := range storage {
-			comboData[storageHash] = data
-		}
+		maps.Copy(comboData, storage)
 	}
 	// Return the combo parent
 	return &diffLayer{

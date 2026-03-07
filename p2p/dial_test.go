@@ -27,11 +27,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/internal/testlog"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/internal/testlog"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // This test checks that dynamic dials are launched from discovery results.
@@ -290,7 +290,7 @@ func TestDialSchedManyStaticNodes(t *testing.T) {
 				{flags: dynDialedConn, node: newNode(uintID(0xFFFF), "")},
 			},
 			update: func(d *dialScheduler) {
-				for id := uint16(0); id < 2000; id++ {
+				for id := range uint16(2000) {
 					n := newNode(uintID(id), "127.0.0.1:30303")
 					d.addStatic(n)
 				}

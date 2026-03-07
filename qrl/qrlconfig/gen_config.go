@@ -5,16 +5,16 @@ package qrlconfig
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/txpool/legacypool"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/qrl/downloader"
-	"github.com/theQRL/go-zond/qrl/gasprice"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/txpool/legacypool"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/qrl/downloader"
+	"github.com/theQRL/go-qrl/qrl/gasprice"
 )
 
 // MarshalTOML marshals as TOML.
-func (c Config) MarshalTOML() (interface{}, error) {
+func (c Config) MarshalTOML() (any, error) {
 	type Config struct {
 		Genesis                 *core.Genesis `toml:",omitempty"`
 		NetworkId               uint64
@@ -81,7 +81,7 @@ func (c Config) MarshalTOML() (interface{}, error) {
 }
 
 // UnmarshalTOML unmarshals from TOML.
-func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
+func (c *Config) UnmarshalTOML(unmarshal func(any) error) error {
 	type Config struct {
 		Genesis                 *core.Genesis `toml:",omitempty"`
 		NetworkId               *uint64

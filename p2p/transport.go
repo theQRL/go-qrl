@@ -19,17 +19,18 @@ package p2p
 import (
 	"bytes"
 	"crypto/ecdsa"
+	"errors"
 	"fmt"
 	"io"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/bitutil"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/p2p/rlpx"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/bitutil"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/p2p/rlpx"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 const (
@@ -157,7 +158,7 @@ func readProtocolHandshake(rw MsgReader) (*protoHandshake, error) {
 		return nil, err
 	}
 	if msg.Size > baseProtocolMaxMsgSize {
-		return nil, fmt.Errorf("message too big")
+		return nil, errors.New("message too big")
 	}
 	if msg.Code == discMsg {
 		// Disconnect before protocol handshake is valid according to the

@@ -17,10 +17,10 @@
 package trie
 
 import (
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 // newTestDatabase initializes the trie database with specified scheme.

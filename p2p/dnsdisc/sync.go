@@ -21,8 +21,8 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // This is the number of consecutive leaf requests that may fail before

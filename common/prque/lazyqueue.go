@@ -21,7 +21,7 @@ import (
 	"container/heap"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
+	"github.com/theQRL/go-qrl/common/mclock"
 )
 
 // LazyQueue is a priority queue data structure where priorities can change over

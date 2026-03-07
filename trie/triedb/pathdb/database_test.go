@@ -24,14 +24,14 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie/testutil"
-	"github.com/theQRL/go-zond/trie/trienode"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie/testutil"
+	"github.com/theQRL/go-qrl/trie/trienode"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 func updateTrie(addrHash common.Hash, root common.Hash, dirties, cleans map[common.Hash][]byte) (common.Hash, *trienode.NodeSet) {
@@ -109,7 +109,7 @@ func newTester(t *testing.T) *tester {
 			snapStorages: make(map[common.Hash]map[common.Hash]map[common.Hash][]byte),
 		}
 	)
-	for i := 0; i < 2*128; i++ {
+	for i := range 2 * 128 {
 		var parent = types.EmptyRootHash
 		if len(obj.roots) != 0 {
 			parent = obj.roots[len(obj.roots)-1]
@@ -141,7 +141,7 @@ func (t *tester) generateStorage(ctx *genctx, addr common.Address) common.Hash {
 		storage  = make(map[common.Hash][]byte)
 		origin   = make(map[common.Hash][]byte)
 	)
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(testutil.RandBytes(32)))
 		hash := testutil.RandomHash()
 
@@ -170,7 +170,7 @@ func (t *tester) mutateStorage(ctx *genctx, addr common.Address, root common.Has
 			break
 		}
 	}
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		v, _ := rlp.EncodeToBytes(common.TrimLeftZeroes(testutil.RandBytes(32)))
 		hash := testutil.RandomHash()
 
@@ -210,7 +210,7 @@ func (t *tester) generate(parent common.Hash) (common.Hash, *trienode.MergedNode
 		ctx     = newCtx()
 		dirties = make(map[common.Hash]struct{})
 	)
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		switch rand.Intn(opLen) {
 		case createAccountOp:
 			// account creation

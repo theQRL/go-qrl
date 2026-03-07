@@ -25,12 +25,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // ChainIndexerBackend defines the methods needed to process chain segments in
@@ -451,12 +451,9 @@ func (c *ChainIndexer) AddChildIndexer(indexer *ChainIndexer) {
 	c.children = append(c.children, indexer)
 
 	// Cascade any pending updates to new children too
-	sections := c.storedSections
-	if c.knownSections < sections {
-		// if a section is "stored" but not "known" then it is a checkpoint without
-		// available chain data so we should not cascade it yet
-		sections = c.knownSections
-	}
+	// if a section is "stored" but not "known" then it is a checkpoint without
+	// available chain data so we should not cascade it yet
+	sections := min(c.knownSections, c.storedSections)
 	if sections > 0 {
 		indexer.newHead(sections*c.sectionSize-1, false)
 	}

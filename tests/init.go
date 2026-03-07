@@ -21,7 +21,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // Forks table defines supported forks and their chain config.

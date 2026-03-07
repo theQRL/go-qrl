@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/theQRL/go-zond/internal/flags"
+	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/urfave/cli/v2"
 )
 

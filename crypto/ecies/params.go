@@ -43,7 +43,7 @@ import (
 	"fmt"
 	"hash"
 
-	qrlcrypto "github.com/theQRL/go-zond/crypto"
+	qrlcrypto "github.com/theQRL/go-qrl/crypto"
 )
 
 var (

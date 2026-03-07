@@ -17,13 +17,12 @@
 package bloombits
 
 import (
-	"context"
 	"math/rand"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 const testSectionSize = 4096
@@ -75,7 +74,7 @@ func TestMatcherIntermittent(t *testing.T) {
 // Tests the matcher pipeline on random input to hopefully catch anomalies.
 func TestMatcherRandom(t *testing.T) {
 	t.Parallel()
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		testMatcherBothModes(t, makeRandomIndexes([]int{1}, 50), 0, 10000, 0)
 		testMatcherBothModes(t, makeRandomIndexes([]int{3}, 50), 0, 10000, 0)
 		testMatcherBothModes(t, makeRandomIndexes([]int{2, 2, 2}, 20), 0, 10000, 0)
@@ -86,7 +85,7 @@ func TestMatcherRandom(t *testing.T) {
 
 // Tests that the matcher can properly find matches if the starting block is
 // shifter from a multiple of 8. This is needed to cover an optimisation with
-// bitset matching https://github.com/theQRL/go-zond/issues/15309.
+// bitset matching https://github.com/theQRL/go-qrl/issues/15309.
 func TestMatcherShifted(t *testing.T) {
 	t.Parallel()
 	// Block 0 always matches in the tests, skip ahead of first 8 blocks with the
@@ -113,8 +112,8 @@ func makeRandomIndexes(lengths []int, max int) [][]bloomIndexes {
 	res := make([][]bloomIndexes, len(lengths))
 	for i, topics := range lengths {
 		res[i] = make([]bloomIndexes, topics)
-		for j := 0; j < topics; j++ {
-			for k := 0; k < len(res[i][j]); k++ {
+		for j := range topics {
+			for k := range len(res[i][j]) {
 				res[i][j][k] = uint(rand.Intn(max-1) + 2)
 			}
 		}
@@ -166,7 +165,7 @@ func testMatcher(t *testing.T, filter [][]bloomIndexes, start, blocks uint64, in
 	quit := make(chan struct{})
 	matches := make(chan uint64, 16)
 
-	session, err := matcher.Start(context.Background(), start, blocks-1, matches)
+	session, err := matcher.Start(t.Context(), start, blocks-1, matches)
 	if err != nil {
 		t.Fatalf("failed to stat matcher session: %v", err)
 	}
@@ -191,7 +190,7 @@ func testMatcher(t *testing.T, filter [][]bloomIndexes, start, blocks uint64, in
 				quit = make(chan struct{})
 				matches = make(chan uint64, 16)
 
-				session, err = matcher.Start(context.Background(), i+1, blocks-1, matches)
+				session, err = matcher.Start(t.Context(), i+1, blocks-1, matches)
 				if err != nil {
 					t.Fatalf("failed to stat matcher session: %v", err)
 				}
@@ -219,7 +218,7 @@ func testMatcher(t *testing.T, filter [][]bloomIndexes, start, blocks uint64, in
 func startRetrievers(session *MatcherSession, quit chan struct{}, retrievals *atomic.Uint32, batch int) {
 	requests := make(chan chan *Retrieval)
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		// Start a multiplexer to test multiple threaded execution
 		go session.Multiplex(batch, 100*time.Microsecond, requests)
 
@@ -252,8 +251,8 @@ func startRetrievers(session *MatcherSession, quit chan struct{}, retrievals *at
 // numbers.
 func generateBitset(bit uint, section uint64) []byte {
 	bitset := make([]byte, testSectionSize/8)
-	for i := 0; i < len(bitset); i++ {
-		for b := 0; b < 8; b++ {
+	for i := range bitset {
+		for b := range 8 {
 			blockIdx := section*testSectionSize + uint64(i*8+b)
 			bitset[i] += bitset[i]
 			if (blockIdx % uint64(bit)) == 0 {

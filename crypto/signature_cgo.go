@@ -15,7 +15,6 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 //go:build !nacl && !js && cgo && !gofuzz
-// +build !nacl,!js,cgo,!gofuzz
 
 package crypto
 
@@ -24,8 +23,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/crypto/secp256k1"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto/secp256k1"
 )
 
 // Ecrecover returns the uncompressed public key that created the given signature.

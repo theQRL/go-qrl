@@ -27,17 +27,17 @@ import (
 	"strings"
 	"sync"
 
-	qrl "github.com/theQRL/go-zond"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/common/math"
-	"github.com/theQRL/go-zond/consensus/misc/eip1559"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/qrl/filters"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/rpc"
+	qrl "github.com/theQRL/go-qrl"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/consensus/misc/eip1559"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/qrl/filters"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 var (
@@ -50,7 +50,7 @@ type Long int64
 func (b Long) ImplementsGraphQLType(name string) bool { return name == "Long" }
 
 // UnmarshalGraphQL unmarshals the provided GraphQL query data.
-func (b *Long) UnmarshalGraphQL(input interface{}) error {
+func (b *Long) UnmarshalGraphQL(input any) error {
 	var err error
 	switch input := input.(type) {
 	case string:
@@ -544,6 +544,23 @@ func (t *Transaction) Signature(ctx context.Context) (hexutil.Bytes, error) {
 	}
 	return tx.RawSignatureValue(), nil
 }
+
+func (t *Transaction) Descriptor(ctx context.Context) (hexutil.Bytes, error) {
+	tx, err := t.resolve(ctx)
+	if err != nil || tx == nil {
+		return hexutil.Bytes{}, nil
+	}
+	return tx.Descriptor(), nil
+}
+
+func (t *Transaction) ExtraParams(ctx context.Context) (hexutil.Bytes, error) {
+	tx, err := t.resolve(ctx)
+	if err != nil || tx == nil {
+		return hexutil.Bytes{}, nil
+	}
+	return tx.ExtraParams(), nil
+}
+
 func (t *Transaction) Raw(ctx context.Context) (hexutil.Bytes, error) {
 	tx, _ := t.resolve(ctx)
 	if tx == nil {

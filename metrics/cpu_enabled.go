@@ -15,13 +15,12 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 //go:build !ios && !js
-// +build !ios,!js
 
 package metrics
 
 import (
 	"github.com/shirou/gopsutil/cpu"
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // ReadCPUStats retrieves the current CPU stats.

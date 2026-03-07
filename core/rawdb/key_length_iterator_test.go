@@ -26,7 +26,7 @@ func TestKeyLengthIterator(t *testing.T) {
 
 	keyLen := 8
 	expectedKeys := make(map[string]struct{})
-	for i := 0; i < 100; i++ {
+	for i := range 100 {
 		key := make([]byte, keyLen)
 		binary.BigEndian.PutUint64(key, uint64(i))
 		if err := db.Put(key, []byte{0x1}); err != nil {

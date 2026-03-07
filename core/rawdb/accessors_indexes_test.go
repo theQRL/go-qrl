@@ -21,11 +21,11 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/internal/blocktest"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/internal/blocktest"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 var newTestHasher = blocktest.NewHasher
@@ -95,8 +95,8 @@ func TestLookupStorage(t *testing.T) {
 func TestDeleteBloomBits(t *testing.T) {
 	// Prepare testing data
 	db := NewMemoryDatabase()
-	for i := uint(0); i < 2; i++ {
-		for s := uint64(0); s < 2; s++ {
+	for i := range uint(2) {
+		for s := range uint64(2) {
 			WriteBloomBits(db, i, s, params.MainnetGenesisHash, []byte{0x01, 0x02})
 		}
 	}

@@ -19,13 +19,14 @@ package pathdb
 import (
 	"bytes"
 	"fmt"
+	"maps"
 	"slices"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/trie/trienode"
-	"github.com/theQRL/go-zond/trie/triestate"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/trie/trienode"
+	"github.com/theQRL/go-qrl/trie/triestate"
 )
 
 // testHasher is a test utility for computing root hash of a batch of state
@@ -85,9 +86,7 @@ func (h *testHasher) Commit(collectLeaf bool) (common.Hash, *trienode.NodeSet, e
 		nodes = make(map[common.Hash][]byte)
 		set   = trienode.NewNodeSet(h.owner)
 	)
-	for hash, val := range h.cleans {
-		nodes[hash] = val
-	}
+	maps.Copy(nodes, h.cleans)
 	for hash, val := range h.dirties {
 		nodes[hash] = val
 		if bytes.Equal(val, h.cleans[hash]) {

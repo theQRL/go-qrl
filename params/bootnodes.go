@@ -16,7 +16,7 @@
 
 package params
 
-import "github.com/theQRL/go-zond/common"
+import "github.com/theQRL/go-qrl/common"
 
 // TODO(now.youtrack.cloud/issue/TGZ-14)
 // MainnetBootnodes are the qnode URLs of the P2P bootstrap nodes running on
@@ -40,7 +40,7 @@ var V5Bootnodes = []string{
 }
 
 // TODO(now.youtrack.cloud/issue/TGZ-21)
-const dnsPrefix = "qnrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@"
+// const dnsPrefix = "qnrtree://AKA3AM6LPBYEUDMVNU3BSVQJ5AD45Y7YPOHJLEF6W26QOE4VTUDPE@"
 
 // TODO(now.youtrack.cloud/issue/TGZ-21)
 // KnownDNSNetwork returns the address of a public DNS-based node list for the given

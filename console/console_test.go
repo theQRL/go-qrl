@@ -25,14 +25,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/console/prompt"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/internal/jsre"
-	"github.com/theQRL/go-zond/miner"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/qrl/qrlconfig"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/console/prompt"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/internal/jsre"
+	"github.com/theQRL/go-qrl/miner"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/qrl/qrlconfig"
 )
 
 const (
@@ -153,8 +153,7 @@ func (env *tester) Close(t *testing.T) {
 }
 
 // Tests that the node lists the correct welcome message, notably that it contains
-// the instance name, coinbase account, block number, data directory and supported
-// console modules.
+// the instance name, block number, data directory and supported console modules.
 func TestWelcome(t *testing.T) {
 	tester := newTester(t, nil)
 	defer tester.Close(t)
@@ -173,6 +172,9 @@ func TestWelcome(t *testing.T) {
 	}
 	if want := fmt.Sprintf("datadir: %s", tester.workspace); !strings.Contains(output, want) {
 		t.Fatalf("console output missing datadir: have\n%s\nwant also %s", output, want)
+	}
+	if want := "modules: "; !strings.Contains(output, want) {
+		t.Fatalf("console output missing modules: have\n%s\nwant also %s", output, want)
 	}
 }
 

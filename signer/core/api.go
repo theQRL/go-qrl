@@ -24,20 +24,20 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/storage"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/storage"
 )
 
 const (
 	// numberOfAccountsToDerive For hardware wallets, the number of accounts to derive
-	numberOfAccountsToDerive = 10
+	// numberOfAccountsToDerive = 10
 	// ExternalAPIVersion -- see extapi_changelog.md
 	ExternalAPIVersion = "6.1.0"
 	// InternalAPIVersion -- see intapi_changelog.md
@@ -53,7 +53,7 @@ type ExternalAPI interface {
 	// SignTransaction request to sign the specified transaction
 	SignTransaction(ctx context.Context, args apitypes.SendTxArgs, methodSelector *string) (*qrlapi.SignTransactionResult, error)
 	// SignData - request to sign the given data (plus prefix)
-	SignData(ctx context.Context, contentType string, addr common.MixedcaseAddress, data interface{}) (hexutil.Bytes, error)
+	SignData(ctx context.Context, contentType string, addr common.MixedcaseAddress, data any) (hexutil.Bytes, error)
 	// SignTypedData - request to sign the given structured data (plus prefix)
 	SignTypedData(ctx context.Context, addr common.MixedcaseAddress, data apitypes.TypedData) (hexutil.Bytes, error)
 	// Version info about the APIs
@@ -121,7 +121,7 @@ type Metadata struct {
 	Origin    string `json:"Origin"`
 }
 
-func StartClefAccountManager(ksLocation string /*usbEnabled bool,*/, lightKDF bool /*scpath string*/) *accounts.Manager {
+func StartClefAccountManager(ksLocation string, lightKDF bool) *accounts.Manager {
 	var (
 		backends []accounts.Backend
 		t, m, p  = keystore.StandardArgon2idT, keystore.StandardArgon2idM, keystore.StandardArgon2idP
@@ -134,54 +134,8 @@ func StartClefAccountManager(ksLocation string /*usbEnabled bool,*/, lightKDF bo
 		backends = append(backends, keystore.NewKeyStore(ksLocation, t, m, p))
 	}
 
-	// TODO(now.youtrack.cloud/issue/TGZ-4)
-	/*
-		if usbEnabled {
-			// Start a USB hub for Ledger hardware wallets
-			if ledgerhub, err := usbwallet.NewLedgerHub(); err != nil {
-				log.Warn(fmt.Sprintf("Failed to start Ledger hub, disabling: %v", err))
-			} else {
-				backends = append(backends, ledgerhub)
-				log.Debug("Ledger support enabled")
-			}
-			// Start a USB hub for Trezor hardware wallets (HID version)
-			if trezorhub, err := usbwallet.NewTrezorHubWithHID(); err != nil {
-				log.Warn(fmt.Sprintf("Failed to start HID Trezor hub, disabling: %v", err))
-			} else {
-				backends = append(backends, trezorhub)
-				log.Debug("Trezor support enabled via HID")
-			}
-			// Start a USB hub for Trezor hardware wallets (WebUSB version)
-			if trezorhub, err := usbwallet.NewTrezorHubWithWebUSB(); err != nil {
-				log.Warn(fmt.Sprintf("Failed to start WebUSB Trezor hub, disabling: %v", err))
-			} else {
-				backends = append(backends, trezorhub)
-				log.Debug("Trezor support enabled via WebUSB")
-			}
-		}
-
-		// Start a smart card hub
-		if len(scpath) > 0 {
-			// Sanity check that the smartcard path is valid
-			fi, err := os.Stat(scpath)
-			if err != nil {
-				log.Info("Smartcard socket file missing, disabling", "err", err)
-			} else {
-				if fi.Mode()&os.ModeType != os.ModeSocket {
-					log.Error("Invalid smartcard socket file type", "path", scpath, "type", fi.Mode().String())
-				} else {
-					if schub, err := scwallet.NewHub(scpath, scwallet.Scheme, ksLocation); err != nil {
-						log.Warn(fmt.Sprintf("Failed to start smart card hub, disabling: %v", err))
-					} else {
-						backends = append(backends, schub)
-					}
-				}
-			}
-		}
-	*/
-
 	// Clef doesn't allow insecure http account unlock.
-	return accounts.NewManager(&accounts.Config{InsecureUnlockAllowed: false}, backends...)
+	return accounts.NewManager(backends...)
 }
 
 // MetadataFromContext extracts Metadata from a given context.Context
@@ -259,7 +213,7 @@ type (
 		Text string `json:"text"`
 	}
 	StartupInfo struct {
-		Info map[string]interface{} `json:"info"`
+		Info map[string]any `json:"info"`
 	}
 	UserInputRequest struct {
 		Title      string `json:"title"`
@@ -276,115 +230,14 @@ var ErrRequestDenied = errors.New("request denied")
 // NewSignerAPI creates a new API that can be used for Account management.
 // ksLocation specifies the directory where to store the password protected private
 // key that is generated when a new Account is created.
-// noUSB disables USB support that is required to support hardware devices such as
-// ledger and trezor.
-func NewSignerAPI(am *accounts.Manager, chainID int64 /*usbEnabled bool,*/, ui UIClientAPI, validator Validator, advancedMode bool, credentials storage.Storage) *SignerAPI {
+func NewSignerAPI(am *accounts.Manager, chainID int64, ui UIClientAPI, validator Validator, advancedMode bool, credentials storage.Storage) *SignerAPI {
 	if advancedMode {
 		log.Info("Clef is in advanced mode: will warn instead of reject")
 	}
 	signer := &SignerAPI{big.NewInt(chainID), am, ui, validator, !advancedMode, credentials}
-	/*
-		if usbEnabled {
-			signer.startUSBListener()
-		}
-	*/
+
 	return signer
 }
-
-/*
-func (api *SignerAPI) openTrezor(url accounts.URL) {
-	resp, err := api.UI.OnInputRequired(UserInputRequest{
-		Prompt: "Pin required to open Trezor wallet\n" +
-			"Look at the device for number positions\n\n" +
-			"7 | 8 | 9\n" +
-			"--+---+--\n" +
-			"4 | 5 | 6\n" +
-			"--+---+--\n" +
-			"1 | 2 | 3\n\n",
-		IsPassword: true,
-		Title:      "Trezor unlock",
-	})
-	if err != nil {
-		log.Warn("failed getting trezor pin", "err", err)
-		return
-	}
-	// We're using the URL instead of the pointer to the
-	// Wallet -- perhaps it is not actually present anymore
-	w, err := api.am.Wallet(url.String())
-	if err != nil {
-		log.Warn("wallet unavailable", "url", url)
-		return
-	}
-	err = w.Open(resp.Text)
-	if err != nil {
-		log.Warn("failed to open wallet", "wallet", url, "err", err)
-		return
-	}
-}
-
-// startUSBListener starts a listener for USB events, for hardware wallet interaction
-func (api *SignerAPI) startUSBListener() {
-	eventCh := make(chan accounts.WalletEvent, 16)
-	am := api.am
-	am.Subscribe(eventCh)
-	// Open any wallets already attached
-	for _, wallet := range am.Wallets() {
-		if err := wallet.Open(""); err != nil {
-			log.Warn("Failed to open wallet", "url", wallet.URL(), "err", err)
-			if err == usbwallet.ErrTrezorPINNeeded {
-				go api.openTrezor(wallet.URL())
-			}
-		}
-	}
-	go api.derivationLoop(eventCh)
-}
-
-// derivationLoop listens for wallet events
-func (api *SignerAPI) derivationLoop(events chan accounts.WalletEvent) {
-	// Listen for wallet event till termination
-	for event := range events {
-		switch event.Kind {
-		case accounts.WalletArrived:
-			if err := event.Wallet.Open(""); err != nil {
-				log.Warn("New wallet appeared, failed to open", "url", event.Wallet.URL(), "err", err)
-				if err == usbwallet.ErrTrezorPINNeeded {
-					go api.openTrezor(event.Wallet.URL())
-				}
-			}
-		case accounts.WalletOpened:
-			status, _ := event.Wallet.Status()
-			log.Info("New wallet appeared", "url", event.Wallet.URL(), "status", status)
-			var derive = func(limit int, next func() accounts.DerivationPath) {
-				// Derive first N accounts, hardcoded for now
-				for i := 0; i < limit; i++ {
-					path := next()
-					if acc, err := event.Wallet.Derive(path, true); err != nil {
-						log.Warn("Account derivation failed", "error", err)
-					} else {
-						log.Info("Derived account", "address", acc.Address, "path", path)
-					}
-				}
-			}
-			log.Info("Deriving default paths")
-			derive(numberOfAccountsToDerive, accounts.DefaultIterator(accounts.DefaultBaseDerivationPath))
-			if event.Wallet.URL().Scheme == "ledger" {
-				log.Info("Deriving ledger legacy paths")
-				derive(numberOfAccountsToDerive, accounts.DefaultIterator(accounts.LegacyLedgerBaseDerivationPath))
-				log.Info("Deriving ledger live paths")
-				// For ledger live, since it's based off the same (DefaultBaseDerivationPath)
-				// as one we've already used, we need to step it forward one step to avoid
-				// hitting the same path again
-				nextFn := accounts.LedgerLiveIterator(accounts.DefaultBaseDerivationPath)
-				nextFn()
-				derive(numberOfAccountsToDerive, nextFn)
-			}
-		case accounts.WalletDropped:
-			log.Info("Old wallet dropped", "url", event.Wallet.URL())
-			event.Wallet.Close()
-		}
-	}
-}
-*/
 
 // List returns the set of wallet this signer manages. Each wallet can contain
 // multiple accounts.
@@ -432,7 +285,7 @@ func (api *SignerAPI) newAccount() (common.Address, error) {
 		return common.Address{}, errors.New("password based accounts not supported")
 	}
 	// Three retries to get a valid password
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		resp, err := api.UI.OnInputRequired(UserInputRequest{
 			"New account password",
 			fmt.Sprintf("Please enter a password for the new account to be created (attempt %d of 3)", i),

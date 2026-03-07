@@ -20,7 +20,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // pendingTTL indicates the period of time a generated pending block should

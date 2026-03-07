@@ -7,7 +7,7 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 var _ = (*executionPayloadEnvelopeMarshaling)(nil)

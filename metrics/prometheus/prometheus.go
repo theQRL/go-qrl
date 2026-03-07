@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 // Handler returns an HTTP handler which dump metrics in Prometheus format.
@@ -31,7 +31,7 @@ func Handler(reg metrics.Registry) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Gather and pre-sort the metrics to avoid random listings
 		var names []string
-		reg.Each(func(name string, i interface{}) {
+		reg.Each(func(name string, i any) {
 			names = append(names, name)
 		})
 		sort.Strings(names)

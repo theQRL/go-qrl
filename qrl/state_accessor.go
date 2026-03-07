@@ -22,15 +22,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // noopReleaser is returned in case there is no operation expected
@@ -97,7 +97,7 @@ func (qrl *QRL) hashState(ctx context.Context, block *types.Block, reexec uint64
 			}
 		}
 		// Database does not have the state for the given block, try to regenerate
-		for i := uint64(0); i < reexec; i++ {
+		for range reexec {
 			if err := ctx.Err(); err != nil {
 				return nil, nil, err
 			}

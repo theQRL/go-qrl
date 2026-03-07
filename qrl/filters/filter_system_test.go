@@ -26,17 +26,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/bloombits"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/bloombits"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 type testBackend struct {
@@ -445,7 +445,7 @@ func TestInvalidGetLogsRequest(t *testing.T) {
 	}
 
 	for i, test := range testCases {
-		if _, err := api.GetLogs(context.Background(), test); err == nil {
+		if _, err := api.GetLogs(t.Context(), test); err == nil {
 			t.Errorf("Expected Logs for case #%d to fail", i)
 		}
 	}
@@ -461,7 +461,7 @@ func TestInvalidGetRangeLogsRequest(t *testing.T) {
 		api    = NewFilterAPI(sys)
 	)
 
-	if _, err := api.GetLogs(context.Background(), FilterCriteria{FromBlock: big.NewInt(2), ToBlock: big.NewInt(1)}); err != errInvalidBlockRange {
+	if _, err := api.GetLogs(t.Context(), FilterCriteria{FromBlock: big.NewInt(2), ToBlock: big.NewInt(1)}); err != errInvalidBlockRange {
 		t.Errorf("Expected Logs for invalid range return error, but got: %v", err)
 	}
 }
@@ -602,7 +602,7 @@ func TestPendingTxFilterDeadlock(t *testing.T) {
 	// Create a bunch of filters that will
 	// timeout either in 100ms or 200ms
 	subs := make([]*Subscription, 20)
-	for i := 0; i < len(subs); i++ {
+	for i := range subs {
 		fid := api.NewPendingTransactionFilter(nil)
 		f, ok := api.filters[fid]
 		if !ok {

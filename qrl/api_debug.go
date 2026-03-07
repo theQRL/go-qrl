@@ -22,17 +22,17 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 // DebugAPI is the collection of QRL full node APIs for debugging the
@@ -97,9 +97,9 @@ func (api *DebugAPI) Preimage(ctx context.Context, hash common.Hash) (hexutil.By
 
 // BadBlockArgs represents the entries in the list returned when bad blocks are queried.
 type BadBlockArgs struct {
-	Hash  common.Hash            `json:"hash"`
-	Block map[string]interface{} `json:"block"`
-	RLP   string                 `json:"rlp"`
+	Hash  common.Hash    `json:"hash"`
+	Block map[string]any `json:"block"`
+	RLP   string         `json:"rlp"`
 }
 
 // GetBadBlocks returns a list of the last 'bad blocks' that the client has seen on the network
@@ -112,7 +112,7 @@ func (api *DebugAPI) GetBadBlocks(ctx context.Context) ([]*BadBlockArgs, error) 
 	for _, block := range blocks {
 		var (
 			blockRlp  string
-			blockJSON map[string]interface{}
+			blockJSON map[string]any
 		)
 		if rlpBytes, err := rlp.EncodeToBytes(block); err != nil {
 			blockRlp = err.Error() // Hacky, but hey, it works

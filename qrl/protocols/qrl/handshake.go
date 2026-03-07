@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/forkid"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/p2p"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/forkid"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/p2p"
 )
 
 const (
@@ -55,7 +55,7 @@ func (p *Peer) Handshake(network uint64, head common.Hash, genesis common.Hash, 
 	}()
 	timeout := time.NewTimer(handshakeTimeout)
 	defer timeout.Stop()
-	for i := 0; i < 2; i++ {
+	for range 2 {
 		select {
 		case err := <-errc:
 			if err != nil {

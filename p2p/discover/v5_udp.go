@@ -25,15 +25,16 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"slices"
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/discover/v5wire"
-	"github.com/theQRL/go-zond/p2p/netutil"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/discover/v5wire"
+	"github.com/theQRL/go-qrl/p2p/netutil"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 const (
@@ -71,7 +72,7 @@ type UDPv5 struct {
 	validSchemes qnr.IdentityScheme
 
 	// misc buffers used during message handling
-	logcontext []interface{}
+	logcontext []any
 
 	// talkreq handler registry
 	talk *talkSystem
@@ -437,7 +438,7 @@ func (t *UDPv5) verifyResponseNode(c *callV5, r *qnr.Record, distances []uint, s
 	}
 	if distances != nil {
 		nd := qnode.LogDist(c.id, node.ID())
-		if !containsUint(uint(nd), distances) {
+		if !slices.Contains(distances, uint(nd)) {
 			return nil, errors.New("does not match any requested distance")
 		}
 	}
@@ -446,15 +447,6 @@ func (t *UDPv5) verifyResponseNode(c *callV5, r *qnr.Record, distances []uint, s
 	}
 	seen[node.ID()] = struct{}{}
 	return node, nil
-}
-
-func containsUint(x uint, xs []uint) bool {
-	for _, v := range xs {
-		if x == v {
-			return true
-		}
-	}
-	return false
 }
 
 // callToNode sends the given call and sets up a handler for response packets (of message

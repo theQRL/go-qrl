@@ -20,9 +20,9 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
 )
 
 func toHexBig(h string) hexutil.Big {
@@ -72,6 +72,7 @@ type txtestcase struct {
 }
 
 func TestTransactionValidation(t *testing.T) {
+	t.Parallel()
 	var (
 		// use empty db, there are other tests for the abi-specific stuff
 		db = newEmpty()

@@ -23,9 +23,10 @@
 package blocktest
 
 import (
+	"bytes"
 	"hash"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -48,8 +49,8 @@ func (h *testHasher) Reset() {
 
 // Update updates the hash state with the given key and value.
 func (h *testHasher) Update(key, val []byte) error {
-	h.hasher.Write(key)
-	h.hasher.Write(val)
+	h.hasher.Write(bytes.Clone(key))
+	h.hasher.Write(bytes.Clone(val))
 	return nil
 }
 

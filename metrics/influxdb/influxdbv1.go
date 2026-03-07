@@ -6,8 +6,8 @@ import (
 	"time"
 
 	client "github.com/influxdata/influxdb1-client/v2"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 type reporter struct {
@@ -133,7 +133,7 @@ func (r *reporter) send(tstamp int64) error {
 	if err != nil {
 		return err
 	}
-	r.reg.Each(func(name string, i interface{}) {
+	r.reg.Each(func(name string, i any) {
 		var now time.Time
 		if tstamp <= 0 {
 			now = time.Now()

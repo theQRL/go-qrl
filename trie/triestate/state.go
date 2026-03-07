@@ -21,11 +21,11 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie/trienode"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -260,7 +260,7 @@ func deleteAccount(ctx *context, loader TrieLoader, addr common.Address) error {
 type hasher struct{ sha crypto.KeccakState }
 
 var hasherPool = sync.Pool{
-	New: func() interface{} { return &hasher{sha: sha3.NewLegacyKeccak256().(crypto.KeccakState)} },
+	New: func() any { return &hasher{sha: sha3.NewLegacyKeccak256().(crypto.KeccakState)} },
 }
 
 func newHasher() *hasher {

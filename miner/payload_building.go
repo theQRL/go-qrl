@@ -12,7 +12,7 @@
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>
+// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 package miner
 
@@ -23,13 +23,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/beacon/engine"
-	beaconparams "github.com/theQRL/go-zond/beacon/params"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/beacon/engine"
+	beaconparams "github.com/theQRL/go-qrl/beacon/params"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // BuildPayloadArgs contains the provided parameters for building payload.

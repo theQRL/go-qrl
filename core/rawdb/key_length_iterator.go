@@ -16,7 +16,7 @@
 
 package rawdb
 
-import "github.com/theQRL/go-zond/qrldb"
+import "github.com/theQRL/go-qrl/qrldb"
 
 // KeyLengthIterator is a wrapper for a database iterator that ensures only key-value pairs
 // with a specific key length will be returned.

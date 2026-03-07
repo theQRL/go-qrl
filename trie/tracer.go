@@ -17,7 +17,7 @@
 package trie
 
 import (
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // tracer tracks the changes of trie nodes. During the trie operations,

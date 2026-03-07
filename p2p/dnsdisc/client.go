@@ -27,12 +27,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/qnode"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/time/rate"
 )
@@ -134,7 +134,7 @@ func (c *Client) NewIterator(urls ...string) (qnode.Iterator, error) {
 
 // resolveRoot retrieves a root entry via DNS.
 func (c *Client) resolveRoot(ctx context.Context, loc *linkEntry) (rootEntry, error) {
-	e, err, _ := c.singleflight.Do(loc.str, func() (interface{}, error) {
+	e, err, _ := c.singleflight.Do(loc.str, func() (any, error) {
 		txts, err := c.cfg.Resolver.LookupTXT(ctx, loc.domain)
 		c.cfg.Logger.Trace("Updating DNS discovery root", "tree", loc.domain, "err", err)
 		if err != nil {
@@ -175,7 +175,7 @@ func (c *Client) resolveEntry(ctx context.Context, domain, hash string) (entry, 
 		return e, nil
 	}
 
-	ei, err, _ := c.singleflight.Do(cacheKey, func() (interface{}, error) {
+	ei, err, _ := c.singleflight.Do(cacheKey, func() (any, error) {
 		e, err := c.doResolveEntry(ctx, domain, hash)
 		if err != nil {
 			return nil, err

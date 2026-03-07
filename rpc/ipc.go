@@ -20,8 +20,8 @@ import (
 	"context"
 	"net"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p/netutil"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p/netutil"
 )
 
 // ServeListener accepts connections on l, serving JSON-RPC on them.

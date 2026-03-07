@@ -25,10 +25,10 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 const (
@@ -45,7 +45,7 @@ const (
 // all registered services.
 type Config struct {
 	// Name sets the instance name of the node. It must not contain the / character and is
-	// used in the devp2p node identifier. The instance name of gzond is "gzond". If no
+	// used in the devp2p node identifier. The instance name of gqrl is "gqrl". If no
 	// value is specified, the basename of the current executable is used.
 	Name string `toml:"-"`
 
@@ -81,15 +81,6 @@ type Config struct {
 	// UseLightweightKDF lowers the memory and CPU requirements of the key store
 	// argon2id KDF at the expense of security.
 	UseLightweightKDF bool `toml:",omitempty"`
-
-	// InsecureUnlockAllowed allows user to unlock accounts in unsafe http environment.
-	InsecureUnlockAllowed bool `toml:",omitempty"`
-
-	// USB enables hardware wallet monitoring and connectivity.
-	USB bool `toml:",omitempty"`
-
-	// SmartCardDaemonPath is the path to the smartcard daemon's socket.
-	SmartCardDaemonPath string `toml:",omitempty"`
 
 	// IPCPath is the requested location to place the IPC endpoint. If the path is
 	// a simple file name, it is placed inside the data directory (or on the root
@@ -284,9 +275,9 @@ func (c *Config) ExtRPCEnabled() bool {
 // NodeName returns the devp2p node identifier.
 func (c *Config) NodeName() string {
 	name := c.name()
-	// Backwards compatibility: previous versions used title-cased "Gzond", keep that.
-	if name == "gzond" || name == "gzond-testnet" {
-		name = "Gzond"
+	// Backwards compatibility: previous versions used title-cased "Gqrl", keep that.
+	if name == "gqrl" || name == "gqrl-testnet" {
+		name = "Gqrl"
 	}
 	if c.UserIdent != "" {
 		name += "/" + c.UserIdent
@@ -365,37 +356,6 @@ func (c *Config) NodeKey() *ecdsa.PrivateKey {
 		log.Error(fmt.Sprintf("Failed to persist node key: %v", err))
 	}
 	return key
-}
-
-// checkLegacyFiles inspects the datadir for signs of legacy static-nodes
-// and trusted-nodes files. If they exist it raises an error.
-func (c *Config) checkLegacyFiles() {
-	c.checkLegacyFile(c.ResolvePath(datadirStaticNodes))
-	c.checkLegacyFile(c.ResolvePath(datadirTrustedNodes))
-}
-
-// checkLegacyFile will only raise an error if a file at the given path exists.
-func (c *Config) checkLegacyFile(path string) {
-	// Short circuit if no node config is present
-	if c.DataDir == "" {
-		return
-	}
-	if _, err := os.Stat(path); err != nil {
-		return
-	}
-	logger := c.Logger
-	if logger == nil {
-		logger = log.Root()
-	}
-	switch fname := filepath.Base(path); fname {
-	case "static-nodes.json":
-		logger.Error("The static-nodes.json file is deprecated and ignored. Use P2P.StaticNodes in config.toml instead.")
-	case "trusted-nodes.json":
-		logger.Error("The trusted-nodes.json file is deprecated and ignored. Use P2P.TrustedNodes in config.toml instead.")
-	default:
-		// We shouldn't wind up here, but better print something just in case.
-		logger.Error("Ignoring deprecated file.", "file", path)
-	}
 }
 
 // KeyDirConfig determines the settings for keydirectory

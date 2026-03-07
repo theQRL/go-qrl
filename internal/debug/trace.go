@@ -21,7 +21,7 @@ import (
 	"os"
 	"runtime/trace"
 
-	"github.com/theQRL/go-zond/log"
+	"github.com/theQRL/go-qrl/log"
 )
 
 // StartGoTrace turns on tracing, writing to the given file.

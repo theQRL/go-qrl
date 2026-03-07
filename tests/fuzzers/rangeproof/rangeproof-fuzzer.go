@@ -23,10 +23,10 @@ import (
 	"io"
 	"slices"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/qrldb/memorydb"
-	"github.com/theQRL/go-zond/trie"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/qrldb/memorydb"
+	"github.com/theQRL/go-qrl/trie"
 )
 
 type kv struct {
@@ -72,7 +72,7 @@ func (f *fuzzer) randomTrie(n int) (*trie.Trie, map[string]*kv) {
 		return nil, nil
 	}
 	// And now fill with some random
-	for i := 0; i < n; i++ {
+	for range n {
 		k := f.randBytes(32)
 		v := f.randBytes(20)
 		value := &kv{k, v, false}
@@ -185,7 +185,7 @@ func (f *fuzzer) fuzz() int {
 //   - 0 otherwise
 //
 // other values are reserved for future use.
-func Fuzz(input []byte) int {
+func fuzz(input []byte) int {
 	if len(input) < 100 {
 		return 0
 	}

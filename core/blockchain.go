@@ -27,27 +27,27 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/lru"
-	"github.com/theQRL/go-zond/common/mclock"
-	"github.com/theQRL/go-zond/common/prque"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/state/snapshot"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/event"
-	"github.com/theQRL/go-zond/internal/syncx"
-	"github.com/theQRL/go-zond/internal/version"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
-	"github.com/theQRL/go-zond/trie"
-	"github.com/theQRL/go-zond/trie/triedb/hashdb"
-	"github.com/theQRL/go-zond/trie/triedb/pathdb"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/lru"
+	"github.com/theQRL/go-qrl/common/mclock"
+	"github.com/theQRL/go-qrl/common/prque"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/state/snapshot"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/syncx"
+	"github.com/theQRL/go-qrl/internal/version"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
+	"github.com/theQRL/go-qrl/trie"
+	"github.com/theQRL/go-qrl/trie/triedb/hashdb"
+	"github.com/theQRL/go-qrl/trie/triedb/pathdb"
 )
 
 var (
@@ -268,7 +268,7 @@ func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	}
 	log.Info("")
 	log.Info(strings.Repeat("-", 153))
-	for _, line := range strings.Split(chainConfig.Description(), "\n") {
+	for line := range strings.SplitSeq(chainConfig.Description(), "\n") {
 		log.Info(line)
 	}
 	log.Info(strings.Repeat("-", 153))
@@ -313,7 +313,7 @@ func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis
 	// Update chain info data metrics
 	chainInfoGauge.Update(metrics.GaugeInfoValue{"chain_id": bc.chainConfig.ChainID.String()})
 
-	// If Gzond is initialized with an external ancient store, re-initialize the
+	// If Gqrl is initialized with an external ancient store, re-initialize the
 	// missing chain indexes and chain flags. This procedure can survive crash
 	// and can be resumed in next restart since chain flags are updated in last step.
 	if bc.empty() {
@@ -1126,7 +1126,7 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 		// * If block number is large enough to be regarded as a recent block
 		// It means blocks below the ancientLimit-txlookupLimit won't be indexed.
 		//
-		// But if the `TxIndexTail` is not nil, e.g. Gzond is initialized with
+		// But if the `TxIndexTail` is not nil, e.g. Gqrl is initialized with
 		// an external ancient database, during the setup, blockchain will start
 		// a background routine to re-indexed all indices in [ancients - txlookupLimit, ancients)
 		// range. In this case, all tx indices of newly imported blocks should be
@@ -1278,13 +1278,13 @@ func (bc *BlockChain) InsertReceiptChain(blockChain types.Blocks, receiptChain [
 	}
 
 	head := blockChain[len(blockChain)-1]
-	context := []interface{}{
+	context := []any{
 		"count", stats.processed, "elapsed", common.PrettyDuration(time.Since(start)),
 		"number", head.Number(), "hash", head.Hash(), "age", common.PrettyAge(time.Unix(int64(head.Time()), 0)),
 		"size", common.StorageSize(size),
 	}
 	if stats.ignored > 0 {
-		context = append(context, []interface{}{"ignored", stats.ignored}...)
+		context = append(context, []any{"ignored", stats.ignored}...)
 	}
 	log.Debug("Imported new block receipts", context...)
 
@@ -2036,14 +2036,14 @@ func (bc *BlockChain) SetCanonical(head *types.Block) (common.Hash, error) {
 	}
 	bc.chainHeadFeed.Send(ChainHeadEvent{Block: head})
 
-	context := []interface{}{
+	context := []any{
 		"number", head.Number(),
 		"hash", head.Hash(),
 		"root", head.Root(),
 		"elapsed", time.Since(start),
 	}
 	if timestamp := time.Unix(int64(head.Time()), 0); time.Since(timestamp) > time.Minute {
-		context = append(context, []interface{}{"age", common.PrettyAge(timestamp)}...)
+		context = append(context, []any{"age", common.PrettyAge(timestamp)}...)
 	}
 	log.Info("Chain head was updated", context...)
 	return head.Hash(), nil
@@ -2116,10 +2116,7 @@ func (bc *BlockChain) indexBlocks(tail *uint64, head uint64, done chan struct{})
 			// It can happen when chain is rewound to a historical point which
 			// is even lower than the indexes tail, recap the indexing target
 			// to new head to avoid reading non-existent block bodies.
-			end := *tail
-			if end > head+1 {
-				end = head + 1
-			}
+			end := min(*tail, head+1)
 			rawdb.IndexTransactions(bc.db, 0, end, bc.quit)
 		}
 		return
@@ -2142,7 +2139,7 @@ func (bc *BlockChain) indexBlocks(tail *uint64, head uint64, done chan struct{})
 // all tx indices will be reserved.
 //
 // The user can adjust the txlookuplimit value for each launch after sync,
-// Gzond will automatically construct the missing indices or delete the extra
+// Gqrl will automatically construct the missing indices or delete the extra
 // indices.
 func (bc *BlockChain) maintainTxIndex() {
 	defer bc.wg.Done()
@@ -2195,11 +2192,11 @@ func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, e
 // summarizeBadBlock returns a string summarizing the bad block and other
 // relevant information.
 func summarizeBadBlock(block *types.Block, receipts []*types.Receipt, config *params.ChainConfig, err error) string {
-	var receiptString string
+	var receiptString strings.Builder
 	for i, receipt := range receipts {
-		receiptString += fmt.Sprintf("\n  %d: cumulative: %v gas: %v contract: %v status: %v tx: %v logs: %v bloom: %x state: %x",
+		receiptString.WriteString(fmt.Sprintf("\n  %d: cumulative: %v gas: %v contract: %v status: %v tx: %v logs: %v bloom: %x state: %x",
 			i, receipt.CumulativeGasUsed, receipt.GasUsed, receipt.ContractAddress.Hex(),
-			receipt.Status, receipt.TxHash.Hex(), receipt.Logs, receipt.Bloom, receipt.PostState)
+			receipt.Status, receipt.TxHash.Hex(), receipt.Logs, receipt.Bloom, receipt.PostState))
 	}
 	version, vcs := version.Info()
 	platform := fmt.Sprintf("%s %s %s %s", version, runtime.Version(), runtime.GOARCH, runtime.GOOS)
@@ -2214,7 +2211,7 @@ Platform: %v%v
 Chain config: %#v
 Receipts: %v
 ##############################
-`, block.Number(), block.Hash(), err, platform, vcs, config, receiptString)
+`, block.Number(), block.Hash(), err, platform, vcs, config, receiptString.String())
 }
 
 // InsertHeaderChain attempts to insert the given header chain in to the local

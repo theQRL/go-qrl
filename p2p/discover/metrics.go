@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/theQRL/go-zond/metrics"
+	"github.com/theQRL/go-qrl/metrics"
 )
 
 const (
@@ -39,7 +39,7 @@ var (
 )
 
 func init() {
-	for i := 0; i < nBuckets; i++ {
+	for i := range nBuckets {
 		bucketsCounter = append(bucketsCounter, metrics.NewRegisteredCounter(fmt.Sprintf("%s/bucket/%d/count", moduleName, i), nil))
 	}
 }

@@ -21,7 +21,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/theQRL/go-zond/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnode"
 )
 
 // lookup performs a network search for nodes close to the given target. It approaches the

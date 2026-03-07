@@ -20,8 +20,8 @@
 package node
 
 import (
-	"github.com/theQRL/go-zond/p2p"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 // NoopLifecycle is a trivial implementation of the Service interface.

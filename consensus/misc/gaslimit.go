@@ -19,7 +19,7 @@ package misc
 import (
 	"fmt"
 
-	"github.com/theQRL/go-zond/params"
+	"github.com/theQRL/go-qrl/params"
 )
 
 // VerifyGaslimit verifies the header gas limit according increase/decrease

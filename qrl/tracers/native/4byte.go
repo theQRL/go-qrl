@@ -19,12 +19,13 @@ package native
 import (
 	"encoding/json"
 	"math/big"
+	"slices"
 	"strconv"
 	"sync/atomic"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/qrl/tracers"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/qrl/tracers"
 )
 
 func init() {
@@ -64,12 +65,7 @@ func newFourByteTracer(ctx *tracers.Context, _ json.RawMessage) (tracers.Tracer,
 
 // isPrecompiled returns whether the addr is a precompile. Logic borrowed from newJsTracer in qrl/tracers/js/tracer.go
 func (t *fourByteTracer) isPrecompiled(addr common.Address) bool {
-	for _, p := range t.activePrecompiles {
-		if p == addr {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(t.activePrecompiles, addr)
 }
 
 // store saves the given identifier and datasize.

@@ -124,13 +124,13 @@ func TestMuxConcurrent(t *testing.T) {
 	go poster()
 	go poster()
 	nsubs := 1000
-	for i := 0; i < nsubs; i++ {
+	for i := range nsubs {
 		go sub(i)
 	}
 
 	// wait until everyone has been served
 	counts := make(map[int]int, nsubs)
-	for i := 0; i < nsubs; i++ {
+	for range nsubs {
 		counts[<-recv]++
 	}
 	for i, count := range counts {
@@ -156,7 +156,7 @@ func BenchmarkPost1000(b *testing.B) {
 	)
 	subscribed.Add(nsubs)
 	done.Add(nsubs)
-	for i := 0; i < nsubs; i++ {
+	for range nsubs {
 		go func() {
 			s := mux.Subscribe(testEvent(0))
 			subscribed.Done()
@@ -168,12 +168,10 @@ func BenchmarkPost1000(b *testing.B) {
 	subscribed.Wait()
 
 	// The actual benchmark.
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mux.Post(testEvent(0))
 	}
 
-	b.StopTimer()
 	mux.Stop()
 	done.Wait()
 }
@@ -193,7 +191,7 @@ func BenchmarkPostConcurrent(b *testing.B) {
 		wg.Done()
 	}
 	wg.Add(5)
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		go poster()
 	}
 	wg.Wait()
@@ -201,7 +199,7 @@ func BenchmarkPostConcurrent(b *testing.B) {
 
 // for comparison
 func BenchmarkChanSend(b *testing.B) {
-	c := make(chan interface{})
+	c := make(chan any)
 	defer close(c)
 	closed := make(chan struct{})
 	go func() {
@@ -209,7 +207,7 @@ func BenchmarkChanSend(b *testing.B) {
 		}
 	}()
 
-	for i := 0; i < b.N; i++ {
+	for i := 0; b.Loop(); i++ {
 		select {
 		case c <- i:
 		case <-closed:

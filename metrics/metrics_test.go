@@ -66,7 +66,7 @@ func BenchmarkMetrics(b *testing.B) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(FANOUT)
-	for i := 0; i < FANOUT; i++ {
+	for i := range FANOUT {
 		go func(i int) {
 			defer wg.Done()
 			//log.Println("go", i)

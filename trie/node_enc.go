@@ -17,7 +17,7 @@
 package trie
 
 import (
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 func nodeToBytes(n node) []byte {

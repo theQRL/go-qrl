@@ -37,24 +37,25 @@ import (
 
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
-	"github.com/theQRL/go-zond/accounts"
-	"github.com/theQRL/go-zond/accounts/keystore"
-	"github.com/theQRL/go-zond/cmd/utils"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/common/hexutil"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/internal/flags"
-	"github.com/theQRL/go-zond/internal/qrlapi"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/rpc"
-	"github.com/theQRL/go-zond/signer/core"
-	"github.com/theQRL/go-zond/signer/core/apitypes"
-	"github.com/theQRL/go-zond/signer/fourbyte"
-	"github.com/theQRL/go-zond/signer/rules"
-	"github.com/theQRL/go-zond/signer/storage"
+	"github.com/theQRL/go-qrl/accounts"
+	"github.com/theQRL/go-qrl/accounts/keystore"
+	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrl/internal/flags"
+	"github.com/theQRL/go-qrl/internal/qrlapi"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/rpc"
+	"github.com/theQRL/go-qrl/signer/core"
+	"github.com/theQRL/go-qrl/signer/core/apitypes"
+	"github.com/theQRL/go-qrl/signer/fourbyte"
+	"github.com/theQRL/go-qrl/signer/rules"
+	"github.com/theQRL/go-qrl/signer/storage"
 	"github.com/urfave/cli/v2"
 )
 
@@ -269,8 +270,6 @@ func init() {
 		configdirFlag,
 		chainIdFlag,
 		utils.LightKDFFlag,
-		utils.USBFlag,
-		utils.SmartCardDaemonPathFlag,
 		utils.HTTPListenAddrFlag,
 		utils.HTTPVirtualHostsFlag,
 		utils.IPCDisabledFlag,
@@ -409,7 +408,6 @@ func initInternalApi(c *cli.Context) (*core.UIServerAPI, core.UIClientAPI, error
 		lightKdf                  = c.Bool(utils.LightKDFFlag.Name)
 	)
 	am := core.StartClefAccountManager(ksLoc /*false,*/, lightKdf /*""*/)
-	defer am.Close()
 	api := core.NewSignerAPI(am, 0 /*false,*/, ui, nil, false, pwStorage)
 	internalApi := core.NewUIServerAPI(api)
 	return internalApi, ui, nil
@@ -494,7 +492,8 @@ func initialize(c *cli.Context) error {
 	if usecolor {
 		output = colorable.NewColorable(logOutput)
 	}
-	log.Root().SetHandler(log.LvlFilterHandler(log.Lvl(c.Int(logLevelFlag.Name)), log.StreamHandler(output, log.TerminalFormat(usecolor))))
+	verbosity := log.FromLegacyLevel(c.Int(logLevelFlag.Name))
+	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(output, verbosity, usecolor)))
 
 	return nil
 }
@@ -560,7 +559,7 @@ func accountImport(c *cli.Context) error {
 		return err
 	}
 
-	hexSeed, err := readSeedFromFile(c.Args().First())
+	hexSeed, err := wallet.ReadSeedFromFile(c.Args().First())
 	if err != nil {
 		return err
 	}
@@ -596,7 +595,7 @@ func accountImport(c *cli.Context) error {
 		}
 	}
 
-	acc, err := internalApi.ImportRawKey(hexSeed, first)
+	acc, err := internalApi.ImportRawWallet(hexSeed, first)
 	if err != nil {
 		return err
 	}
@@ -709,13 +708,12 @@ func signer(c *cli.Context) error {
 		ksLoc    = c.String(keystoreFlag.Name)
 		lightKdf = c.Bool(utils.LightKDFFlag.Name)
 		advanced = c.Bool(advancedMode.Name)
-		// usbEnabled = c.Bool(utils.USBFlag.Name)
-		// scpath = c.String(utils.SmartCardDaemonPathFlag.Name)
 	)
 	log.Info("Starting signer", "chainid", chainId, "keystore", ksLoc,
 		"light-kdf", lightKdf, "advanced", advanced)
-	am := core.StartClefAccountManager(ksLoc /*usbEnabled,*/, lightKdf /*, scpath*/)
-	apiImpl := core.NewSignerAPI(am, chainId /*usbEnabled,*/, ui, db, advanced, pwStorage)
+	am := core.StartClefAccountManager(ksLoc, lightKdf)
+	defer am.Close()
+	apiImpl := core.NewSignerAPI(am, chainId, ui, db, advanced, pwStorage)
 
 	// Establish the bidirectional communication, by creating a new UI backend and registering
 	// it with the UI.
@@ -789,7 +787,7 @@ func signer(c *cli.Context) error {
 		go testExternalUI(apiImpl)
 	}
 	ui.OnSignerStartup(core.StartupInfo{
-		Info: map[string]interface{}{
+		Info: map[string]any{
 			"intapi_version": core.InternalAPIVersion,
 			"extapi_version": core.ExternalAPIVersion,
 			"extapi_http":    extapiURL,
@@ -883,7 +881,7 @@ func checkFile(filename string) error {
 	}
 	// Check the unix permission bits
 	// However, on windows, we cannot use the unix perm-bits, see
-	// https://github.com/theQRL/go-zond/issues/20123
+	// https://github.com/theQRL/go-qrl/issues/20123
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0377 != 0 {
 		return fmt.Errorf("file (%v) has insecure file permissions (%v)", filename, info.Mode().String())
 	}
@@ -1070,7 +1068,7 @@ func GenDoc(ctx *cli.Context) error {
 			UserAgent: "Firefox 3.2",
 		}
 		output []string
-		add    = func(name, desc string, v interface{}) {
+		add    = func(name, desc string, v any) {
 			if data, err := json.MarshalIndent(v, "", "  "); err == nil {
 				output = append(output, fmt.Sprintf("### %s\n\n%s\n\nExample:\n```json\n%s\n```", name, desc, data))
 			} else {
@@ -1209,58 +1207,4 @@ These data types are defined in the channel between clef and the UI`)
 		fmt.Println(elem)
 	}
 	return nil
-}
-
-func readSeedFromFile(file string) (string, error) {
-	fd, err := os.Open(file)
-	if err != nil {
-		return "", err
-	}
-	defer fd.Close()
-
-	r := bufio.NewReader(fd)
-	buf := make([]byte, 96)
-	n, err := readASCII(buf, r)
-	if err != nil {
-		return "", err
-	} else if n != len(buf) {
-		return "", errors.New("seed too short, want 96 hex characters")
-	}
-	if err := checkKeyFileEnd(r); err != nil {
-		return "", err
-	}
-
-	return string(buf), nil
-}
-
-// checkKeyFileEnd skips over additional newlines at the end of a key file.
-func checkKeyFileEnd(r *bufio.Reader) error {
-	for i := 0; ; i++ {
-		b, err := r.ReadByte()
-		switch {
-		case err == io.EOF:
-			return nil
-		case err != nil:
-			return err
-		case b != '\n' && b != '\r':
-			return fmt.Errorf("invalid character %q at end of file", b)
-		case i >= 2:
-			return errors.New("key file too long, want 48 hex characters")
-		}
-	}
-}
-
-// readASCII reads into 'buf', stopping when the buffer is full or
-// when a non-printable control character is encountered.
-func readASCII(buf []byte, r *bufio.Reader) (n int, err error) {
-	for ; n < len(buf); n++ {
-		buf[n], err = r.ReadByte()
-		switch {
-		case err == io.EOF || buf[n] < '!':
-			return n, nil
-		case err != nil:
-			return n, err
-		}
-	}
-	return n, nil
 }

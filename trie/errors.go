@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 // ErrCommitted is returned when a already committed trie is requested for usage.

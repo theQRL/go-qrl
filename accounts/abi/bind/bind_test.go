@@ -25,7 +25,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/common"
+	"github.com/theQRL/go-qrl/common"
 )
 
 var bindTests = []struct {
@@ -48,7 +48,7 @@ var bindTests = []struct {
 		[]string{`6080604052348015600e575f80fd5b50605e80601a5f395ff3fe60806040525f80fdfea2646970667358221220a80e8222d8e6b3f4dd49decd54be722a2bcde4c17e8140473413d4e0a8777b6e64687970637822302e312e302d63692e323032352e322e31372b636f6d6d69742e32333263333034320053`},
 		[]string{`[]`},
 		`
-			"github.com/theQRL/go-zond/common"
+			"github.com/theQRL/go-qrl/common"
 		`,
 		`
 			if b, err := NewEmpty(common.Address{}, nil); b == nil || err != nil {
@@ -73,7 +73,7 @@ var bindTests = []struct {
 		`
 			"fmt"
 
-			"github.com/theQRL/go-zond/common"
+			"github.com/theQRL/go-qrl/common"
 		`,
 		`
 			if b, err := NewInputChecker(common.Address{}, nil); b == nil || err != nil {
@@ -103,7 +103,7 @@ var bindTests = []struct {
 		`
 			"fmt"
 
-			"github.com/theQRL/go-zond/common"
+			"github.com/theQRL/go-qrl/common"
 		`,
 		`
 			if b, err := NewOutputChecker(common.Address{}, nil); b == nil || err != nil {
@@ -137,7 +137,7 @@ var bindTests = []struct {
 			"math/big"
 			"reflect"
 
-			"github.com/theQRL/go-zond/common"
+			"github.com/theQRL/go-qrl/common"
 		`,
 		`
 			if e, err := NewEventChecker(common.Address{}, nil); e == nil || err != nil {
@@ -219,15 +219,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -274,15 +274,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -320,15 +320,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -378,16 +378,16 @@ var bindTests = []struct {
 			"math/big"
 			"reflect"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/common"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/common"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -441,15 +441,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -486,10 +486,10 @@ var bindTests = []struct {
 		[]string{`608060405234801561000f575f80fd5b506101888061001d5f395ff3fe608060405234801561000f575f80fd5b5060043610610029575f3560e01c8063f97a60051461002d575b5f80fd5b61003561004b565b6040516100429190610112565b60405180910390f35b60606040518060400160405280600d81526020017f4920646f6e277420657869737400000000000000000000000000000000000000815250905090565b5f81519050919050565b5f82825260208201905092915050565b5f5b838110156100bf5780820151818401526020810190506100a4565b5f8484015250505050565b5f601f19601f8301169050919050565b5f6100e482610088565b6100ee8185610092565b93506100fe8185602086016100a2565b610107816100ca565b840191505092915050565b5f6020820190508181035f83015261012a81846100da565b90509291505056fea264697066735822122010c82b9beb9a9021a9b7fac44becbb220ef3e27d2ccb5d33c9d3fc268440d38964687970637822302e312e302d63692e323032352e322e31372b636f6d6d69742e32333263333034320053`},
 		[]string{`[{"inputs":[],"name":"String","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"pure","type":"function"}]`},
 		`
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/common"
-			"github.com/theQRL/go-zond/core"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/common"
+			"github.com/theQRL/go-qrl/core"
 		`,
 		`
 			// Create a simulator and wrap a non-deployed contract
@@ -525,10 +525,10 @@ var bindTests = []struct {
 		[]string{`608060405234801561000f575f80fd5b5060e18061001c5f395ff3fe6080604052348015600e575f80fd5b50600436106026575f3560e01c8063d5f6622514602a575b5f80fd5b60306045565b604051603c9291906068565b60405180910390f35b5f80600a80915091509091565b5f819050919050565b6062816052565b82525050565b5f60408201905060795f830185605b565b60846020830184605b565b939250505056fea2646970667358221220f23812f4bf6452d78f05884b269e72452b4a21fe9c95ddcba91f86b8a106130f64687970637822302e312e302d63692e323032352e322e31372b636f6d6d69742e32333263333034320053`},
 		[]string{`[{"inputs":[],"name":"Struct","outputs":[{"internalType":"uint256","name":"a","type":"uint256"},{"internalType":"uint256","name":"b","type":"uint256"}],"stateMutability":"pure","type":"function"}]`},
 		`
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/common"
-			"github.com/theQRL/go-zond/core"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/common"
+			"github.com/theQRL/go-qrl/core"
 		`,
 		`
 			// Create a simulator and wrap a non-deployed contract
@@ -573,15 +573,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -623,16 +623,16 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/common"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/common"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -694,15 +694,15 @@ var bindTests = []struct {
 			"fmt"
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -785,16 +785,16 @@ var bindTests = []struct {
 			"math/big"
 			"time"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/common"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/common"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -976,15 +976,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -1000,11 +1000,11 @@ var bindTests = []struct {
 
 			//Create coordinate-filled array, for testing purposes.
 			testArr := [5][4][3]uint64{}
-			for i := 0; i < 5; i++ {
+			for i := range 5 {
 				testArr[i] = [4][3]uint64{}
-				for j := 0; j < 4; j++ {
+				for j := range 4 {
 					testArr[i][j] = [3]uint64{}
-					for k := 0; k < 3; k++ {
+					for k := range 3 {
 						//pack the coordinates, each array value will be unique, and can be validated easily.
 						testArr[i][j][k] = uint64(i) << 16 | uint64(j) << 8 | uint64(k)
 					}
@@ -1095,14 +1095,14 @@ var bindTests = []struct {
 			"math/big"
 			"reflect"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -1113,7 +1113,7 @@ var bindTests = []struct {
 			}
 			sim.Commit()
 
-			check := func(a, b interface{}, errMsg string) {
+			check := func(a, b any, errMsg string) {
 				if !reflect.DeepEqual(a, b) {
 					t.Fatal(errMsg)
 				}
@@ -1236,15 +1236,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -1301,15 +1301,15 @@ var bindTests = []struct {
 			"math/big"
 			"time"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Initialize test accounts
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
 
@@ -1387,21 +1387,21 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/core"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/core"
 		`,
 		`
 			// Initialize test accounts
-			key, _ := crypto.GenerateMLDSA87Key()
-			addr := key.GetAddress()
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			addr := wallet.GetAddress()
 
 			// Deploy registrar contract
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
 
-			transactOpts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			transactOpts, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 			_, _, _, err := DeployIdentifierCollision(transactOpts, sim)
 			if err != nil {
 				t.Fatalf("failed to deploy contract: %v", err)
@@ -1449,20 +1449,20 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/core"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/core"
 		`,
 		`
-			key, _ := crypto.GenerateMLDSA87Key()
-			addr := key.GetAddress()
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			addr := wallet.GetAddress()
 
 			// Deploy registrar contract
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
 
-			transactOpts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			transactOpts, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 			_, _, c1, err := DeployContractOne(transactOpts, sim)
 			if err != nil {
 				t.Fatal("Failed to deploy contract")
@@ -1511,15 +1511,15 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
 			// Generate a new random account and a funded simulator
-			key, _ := crypto.GenerateMLDSA87Key()
-			auth, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			auth, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{auth.From: {Balance: big.NewInt(10000000000000000)}}, 10000000)
 			defer sim.Close()
@@ -1570,19 +1570,19 @@ var bindTests = []struct {
 			"bytes"
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 		`,
 		`
-			key, _ := crypto.GenerateMLDSA87Key()
-			addr := key.GetAddress()
+			wallet, _ := wallet.Generate(wallet.ML_DSA_87)
+			addr := wallet.GetAddress()
 
 			sim := backends.NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(10000000000000000)}}, 1000000)
 			defer sim.Close()
 
-			opts, _ := bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+			opts, _ := bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 			_, _, c, err := DeployNewFallbacks(opts, sim)
 			if err != nil {
 				t.Fatalf("Failed to deploy contract: %v", err)
@@ -1656,16 +1656,16 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/qrl/qrlconfig"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/qrl/qrlconfig"
 		`,
 		`
 			var (
-				key, _  = crypto.GenerateMLDSA87Key()
-				user, _ = bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+				wallet, _  = wallet.Generate(wallet.ML_DSA_87)
+				user, _ = bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 				sim     = backends.NewSimulatedBackend(core.GenesisAlloc{user.From: {Balance: big.NewInt(1000000000000000000)}}, qrlconfig.Defaults.Miner.GasCeil)
 			)
 			defer sim.Close()
@@ -1724,16 +1724,16 @@ var bindTests = []struct {
 		`
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/qrl/qrlconfig"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/qrl/qrlconfig"
 		`,
 		`
 			var (
-				key, _  = crypto.GenerateMLDSA87Key()
-				user, _ = bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+				wallet, _  = wallet.Generate(wallet.ML_DSA_87)
+				user, _ = bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 				sim     = backends.NewSimulatedBackend(core.GenesisAlloc{user.From: {Balance: big.NewInt(1000000000000000000)}}, qrlconfig.Defaults.Miner.GasCeil)
 			)
 			defer sim.Close()
@@ -1774,16 +1774,16 @@ var bindTests = []struct {
 		imports: `
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/qrl/qrlconfig"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/qrl/qrlconfig"
 		`,
 		tester: `
 			var (
-				key, _  = crypto.GenerateMLDSA87Key()
-				user, _ = bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+				wallet, _  = wallet.Generate(wallet.ML_DSA_87)
+				user, _ = bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 				sim     = backends.NewSimulatedBackend(core.GenesisAlloc{user.From: {Balance: big.NewInt(1000000000000000000)}}, qrlconfig.Defaults.Miner.GasCeil)
 			)
 			defer sim.Close()
@@ -1820,16 +1820,16 @@ var bindTests = []struct {
 		imports: `
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/qrl/qrlconfig"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/qrl/qrlconfig"
 		`,
 		tester: `
 			var (
-				key, _  = crypto.GenerateMLDSA87Key()
-				user, _ = bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+				wallet, _  = wallet.Generate(wallet.ML_DSA_87)
+				user, _ = bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 				sim     = backends.NewSimulatedBackend(core.GenesisAlloc{user.From: {Balance: big.NewInt(1000000000000000000)}}, qrlconfig.Defaults.Miner.GasCeil)
 			)
 			defer sim.Close()
@@ -1858,16 +1858,16 @@ var bindTests = []struct {
 		imports: `
 			"math/big"
 
-			"github.com/theQRL/go-zond/accounts/abi/bind"
-			"github.com/theQRL/go-zond/accounts/abi/bind/backends"
-			"github.com/theQRL/go-zond/core"
-			"github.com/theQRL/go-zond/crypto"
-			"github.com/theQRL/go-zond/qrl/qrlconfig"
+			"github.com/theQRL/go-qrl/accounts/abi/bind"
+			"github.com/theQRL/go-qrl/accounts/abi/bind/backends"
+			"github.com/theQRL/go-qrl/core"
+			"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+			"github.com/theQRL/go-qrl/qrl/qrlconfig"
 		`,
 		tester: `
 			var (
-				key, _  = crypto.GenerateMLDSA87Key()
-				user, _ = bind.NewKeyedTransactorWithChainID(key, big.NewInt(1337))
+				wallet, _  = wallet.Generate(wallet.ML_DSA_87)
+				user, _ = bind.NewKeyedTransactorWithChainID(wallet, big.NewInt(1337))
 				sim     = backends.NewSimulatedBackend(core.GenesisAlloc{user.From: {Balance: big.NewInt(1000000000000000000)}}, qrlconfig.Defaults.Miner.GasCeil)
 			)
 			_, tx, _, err := DeployRangeKeyword(user, sim)
@@ -1894,7 +1894,7 @@ var bindTests = []struct {
 		bytecode: []string{"0x6080604052348015600e575f80fd5b5060b28061001b5f395ff3fe6080604052348015600e575f80fd5b5060043610603a575f3560e01c80639d99313214603e578063d02767c7146046578063ffa0279514604e575b5f80fd5b60446056565b005b604c6058565b005b6054605a565b005b565b565b56fea26469706673582212202d6c1deab83fc4da3da533de039b19e156b45f3a2da7ed065062a85dc76f586864687970637822302e312e302d63692e323032352e322e31372b636f6d6d69742e32333263333034320053"},
 		abi:      []string{`[{"anonymous":false,"inputs":[{"indexed":false,"internalType":"address","name":"_param","type":"address"}],"name":"_1TestEvent","type":"event"},{"inputs":[],"name":"_1test","outputs":[],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"__1test","outputs":[],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"__2test","outputs":[],"stateMutability":"pure","type":"function"}]`},
 		imports: `
-			"github.com/theQRL/go-zond/common"
+			"github.com/theQRL/go-qrl/common"
 		`,
 		tester: `
 			if b, err := NewNumericMethodName(common.Address{}, nil); b == nil || err != nil {
@@ -1929,7 +1929,7 @@ func TestGolangBindings(t *testing.T) {
 				types = []string{tt.name}
 			}
 			// Generate the binding and create a Go source file in the workspace
-			bind, err := Bind(types, tt.abi, tt.bytecode, tt.fsigs, "bindtest", LangGo, tt.libs, tt.aliases)
+			bind, err := Bind(types, tt.abi, tt.bytecode, tt.fsigs, "bindtest", tt.libs, tt.aliases)
 			if err != nil {
 				t.Fatalf("test %d: failed to generate binding: %v", i, err)
 			}
@@ -1961,7 +1961,7 @@ func TestGolangBindings(t *testing.T) {
 		t.Fatalf("failed to convert binding test to modules: %v\n%s", err, out)
 	}
 	pwd, _ := os.Getwd()
-	replacer := exec.Command(gocmd, "mod", "edit", "-x", "-require", "github.com/theQRL/go-zond@v0.0.0", "-replace", "github.com/theQRL/go-zond="+filepath.Join(pwd, "..", "..", "..")) // Repo root
+	replacer := exec.Command(gocmd, "mod", "edit", "-x", "-require", "github.com/theQRL/go-qrl@v0.0.0", "-replace", "github.com/theQRL/go-qrl="+filepath.Join(pwd, "..", "..", "..")) // Repo root
 	replacer.Dir = pkg
 	if out, err := replacer.CombinedOutput(); err != nil {
 		t.Fatalf("failed to replace binding test dependency to current source tree: %v\n%s", err, out)

@@ -23,21 +23,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/theQRL/go-zond/accounts/abi"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/core"
-	"github.com/theQRL/go-zond/core/asm"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/state"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl/tracers"
-	"github.com/theQRL/go-zond/qrl/tracers/logger"
+	"github.com/theQRL/go-qrl/accounts/abi"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/core"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/state"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl/tracers"
+	"github.com/theQRL/go-qrl/qrl/tracers/logger"
 
 	// force-load js tracers to trigger registration
-	_ "github.com/theQRL/go-zond/qrl/tracers/js"
+	_ "github.com/theQRL/go-qrl/qrl/tracers/js"
 )
 
 func TestDefaults(t *testing.T) {
@@ -145,9 +144,8 @@ func BenchmarkCall(b *testing.B) {
 		b.Fatal(err)
 	}
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 400; j++ {
+	for b.Loop() {
+		for range 400 {
 			Execute(code, cpurchase, nil)
 			Execute(code, creceived, nil)
 			Execute(code, refund, nil)
@@ -176,11 +174,9 @@ func benchmarkQRVM_Create(bench *testing.B, code string) {
 		QRVMConfig: vm.Config{},
 	}
 	// Warm up the intpools and stuff
-	bench.ResetTimer()
-	for i := 0; i < bench.N; i++ {
+	for bench.Loop() {
 		Call(receiver, []byte{}, &runtimeConfig)
 	}
-	bench.StopTimer()
 }
 
 func BenchmarkQRVM_CREATE_500(bench *testing.B) {
@@ -353,7 +349,7 @@ func benchmarkNonModifyingCode(gas uint64, code []byte, name string, tracerCode 
 
 	b.Run(name, func(b *testing.B) {
 		b.ReportAllocs()
-		for i := 0; i < b.N; i++ {
+		for b.Loop() {
 			vmenv.Call(sender, destination, nil, gas, cfg.Value)
 		}
 	})
@@ -480,21 +476,9 @@ func TestEip2929Cases(t *testing.T) {
 	t.Skip("Test only useful for generating documentation")
 	id := 1
 	prettyPrint := func(comment string, code []byte) {
-		instrs := make([]string, 0)
-		it := asm.NewInstructionIterator(code)
-		for it.Next() {
-			if it.Arg() != nil && 0 < len(it.Arg()) {
-				instrs = append(instrs, fmt.Sprintf("%v %#x", it.Op(), it.Arg()))
-			} else {
-				instrs = append(instrs, fmt.Sprintf("%v", it.Op()))
-			}
-		}
-		ops := strings.Join(instrs, ", ")
 		fmt.Printf("### Case %d\n\n", id)
 		id++
-		fmt.Printf("%v\n\nBytecode: \n```\n%#x\n```\nOperations: \n```\n%v\n```\n\n",
-			comment,
-			code, ops)
+		fmt.Printf("%v\n\nBytecode: \n```\n%#x\n```\n", comment, code)
 		Execute(code, nil, &Config{
 			QRVMConfig: vm.Config{
 				Tracer:    logger.NewMarkdownLogger(nil, os.Stdout),
@@ -586,7 +570,7 @@ func TestEip2929Cases(t *testing.T) {
 
 // TestColdAccountAccessCost test that the cold account access cost is reported
 // correctly
-// see: https://github.com/theQRL/go-zond/issues/22649
+// see: https://github.com/theQRL/go-qrl/issues/22649
 func TestColdAccountAccessCost(t *testing.T) {
 	for i, tc := range []struct {
 		code []byte
@@ -756,11 +740,11 @@ func TestRuntimeJSTracer(t *testing.T) {
 		byte(vm.PUSH1), 0,
 		byte(vm.RETURN),
 	}
-	main, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000aa")
-	address0, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000bb")
-	address1, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000cc")
-	address2, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000dd")
-	address3, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000ee")
+	main, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000aa")
+	address0, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000bb")
+	address1, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000cc")
+	address2, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000dd")
+	address3, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000ee")
 	for i, jsTracer := range jsTracers {
 		for j, tc := range tests {
 			statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)

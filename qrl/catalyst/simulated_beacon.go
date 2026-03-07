@@ -23,15 +23,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/theQRL/go-zond/beacon/engine"
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/txpool"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/node"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrl"
-	"github.com/theQRL/go-zond/rpc"
+	"github.com/theQRL/go-qrl/beacon/engine"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/txpool"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/node"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrl"
+	"github.com/theQRL/go-qrl/rpc"
 )
 
 const devEpochLength = 32

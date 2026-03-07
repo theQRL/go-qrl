@@ -66,9 +66,9 @@ type echoResult struct {
 
 type testError struct{}
 
-func (testError) Error() string          { return "testError" }
-func (testError) ErrorCode() int         { return 444 }
-func (testError) ErrorData() interface{} { return "testError data" }
+func (testError) Error() string  { return "testError" }
+func (testError) ErrorCode() int { return 444 }
+func (testError) ErrorData() any { return "testError data" }
 
 type MarshalErrObj struct{}
 
@@ -88,6 +88,10 @@ func (s *testService) Echo(str string, i int, args *echoArgs) echoResult {
 
 func (s *testService) EchoWithCtx(ctx context.Context, str string, i int, args *echoArgs) echoResult {
 	return echoResult{str, i, args}
+}
+
+func (s *testService) Repeat(msg string, i int) string {
+	return strings.Repeat(msg, i)
 }
 
 func (s *testService) PeerInfo(ctx context.Context) PeerInfo {
@@ -132,24 +136,24 @@ func (s *testService) Panic() string {
 	panic("service panic")
 }
 
-func (s *testService) CallMeBack(ctx context.Context, method string, args []interface{}) (interface{}, error) {
+func (s *testService) CallMeBack(ctx context.Context, method string, args []any) (any, error) {
 	c, ok := ClientFromContext(ctx)
 	if !ok {
 		return nil, errors.New("no client")
 	}
-	var result interface{}
+	var result any
 	err := c.Call(&result, method, args...)
 	return result, err
 }
 
-func (s *testService) CallMeBackLater(ctx context.Context, method string, args []interface{}) error {
+func (s *testService) CallMeBackLater(ctx context.Context, method string, args []any) error {
 	c, ok := ClientFromContext(ctx)
 	if !ok {
 		return errors.New("no client")
 	}
 	go func() {
 		<-ctx.Done()
-		var result interface{}
+		var result any
 		c.Call(&result, method, args...)
 	}()
 	return nil
@@ -186,7 +190,7 @@ func (s *notificationTestService) SomeSubscription(ctx context.Context, n, val i
 	// events might be send before the response for the *_subscribe method.
 	subscription := notifier.CreateSubscription()
 	go func() {
-		for i := 0; i < n; i++ {
+		for i := range n {
 			if err := notifier.Notify(subscription.ID, val+i); err != nil {
 				return
 			}

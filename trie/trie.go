@@ -22,10 +22,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/trie/trienode"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/trie/trienode"
 )
 
 // Trie is a Merkle Patricia Trie. Use New to create a trie that sits on

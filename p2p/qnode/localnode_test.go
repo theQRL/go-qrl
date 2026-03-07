@@ -22,8 +22,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/p2p/qnr"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 func newLocalNodeForTesting() (*LocalNode, *DB) {
@@ -108,7 +108,7 @@ func TestLocalNodeEndpoint(t *testing.T) {
 	assert.Equal(t, initialSeq+1, ln.Node().Seq())
 
 	// Add endpoint statements from random hosts.
-	for i := 0; i < iptrackMinStatements; i++ {
+	for range iptrackMinStatements {
 		assert.Equal(t, fallback.IP, ln.Node().IP())
 		assert.Equal(t, fallback.Port, ln.Node().UDP())
 		assert.Equal(t, initialSeq+1, ln.Node().Seq())

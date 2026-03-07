@@ -19,8 +19,8 @@ package qrl
 import (
 	"time"
 
-	"github.com/theQRL/go-zond/common/bitutil"
-	"github.com/theQRL/go-zond/core/rawdb"
+	"github.com/theQRL/go-qrl/common/bitutil"
+	"github.com/theQRL/go-qrl/core/rawdb"
 )
 
 const (
@@ -44,7 +44,7 @@ const (
 // startBloomHandlers starts a batch of goroutines to accept bloom bit database
 // retrievals from possibly a range of filters and serving the data to satisfy.
 func (qrl *QRL) startBloomHandlers(sectionSize uint64) {
-	for i := 0; i < bloomServiceThreads; i++ {
+	for range bloomServiceThreads {
 		go func() {
 			for {
 				select {

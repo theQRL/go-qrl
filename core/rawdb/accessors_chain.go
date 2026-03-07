@@ -24,13 +24,13 @@ import (
 	"math/big"
 	"slices"
 
-	"github.com/theQRL/go-zond/common"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/crypto"
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/crypto"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 // ReadCanonicalHash retrieves the hash assigned to a canonical block number.
@@ -659,7 +659,7 @@ func deriveLogFields(receipts []*receiptLogs, hash common.Hash, number uint64, t
 	if len(txs) != len(receipts) {
 		return errors.New("transaction and receipt count mismatch")
 	}
-	for i := 0; i < len(receipts); i++ {
+	for i := range receipts {
 		txHash := txs[i].Hash()
 		// The derived log fields can simply be set from the block and transaction
 		for j := 0; j < len(receipts[i].Logs); j++ {

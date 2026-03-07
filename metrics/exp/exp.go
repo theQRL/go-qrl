@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/metrics"
-	"github.com/theQRL/go-zond/metrics/prometheus"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/metrics"
+	"github.com/theQRL/go-qrl/metrics/prometheus"
 )
 
 type exp struct {
@@ -186,7 +186,7 @@ func (exp *exp) publishResettingTimer(name string, metric metrics.ResettingTimer
 }
 
 func (exp *exp) syncToExpvar() {
-	exp.registry.Each(func(name string, i interface{}) {
+	exp.registry.Each(func(name string, i any) {
 		switch i := i.(type) {
 		case metrics.Counter:
 			exp.publishCounter(name, i.Snapshot())

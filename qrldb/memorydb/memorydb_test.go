@@ -19,8 +19,8 @@ package memorydb
 import (
 	"testing"
 
-	"github.com/theQRL/go-zond/qrldb"
-	"github.com/theQRL/go-zond/qrldb/dbtest"
+	"github.com/theQRL/go-qrl/qrldb"
+	"github.com/theQRL/go-qrl/qrldb/dbtest"
 )
 
 func TestMemoryDB(t *testing.T) {

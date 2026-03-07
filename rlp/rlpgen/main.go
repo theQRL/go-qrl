@@ -27,7 +27,7 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-const pathOfPackageRLP = "github.com/theQRL/go-zond/rlp"
+const pathOfPackageRLP = "github.com/theQRL/go-qrl/rlp"
 
 func main() {
 	var (
@@ -56,7 +56,7 @@ func main() {
 	}
 }
 
-func fatal(args ...interface{}) {
+func fatal(args ...any) {
 	fmt.Fprintln(os.Stderr, args...)
 	os.Exit(1)
 }

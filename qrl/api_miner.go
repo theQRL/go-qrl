@@ -19,7 +19,7 @@ package qrl
 import (
 	"math/big"
 
-	"github.com/theQRL/go-zond/common/hexutil"
+	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
 // MinerAPI provides an API to control the miner.

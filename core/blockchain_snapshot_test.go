@@ -29,13 +29,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/theQRL/go-zond/consensus"
-	"github.com/theQRL/go-zond/consensus/beacon"
-	"github.com/theQRL/go-zond/core/rawdb"
-	"github.com/theQRL/go-zond/core/types"
-	"github.com/theQRL/go-zond/core/vm"
-	"github.com/theQRL/go-zond/params"
-	"github.com/theQRL/go-zond/qrldb"
+	"github.com/theQRL/go-qrl/consensus"
+	"github.com/theQRL/go-qrl/consensus/beacon"
+	"github.com/theQRL/go-qrl/core/rawdb"
+	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/params"
+	"github.com/theQRL/go-qrl/qrldb"
 )
 
 // snapshotTestBasic wraps the common testing fields in the snapshot tests.
@@ -215,7 +215,7 @@ func (basic *snapshotTestBasic) teardown() {
 }
 
 // snapshotTest is a test case type for normal snapshot recovery.
-// It can be used for testing that restart Gzond normally.
+// It can be used for testing that restart Gqrl normally.
 type snapshotTest struct {
 	snapshotTestBasic
 }
@@ -238,7 +238,7 @@ func (snaptest *snapshotTest) test(t *testing.T) {
 }
 
 // crashSnapshotTest is a test case type for irregular snapshot recovery.
-// It can be used for testing that restart Gzond after the crash.
+// It can be used for testing that restart Gqrl after the crash.
 type crashSnapshotTest struct {
 	snapshotTestBasic
 }
@@ -419,7 +419,7 @@ func (snaptest *wipeCrashSnapshotTest) test(t *testing.T) {
 	newchain.Stop()
 }
 
-// Tests a Gzond restart with valid snapshot. Before the shutdown, all snapshot
+// Tests a Gqrl restart with valid snapshot. Before the shutdown, all snapshot
 // journal will be persisted correctly. In this case no snapshot recovery is
 // required.
 func TestRestartWithNewSnapshot(t *testing.T) {
@@ -459,7 +459,7 @@ func TestRestartWithNewSnapshot(t *testing.T) {
 	}
 }
 
-// Tests a Gzond was crashed and restarts with a broken snapshot. In this case the
+// Tests a Gqrl was crashed and restarts with a broken snapshot. In this case the
 // chain head should be rewound to the point with available state. And also the
 // new head should must be lower than disk layer. But there is no committed point
 // so the chain should be rewound to genesis and the disk layer should be left
@@ -502,7 +502,7 @@ func TestNoCommitCrashWithNewSnapshot(t *testing.T) {
 	}
 }
 
-// Tests a Gzond was crashed and restarts with a broken snapshot. In this case the
+// Tests a Gqrl was crashed and restarts with a broken snapshot. In this case the
 // chain head should be rewound to the point with available state. And also the
 // new head should must be lower than disk layer. But there is only a low committed
 // point so the chain should be rewound to committed point and the disk layer
@@ -545,7 +545,7 @@ func TestLowCommitCrashWithNewSnapshot(t *testing.T) {
 	}
 }
 
-// Tests a Gzond was crashed and restarts with a broken snapshot. In this case
+// Tests a Gqrl was crashed and restarts with a broken snapshot. In this case
 // the chain head should be rewound to the point with available state. And also
 // the new head should must be lower than disk layer. But there is only a high
 // committed point so the chain should be rewound to genesis and the disk layer
@@ -592,7 +592,7 @@ func TestHighCommitCrashWithNewSnapshot(t *testing.T) {
 	}
 }
 
-// Tests a Gzond was running with snapshot enabled. Then restarts without
+// Tests a Gqrl was running with snapshot enabled. Then restarts without
 // enabling snapshot and after that re-enable the snapshot again. In this
 // case the snapshot should be rebuilt with latest chain head.
 func TestGappedNewSnapshot(t *testing.T) {
@@ -633,7 +633,7 @@ func TestGappedNewSnapshot(t *testing.T) {
 	}
 }
 
-// Tests the Gzond was running with snapshot enabled and resetHead is applied.
+// Tests the Gqrl was running with snapshot enabled and resetHead is applied.
 // In this case the head is rewound to the target(with state available). After
 // that the chain is restarted and the original disk layer is kept.
 func TestSetHeadWithNewSnapshot(t *testing.T) {
@@ -674,7 +674,7 @@ func TestSetHeadWithNewSnapshot(t *testing.T) {
 	}
 }
 
-// Tests the Gzond was running with a complete snapshot and then imports a few
+// Tests the Gqrl was running with a complete snapshot and then imports a few
 // more new blocks on top without enabling the snapshot. After the restart,
 // crash happens. Check everything is ok after the restart.
 func TestRecoverSnapshotFromWipingCrash(t *testing.T) {

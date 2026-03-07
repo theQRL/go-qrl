@@ -20,8 +20,8 @@ import (
 	"io"
 	"os"
 
-	"github.com/theQRL/go-zond/log"
-	"github.com/theQRL/go-zond/rlp"
+	"github.com/theQRL/go-qrl/log"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 const freezerVersion = 1 // The initial version tag of freezer table metadata
