@@ -209,7 +209,7 @@ found in [`tests/init.go`](tests/init.go).
 
 Invoking it with the provided example files
 EOF
-cmd="./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Shanghai"
+cmd="./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond"
 tick;echo "$cmd"; tick
 $cmd 2>/dev/null
 echo "Two resulting files:"
@@ -219,7 +219,7 @@ showjson result.json
 echo ""
 
 echo "We can make them spit out the data to e.g. \`stdout\` like this:"
-cmd="./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --output.result=stdout --output.alloc=stdout --state.fork=Shanghai"
+cmd="./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --output.result=stdout --output.alloc=stdout --state.fork=Zond"
 tick;echo "$cmd"; tick
 output=`$cmd 2>/dev/null`
 echo "Output:"
@@ -240,7 +240,7 @@ echo ""
 echo "The \`BLOCKHASH\` opcode requires blockhashes to be provided by the caller, inside the \`env\`."
 echo "If a required blockhash is not provided, the exit code should be \`4\`:"
 echo "Example where blockhashes are provided: "
-demo "./qrvm t8n --input.alloc=./testdata/3/alloc.json --input.txs=./testdata/3/txs.json --input.env=./testdata/3/env.json  --trace --state.fork=Shanghai"
+demo "./qrvm t8n --input.alloc=./testdata/3/alloc.json --input.txs=./testdata/3/txs.json --input.env=./testdata/3/env.json  --trace --state.fork=Zond"
 cmd="cat trace-0-0x72fadbef39cd251a437eea619cfeda752271a5faaaa2147df012e112159ffb81.jsonl | grep BLOCKHASH -C2"
 tick && echo $cmd && tick
 echo "$ticks"
@@ -249,7 +249,7 @@ echo "$ticks"
 echo ""
 
 echo "In this example, the caller has not provided the required blockhash:"
-cmd="./qrvm t8n --input.alloc=./testdata/4/alloc.json --input.txs=./testdata/4/txs.json --input.env=./testdata/4/env.json  --trace --state.fork=Shanghai"
+cmd="./qrvm t8n --input.alloc=./testdata/4/alloc.json --input.txs=./testdata/4/txs.json --input.env=./testdata/4/env.json  --trace --state.fork=Zond"
 tick && echo $cmd && $cmd 2>&1
 errc=$?
 tick
@@ -259,8 +259,8 @@ echo ""
 echo "#### Chaining"
 echo ""
 echo "Another thing that can be done, is to chain invocations:"
-cmd1="./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Shanghai --output.alloc=stdout"
-cmd2="./qrvm t8n --input.alloc=stdin --input.env=./testdata/1/env.json --input.txs=./testdata/1/txs.json --state.fork=Shanghai"
+cmd1="./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond --output.alloc=stdout"
+cmd2="./qrvm t8n --input.alloc=stdin --input.env=./testdata/1/env.json --input.txs=./testdata/1/txs.json --state.fork=Zond"
 echo "$ticks"
 echo "$cmd1 | $cmd2"
 output=$($cmd1 | $cmd2 )
@@ -281,7 +281,7 @@ echo "The input format for RLP-form transactions is _identical_ to the _output_ 
 echo "to use the qrvm to go from \`json\` input to \`rlp\` input."
 echo ""
 echo "The following command takes **json** the transactions in \`./testdata/13/txs.json\` and signs them. After execution, they are output to \`signed_txs.rlp\`.:"
-cmd="./qrvm t8n --state.fork=Shanghai --input.alloc=./testdata/13/alloc.json --input.txs=./testdata/13/txs.json --input.env=./testdata/13/env.json --output.result=alloc_jsontx.json --output.body=signed_txs.rlp"
+cmd="./qrvm t8n --state.fork=Zond --input.alloc=./testdata/13/alloc.json --input.txs=./testdata/13/txs.json --input.env=./testdata/13/env.json --output.result=alloc_jsontx.json --output.body=signed_txs.rlp"
 echo "$ticks"
 echo $cmd
 $cmd 2>&1
@@ -295,7 +295,7 @@ echo "rlpdump -hex \$(cat signed_txs.rlp | jq -r )"
 rlpdump -hex $(cat signed_txs.rlp | jq -r )
 echo "$ticks"
 echo "Now, we can now use those (or any other already signed transactions), as input, like so: "
-cmd="./qrvm t8n --state.fork=Shanghai --input.alloc=./testdata/13/alloc.json --input.txs=./signed_txs.rlp --input.env=./testdata/13/env.json --output.result=alloc_rlptx.json"
+cmd="./qrvm t8n --state.fork=Zond --input.alloc=./testdata/13/alloc.json --input.txs=./signed_txs.rlp --input.env=./testdata/13/env.json --output.result=alloc_rlptx.json"
 echo "$ticks"
 echo $cmd
 $cmd 2>&1
@@ -321,7 +321,7 @@ The transaction tool is used to perform static validity checks on transactions s
 
 EOF
 
-cmd="./qrvm t9n --state.fork Shanghai --input.txs testdata/15/signed_txs.rlp"
+cmd="./qrvm t9n --state.fork Zond --input.txs testdata/15/signed_txs.rlp"
 tick;echo "$cmd";
 $cmd 2>/dev/null
 tick

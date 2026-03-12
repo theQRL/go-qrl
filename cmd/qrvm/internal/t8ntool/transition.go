@@ -180,7 +180,7 @@ func Transition(ctx *cli.Context) error {
 	if err := applyLondonChecks(&prestate.Env, chainConfig); err != nil {
 		return err
 	}
-	if err := applyShanghaiChecks(&prestate.Env, chainConfig); err != nil {
+	if err := applyZondChecks(&prestate.Env, chainConfig); err != nil {
 		return err
 	}
 	if err := applyMergeChecks(&prestate.Env, chainConfig); err != nil {
@@ -324,9 +324,9 @@ func applyLondonChecks(env *stEnv, chainConfig *params.ChainConfig) error {
 	return nil
 }
 
-func applyShanghaiChecks(env *stEnv, chainConfig *params.ChainConfig) error {
+func applyZondChecks(env *stEnv, chainConfig *params.ChainConfig) error {
 	if env.Withdrawals == nil {
-		return NewError(ErrorConfig, errors.New("shanghai config but missing 'withdrawals' in env section"))
+		return NewError(ErrorConfig, errors.New("zond config but missing 'withdrawals' in env section"))
 	}
 	return nil
 }

@@ -128,7 +128,7 @@ func TestTransactionTimeSort(t *testing.T) {
 	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 	}
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(0)}
+	signer := types.ZondSigner{ChainId: big.NewInt(0)}
 
 	// Generate a batch of transactions with overlapping prices, but different creation times
 	groups := map[common.Address][]*txpool.LazyTransaction{}

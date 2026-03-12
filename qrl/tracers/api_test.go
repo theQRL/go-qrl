@@ -198,7 +198,7 @@ func TestTraceCall(t *testing.T) {
 		},
 	}
 	genBlocks := 10
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	backend := newTestBackend(t, genBlocks, genesis, func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
@@ -340,7 +340,7 @@ func TestTraceTransaction(t *testing.T) {
 		},
 	}
 	target := common.Hash{}
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	backend := newTestBackend(t, 1, genesis, func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
@@ -397,7 +397,7 @@ func TestTraceBlock(t *testing.T) {
 		},
 	}
 	genBlocks := 10
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	var txHash common.Hash
 	backend := newTestBackend(t, genBlocks, genesis, func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
@@ -496,7 +496,7 @@ func TestTracingWithOverrides(t *testing.T) {
 		},
 	}
 	genBlocks := 10
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	backend := newTestBackend(t, genBlocks, genesis, func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
 		//    value: 1000 planck
@@ -857,7 +857,7 @@ func TestTraceChain(t *testing.T) {
 		},
 	}
 	genBlocks := 50
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 
 	var (
 		ref   atomic.Uint32 // total refs has made

@@ -94,7 +94,7 @@ func (p *testTxPool) Pending(filter txpool.PendingFilter) map[common.Address][]*
 
 	batches := make(map[common.Address][]*types.Transaction)
 	for _, tx := range p.pool {
-		from, _ := types.Sender(types.ShanghaiSigner{ChainId: big.NewInt(0)}, tx)
+		from, _ := types.Sender(types.ZondSigner{ChainId: big.NewInt(0)}, tx)
 		batches[from] = append(batches[from], tx)
 	}
 	for _, batch := range batches {

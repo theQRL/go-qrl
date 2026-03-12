@@ -84,8 +84,8 @@ func TestCreation(t *testing.T) {
 					{15049999, 0, ID{Hash: checksumToBytes(0x20c327fc), Next: 15050000}},            // Last Arrow Glacier block
 					{15050000, 0, ID{Hash: checksumToBytes(0xf0afd0e3), Next: 1681338455}},          // First Gray Glacier block
 					{20000000, 1681338454, ID{Hash: checksumToBytes(0xf0afd0e3), Next: 1681338455}}, // Last Gray Glacier block
-					{20000000, 1681338455, ID{Hash: checksumToBytes(0xdce96c2d), Next: 0}},          // First Shanghai block
-					{30000000, 2000000000, ID{Hash: checksumToBytes(0xdce96c2d), Next: 0}},          // Future Shanghai block
+					{20000000, 1681338455, ID{Hash: checksumToBytes(0xdce96c2d), Next: 0}},          // First Zond block
+					{30000000, 2000000000, ID{Hash: checksumToBytes(0xdce96c2d), Next: 0}},          // Future Zond block
 				*/
 			},
 		},
@@ -114,21 +114,21 @@ func TestValidation(t *testing.T) {
 		// Timestamp based tests
 		//----------------------
 
-		// Local is mainnet Shanghai, remote announces the same. No future fork is announced.
+		// Local is mainnet Zond, remote announces the same. No future fork is announced.
 		{params.MainnetChainConfig, 15050000, 20000000, ID{Hash: checksumToBytes(0x6170f487), Next: 0}, nil},
 
-		// Local is mainnet Shanghai, remote announces the same. Remote also announces a next fork
+		// Local is mainnet Zond, remote announces the same. Remote also announces a next fork
 		// at time 0xffffffff, but that is uncertain.
 		{params.MainnetChainConfig, 15050000, 20000000, ID{Hash: checksumToBytes(0x6170f487), Next: math.MaxUint64}, nil},
 
-		// Local is mainnet Shanghai, and isn't aware of more forks. Remote announces Shanghai +
+		// Local is mainnet Zond, and isn't aware of more forks. Remote announces Zond +
 		// 0xffffffff. Local needs software update, reject.
 		{params.MainnetChainConfig, 20000000, 1681338455, ID{Hash: checksumToBytes(checksumUpdate(0xdce96c2d, math.MaxUint64)), Next: 0}, ErrLocalIncompatibleOrStale},
 
-		// Local is mainnet Shanghai, remote is random Shanghai.
+		// Local is mainnet Zond, remote is random Zond.
 		{params.MainnetChainConfig, 20000000, 1681338455, ID{Hash: checksumToBytes(0x12345678), Next: 0}, ErrLocalIncompatibleOrStale},
 
-		// Local is mainnet Shanghai, far in the future. Remote announces Gopherium (non existing fork)
+		// Local is mainnet Zond, far in the future. Remote announces Gopherium (non existing fork)
 		// at some future timestamp 8888888888, for itself, but past block for local. Local is incompatible.
 		//
 		// This case detects non-upgraded nodes with majority hash power (typical Ropsten mess).
@@ -184,13 +184,13 @@ func TestTimeBasedForkInGenesis(t *testing.T) {
 	}{
 		// NOTE(rgeraldes24): revisit upon new fork
 		/*
-			// Shanghai active before genesis, skip
+			// Zond active before genesis, skip
 			{config(), ID{Hash: forkidHash, Next: time + 1}},
 
-			// Shanghai active at genesis, skip
+			// Zond active at genesis, skip
 			{config(), ID{Hash: forkidHash, Next: time + 1}},
 
-			// Shanghai not active, skip
+			// Zond not active, skip
 			{config(), ID{Hash: forkidHash, Next: time + 1}},
 		*/
 		// No forks

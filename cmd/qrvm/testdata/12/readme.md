@@ -5,12 +5,12 @@ This test contains an EIP-1559 consensus issue which happened on Ropsten, where
 
 Before the issue was fixed, this invocation allowed the transaction to pass into a block:
 ```
-$ go run . t8n --state.fork=Shanghai --input.alloc=testdata/12/alloc.json --input.txs=testdata/12/txs.json --input.env=testdata/12/env.json --output.alloc=stdout --output.result=stdout
+$ go run . t8n --state.fork=Zond --input.alloc=testdata/12/alloc.json --input.txs=testdata/12/txs.json --input.env=testdata/12/env.json --output.alloc=stdout --output.result=stdout
 ```
 
 With the fix applied, the result is: 
 ```
-go run . t8n --state.fork=Shanghai --input.alloc=testdata/12/alloc.json --input.txs=testdata/12/txs.json --input.env=testdata/12/env.json --output.alloc=stdout --output.result=stdout
+go run . t8n --state.fork=Zond --input.alloc=testdata/12/alloc.json --input.txs=testdata/12/txs.json --input.env=testdata/12/env.json --output.alloc=stdout --output.result=stdout
 INFO [08-29|20:12:04.348] rejected tx                              index=0 hash=1d8f98..d32abf from=Q204cC644e26BDF879db422658eDEE62e302c3Da8 error="insufficient funds for gas * price + value: address Q204cC644e26BDF879db422658eDEE62e302c3Da8 have 84000000 want 84000032"
 INFO [08-29|20:12:04.348] Trie dumping started                     root=67e50f..797459
 INFO [08-29|20:12:04.348] Trie dumping complete                    accounts=1 elapsed="17.958µs"

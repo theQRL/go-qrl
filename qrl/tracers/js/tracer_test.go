@@ -242,7 +242,7 @@ func TestIsPrecompile(t *testing.T) {
 		t.Error(err)
 	}
 	if string(res) != "false" {
-		t.Errorf("tracer should not consider unavailable contract as precompile in shanghai")
+		t.Errorf("tracer should not consider unavailable contract as precompile in zond")
 	}
 
 	tracer, _ = newJsTracer("{addr: toAddress('Q0000000000000000000000000000000000000001'), res: null, step: function() { this.res = isPrecompiled(this.addr); }, fault: function() {}, result: function() { return this.res; }}", nil, nil)
@@ -252,7 +252,7 @@ func TestIsPrecompile(t *testing.T) {
 		t.Error(err)
 	}
 	if string(res) != "true" {
-		t.Errorf("tracer should consider deposit contract as precompile in shanghai")
+		t.Errorf("tracer should consider deposit contract as precompile in zond")
 	}
 }
 

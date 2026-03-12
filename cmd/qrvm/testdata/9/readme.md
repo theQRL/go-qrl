@@ -21,14 +21,14 @@ The transaction invokes the contract above.
 
 Running it yields: 
 ```
-$ go run . t8n --state.fork=Shanghai --input.alloc=testdata/9/alloc.json --input.txs=testdata/9/txs.json --input.env=testdata/9/env.json --trace 2>/dev/null  && cat trace-*  | grep SLOAD
+$ go run . t8n --state.fork=Zond --input.alloc=testdata/9/alloc.json --input.txs=testdata/9/txs.json --input.env=testdata/9/env.json --trace 2>/dev/null  && cat trace-*  | grep SLOAD
 {"pc":2,"op":84,"gas":"0x48c28","gasCost":"0x834","memSize":0,"stack":["0x0","0x1"],"depth":1,"refund":0,"opName":"SLOAD"}
 {"pc":3,"op":84,"gas":"0x483f4","gasCost":"0x64","memSize":0,"stack":["0x0","0x0"],"depth":1,"refund":0,"opName":"SLOAD"}
 ```
 
 We can also get the post-alloc:
 ```
-$ go run . t8n --state.fork=Shanghai --input.alloc=testdata/9/alloc.json --input.txs=testdata/9/txs.json --input.env=testdata/9/env.json --output.alloc=stdout 2>/dev/null
+$ go run . t8n --state.fork=Zond --input.alloc=testdata/9/alloc.json --input.txs=testdata/9/txs.json --input.env=testdata/9/env.json --output.alloc=stdout 2>/dev/null
 {
   "alloc": {
     "Q000000000000000000000000000000000000aaaa": {

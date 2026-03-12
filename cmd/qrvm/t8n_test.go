@@ -118,7 +118,7 @@ func TestT8n(t *testing.T) {
 		{ // Test exit (3) on bad config
 			base: "./testdata/1",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai+1346", "",
+				"alloc.json", "txs.json", "env.json", "Zond+1346", "",
 			},
 			output:      t8nOutput{alloc: true, result: true},
 			expExitCode: 3,
@@ -126,7 +126,7 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/1",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output: t8nOutput{alloc: true, result: true},
 			expOut: "exp.json",
@@ -134,7 +134,7 @@ func TestT8n(t *testing.T) {
 		{ // blockhash test
 			base: "./testdata/3",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output: t8nOutput{alloc: true, result: true},
 			expOut: "exp.json",
@@ -142,7 +142,7 @@ func TestT8n(t *testing.T) {
 		{ // missing blockhash test
 			base: "./testdata/4",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output:      t8nOutput{alloc: true, result: true},
 			expExitCode: 4,
@@ -150,7 +150,7 @@ func TestT8n(t *testing.T) {
 		{ // Sign json transactions
 			base: "./testdata/13",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output: t8nOutput{body: true},
 			expOut: "exp.json",
@@ -158,7 +158,7 @@ func TestT8n(t *testing.T) {
 		{ // Already signed transactions
 			base: "./testdata/13",
 			input: t8nInput{
-				"alloc.json", "signed_txs.rlp", "env.json", "Shanghai", "",
+				"alloc.json", "signed_txs.rlp", "env.json", "Zond", "",
 			},
 			output: t8nOutput{result: true},
 			expOut: "exp2.json",
@@ -166,7 +166,7 @@ func TestT8n(t *testing.T) {
 		{ // Test post-merge transition
 			base: "./testdata/24",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output: t8nOutput{alloc: true, result: true},
 			expOut: "exp.json",
@@ -174,7 +174,7 @@ func TestT8n(t *testing.T) {
 		{ // Test post-merge transition where input is missing random
 			base: "./testdata/24",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env-missingrandom.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env-missingrandom.json", "Zond", "",
 			},
 			output:      t8nOutput{alloc: false, result: false},
 			expExitCode: 3,
@@ -182,7 +182,7 @@ func TestT8n(t *testing.T) {
 		{ // Test base fee calculation
 			base: "./testdata/25",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output: t8nOutput{alloc: true, result: true},
 			expOut: "exp.json",
@@ -190,7 +190,7 @@ func TestT8n(t *testing.T) {
 		{ // Test withdrawals transition
 			base: "./testdata/26",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Shanghai", "",
+				"alloc.json", "txs.json", "env.json", "Zond", "",
 			},
 			output: t8nOutput{alloc: true, result: true},
 			expOut: "exp.json",
@@ -258,7 +258,7 @@ func TestT9n(t *testing.T) {
 		expExitCode int
 		expOut      string
 	}{
-		{ // txs on Shanghai
+		{ // txs on Zond
 			base: "./testdata/15",
 			input: t9nInput{
 				inTxs: "signed_txs.rlp",

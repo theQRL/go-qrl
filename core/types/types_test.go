@@ -43,7 +43,7 @@ func BenchmarkDecodeRLP(b *testing.B) {
 func benchRLP(b *testing.B, encode bool) {
 	wallet, _ := wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 	to, _ := common.NewAddressFromString("Q00000000000000000000000000000000deadbeef")
-	signer := NewShanghaiSigner(big.NewInt(1337))
+	signer := NewZondSigner(big.NewInt(1337))
 	for _, tc := range []struct {
 		name string
 		obj  any

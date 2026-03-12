@@ -95,7 +95,7 @@ func TestAssembleBlock(t *testing.T) {
 	defer n.Close()
 
 	api := NewConsensusAPI(qrlservice)
-	signer := types.NewShanghaiSigner(qrlservice.BlockChain().Config().ChainID)
+	signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 	to := blocks[9].Coinbase()
 	tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(10), To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testWallet)
 	if err != nil {
@@ -911,7 +911,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 	}
 }
 
-// TestWithdrawals creates and verifies two post-Shanghai blocks. The first
+// TestWithdrawals creates and verifies two post-Zond blocks. The first
 // includes zero withdrawals and the second includes two.
 func TestWithdrawals(t *testing.T) {
 	genesis, blocks := generateChain(10)
@@ -921,7 +921,7 @@ func TestWithdrawals(t *testing.T) {
 
 	api := NewConsensusAPI(qrlservice)
 
-	// 10: Build Shanghai block with no withdrawals.
+	// 10: Build Zond block with no withdrawals.
 	parent := qrlservice.BlockChain().CurrentHeader()
 	blockParams := engine.PayloadAttributes{
 		Timestamp:   parent.Time + 5,
@@ -961,7 +961,7 @@ func TestWithdrawals(t *testing.T) {
 		t.Fatalf("invalid payload")
 	}
 
-	// 11: build shanghai block with withdrawal
+	// 11: build zond block with withdrawal
 	aa := common.Address{0xaa}
 	bb := common.Address{0xbb}
 	blockParams = engine.PayloadAttributes{
@@ -1137,12 +1137,12 @@ func setupBodies(t *testing.T) (*node.Node, *qrl.QRL, []*types.Block) {
 		}
 	}
 
-	postShanghaiHeaders := setupBlocks(t, qrlservice, 10, parent, callback, withdrawals)
-	postShanghaiBlocks := make([]*types.Block, len(postShanghaiHeaders))
-	for i, header := range postShanghaiHeaders {
-		postShanghaiBlocks[i] = qrlservice.BlockChain().GetBlock(header.Hash(), header.Number.Uint64())
+	postZondHeaders := setupBlocks(t, qrlservice, 10, parent, callback, withdrawals)
+	postZondBlocks := make([]*types.Block, len(postZondHeaders))
+	for i, header := range postZondHeaders {
+		postZondBlocks[i] = qrlservice.BlockChain().GetBlock(header.Hash(), header.Number.Uint64())
 	}
-	return n, qrlservice, append(blocks, postShanghaiBlocks...)
+	return n, qrlservice, append(blocks, postZondBlocks...)
 }
 
 func allHashes(blocks []*types.Block) []common.Hash {

@@ -163,7 +163,7 @@ func ExampleGenerateChain() {
 	// This call generates a chain of 5 blocks. The function runs for
 	// each block and adds different features to gen based on the
 	// block index.
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	chain, _ := GenerateChain(gspec.Config, genesis, beacon.NewFaker(), genDb, 5, func(i int, gen *BlockGen) {
 		switch i {
 		case 0:

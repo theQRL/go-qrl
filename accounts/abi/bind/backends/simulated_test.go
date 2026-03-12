@@ -70,7 +70,7 @@ func TestSimulatedBackend(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(code),
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, wallet)
+	tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, wallet)
 
 	err = sim.SendTransaction(t.Context(), tx)
 	if err != nil {
@@ -180,7 +180,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx2, err := types.SignTx(tx2, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx2, err := types.SignTx(tx2, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -325,7 +325,7 @@ func TestNonceAt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -376,7 +376,7 @@ func TestSendTransaction(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -421,7 +421,7 @@ func TestTransactionByHash(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -766,7 +766,7 @@ func TestTransactionCount(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -830,7 +830,7 @@ func TestTransactionInBlock(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -895,7 +895,7 @@ func TestPendingNonceAt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -925,7 +925,7 @@ func TestPendingNonceAt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -964,7 +964,7 @@ func TestTransactionReceipt(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, err := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	signedTx, err := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	if err != nil {
 		t.Errorf("could not sign tx: %v", err)
 	}
@@ -1402,7 +1402,7 @@ func TestForkResendTx(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	tx, _ := types.SignTx(_tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	sim.SendTransaction(t.Context(), tx)
 	sim.Commit()
 	// 3.
@@ -1451,7 +1451,7 @@ func TestCommitReturnValue(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	tx, _ := types.SignTx(_tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+	tx, _ := types.SignTx(_tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 	sim.SendTransaction(t.Context(), tx)
 	h2 := sim.Commit()
 

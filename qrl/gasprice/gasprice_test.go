@@ -177,7 +177,7 @@ func TestSuggestTipCap(t *testing.T) {
 		Default:    big.NewInt(params.Shor),
 	}
 	var cases = []struct {
-		fork   *big.Int // London fork number
+		fork   *big.Int // Zond fork number
 		expect *big.Int // Expected gasprice suggestion
 	}{
 		{nil, big.NewInt(params.Shor * int64(30))},

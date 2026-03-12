@@ -888,7 +888,7 @@ func (b *Block) WithdrawalsRoot(ctx context.Context) (*common.Hash, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Pre-shanghai blocks
+	// Pre-zond blocks
 	if header.WithdrawalsHash == nil {
 		return nil, nil
 	}
@@ -900,7 +900,7 @@ func (b *Block) Withdrawals(ctx context.Context) (*[]*Withdrawal, error) {
 	if err != nil || block == nil {
 		return nil, err
 	}
-	// Pre-shanghai blocks
+	// Pre-zond blocks
 	if block.Header().WithdrawalsHash == nil {
 		return nil, nil
 	}

@@ -127,7 +127,7 @@ var (
 			"\n\tSyntax <forkname>(+ExtraQip)",
 			strings.Join(tests.AvailableForks(), "\n\t    "),
 			strings.Join(vm.ActivateableQips(), ", ")),
-		Value: "Shanghai",
+		Value: "Zond",
 	}
 	VerbosityFlag = &cli.IntFlag{
 		Name:  "verbosity",

@@ -38,9 +38,9 @@ type PrecompiledContract interface {
 	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
 }
 
-// PrecompiledContractsShanghai contains the default set of pre-compiled QRL
-// contracts used in the Shanghai release.
-var PrecompiledContractsShanghai = map[common.Address]PrecompiledContract{
+// PrecompiledContractsZond contains the default set of pre-compiled QRL
+// contracts used in the Zond release.
+var PrecompiledContractsZond = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
@@ -48,18 +48,18 @@ var PrecompiledContractsShanghai = map[common.Address]PrecompiledContract{
 }
 
 var (
-	PrecompiledAddressesShanghai []common.Address
+	PrecompiledAddressesZond []common.Address
 )
 
 func init() {
-	for k := range PrecompiledContractsShanghai {
-		PrecompiledAddressesShanghai = append(PrecompiledAddressesShanghai, k)
+	for k := range PrecompiledContractsZond {
+		PrecompiledAddressesZond = append(PrecompiledAddressesZond, k)
 	}
 }
 
 // ActivePrecompiles returns the precompiles enabled with the current configuration.
 func ActivePrecompiles(rules params.Rules) []common.Address {
-	return PrecompiledAddressesShanghai
+	return PrecompiledAddressesZond
 }
 
 // RunPrecompiledContract runs and evaluates the output of a precompiled contract.

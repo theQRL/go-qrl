@@ -45,7 +45,7 @@ Command line params that need to be supported are
     --output.result value          (default: "result.json")
     --state.chainid value          (default: 1)
     --state.reward value           (default: 0)
-    --state.fork value             (default: "Shanghai")
+    --state.fork value             (default: "Zond")
     --trace.memory                 (default: false)
     --trace.nomemory               (default: true)
     --trace.noreturndata           (default: true)
@@ -169,7 +169,7 @@ There are a few (not many) errors that can occur, those are defined below.
 
 ```
 # This should exit with 3
-./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Shanghai 2>/dev/null
+./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond 2>/dev/null
 exitcode:3 OK
 ```
 #### Forks
@@ -184,7 +184,7 @@ found in [`tests/init.go`](tests/init.go).
 
 Invoking it with the provided example files
 ```
-./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Shanghai
+./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond
 ```
 Two resulting files:
 
@@ -239,7 +239,7 @@ Two resulting files:
 
 We can make them spit out the data to e.g. `stdout` like this:
 ```
-./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --output.result=stdout --output.alloc=stdout --state.fork=Shanghai
+./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --output.result=stdout --output.alloc=stdout --state.fork=Zond
 ```
 Output:
 ```json
@@ -291,9 +291,9 @@ Output:
 #### Future QIPS
 
 It is also possible to experiment with future qips that are not yet defined in a hard fork.
-Example, putting QIP-1344 into Shanghai: 
+Example, putting QIP-1344 into Zond: 
 ```
-./qrvm t8n --state.fork=Shanghai+1344 --input.pre=./testdata/1/pre.json --input.txs=./testdata/1/txs.json --input.env=/testdata/1/env.json
+./qrvm t8n --state.fork=Zond+1344 --input.pre=./testdata/1/pre.json --input.txs=./testdata/1/txs.json --input.env=/testdata/1/env.json
 ```
 
 #### Block history
@@ -302,7 +302,7 @@ The `BLOCKHASH` opcode requires blockhashes to be provided by the caller, inside
 If a required blockhash is not provided, the exit code should be `4`:
 Example where blockhashes are provided: 
 ```
-./qrvm t8n --input.alloc=./testdata/3/alloc.json --input.txs=./testdata/3/txs.json --input.env=./testdata/3/env.json  --trace --state.fork=Shanghai
+./qrvm t8n --input.alloc=./testdata/3/alloc.json --input.txs=./testdata/3/txs.json --input.env=./testdata/3/env.json  --trace --state.fork=Zond
 
 ```
 
@@ -318,7 +318,7 @@ cat trace-0-0x72fadbef39cd251a437eea619cfeda752271a5faaaa2147df012e112159ffb81.j
 
 In this example, the caller has not provided the required blockhash:
 ```
-./qrvm t8n --input.alloc=./testdata/4/alloc.json --input.txs=./testdata/4/txs.json --input.env=./testdata/4/env.json --trace --state.fork=Shanghai
+./qrvm t8n --input.alloc=./testdata/4/alloc.json --input.txs=./testdata/4/txs.json --input.env=./testdata/4/env.json --trace --state.fork=Zond
 ERROR(4): getHash(3) invoked, blockhash for that block not provided
 ```
 Error code: 4
@@ -327,7 +327,7 @@ Error code: 4
 
 Another thing that can be done, is to chain invocations:
 ```
-./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Shanghai --output.alloc=stdout | ./qrvm t8n --input.alloc=stdin --input.env=./testdata/1/env.json --input.txs=./testdata/1/txs.json --state.fork=Shanghai
+./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond --output.alloc=stdout | ./qrvm t8n --input.alloc=stdin --input.env=./testdata/1/env.json --input.txs=./testdata/1/txs.json --state.fork=Zond
 
 ```
 What happened here, is that we first applied two identical transactions, so the second one was rejected. 
@@ -345,7 +345,7 @@ to use the qrvm to go from `json` input to `rlp` input.
 
 The following command takes **json** the transactions in `./testdata/13/txs.json` and signs them. After execution, they are output to `signed_txs.rlp`.:
 ```
-./qrvm t8n --state.fork=Shanghai --input.alloc=./testdata/13/alloc.json --input.txs=./testdata/13/txs.json --input.env=./testdata/13/env.json --output.result=alloc_jsontx.json --output.body=signed_txs.rlp
+./qrvm t8n --state.fork=Zond --input.alloc=./testdata/13/alloc.json --input.txs=./testdata/13/txs.json --input.env=./testdata/13/env.json --output.result=alloc_jsontx.json --output.body=signed_txs.rlp
 INFO [08-29|20:19:29.728] Trie dumping started                     root=7fe86c..0f502d
 INFO [08-29|20:19:29.728] Trie dumping complete                    accounts=3 elapsed="149.584µs"
 INFO [08-29|20:19:29.729] Wrote file                               file=alloc.json
@@ -369,7 +369,7 @@ rlpdump -hex $(cat signed_txs.rlp | jq -r )
 ```
 Now, we can now use those (or any other already signed transactions), as input, like so: 
 ```
-./qrvm t8n --state.fork=Shanghai --input.alloc=./testdata/13/alloc.json --input.txs=./signed_txs.rlp --input.env=./testdata/13/env.json --output.result=alloc_rlptx.json
+./qrvm t8n --state.fork=Zond --input.alloc=./testdata/13/alloc.json --input.txs=./signed_txs.rlp --input.env=./testdata/13/env.json --output.result=alloc_rlptx.json
 INFO [08-29|20:20:43.691] Trie dumping started                     root=7fe86c..0f502d
 INFO [08-29|20:20:43.691] Trie dumping complete                    accounts=3 elapsed="142.292µs"
 INFO [08-29|20:20:43.691] Wrote file                               file=alloc.json
@@ -394,7 +394,7 @@ The transaction tool is used to perform static validity checks on transactions s
 ### Examples
 
 ```
-./qrvm t9n --state.fork Shanghai --input.txs testdata/15/signed_txs.rlp
+./qrvm t9n --state.fork Zond --input.txs testdata/15/signed_txs.rlp
 [
   {
     "address": "Q2014ae9f42335b44f94ee97d6248c0f55f0ee16e",

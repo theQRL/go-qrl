@@ -44,7 +44,7 @@ type operation struct {
 	memorySize memorySizeFunc
 }
 
-var shanghaiInstructionSet = newShanghaiInstructionSet()
+var zondInstructionSet = newZondInstructionSet()
 
 // JumpTable contains the QRVM opcodes supported at a given fork.
 type JumpTable [256]*operation
@@ -67,9 +67,9 @@ func validate(jt JumpTable) JumpTable {
 	return jt
 }
 
-// newFrontierInstructionSet returns the frontier instructions
-// that can be executed during the frontier phase.
-func newShanghaiInstructionSet() JumpTable {
+// newZondInstructionSet returns the zond instructions
+// that can be executed during the zond	 phase.
+func newZondInstructionSet() JumpTable {
 	tbl := JumpTable{
 		STOP: {
 			execute:     opStop,
