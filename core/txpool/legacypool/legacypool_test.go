@@ -116,7 +116,7 @@ func dynamicFeeDataTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.I
 	data := make([]byte, bytes)
 	crand.Read(data)
 
-	tx, _ := types.SignNewTx(wallet, types.ShanghaiSigner{ChainId: big.NewInt(1)}, &types.DynamicFeeTx{
+	tx, _ := types.SignNewTx(wallet, types.ZondSigner{ChainId: big.NewInt(1)}, &types.DynamicFeeTx{
 		ChainID:    params.TestChainConfig.ChainID,
 		Nonce:      nonce,
 		GasTipCap:  tip,
@@ -233,7 +233,7 @@ func validateEvents(events chan core.NewTxsEvent, count int) error {
 }
 
 func deriveSender(tx *types.Transaction) (common.Address, error) {
-	return types.Sender(types.ShanghaiSigner{ChainId: big.NewInt(1)}, tx)
+	return types.Sender(types.ZondSigner{ChainId: big.NewInt(1)}, tx)
 }
 
 type testChain struct {
@@ -426,7 +426,7 @@ func TestNegativeValue(t *testing.T) {
 		Gas:   100,
 		Data:  nil,
 	})
-	signedTx, _ := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, key)
+	signedTx, _ := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, key)
 	from, _ := deriveSender(signedTx)
 	testAddBalance(pool, from, big.NewInt(1))
 	if err := pool.addRemote(signedTx); err != txpool.ErrNegativeValue {
@@ -512,7 +512,7 @@ func TestDoubleNonce(t *testing.T) {
 	}
 	resetState()
 
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	tx1, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &common.Address{}, Value: big.NewInt(100), Gas: 100000, GasFeeCap: big.NewInt(1), GasTipCap: big.NewInt(1), Data: nil}), signer, key)
 	tx2, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &common.Address{}, Value: big.NewInt(100), Gas: 1000000, GasFeeCap: big.NewInt(2), GasTipCap: big.NewInt(2), Data: nil}), signer, key)
 	tx3, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: 0, To: &common.Address{}, Value: big.NewInt(100), Gas: 1000000, GasFeeCap: big.NewInt(1), GasTipCap: big.NewInt(1), Data: nil}), signer, key)

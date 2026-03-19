@@ -118,7 +118,7 @@ func TestFilters(t *testing.T) {
 		// Sender account
 		wallet1, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		addr       = wallet1.GetAddress()
-		signer     = types.NewShanghaiSigner(big.NewInt(1))
+		signer     = types.NewZondSigner(big.NewInt(1))
 		// Logging contract
 		contract  = common.Address{0xfe}
 		contract2 = common.Address{0xff}

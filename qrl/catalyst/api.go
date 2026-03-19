@@ -327,7 +327,7 @@ func (api *ConsensusAPI) getPayload(payloadID engine.PayloadID, full bool) (*eng
 // NewPayloadV2 creates a QRL execution block, inserts it in the chain, and returns the status of the chain.
 func (api *ConsensusAPI) NewPayloadV2(params engine.ExecutableData) (engine.PayloadStatusV1, error) {
 	if params.Withdrawals == nil {
-		return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("nil withdrawals post-shanghai"))
+		return engine.PayloadStatusV1{Status: engine.INVALID}, engine.InvalidParams.With(errors.New("nil withdrawals post-zond"))
 	}
 
 	return api.newPayload(params)
@@ -641,7 +641,7 @@ func getBody(block *types.Block) *engine.ExecutionPayloadBodyV1 {
 		txs[j] = hexutil.Bytes(data)
 	}
 
-	// Post-shanghai withdrawals MUST be set to empty slice instead of nil
+	// Post-zond withdrawals MUST be set to empty slice instead of nil
 	if withdrawals == nil && block.Header().WithdrawalsHash != nil {
 		withdrawals = make([]*types.Withdrawal, 0)
 	}

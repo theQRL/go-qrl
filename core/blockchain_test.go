@@ -2219,7 +2219,7 @@ func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 func benchmarkLargeNumberOfValueToNonexisting(b *testing.B, numTxs, numBlocks int, recipientFn func(uint64) common.Address) {
 	var (
 		address, _        = common.NewAddressFromString("Q000000000000000000000000000000000000c0de")
-		signer            = types.ShanghaiSigner{}
+		signer            = types.ZondSigner{}
 		testBankWallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		testBankAddress   = testBankWallet.GetAddress()
 		bankFunds         = big.NewInt(100000000000000000)
@@ -2413,7 +2413,7 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 			GasFeeCap: b.header.BaseFee,
 			Data:      nil,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, wallet)
+		tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1)}, wallet)
 		b.AddTx(tx)
 		nonce++
 	})
@@ -2913,7 +2913,7 @@ func TestTxIndexer(t *testing.T) {
 			GasFeeCap: big.NewInt(10 * params.InitialBaseFee),
 			Data:      nil,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, testBankWallet)
+		tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1)}, testBankWallet)
 		gen.AddTx(tx)
 		nonce += 1
 	})

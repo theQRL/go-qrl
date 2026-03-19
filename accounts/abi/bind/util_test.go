@@ -74,7 +74,7 @@ func TestWaitDeployed(t *testing.T) {
 			Data:      common.FromHex(test.code),
 			GasFeeCap: gasFeeCap,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1337)}, testWallet)
+		tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1337)}, testWallet)
 
 		// Wait for it to get mined in the background.
 		var (
@@ -128,7 +128,7 @@ func TestWaitDeployedCornerCases(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(code),
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
+	tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, testWallet)
 	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	backend.SendTransaction(ctx, tx)
@@ -146,7 +146,7 @@ func TestWaitDeployedCornerCases(t *testing.T) {
 		GasFeeCap: gasFeeCap,
 		Data:      common.FromHex(code),
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
+	tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, testWallet)
 
 	go func() {
 		contextCanceled := errors.New("context canceled")

@@ -23,7 +23,7 @@ import (
 // LookupInstructionSet returns the instructionset for the fork configured by
 // the rules.
 func LookupInstructionSet(rules params.Rules) (JumpTable, error) {
-	return newShanghaiInstructionSet(), nil
+	return newZondInstructionSet(), nil
 }
 
 // Stack returns the minimum and maximum stack requirements.

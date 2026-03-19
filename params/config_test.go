@@ -113,7 +113,7 @@ func TestCheckCompatible(t *testing.T) {
 				new:           &ChainConfig{},
 				headTimestamp: 25,
 				wantErr: &ConfigCompatError{
-					What:         "Shanghai fork timestamp",
+					What:         "Zond fork timestamp",
 					StoredTime:   newUint64(10),
 					NewTime:      newUint64(20),
 					RewindToTime: 9,
@@ -134,19 +134,19 @@ func TestCheckCompatible(t *testing.T) {
 /*
 func TestConfigRules(t *testing.T) {
 	c := &ChainConfig{
-		ShanghaiTime: newUint64(500),
+		ZondTime: newUint64(500),
 	}
 	var stamp uint64
-	if r := c.Rules(big.NewInt(0), true, stamp); r.IsShanghai {
-		t.Errorf("expected %v to not be shanghai", stamp)
+	if r := c.Rules(big.NewInt(0), true, stamp); r.IsZond {
+		t.Errorf("expected %v to not be zond", stamp)
 	}
 	stamp = 500
-	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsShanghai {
-		t.Errorf("expected %v to be shanghai", stamp)
+	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsZond {
+		t.Errorf("expected %v to be zond", stamp)
 	}
 	stamp = math.MaxInt64
-	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsShanghai {
-		t.Errorf("expected %v to be shanghai", stamp)
+	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsZond {
+		t.Errorf("expected %v to be zond", stamp)
 	}
 }
 */

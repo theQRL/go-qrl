@@ -30,7 +30,7 @@ func TestEIP155ChainId(t *testing.T) {
 	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 	addr := common.Address(wallet.GetAddress())
 
-	signer := NewShanghaiSigner(big.NewInt(18))
+	signer := NewZondSigner(big.NewInt(18))
 	tx, err := SignTx(NewTx(&DynamicFeeTx{Nonce: 0, To: &addr, Value: new(big.Int), Gas: 0, GasFeeCap: new(big.Int), Data: nil}), signer, wallet)
 	if err != nil {
 		t.Fatal(err)
@@ -41,7 +41,7 @@ func TestEIP155ChainId(t *testing.T) {
 	}
 }
 
-func TestShanghaiSigner_Sender(t *testing.T) {
+func TestZondSigner_Sender(t *testing.T) {
 	mkTx := func(chainID *big.Int) *Transaction {
 		return NewTx(&DynamicFeeTx{
 			ChainID:    new(big.Int).Set(chainID),
@@ -85,7 +85,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 			t.Fatalf("wallet: %v", err)
 		}
 		chainID := big.NewInt(31337)
-		signer := NewShanghaiSigner(chainID)
+		signer := NewZondSigner(chainID)
 
 		tx := mkTx(chainID)
 		signed, _, _, _ := signTx(t, signer, tx, wallet)
@@ -105,11 +105,11 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
-		s1 := NewShanghaiSigner(common.Big1)
+		s1 := NewZondSigner(common.Big1)
 		tx := mkTx(common.Big1)
 		signed, _, _, _ := signTx(t, s1, tx, wallet)
 
-		s2 := NewShanghaiSigner(common.Big2)
+		s2 := NewZondSigner(common.Big2)
 		_, err = s2.Sender(signed)
 		if !errors.Is(err, ErrInvalidChainId) && err == nil {
 			t.Fatalf("expected chain id error; got %v", err)
@@ -123,7 +123,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
-		signer := NewShanghaiSigner(big.NewInt(7))
+		signer := NewZondSigner(big.NewInt(7))
 		tx := mkTx(big.NewInt(7))
 		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
 
@@ -145,7 +145,7 @@ func TestShanghaiSigner_Sender(t *testing.T) {
 		if err != nil {
 			t.Fatalf("wallet: %v", err)
 		}
-		signer := NewShanghaiSigner(big.NewInt(7))
+		signer := NewZondSigner(big.NewInt(7))
 		tx := mkTx(big.NewInt(7))
 		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
 

@@ -410,7 +410,7 @@ func testGetBlockReceipts(t *testing.T, protocol uint) {
 	acc1Addr := acc1Wallet.GetAddress()
 	acc2Addr := acc2Wallet.GetAddress()
 
-	signer := types.ShanghaiSigner{ChainId: big.NewInt(1)}
+	signer := types.ZondSigner{ChainId: big.NewInt(1)}
 	// Create a chain generator with some simple transactions (blatantly stolen from @fjl/chain_markets_test)
 	generator := func(i int, block *core.BlockGen) {
 		to1 := common.Address(acc1Addr)

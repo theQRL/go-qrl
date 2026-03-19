@@ -36,7 +36,7 @@ func dynamicFeeValuedTransaction(nonce uint64, value int64, gasLimit uint64, gas
 		GasFeeCap: gasFeeCap,
 		Data:      nil,
 	})
-	signedTx, _ := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, key)
+	signedTx, _ := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, key)
 	return signedTx
 }
 

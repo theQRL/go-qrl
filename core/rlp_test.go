@@ -58,7 +58,7 @@ func getBlock(transactions int, dataSize int) *types.Block {
 						GasFeeCap: b.header.BaseFee,
 						Data:      make([]byte, dataSize),
 					})
-					signedTx, _ := types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(1)}, d)
+					signedTx, _ := types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(1)}, d)
 					b.AddTx(signedTx)
 				}
 			}

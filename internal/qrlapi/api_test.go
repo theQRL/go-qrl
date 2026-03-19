@@ -393,7 +393,7 @@ func TestEstimateGas(t *testing.T) {
 			},
 		}
 		genBlocks      = 10
-		signer         = types.ShanghaiSigner{ChainId: big.NewInt(1)}
+		signer         = types.ZondSigner{ChainId: big.NewInt(1)}
 		randomAccounts = newAccounts(2)
 	)
 	api := NewBlockChainAPI(newTestBackend(t, genBlocks, genesis, beacon.NewFaker(), func(i int, b *core.BlockGen) {
@@ -497,7 +497,7 @@ func TestCall(t *testing.T) {
 			},
 		}
 		genBlocks = 10
-		signer    = types.ShanghaiSigner{ChainId: big.NewInt(1)}
+		signer    = types.ZondSigner{ChainId: big.NewInt(1)}
 	)
 	api := NewBlockChainAPI(newTestBackend(t, genBlocks, genesis, beacon.NewFaker(), func(i int, b *core.BlockGen) {
 		// Transfer from account[0] to account[1]
@@ -903,7 +903,7 @@ func TestRPCGetBlockOrHeader(t *testing.T) {
 			},
 		}
 		genBlocks = 10
-		signer    = types.ShanghaiSigner{ChainId: big.NewInt(1)}
+		signer    = types.ZondSigner{ChainId: big.NewInt(1)}
 		tx        = types.NewTx(&types.DynamicFeeTx{
 			Nonce:     11,
 			GasFeeCap: big.NewInt(11111),
@@ -1178,7 +1178,7 @@ func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Ha
 		switch i {
 		case 0:
 			// transfer 1000planck
-			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &acc2Addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), types.ShanghaiSigner{ChainId: big.NewInt(1)}, acc1Wallet)
+			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: &acc2Addr, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: b.BaseFee(), Data: nil}), types.ZondSigner{ChainId: big.NewInt(1)}, acc1Wallet)
 		case 1:
 			// create contract
 			tx, err = types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(i), To: nil, Gas: 53100, GasFeeCap: b.BaseFee(), Data: common.FromHex("0x60806040")}), signer, acc1Wallet)

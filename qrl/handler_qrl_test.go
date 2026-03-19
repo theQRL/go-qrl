@@ -265,7 +265,7 @@ func testRecvTransactions(t *testing.T, protocol uint) {
 		GasFeeCap: big.NewInt(0),
 		Data:      nil,
 	})
-	tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
+	tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, testWallet)
 
 	if err := src.SendTransactions([]*types.Transaction{tx}); err != nil {
 		t.Fatalf("failed to send transaction: %v", err)
@@ -302,7 +302,7 @@ func testSendTransactions(t *testing.T, protocol uint) {
 			GasFeeCap: big.NewInt(0),
 			Data:      make([]byte, 10240),
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
+		tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, testWallet)
 		insert[nonce] = tx
 	}
 	go handler.txpool.Add(insert, false, false) // Need goroutine to not block on feed
@@ -429,7 +429,7 @@ func testTransactionPropagation(t *testing.T, protocol uint) {
 			GasFeeCap: big.NewInt(0),
 			Data:      nil,
 		})
-		tx, _ = types.SignTx(tx, types.ShanghaiSigner{ChainId: big.NewInt(0)}, testWallet)
+		tx, _ = types.SignTx(tx, types.ZondSigner{ChainId: big.NewInt(0)}, testWallet)
 
 		txs[nonce] = tx
 	}

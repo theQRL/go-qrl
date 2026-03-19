@@ -38,7 +38,7 @@ type (
 )
 
 func (qrvm *QRVM) precompile(addr common.Address) (PrecompiledContract, bool) {
-	precompiles := PrecompiledContractsShanghai
+	precompiles := PrecompiledContractsZond
 	p, ok := precompiles[addr]
 	return p, ok
 }

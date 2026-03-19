@@ -3,7 +3,7 @@
 This test contains testcases for EIP-1559, which were reported by Ori as misbehaving. 
 
 ```
-$ go run . t8n --state.fork=Shanghai --input.alloc=testdata/10/alloc.json --input.txs=testdata/10/txs.json --input.env=testdata/10/env.json --output.alloc=stdout --output.result=stdout
+$ go run . t8n --state.fork=Zond --input.alloc=testdata/10/alloc.json --input.txs=testdata/10/txs.json --input.env=testdata/10/env.json --output.alloc=stdout --output.result=stdout
 INFO [08-29|20:06:24.375] rejected tx                              index=3 hash=95fc73..558541 from=Q20687Fa825ab4AD40A89C303F22F65FEf9778555 error="gas limit reached"
 ```
 Output:

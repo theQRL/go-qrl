@@ -54,7 +54,7 @@ type QRVMInterpreter struct {
 // NewQRVMInterpreter returns a new instance of the Interpreter.
 func NewQRVMInterpreter(qrvm *QRVM) *QRVMInterpreter {
 	// If jump table was not initialised we set the default one.
-	table := &shanghaiInstructionSet
+	table := &zondInstructionSet
 	var extraQips []int
 	if len(qrvm.Config.ExtraQips) > 0 {
 		// Deep-copy jumptable to prevent modification of opcodes in other tables
