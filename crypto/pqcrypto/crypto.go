@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	MLDSA87SignatureLength = cryptomldsa87.CryptoBytes
-	MLDSA87PublicKeyLength = cryptomldsa87.CryptoPublicKeyBytes
+	MLDSA87SignatureLength = cryptomldsa87.CRYPTO_BYTES
+	MLDSA87PublicKeyLength = cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES
 	DescriptorSize         = descriptor.DescriptorSize
 
 	// DigestLength sets the signature digest exact length
@@ -33,7 +33,7 @@ func PublicKeyAndDescriptorToAddress(pk []byte, d descriptor.Descriptor) (common
 
 func MLDSA87VerifySignature(sig []byte, msg []byte, pk []byte) (bool, error) {
 	// walletmldsa87.Verify would panic on bad length
-	if l := len(sig); l != cryptomldsa87.CryptoBytes {
+	if l := len(sig); l != cryptomldsa87.CRYPTO_BYTES {
 		return false, fmt.Errorf("%w: bad length", ErrBadSignature)
 	}
 
@@ -42,7 +42,12 @@ func MLDSA87VerifySignature(sig []byte, msg []byte, pk []byte) (bool, error) {
 		return false, err
 	}
 
-	return walletmldsa87.Verify(msg, sig, &pk87, walletmldsa87.NewMLDSA87Descriptor()), nil
+	desc, err := walletmldsa87.NewMLDSA87Descriptor()
+	if err != nil {
+		return false, err
+	}
+
+	return walletmldsa87.Verify(msg, sig, &pk87, desc), nil
 }
 
 func Sign(digestHash []byte, w wallet.Wallet) ([]byte, error) {

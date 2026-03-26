@@ -38,7 +38,7 @@ func TestSetupGenesis(t *testing.T) {
 
 func testSetupGenesis(t *testing.T, scheme string) {
 	var (
-		customghash = common.HexToHash("0x512a0d99941f1551db550852bdec6c9e213595356ede9dd23d1572199a8d66ba")
+		customghash = common.HexToHash("0xd6bcea948cdbf4cfecaf78c27a9642488fdfcecec9d13f530930c5b309eedbff")
 		customg     = Genesis{
 			Config: &params.ChainConfig{},
 			Alloc: GenesisAlloc{

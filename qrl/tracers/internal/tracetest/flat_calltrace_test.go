@@ -16,7 +16,6 @@ import (
 	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
-	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/rlp"
 	"github.com/theQRL/go-qrl/tests"
 
@@ -91,6 +90,10 @@ func flatCallTracerTestRunner(tracerName string, filename string, dirPath string
 		Origin:   origin,
 		GasPrice: tx.GasPrice(),
 	}
+	baseFee := test.Genesis.BaseFee
+	if baseFee == nil {
+		baseFee = tx.GasPrice()
+	}
 	context := vm.BlockContext{
 		CanTransfer: core.CanTransfer,
 		Transfer:    core.Transfer,
@@ -98,7 +101,7 @@ func flatCallTracerTestRunner(tracerName string, filename string, dirPath string
 		BlockNumber: new(big.Int).SetUint64(uint64(test.Context.Number)),
 		Time:        uint64(test.Context.Time),
 		GasLimit:    uint64(test.Context.GasLimit),
-		BaseFee:     big.NewInt(params.InitialBaseFee),
+		BaseFee:     baseFee,
 	}
 	triedb, _, statedb := tests.MakePreState(rawdb.NewMemoryDatabase(), test.Genesis.Alloc, false, rawdb.HashScheme)
 	defer triedb.Close()

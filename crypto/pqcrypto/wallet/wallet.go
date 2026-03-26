@@ -22,7 +22,7 @@ const (
 var ErrBadWalletType = errors.New("unsupported wallet type")
 
 type Wallet interface {
-	GetSeed() walletcommon.ExtendedSeed
+	GetSeed() (walletcommon.ExtendedSeed, error)
 	GetAddress() [common.AddressLength]uint8
 	GetDescriptor() descriptor.Descriptor
 	GetPK() []byte
@@ -50,7 +50,7 @@ func (w *MLDSA87Wallet) GetDescriptor() descriptor.Descriptor {
 	return w.Wallet.GetDescriptor().ToDescriptor()
 }
 
-func (w *MLDSA87Wallet) GetSeed() walletcommon.ExtendedSeed {
+func (w *MLDSA87Wallet) GetSeed() (walletcommon.ExtendedSeed, error) {
 	return w.Wallet.GetExtendedSeed()
 }
 
@@ -88,7 +88,11 @@ func restoreWalletFromExtendedSeed(ext walletcommon.ExtendedSeed) (Wallet, error
 	desc := descriptor.New(ext.GetDescriptorBytes())
 	switch desc.Type() {
 	case byte(wallettype.ML_DSA_87):
-		mldsa87, err := walletmldsa87.NewWalletFromSeed(ext.GetSeed())
+		seed, err := ext.GetSeed()
+		if err != nil {
+			return nil, err
+		}
+		mldsa87, err := walletmldsa87.NewWalletFromSeed(seed)
 		if err != nil {
 			return nil, err
 		}
