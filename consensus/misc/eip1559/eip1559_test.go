@@ -83,6 +83,62 @@ func TestBlockGasLimits(t *testing.T) {
 	}
 }
 
+// TestGasCostUnderSpam simulates how the base fee (and therefore gas cost)
+// increases when an attacker fills every block to the 20M gas limit.
+func TestGasCostUnderSpam(t *testing.T) {
+	gasLimit := params.MaxGasLimit
+	numTxsPerBlock := gasLimit / params.TxGas // 952 txs per block
+	gasUsedPerBlock := numTxsPerBlock * params.TxGas
+
+	initialBaseFee := big.NewInt(int64(params.InitialBaseFee))
+	numBlocks := 100
+
+	baseFee := new(big.Int).Set(initialBaseFee)
+
+	t.Logf("%-8s %-25s %-25s %-25s", "Block", "BaseFee (planck)", "Tx Cost (planck)", "Block Cost (planck)")
+	t.Logf("%-8s %-25s %-25s %-25s", "-----", "----------------", "----------------", "-------------------")
+
+	for i := 0; i < numBlocks; i++ {
+		// Cost for one transfer at this base fee
+		txCost := new(big.Int).Mul(big.NewInt(int64(params.TxGas)), baseFee)
+		// Total cost for the entire block
+		blockCost := new(big.Int).Mul(big.NewInt(int64(gasUsedPerBlock)), baseFee)
+
+		// Log every 10 blocks and the first/last
+		if i%10 == 0 || i == numBlocks-1 {
+			quantaFloat := new(big.Float).Quo(
+				new(big.Float).SetInt(blockCost),
+				new(big.Float).SetUint64(params.Quanta),
+			)
+			t.Logf("%-8d %-25s %-25s %-25s (%.4f Quanta)",
+				i, baseFee, txCost, blockCost, quantaFloat)
+		}
+
+		// Compute next base fee using CalcBaseFee
+		parent := &types.Header{
+			GasLimit: gasLimit,
+			GasUsed:  gasUsedPerBlock,
+			BaseFee:  baseFee,
+		}
+		baseFee = CalcBaseFee(config(), parent)
+	}
+
+	// After 100 full blocks the base fee should have increased dramatically
+	ratio := new(big.Float).Quo(
+		new(big.Float).SetInt(baseFee),
+		new(big.Float).SetInt(initialBaseFee),
+	)
+	ratioF, _ := ratio.Float64()
+	t.Logf("\nAfter %d full blocks:", numBlocks)
+	t.Logf("  Initial base fee: %s planck", initialBaseFee)
+	t.Logf("  Final base fee:   %s planck", baseFee)
+	t.Logf("  Increase factor:  %.2fx", ratioF)
+
+	if baseFee.Cmp(initialBaseFee) <= 0 {
+		t.Error("base fee did not increase after sustained full blocks")
+	}
+}
+
 // TestCalcBaseFee assumes all blocks are 1559-blocks
 func TestCalcBaseFee(t *testing.T) {
 	tests := []struct {
@@ -92,8 +148,8 @@ func TestCalcBaseFee(t *testing.T) {
 		expectedBaseFee int64
 	}{
 		{params.InitialBaseFee, 20000000, 10000000, params.InitialBaseFee}, // usage == target
-		{params.InitialBaseFee, 20000000, 9000000, 987500000},              // usage below target
-		{params.InitialBaseFee, 20000000, 11000000, 1012500000},            // usage above target
+		{params.InitialBaseFee, 20000000, 9000000, 98750000000},            // usage below target
+		{params.InitialBaseFee, 20000000, 11000000, 101250000000},          // usage above target
 	}
 	for i, test := range tests {
 		parent := &types.Header{

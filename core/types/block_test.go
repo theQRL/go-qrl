@@ -25,6 +25,7 @@ import (
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto"
 	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-qrl/internal/blocktest"
 	"github.com/theQRL/go-qrl/params"
@@ -252,10 +253,10 @@ func BenchmarkEncodeBlock(b *testing.B) {
 
 func makeBenchBlock() *Block {
 	var (
-		wallet, _ = wallet.Generate(wallet.ML_DSA_87)
-		txs       = make([]*Transaction, 70)
-		receipts  = make([]*Receipt, len(txs))
-		signer    = LatestSigner(params.TestChainConfig)
+		w, _     = wallet.Generate(wallet.ML_DSA_87)
+		txs      = make([]*Transaction, 70)
+		receipts = make([]*Receipt, len(txs))
+		signer   = LatestSigner(params.TestChainConfig)
 	)
 	header := &Header{
 		Number:   math.BigPow(2, 9),
@@ -276,7 +277,7 @@ func makeBenchBlock() *Block {
 			GasFeeCap: gasFeeCap,
 			Data:      data,
 		})
-		signedTx, err := SignTx(tx, signer, wallet)
+		signedTx, err := SignTx(tx, signer, w)
 		if err != nil {
 			panic(err)
 		}
@@ -346,5 +347,63 @@ func TestRlpDecodeParentHash(t *testing.T) {
 				t.Fatalf("invalid %d: have %x, want %x", i, have, want)
 			}
 		}
+	}
+}
+
+// TestMaxBlockSize computes the maximum possible block size when the block is
+// full of simple transfer transactions that consume the entire gas limit.
+func TestMaxBlockSize(t *testing.T) {
+	gasLimit := params.MaxGasLimit
+	numTxs := gasLimit / params.TxGas
+
+	to, _ := common.NewAddressFromString("Q9a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a")
+
+	txs := make([]*Transaction, numTxs)
+	for i := uint64(0); i < numTxs; i++ {
+		tx := NewTx(&DynamicFeeTx{
+			ChainID:     big.NewInt(1),
+			Nonce:       i,
+			GasTipCap:   big.NewInt(1),
+			GasFeeCap:   big.NewInt(1000000000),
+			Gas:         params.TxGas,
+			To:          &to,
+			Value:       big.NewInt(1),
+			Descriptor:  [3]byte{},
+			ExtraParams: []byte{},
+			Signature:   make([]byte, pqcrypto.MLDSA87SignatureLength),
+			PublicKey:   make([]byte, pqcrypto.MLDSA87PublicKeyLength),
+		})
+		txs[i] = tx
+	}
+
+	header := &Header{
+		ParentHash: common.Hash{},
+		Number:     big.NewInt(1),
+		GasLimit:   gasLimit,
+		GasUsed:    numTxs * params.TxGas,
+		BaseFee:    big.NewInt(1000000000),
+		Extra:      make([]byte, params.MaximumExtraDataSize),
+	}
+
+	block := NewBlock(header, &Body{Transactions: txs}, nil, blocktest.NewHasher())
+
+	txSize := txs[0].Size()
+	blockSize := block.Size()
+
+	t.Logf("Gas limit:          %d", gasLimit)
+	t.Logf("Tx gas:             %d", params.TxGas)
+	t.Logf("Number of txs:      %d", numTxs)
+	t.Logf("Single tx size:     %d bytes", txSize)
+	t.Logf("Block size:         %d bytes (%.2f MB)", blockSize, float64(blockSize)/(1024*1024))
+
+	if block.GasLimit() != 20000000 {
+		t.Errorf("gas limit mismatch: got %d, want %d", block.GasLimit(), 20000000)
+	}
+	if block.GasUsed() != 19992000 {
+		t.Errorf("gas used mismatch: got %d, want %d", block.GasUsed(), 19992000)
+	}
+	const expectedBlockSize = uint64(6924970)
+	if blockSize != expectedBlockSize {
+		t.Errorf("block size mismatch: got %d, want %d", blockSize, expectedBlockSize)
 	}
 }

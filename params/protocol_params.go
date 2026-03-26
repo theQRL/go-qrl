@@ -75,9 +75,9 @@ const (
 	// EXP has a dynamic portion depending on the size of the exponent
 	ExpByteEIP158 uint64 = 50 // was raised to 50 during Eip158
 
-	DefaultBaseFeeChangeDenominator = 8          // Bounds the amount the base fee can change between blocks.
-	DefaultElasticityMultiplier     = 2          // Bounds the maximum gas limit a block may have.
-	InitialBaseFee                  = 1000000000 // Initial base fee.
+	DefaultBaseFeeChangeDenominator = 8            // Bounds the amount the base fee can change between blocks.
+	DefaultElasticityMultiplier     = 2            // Bounds the maximum gas limit a block may have.
+	InitialBaseFee                  = 100000000000 // Initial base fee.
 
 	MaxCodeSize     = 24576           // Maximum bytecode to permit for a contract
 	MaxInitCodeSize = 2 * MaxCodeSize // Maximum initcode to permit in a creation transaction and create instructions
