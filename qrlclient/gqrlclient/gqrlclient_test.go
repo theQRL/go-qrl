@@ -46,7 +46,7 @@ var (
 	testEmpty, _    = common.NewAddressFromString("Q000000000000000000000000000000000000eeee")
 	testSlot        = common.HexToHash("0xdeadbeef")
 	testValue       = crypto.Keccak256Hash(testSlot[:])
-	testBalance     = big.NewInt(2e15)
+	testBalance     = big.NewInt(2e18)
 )
 
 func newTestBackend(t *testing.T) (*node.Node, []*types.Block) {
@@ -182,7 +182,7 @@ func testAccessList(t *testing.T, client *rpc.Client) {
 		From:      testAddr,
 		To:        &common.Address{},
 		Gas:       21000,
-		GasFeeCap: big.NewInt(1000000000),
+		GasFeeCap: big.NewInt(100000000000),
 		Value:     big.NewInt(1),
 	}
 	al, gas, vmErr, err := zc.CreateAccessList(t.Context(), msg)
@@ -203,7 +203,7 @@ func testAccessList(t *testing.T, client *rpc.Client) {
 		From:      testAddr,
 		To:        nil,
 		Gas:       100000,
-		GasFeeCap: big.NewInt(1000000000),
+		GasFeeCap: big.NewInt(100000000000),
 		Value:     big.NewInt(1),
 		Data:      common.FromHex("0x608060806080608155fd"),
 	}
@@ -386,7 +386,7 @@ func testSubscribePendingTransactions(t *testing.T, client *rpc.Client) {
 		To:        &common.Address{1},
 		Value:     big.NewInt(1),
 		Gas:       22000,
-		GasFeeCap: big.NewInt(1),
+		GasFeeCap: big.NewInt(100000000000),
 		Data:      nil,
 	})
 	signer := types.LatestSignerForChainID(chainID)
@@ -423,7 +423,7 @@ func testSubscribeFullPendingTransactions(t *testing.T, client *rpc.Client) {
 		To:        &common.Address{1},
 		Value:     big.NewInt(1),
 		Gas:       22000,
-		GasFeeCap: big.NewInt(1),
+		GasFeeCap: big.NewInt(100000000000),
 		Data:      nil,
 	})
 	signer := types.LatestSignerForChainID(chainID)
@@ -449,7 +449,7 @@ func testCallContract(t *testing.T, client *rpc.Client) {
 		From:      testAddr,
 		To:        &common.Address{},
 		Gas:       21000,
-		GasFeeCap: big.NewInt(1000000000),
+		GasFeeCap: big.NewInt(100000000000),
 		Value:     big.NewInt(1),
 	}
 	// CallContract without override
@@ -560,7 +560,7 @@ func testCallContractWithBlockOverrides(t *testing.T, client *rpc.Client) {
 		From:      testAddr,
 		To:        &common.Address{},
 		Gas:       50000,
-		GasFeeCap: big.NewInt(1000000000),
+		GasFeeCap: big.NewInt(100000000000),
 		Value:     big.NewInt(1),
 	}
 	override := OverrideAccount{

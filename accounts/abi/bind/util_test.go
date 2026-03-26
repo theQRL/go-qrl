@@ -57,7 +57,7 @@ func TestWaitDeployed(t *testing.T) {
 	for name, test := range waitDeployedTests {
 		backend := backends.NewSimulatedBackend(
 			core.GenesisAlloc{
-				testWallet.GetAddress(): {Balance: big.NewInt(10000000000000000)},
+				testWallet.GetAddress(): {Balance: big.NewInt(9000000000000000000)},
 			},
 			10000000,
 		)
@@ -108,7 +108,7 @@ func TestWaitDeployed(t *testing.T) {
 func TestWaitDeployedCornerCases(t *testing.T) {
 	backend := backends.NewSimulatedBackend(
 		core.GenesisAlloc{
-			testWallet.GetAddress(): {Balance: big.NewInt(10000000000000000)},
+			testWallet.GetAddress(): {Balance: big.NewInt(9000000000000000000)},
 		},
 		10000000,
 	)

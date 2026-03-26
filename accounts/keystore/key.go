@@ -78,7 +78,10 @@ type cipherparamsJSON struct {
 }
 
 func (k *Key) MarshalJSON() (j []byte, err error) {
-	seed := k.Wallet.GetSeed()
+	seed, err := k.Wallet.GetSeed()
+	if err != nil {
+		return nil, err
+	}
 	jStruct := plainKeyJSON{
 		fmt.Sprintf("%#x", k.Address),
 		common.Bytes2Hex(seed[:]),

@@ -183,7 +183,10 @@ func EncryptDataV1(data, auth []byte, argon2idT, argon2idM uint32, argon2idP uin
 // EncryptKey encrypts a key using the specified argon2id parameters into a json
 // blob that can be decrypted later on.
 func EncryptKey(key *Key, auth string, argon2idT, argo2idM uint32, argo2idP uint8) ([]byte, error) {
-	seed := key.Wallet.GetSeed()
+	seed, err := key.Wallet.GetSeed()
+	if err != nil {
+		return nil, err
+	}
 	cryptoStruct, err := EncryptDataV1(seed.ToBytes(), []byte(auth), argon2idT, argo2idM, argo2idP)
 	if err != nil {
 		return nil, err

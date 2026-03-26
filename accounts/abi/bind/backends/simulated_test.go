@@ -120,14 +120,14 @@ var expectedReturn = []byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 func simTestBackend(testAddr common.Address) *SimulatedBackend {
 	return NewSimulatedBackend(
 		core.GenesisAlloc{
-			testAddr: {Balance: big.NewInt(10000000000000000)},
+			testAddr: {Balance: big.NewInt(9223372036854775807)},
 		}, 10000000,
 	)
 }
 
 func TestNewSimulatedBackend(t *testing.T) {
 	testAddr := testWallet.GetAddress()
-	expectedBal := big.NewInt(10000000000000000)
+	expectedBal := big.NewInt(9223372036854775807)
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 
@@ -226,7 +226,7 @@ func TestNewAdjustTimeFail(t *testing.T) {
 
 func TestBalanceAt(t *testing.T) {
 	testAddr := testWallet.GetAddress()
-	expectedBal := big.NewInt(10000000000000000)
+	expectedBal := big.NewInt(9223372036854775807)
 	sim := simTestBackend(testAddr)
 	defer sim.Close()
 	bgCtx := t.Context()
@@ -403,7 +403,7 @@ func TestTransactionByHash(t *testing.T) {
 
 	sim := NewSimulatedBackend(
 		core.GenesisAlloc{
-			testAddr: {Balance: big.NewInt(10000000000000000)},
+			testAddr: {Balance: big.NewInt(9223372036854775807)},
 		}, 10000000,
 	)
 	defer sim.Close()

@@ -45,7 +45,7 @@ func makeChain(n int, seed byte, parent *types.Block, empty bool) ([]*types.Bloc
 		// Add one tx to every secondblock
 		if !empty && i%2 == 0 {
 			signer := types.MakeSigner(params.TestChainConfig)
-			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testWallet)
+			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(params.InitialBaseFee), Data: nil}), signer, testWallet)
 			if err != nil {
 				panic(err)
 			}

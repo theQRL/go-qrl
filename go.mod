@@ -45,16 +45,16 @@ require (
 	github.com/shirou/gopsutil v3.21.4-0.20210419000835-c7a38de76ee5+incompatible
 	github.com/stretchr/testify v1.10.0
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
-	github.com/theQRL/go-qrllib v0.0.0-20251008091143-a411d9a85341
+	github.com/theQRL/go-qrllib v0.0.0-20260305164948-c7005af0f8ff
 	github.com/urfave/cli/v2 v2.27.5
 	go.uber.org/automaxprocs v1.5.2
-	golang.org/x/crypto v0.36.0
+	golang.org/x/crypto v0.48.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/sync v0.12.0
-	golang.org/x/sys v0.36.0
-	golang.org/x/text v0.23.0
+	golang.org/x/sync v0.19.0
+	golang.org/x/sys v0.41.0
+	golang.org/x/text v0.34.0
 	golang.org/x/time v0.9.0
-	golang.org/x/tools v0.29.0
+	golang.org/x/tools v0.41.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -115,8 +115,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xrash/smetrics v0.0.0-20240521201337-686a1a2994c1 // indirect
-	golang.org/x/mod v0.22.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

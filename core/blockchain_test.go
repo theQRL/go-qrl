@@ -678,7 +678,7 @@ func testFastVsFullChains(t *testing.T, scheme string) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(1000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
@@ -807,7 +807,7 @@ func testLightVsFastVsFullChainHeads(t *testing.T, scheme string) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(1000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
@@ -931,9 +931,9 @@ func testChainTxReorgs(t *testing.T, scheme string) {
 			Config:   params.TestChainConfig,
 			GasLimit: 3141592,
 			Alloc: GenesisAlloc{
-				addr1: {Balance: big.NewInt(1000000000000000)},
-				addr2: {Balance: big.NewInt(1000000000000000)},
-				addr3: {Balance: big.NewInt(1000000000000000)},
+				addr1: {Balance: big.NewInt(1000000000000000000)},
+				addr2: {Balance: big.NewInt(1000000000000000000)},
+				addr3: {Balance: big.NewInt(1000000000000000000)},
 			},
 		}
 		signer = types.LatestSigner(gspec.Config)
@@ -1049,7 +1049,7 @@ func testLogReorgs(t *testing.T, scheme string) {
 
 		// this code generates a log
 		code   = common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
-		gspec  = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000000)}}}
+		gspec  = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(1000000000000000000)}}}
 		signer = types.LatestSigner(gspec.Config)
 	)
 
@@ -1113,7 +1113,7 @@ func testLogRebirth(t *testing.T, scheme string) {
 	var (
 		wallet1, _    = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		addr1         = wallet1.GetAddress()
-		gspec         = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000000)}}}
+		gspec         = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(1000000000000000000)}}}
 		signer        = types.LatestSigner(gspec.Config)
 		engine        = beacon.NewFaker()
 		blockchain, _ = NewBlockChain(rawdb.NewMemoryDatabase(), DefaultCacheConfigWithScheme(scheme), gspec, engine, vm.Config{}, nil)
@@ -1237,7 +1237,7 @@ func testReorgSideEvent(t *testing.T, scheme string) {
 		addr1      = wallet1.GetAddress()
 		gspec      = &Genesis{
 			Config: params.TestChainConfig,
-			Alloc:  GenesisAlloc{addr1: {Balance: big.NewInt(10000000000000000)}},
+			Alloc:  GenesisAlloc{addr1: {Balance: big.NewInt(1000000000000000000)}},
 		}
 		signer = types.LatestSigner(gspec.Config)
 	)
@@ -1374,7 +1374,7 @@ func testEIP161AccountRemoval(t *testing.T, scheme string) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(100000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		theAddr   = common.Address{1}
 		gspec     = &Genesis{
 			Config: &params.ChainConfig{
@@ -1621,7 +1621,7 @@ func testBlockchainRecovery(t *testing.T, scheme string) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(1000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
 	)
 	height := uint64(1024)
@@ -2021,7 +2021,7 @@ func TestTransactionIndices(t *testing.T) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(100000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
@@ -2132,7 +2132,7 @@ func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(100000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
 		signer    = types.LatestSigner(gspec.Config)
 	)
@@ -2346,7 +2346,7 @@ func testInitThenFailCreateContract(t *testing.T, scheme string) {
 		// A sender who makes transactions, has some funds
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(1000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		bb, _     = common.NewAddressFromString("Q000000000000000000000000000000000000bbbb")
 	)
 
@@ -2468,7 +2468,7 @@ func testEIP2718Transition(t *testing.T, scheme string) {
 		// A sender who makes transactions, has some funds
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(1000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{
 			Config: params.TestChainConfig,
 			Alloc: GenesisAlloc{
@@ -2590,7 +2590,7 @@ func testEIP1559Transition(t *testing.T, scheme string) {
 			Nonce:      0,
 			To:         &aa,
 			Gas:        30000,
-			GasFeeCap:  newShor(5),
+			GasFeeCap:  newShor(500),
 			GasTipCap:  big.NewInt(2),
 			AccessList: accesses,
 			Data:       []byte{},
@@ -2642,8 +2642,8 @@ func testEIP1559Transition(t *testing.T, scheme string) {
 			Nonce:     0,
 			To:        &aa,
 			Gas:       30000,
-			GasFeeCap: newShor(5),
-			GasTipCap: newShor(5),
+			GasFeeCap: newShor(500),
+			GasTipCap: newShor(500),
 		}
 		tx := types.NewTx(txdata)
 		tx, _ = types.SignTx(tx, signer, wallet2)
@@ -2687,7 +2687,7 @@ func testSetCanonical(t *testing.T, scheme string) {
 	var (
 		wallet, _ = wallet.RestoreFromSeedHex("0x010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 		address   = wallet.GetAddress()
-		funds     = big.NewInt(100000000000000000)
+		funds     = big.NewInt(1000000000000000000)
 		gspec     = &Genesis{
 			Config:  params.TestChainConfig,
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
@@ -3162,7 +3162,7 @@ func TestEIP3651(t *testing.T) {
 			Nonce:      0,
 			To:         &bb,
 			Gas:        500000,
-			GasFeeCap:  newShor(5),
+			GasFeeCap:  newShor(500),
 			GasTipCap:  big.NewInt(2),
 			AccessList: nil,
 			Data:       []byte{},

@@ -156,7 +156,7 @@ func ExampleGenerateChain() {
 		Config: &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		},
-		Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(2000000000000000)}},
+		Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(200000000000000000)}},
 	}
 	genesis := gspec.MustCommit(genDb, trie.NewDatabase(genDb, trie.HashDefaults))
 
@@ -172,7 +172,7 @@ func ExampleGenerateChain() {
 			tx := types.NewTx(&types.DynamicFeeTx{
 				Nonce:     gen.TxNonce(addr1),
 				To:        &to,
-				Value:     big.NewInt(10000000000000),
+				Value:     big.NewInt(10000000000000000),
 				Gas:       params.TxGas,
 				GasFeeCap: gen.header.BaseFee,
 				Data:      nil,
@@ -188,7 +188,7 @@ func ExampleGenerateChain() {
 			tx1 := types.NewTx(&types.DynamicFeeTx{
 				Nonce:     gen.TxNonce(addr1),
 				To:        &to2,
-				Value:     big.NewInt(10000000000000),
+				Value:     big.NewInt(10000000000000000),
 				Gas:       params.TxGas,
 				GasFeeCap: gen.header.BaseFee,
 				Data:      nil,
@@ -234,7 +234,7 @@ func ExampleGenerateChain() {
 	fmt.Println("balance of addr3:", state.GetBalance(addr3))
 	// Output:
 	// last block: #5
-	// balance of addr1: 1945526403675000
-	// balance of addr2: 3901393675000
+	// balance of addr1: 176552640369117000
+	// balance of addr2: 18390140359117000
 	// balance of addr3: 10000000
 }

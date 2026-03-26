@@ -183,7 +183,7 @@ func TestToFilterArg(t *testing.T) {
 var (
 	testWallet, _ = wallet.RestoreFromSeedHex("010000b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f29100000000000000000000000000000000")
 	testAddr      = testWallet.GetAddress()
-	testBalance   = big.NewInt(2e15)
+	testBalance   = big.NewInt(2e18)
 )
 
 var genesis = &core.Genesis{
@@ -198,8 +198,8 @@ var testTx1 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config)
 	Nonce:     0,
 	Value:     big.NewInt(12),
 	Gas:       params.TxGas,
-	GasTipCap: big.NewInt(765625000),
-	GasFeeCap: big.NewInt(1000000000),
+	GasTipCap: big.NewInt(76562500000),
+	GasFeeCap: big.NewInt(100000000000),
 	To:        &common.Address{2},
 })
 
@@ -207,8 +207,8 @@ var testTx2 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config)
 	Nonce:     1,
 	Value:     big.NewInt(8),
 	Gas:       params.TxGas,
-	GasTipCap: big.NewInt(765625000),
-	GasFeeCap: big.NewInt(1000000000),
+	GasTipCap: big.NewInt(76562500000),
+	GasFeeCap: big.NewInt(100000000000),
 	To:        &common.Address{2},
 })
 
@@ -498,7 +498,7 @@ func testStatusFunctions(t *testing.T, client *rpc.Client) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gasPrice.Cmp(big.NewInt(1000000000)) != 0 {
+	if gasPrice.Cmp(big.NewInt(100000000000)) != 0 {
 		t.Fatalf("unexpected gas price: %v", gasPrice)
 	}
 
@@ -507,7 +507,7 @@ func testStatusFunctions(t *testing.T, client *rpc.Client) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if gasTipCap.Cmp(big.NewInt(234375000)) != 0 {
+	if gasTipCap.Cmp(big.NewInt(23437500000)) != 0 {
 		t.Fatalf("unexpected gas tip cap: %v", gasTipCap)
 	}
 
@@ -520,13 +520,13 @@ func testStatusFunctions(t *testing.T, client *rpc.Client) {
 		OldestBlock: big.NewInt(2),
 		Reward: [][]*big.Int{
 			{
-				big.NewInt(234375000),
-				big.NewInt(234375000),
+				big.NewInt(23437500000),
+				big.NewInt(23437500000),
 			},
 		},
 		BaseFee: []*big.Int{
-			big.NewInt(765625000),
-			big.NewInt(671627818),
+			big.NewInt(76562500000),
+			big.NewInt(67162781741),
 		},
 		GasUsedRatio: []float64{0.008912678667376286},
 	}
@@ -717,7 +717,7 @@ func sendTransaction(zc *Client) error {
 		To:        &common.Address{2},
 		Value:     big.NewInt(1),
 		Gas:       22000,
-		GasFeeCap: big.NewInt(765625000),
+		GasFeeCap: big.NewInt(100000000000),
 	})
 	if err != nil {
 		return err

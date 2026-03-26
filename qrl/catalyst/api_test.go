@@ -53,7 +53,7 @@ var (
 	// testAddr is the QRL address of the tester account.
 	testAddr = common.Address(testWallet.GetAddress())
 
-	testBalance = big.NewInt(2e18)
+	testBalance = new(big.Int).Mul(big.NewInt(200), big.NewInt(params.Quanta))
 )
 
 func generateChain(n int) (*core.Genesis, []*types.Block) {
@@ -78,7 +78,7 @@ func generateChain(n int) (*core.Genesis, []*types.Block) {
 			To:        &to,
 			Value:     big.NewInt(1),
 			Gas:       params.TxGas,
-			GasFeeCap: big.NewInt(8750000000),
+			GasFeeCap: big.NewInt(2 * params.InitialBaseFee),
 			GasTipCap: big.NewInt(params.Shor),
 			Data:      nil}), types.LatestSigner(&config), testWallet)
 		g.AddTx(tx)
@@ -97,7 +97,7 @@ func TestAssembleBlock(t *testing.T) {
 	api := NewConsensusAPI(qrlservice)
 	signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 	to := blocks[9].Coinbase()
-	tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(10), To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(875000000), Data: nil}), signer, testWallet)
+	tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: uint64(10), To: &to, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: big.NewInt(2 * params.InitialBaseFee), Data: nil}), signer, testWallet)
 	if err != nil {
 		t.Fatalf("error signing transaction, err=%v", err)
 	}
