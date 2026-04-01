@@ -82,8 +82,8 @@ jobs:
       - run: |
           # NOTE(rgeraldes24): currently relying on brew auto update to have the latest
           # versions of golang available but this can be achieved in other ways!
-          brew install go@1.22
-          echo 'export PATH="/usr/local/opt/go@1.22/bin:$PATH"' >> /Users/distiller/.bash_profile
+          brew install go@1.25
+          echo 'export PATH="/usr/local/opt/go@1.25/bin:$PATH"' >> /Users/distiller/.bash_profile
           brew install coreutils
           brew install gpg
       - *restore_go_cache
