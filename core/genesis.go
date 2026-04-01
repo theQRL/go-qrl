@@ -504,10 +504,10 @@ func DefaultBetaNetGenesisBlock() *Genesis {
 func DefaultTestnetGenesisBlock() *Genesis {
 	return &Genesis{
 		Config:    params.TestnetChainConfig,
-		ExtraData: hexutil.MustDecode("0x82efec7f3c6d3b266171cb97fd52afced535c77d77979e24add05a6ea0ff3794"),
+		ExtraData: hexutil.MustDecode("0x0000000000000000000000000000000000000000000000000000000000000000"),
 		GasLimit:  0x1312d00,
-		Timestamp: 1743071966,
-		Alloc:     decodePreallocWithContractCode(testnetAllocData),
+		Timestamp: 1775003316,
+		Alloc:     decodePrealloc(testnetAllocData),
 	}
 }
 

@@ -28,7 +28,7 @@ import (
 var (
 	MainnetGenesisHash = common.HexToHash("0x01bc5f152bbe334ee169a63069fd2700933c470b40192d177136ff70dbef9c7b")
 	BetaNetGenesisHash = common.HexToHash("0x73c6974a471c34fc65ce4051a78642ca25a4feb0eaa6ef420588955a518a7a12")
-	TestnetGenesisHash = common.HexToHash("0xb06242b7e24e5ca788476ad39ab3d45da561d6471cc84d1977822af5b91e6755")
+	TestnetGenesisHash = common.HexToHash("0x6a7659906cc310bbef84a9a934f1f5cffdf5487e5f43addcf0386e40396eebe7")
 )
 
 // NOTE(rgeraldes24): unused atm
