@@ -1,0 +1,120 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${GITHUB_REF_NAME} --draft --title "${GITHUB_REF_NAME}" --notes ""
+
+  publish-linux-amd64:
+    needs: create-release
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go run build/ci.go install ./cmd/gqrl
+      - name: Prepare and upload artifacts
+        env:
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          cp build/bin/gqrl /tmp/gqrl-${TAG}-linux-amd64
+          (cd /tmp && sha256sum gqrl-${TAG}-linux-amd64 > gqrl-${TAG}-linux-amd64.sha256)
+          UPLOAD_FILES="/tmp/gqrl-${TAG}-linux-amd64 /tmp/gqrl-${TAG}-linux-amd64.sha256"
+          if [ -n "$GPG_KEY" ]; then
+            echo -n "$GPG_KEY" | base64 --decode | gpg --import
+            gpg -o /tmp/gqrl-${TAG}-linux-amd64.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/gqrl-${TAG}-linux-amd64
+            UPLOAD_FILES="$UPLOAD_FILES /tmp/gqrl-${TAG}-linux-amd64.sig"
+          fi
+          gh release upload ${TAG} ${UPLOAD_FILES}
+
+  publish-linux-arm64:
+    needs: create-release
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Install cross-compiler
+        run: sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu
+      - run: go run build/ci.go install -arch arm64 -cc aarch64-linux-gnu-gcc ./cmd/gqrl
+      - name: Prepare and upload artifacts
+        env:
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          cp build/bin/gqrl /tmp/gqrl-${TAG}-linux-arm64
+          (cd /tmp && sha256sum gqrl-${TAG}-linux-arm64 > gqrl-${TAG}-linux-arm64.sha256)
+          UPLOAD_FILES="/tmp/gqrl-${TAG}-linux-arm64 /tmp/gqrl-${TAG}-linux-arm64.sha256"
+          if [ -n "$GPG_KEY" ]; then
+            echo -n "$GPG_KEY" | base64 --decode | gpg --import
+            gpg -o /tmp/gqrl-${TAG}-linux-arm64.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/gqrl-${TAG}-linux-arm64
+            UPLOAD_FILES="$UPLOAD_FILES /tmp/gqrl-${TAG}-linux-arm64.sig"
+          fi
+          gh release upload ${TAG} ${UPLOAD_FILES}
+
+  publish-darwin-amd64:
+    needs: create-release
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - run: go run build/ci.go install -arch amd64 ./cmd/gqrl
+      - name: Prepare and upload artifacts
+        env:
+          GPG_KEY: ${{ secrets.GPG_KEY }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          cp build/bin/gqrl /tmp/gqrl-${TAG}-darwin-amd64
+          (cd /tmp && shasum -a 256 gqrl-${TAG}-darwin-amd64 > gqrl-${TAG}-darwin-amd64.sha256)
+          UPLOAD_FILES="/tmp/gqrl-${TAG}-darwin-amd64 /tmp/gqrl-${TAG}-darwin-amd64.sha256"
+          if [ -n "$GPG_KEY" ]; then
+            echo -n "$GPG_KEY" | base64 --decode | gpg --import
+            gpg -o /tmp/gqrl-${TAG}-darwin-amd64.sig --default-key 28580FDD99DA68203ABCE4205EA04E4E0FAC11B6 --sign --detach-sig /tmp/gqrl-${TAG}-darwin-amd64
+            UPLOAD_FILES="$UPLOAD_FILES /tmp/gqrl-${TAG}-darwin-amd64.sig"
+          fi
+          gh release upload ${TAG} ${UPLOAD_FILES}
+
+  build-and-deploy-docker-images:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push Docker images
+        run: |
+          go run build/ci.go dockerx -git-tag ${GITHUB_REF_NAME} -platform linux/amd64,linux/arm64 -hub qrledger/go-qrl -upload true
