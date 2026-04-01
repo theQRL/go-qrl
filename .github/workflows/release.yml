@@ -117,4 +117,4 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push Docker images
         run: |
-          go run build/ci.go -git-tag ${GITHUB_REF_NAME} dockerx -platform linux/amd64,linux/arm64 -hub qrledger/go-qrl -upload true
+          go run build/ci.go dockerx -git-tag ${GITHUB_REF_NAME} -platform linux/amd64,linux/arm64 -hub qrledger/go-qrl -upload true
