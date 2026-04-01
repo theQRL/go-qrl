@@ -17,7 +17,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create ${GITHUB_REF_NAME} --draft --title "${GITHUB_REF_NAME}" --generate-notes
+          gh release create ${GITHUB_REF_NAME} --draft --title "${GITHUB_REF_NAME}" --notes ""
 
   publish-linux-amd64:
     needs: create-release
@@ -52,11 +52,7 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-      - name: Build for arm64
-        env:
-          GOARCH: arm64
-          GOOS: linux
-        run: go run build/ci.go install ./cmd/gqrl
+      - run: go run build/ci.go install -arch arm64 ./cmd/gqrl
       - name: Prepare and upload artifacts
         env:
           GPG_KEY: ${{ secrets.GPG_KEY }}
@@ -75,13 +71,13 @@ jobs:
 
   publish-darwin-amd64:
     needs: create-release
-    runs-on: macos-13
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: '1.25'
-      - run: go run build/ci.go install ./cmd/gqrl
+      - run: go run build/ci.go install -arch amd64 ./cmd/gqrl
       - name: Prepare and upload artifacts
         env:
           GPG_KEY: ${{ secrets.GPG_KEY }}
