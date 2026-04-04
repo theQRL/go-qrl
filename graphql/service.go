@@ -116,7 +116,7 @@ func New(stack *node.Node, backend qrlapi.Backend, filterSystem *filters.FilterS
 func newHandler(stack *node.Node, backend qrlapi.Backend, filterSystem *filters.FilterSystem, cors, vhosts []string) (*handler, error) {
 	q := Resolver{backend, filterSystem}
 
-	s, err := graphql.ParseSchema(schema, &q)
+	s, err := graphql.ParseSchema(schema, &q, graphql.MaxDepth(20))
 	if err != nil {
 		return nil, err
 	}
