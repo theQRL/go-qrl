@@ -218,7 +218,7 @@ func TestSignData(t *testing.T) {
 		t.Fatal(err)
 	}
 	if signature == nil || len(signature) != 4627 {
-		t.Errorf("Expected 65 byte signature (got %d bytes)", len(signature))
+		t.Errorf("Expected 4627 byte ML-DSA-87 signature (got %d bytes)", len(signature))
 	}
 	// data/typed via SignTypeData
 	control.approveCh <- "Y"
@@ -227,7 +227,7 @@ func TestSignData(t *testing.T) {
 	if signature, err = api.SignTypedData(t.Context(), a, typedData); err != nil {
 		t.Fatal(err)
 	} else if signature == nil || len(signature) != 4627 {
-		t.Errorf("Expected 65 byte signature (got %d bytes)", len(signature))
+		t.Errorf("Expected 4627 byte ML-DSA-87 signature (got %d bytes)", len(signature))
 	} else {
 		want = signature
 	}
@@ -240,7 +240,7 @@ func TestSignData(t *testing.T) {
 	} else if signature, err = api.SignData(t.Context(), apitypes.DataTyped.Mime, a, hexutil.Encode(typedDataJson)); err != nil {
 		t.Fatal(err)
 	} else if signature == nil || len(signature) != 4627 {
-		t.Errorf("Expected 65 byte signature (got %d bytes)", len(signature))
+		t.Errorf("Expected 4627 byte ML-DSA-87 signature (got %d bytes)", len(signature))
 	} else if have := signature; !bytes.Equal(have, want) {
 		t.Fatalf("want %x, have %x", want, have)
 	}
