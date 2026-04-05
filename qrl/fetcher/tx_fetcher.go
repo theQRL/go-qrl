@@ -47,13 +47,13 @@ const (
 	//
 	// This number also acts as a failsafe against malicious announces which might
 	// cause us to request more data than we'd expect.
-	maxTxRetrievals = 256
+	maxTxRetrievals = 32
 
 	// maxTxRetrievalSize is the max number of bytes that delivered transactions
-	// should weigh according to the announcements. The 128KB was chosen to limit
-	// retrieving a maximum of one blob transaction at a time to minimize hogging
-	// a connection between two peers.
-	maxTxRetrievalSize = 128 * 1024
+	// should weigh according to the announcements. The 256KB limit allows fetching
+	// up to maxTxRetrievals simple ML-DSA-87 transactions (~7.4KB each) without
+	// the byte limit being the bottleneck.
+	maxTxRetrievalSize = 256 * 1024
 
 	// maxTxUnderpricedSetSize is the size of the underpriced transaction set that
 	// is used to track recent transactions that have been dropped so we don't

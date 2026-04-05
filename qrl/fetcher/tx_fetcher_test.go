@@ -1090,7 +1090,7 @@ func TestTransactionFetcherBandwidthLimiting(t *testing.T) {
 					},
 				},
 				fetching: map[string][]common.Hash{
-					"A": {{0x02}, {0x03}, {0x04}},
+					"A": {{0x01}, {0x02}, {0x03}, {0x04}},
 					"B": {{0x06}},
 					"C": {{0x08}},
 				},
