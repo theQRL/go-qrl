@@ -1476,15 +1476,10 @@ func (s *TransactionAPI) SendRawTransaction(ctx context.Context, input hexutil.B
 	return SubmitTransaction(ctx, s.b, tx)
 }
 
-// Sign calculates an ECDSA signature for:
+// Sign calculates an ML-DSA-87 signature for:
 // keccak256("\x19QRL Signed Message:\n" + len(message) + message).
 //
-// Note, the produced signature conforms to the secp256k1 curve R, S and V values,
-// where the V value will be 27 or 28 for legacy reasons.
-//
 // The account associated with addr must be unlocked.
-//
-// https://github.com/ethereum/wiki/wiki/JSON-RPC#eth_sign
 func (s *TransactionAPI) Sign(addr common.Address, data hexutil.Bytes) (hexutil.Bytes, error) {
 	// Look up the wallet containing the requested signer
 	account := accounts.Account{Address: addr}
@@ -1494,11 +1489,7 @@ func (s *TransactionAPI) Sign(addr common.Address, data hexutil.Bytes) (hexutil.
 		return nil, err
 	}
 	// Sign the requested hash with the wallet
-	signature, err := wallet.SignText(account, data)
-	if err == nil {
-		signature[64] += 27 // Transform V from 0/1 to 27/28 according to the yellow paper
-	}
-	return signature, err
+	return wallet.SignText(account, data)
 }
 
 // SignTransactionResult represents a RLP encoded signed transaction.

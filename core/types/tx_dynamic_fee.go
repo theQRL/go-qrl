@@ -94,6 +94,9 @@ func (tx *DynamicFeeTx) copy() TxData {
 	if tx.GasFeeCap != nil {
 		cpy.GasFeeCap.Set(tx.GasFeeCap)
 	}
+	// Destination is pre-allocated at exact ML-DSA-87 lengths (lines 81-82).
+	// If source has wrong length, copy() truncates or zero-pads — either way,
+	// signature verification will reject the tx downstream.
 	if tx.PublicKey != nil {
 		copy(cpy.PublicKey[:pqcrypto.MLDSA87PublicKeyLength], tx.PublicKey)
 	}
