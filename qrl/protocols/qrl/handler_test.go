@@ -398,6 +398,224 @@ func testGetBlockBodies(t *testing.T, protocol uint) {
 	}
 }
 
+// Tests that block bodies can be retrieved when blocks are at maximum size
+// (filled with transactions consuming the entire gas limit). This verifies
+// that the handler correctly respects softResponseLimit with large blocks.
+func TestGetBlockBodiesMaxBlockSize1(t *testing.T) {
+	testGetBlockBodiesMaxBlockSize(t, QRL1)
+}
+
+func newTestBackendMaxBlocks(blocks int, gen func(int, *core.BlockGen)) *testBackend {
+	var (
+		db                      = rawdb.NewMemoryDatabase()
+		config                  = params.MainnetChainConfig
+		engine consensus.Engine = beacon.NewFaker()
+	)
+	// Use a massive balance to sustain max-size blocks with rising EIP-1559 base fees.
+	balance := new(big.Int).Exp(big.NewInt(10), big.NewInt(76), nil)
+	gspec := &core.Genesis{
+		Config:   config,
+		GasLimit: params.MaxGasLimit,
+		Alloc:    core.GenesisAlloc{testAddr: {Balance: balance}},
+	}
+	chain, _ := core.NewBlockChain(db, nil, gspec, engine, vm.Config{}, nil)
+	_, bs, _ := core.GenerateChainWithGenesis(gspec, engine, blocks, gen)
+	if _, err := chain.InsertChain(bs); err != nil {
+		panic(err)
+	}
+	for _, block := range bs {
+		chain.TrieDB().Commit(block.Root(), false)
+	}
+	txconfig := legacypool.DefaultConfig
+	txconfig.Journal = ""
+	pool := legacypool.New(txconfig, chain)
+	txpool, _ := txpool.New(new(big.Int).SetUint64(txconfig.PriceLimit), chain, []txpool.SubPool{pool})
+	return &testBackend{db: db, chain: chain, txpool: txpool}
+}
+
+func testGetBlockBodiesMaxBlockSize(t *testing.T, protocol uint) {
+	t.Parallel()
+
+	signer := types.NewZondSigner(params.MainnetChainConfig.ChainID)
+	numBlocks := 5
+
+	// Generate blocks packed with transactions to simulate max block sizes.
+	// Each tx carries full ML-DSA-87 signature + public key (~7KB per tx).
+	// With MaxGasLimit (20M) and TxGas (21000), we get ~952 txs per block (~6.6 MB).
+	txsPerBlock := params.MaxGasLimit/params.TxGas - 1
+	var nonce uint64
+	gen := func(n int, g *core.BlockGen) {
+		to := common.Address{0x01}
+		baseFee := g.BaseFee()
+		gasFeeCap := new(big.Int).Mul(baseFee, big.NewInt(10))
+		for i := uint64(0); i < txsPerBlock; i++ {
+			tx := types.MustSignNewTx(testWallet, signer, &types.DynamicFeeTx{
+				ChainID:   params.MainnetChainConfig.ChainID,
+				Nonce:     nonce,
+				GasTipCap: big.NewInt(1),
+				GasFeeCap: gasFeeCap,
+				Gas:       params.TxGas,
+				To:        &to,
+				Value:     big.NewInt(1),
+			})
+			g.AddTx(tx)
+			nonce++
+		}
+	}
+
+	backend := newTestBackendMaxBlocks(numBlocks, gen)
+	defer backend.close()
+
+	peer, _ := newTestPeer("peer", protocol, backend)
+	defer peer.close()
+
+	// Collect all block hashes and expected bodies
+	var allHashes []common.Hash
+	var allBodies []*BlockBody
+	for i := uint64(1); i <= uint64(numBlocks); i++ {
+		block := backend.chain.GetBlockByNumber(i)
+		allHashes = append(allHashes, block.Hash())
+		allBodies = append(allBodies, &BlockBody{Transactions: block.Transactions(), Withdrawals: block.Withdrawals()})
+	}
+
+	// Log block sizes for visibility
+	for i, hash := range allHashes {
+		block := backend.chain.GetBlockByHash(hash)
+		t.Logf("Block %d: %d txs, body RLP size: %d bytes", i+1, len(block.Transactions()), len(backend.chain.GetBodyRLP(hash)))
+	}
+
+	// Test 1: Request a single max-size block
+	t.Run("single_max_block", func(t *testing.T) {
+		p2p.Send(peer.app, GetBlockBodiesMsg, &GetBlockBodiesPacket{
+			RequestId:             1,
+			GetBlockBodiesRequest: allHashes[:1],
+		})
+		if err := p2p.ExpectMsg(peer.app, BlockBodiesMsg, &BlockBodiesPacket{
+			RequestId:           1,
+			BlockBodiesResponse: allBodies[:1],
+		}); err != nil {
+			t.Fatalf("single block body mismatch: %v", err)
+		}
+	})
+
+	// Test 2: Request all max-size blocks — expect response truncated by softResponseLimit
+	t.Run("all_max_blocks", func(t *testing.T) {
+		p2p.Send(peer.app, GetBlockBodiesMsg, &GetBlockBodiesPacket{
+			RequestId:             2,
+			GetBlockBodiesRequest: allHashes,
+		})
+		// Read the response and verify we got at least 1 body but likely
+		// fewer than requested due to softResponseLimit
+		msg, err := peer.app.ReadMsg()
+		if err != nil {
+			t.Fatalf("failed to read response: %v", err)
+		}
+		defer msg.Discard()
+
+		if msg.Code != BlockBodiesMsg {
+			t.Fatalf("expected BlockBodiesMsg (%d), got %d", BlockBodiesMsg, msg.Code)
+		}
+
+		var resp BlockBodiesPacket
+		if err := msg.Decode(&resp); err != nil {
+			t.Fatalf("failed to decode response: %v", err)
+		}
+
+		if len(resp.BlockBodiesResponse) == 0 {
+			t.Fatal("expected at least one block body in response")
+		}
+		t.Logf("Requested %d max-size blocks, received %d bodies (softResponseLimit=%d)",
+			len(allHashes), len(resp.BlockBodiesResponse), softResponseLimit)
+	})
+}
+
+// Tests that requesting large blocks correctly limits the response.
+// With ~6.9 MB per block, the softResponseLimit (10 MB) should cap the
+// response to fewer bodies than requested.
+func TestGetBlockBodiesMaxServeMaxSize1(t *testing.T) {
+	testGetBlockBodiesMaxServeMaxSize(t, QRL1)
+}
+
+func testGetBlockBodiesMaxServeMaxSize(t *testing.T, protocol uint) {
+	t.Parallel()
+
+	signer := types.NewZondSigner(params.MainnetChainConfig.ChainID)
+	numBlocks := 5 // Only need a few max-size blocks to verify softResponseLimit caps the response
+
+	txsPerBlock := params.MaxGasLimit/params.TxGas - 1
+	var nonce uint64
+	gen := func(n int, g *core.BlockGen) {
+		to := common.Address{0x01}
+		baseFee := g.BaseFee()
+		gasFeeCap := new(big.Int).Mul(baseFee, big.NewInt(10))
+		for i := uint64(0); i < txsPerBlock; i++ {
+			tx := types.MustSignNewTx(testWallet, signer, &types.DynamicFeeTx{
+				ChainID:   params.MainnetChainConfig.ChainID,
+				Nonce:     nonce,
+				GasTipCap: big.NewInt(1),
+				GasFeeCap: gasFeeCap,
+				Gas:       params.TxGas,
+				To:        &to,
+				Value:     big.NewInt(1),
+			})
+			g.AddTx(tx)
+			nonce++
+		}
+	}
+
+	backend := newTestBackendMaxBlocks(numBlocks, gen)
+	defer backend.close()
+
+	peer, _ := newTestPeer("peer", protocol, backend)
+	defer peer.close()
+
+	// Collect all block hashes
+	var allHashes []common.Hash
+	for i := uint64(1); i <= uint64(numBlocks); i++ {
+		block := backend.chain.GetBlockByNumber(i)
+		allHashes = append(allHashes, block.Hash())
+	}
+
+	// Log first and last block sizes
+	first := backend.chain.GetBodyRLP(allHashes[0])
+	last := backend.chain.GetBodyRLP(allHashes[len(allHashes)-1])
+	t.Logf("Generated %d max-size blocks (first body: %d bytes, last body: %d bytes)",
+		numBlocks, len(first), len(last))
+
+	// Request all blocks at once
+	p2p.Send(peer.app, GetBlockBodiesMsg, &GetBlockBodiesPacket{
+		RequestId:             1,
+		GetBlockBodiesRequest: allHashes,
+	})
+
+	msg, err := peer.app.ReadMsg()
+	if err != nil {
+		t.Fatalf("failed to read response: %v", err)
+	}
+	defer msg.Discard()
+
+	if msg.Code != BlockBodiesMsg {
+		t.Fatalf("expected BlockBodiesMsg (%d), got %d", BlockBodiesMsg, msg.Code)
+	}
+
+	var resp BlockBodiesPacket
+	if err := msg.Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+
+	received := len(resp.BlockBodiesResponse)
+	if received == 0 {
+		t.Fatal("expected at least one block body in response")
+	}
+	if received >= numBlocks {
+		t.Fatalf("expected fewer than %d bodies due to softResponseLimit, got %d", numBlocks, received)
+	}
+
+	// With ~6.9 MB blocks and 10 MB softResponseLimit, expect only 1-2 bodies
+	t.Logf("Requested %d max-size blocks, received %d bodies (softResponseLimit=%d)",
+		numBlocks, received, softResponseLimit)
+}
+
 // Tests that the transaction receipts can be retrieved based on hashes.
 func TestGetBlockReceipts1(t *testing.T) { testGetBlockReceipts(t, QRL1) }
 
