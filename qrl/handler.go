@@ -51,8 +51,9 @@ const (
 
 	// txMaxBroadcastSize is the max size of a transaction that will be broadcasted.
 	// All transactions with a higher size will be announced and need to be fetched
-	// by the peer.
-	txMaxBroadcastSize = 4096
+	// by the peer. Set to 16KB so that simple ML-DSA-87 transactions (~7.4KB) are
+	// broadcast directly rather than taking the slower announce+fetch path.
+	txMaxBroadcastSize = 16 * 1024
 )
 
 var syncChallengeTimeout = 15 * time.Second // Time allowance for a node to reply to the sync progress challenge
