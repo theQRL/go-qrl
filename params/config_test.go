@@ -17,6 +17,9 @@
 package params
 
 import (
+	"encoding/json"
+	"math"
+	"math/big"
 	"reflect"
 	"testing"
 	"time"
@@ -48,6 +51,34 @@ func TestCheckCompatible(t *testing.T) {
 				What:        "chain ID",
 				StoredBlock: common.Big1,
 				NewBlock:    common.Big32,
+			},
+		},
+		{
+			stored:        &ChainConfig{ChainID: common.Big1, QRL2PQPrecompilesTime: newUint64(10)},
+			new:           &ChainConfig{ChainID: common.Big1, QRL2PQPrecompilesTime: newUint64(20)},
+			headTimestamp: 9,
+			wantErr:       nil,
+		},
+		{
+			stored:        &ChainConfig{ChainID: common.Big1, QRL2PQPrecompilesTime: newUint64(10)},
+			new:           &ChainConfig{ChainID: common.Big1, QRL2PQPrecompilesTime: newUint64(20)},
+			headTimestamp: 10,
+			wantErr: &ConfigCompatError{
+				What:         "QRL2 PQ precompiles fork timestamp",
+				StoredTime:   newUint64(10),
+				NewTime:      newUint64(20),
+				RewindToTime: 9,
+			},
+		},
+		{
+			stored:        &ChainConfig{ChainID: common.Big1, QRL2PQPrecompilesTime: newUint64(10)},
+			new:           &ChainConfig{ChainID: common.Big1},
+			headTimestamp: 10,
+			wantErr: &ConfigCompatError{
+				What:         "QRL2 PQ precompiles fork timestamp",
+				StoredTime:   newUint64(10),
+				NewTime:      nil,
+				RewindToTime: 9,
 			},
 		},
 		// NOTE(rgeraldes24): not valid at the moment
@@ -127,6 +158,56 @@ func TestCheckCompatible(t *testing.T) {
 		if !reflect.DeepEqual(err, test.wantErr) {
 			t.Errorf("error mismatch:\nstored: %v\nnew: %v\nheadBlock: %v\nheadTimestamp: %v\nerr: %v\nwant: %v", test.stored, test.new, test.headBlock, test.headTimestamp, err, test.wantErr)
 		}
+	}
+}
+
+func TestConfigRules(t *testing.T) {
+	c := &ChainConfig{
+		ChainID:               big.NewInt(1),
+		QRL2PQPrecompilesTime: newUint64(500),
+	}
+	for _, test := range []struct {
+		timestamp uint64
+		active    bool
+	}{
+		{timestamp: 0, active: false},
+		{timestamp: 499, active: false},
+		{timestamp: 500, active: true},
+		{timestamp: math.MaxUint64, active: true},
+	} {
+		if got := c.Rules(big.NewInt(0), test.timestamp).IsQRL2PQPrecompiles; got != test.active {
+			t.Errorf("timestamp %d: activation is %t, want %t", test.timestamp, got, test.active)
+		}
+	}
+}
+
+func TestQRL2PQPrecompilesGenesisJSON(t *testing.T) {
+	var config ChainConfig
+	if err := json.Unmarshal(
+		[]byte(`{"chainId":3151908,"qrl2PQPrecompilesTime":0}`),
+		&config,
+	); err != nil {
+		t.Fatal(err)
+	}
+	if config.QRL2PQPrecompilesTime == nil || *config.QRL2PQPrecompilesTime != 0 {
+		t.Fatalf("activation timestamp is %v, want pointer to zero", config.QRL2PQPrecompilesTime)
+	}
+	if !config.Rules(big.NewInt(0), 0).IsQRL2PQPrecompiles {
+		t.Fatal("genesis timestamp does not activate QRL2 PQ precompiles")
+	}
+	encoded, err := json.Marshal(&config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var encodedConfig map[string]any
+	if err := json.Unmarshal(encoded, &encodedConfig); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(
+		map[string]any{"chainId": float64(3151908), "qrl2PQPrecompilesTime": float64(0)},
+		encodedConfig,
+	) {
+		t.Fatalf("unexpected encoded config: %s", encoded)
 	}
 }
 

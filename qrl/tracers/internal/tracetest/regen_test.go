@@ -339,6 +339,7 @@ func multiContractScenario(sc *fixtureScenario) {
 }
 
 func precompileScenario(sc *fixtureScenario) {
+	sc.gas = 1_000_000
 	var code []byte
 	for i := byte(1); i <= 9; i++ {
 		code = append(code, callContract(fixtureAddress(i))...)

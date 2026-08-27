@@ -119,6 +119,7 @@ func minerTestGenesisBlock(gasLimit uint64, faucet common.Address) *core.Genesis
 			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // MLDSA87Verify
 			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
 			common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
+			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // SHAKE256
 			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // XMSSVerify
 			faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
 		},

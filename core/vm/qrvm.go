@@ -39,6 +39,9 @@ type (
 
 func (qrvm *QRVM) precompile(addr common.Address) (PrecompiledContract, bool) {
 	precompiles := PrecompiledContractsZond
+	if qrvm.chainRules.IsQRL2PQPrecompiles {
+		precompiles = PrecompiledContractsQRL2PQ
+	}
 	p, ok := precompiles[addr]
 	return p, ok
 }
