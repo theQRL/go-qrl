@@ -407,7 +407,18 @@ func TestPrecompiledMLDSA87VerifyRejectsInvalidInput(t *testing.T) {
 // every QRL client; the FIPS 204 primitive deliberately does not.
 func TestPrecompiledMLDSA87VerifyRejectsWeakKey(t *testing.T) {
 	context := []byte("QRL")
-	digest := crypto.Keccak256([]byte("QRL weak-key forgery test"))
+	// Run the forgery against both slot 3 frames. The digest width must
+	// match the frame, or the input is rejected on length before the key is
+	// ever parsed and the test passes without exercising the weak-key rule.
+	shakeDigest := sha3.SumSHAKE256([]byte("QRL weak-key forgery test"), mldsa87VerifyDigestLength)
+	verifiers := []struct {
+		name     string
+		contract PrecompiledContract
+		digest   []byte
+	}{
+		{name: "legacy 32-byte frame", contract: new(mldsa87VerifyLegacy32), digest: crypto.Keccak256([]byte("QRL weak-key forgery test"))},
+		{name: "QRL 2.0 64-byte frame", contract: new(mldsa87Verify), digest: shakeDigest[:]},
+	}
 	tests := []struct {
 		name string
 		rho  byte
@@ -418,24 +429,30 @@ func TestPrecompiledMLDSA87VerifyRejectsWeakKey(t *testing.T) {
 		{name: "t1 all 1023", rho: 0xab, t1: 1023},
 		{name: "t1 all 512", rho: 0xab, t1: 512},
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			var publicKey [cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte
-			for i := 0; i < cryptomldsa87.SEED_BYTES; i++ {
-				publicKey[i] = test.rho
-			}
-			fillT1(&publicKey, test.t1)
-			signature := forgeZeroHintSignature(publicKey, context, digest)
-			input := make([]byte, 0, mldsa87VerifyMinInputLength+len(context))
-			input = append(input, digest...)
-			input = append(input, publicKey[:]...)
-			input = append(input, signature[:]...)
-			input = append(input, byte(len(context)))
-			input = append(input, context...)
-			if output := runMLDSA87Verify(t, input); output != nil {
-				t.Fatalf("forged signature under a weak key verified: output %x, want nil", output)
-			}
-		})
+	for _, verifier := range verifiers {
+		for _, test := range tests {
+			t.Run(verifier.name+"/"+test.name, func(t *testing.T) {
+				var publicKey [cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES]byte
+				for i := 0; i < cryptomldsa87.SEED_BYTES; i++ {
+					publicKey[i] = test.rho
+				}
+				fillT1(&publicKey, test.t1)
+				signature := forgeZeroHintSignature(publicKey, context, verifier.digest)
+				input := make([]byte, 0, len(verifier.digest)+len(publicKey)+len(signature)+1+len(context))
+				input = append(input, verifier.digest...)
+				input = append(input, publicKey[:]...)
+				input = append(input, signature[:]...)
+				input = append(input, byte(len(context)))
+				input = append(input, context...)
+				output, _, err := RunPrecompiledContract(verifier.contract, input, params.MLDSA87VerifyGas)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if output != nil {
+					t.Fatalf("forged signature under a weak key verified: output %x, want nil", output)
+				}
+			})
+		}
 	}
 }
 
