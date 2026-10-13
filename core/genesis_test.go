@@ -196,9 +196,6 @@ func TestDeveloperGenesisFundsPrecompiles(t *testing.T) {
 			t.Fatalf("precompile slot %d balance is %v, want 1", slot, account.Balance)
 		}
 	}
-	if rules := genesis.Config.Rules(new(big.Int), genesis.Timestamp); !rules.IsQRL2PQPrecompiles {
-		t.Fatal("developer genesis does not activate the QRL2 PQ precompile set")
-	}
 }
 
 // TestGenesisExtraDataLen checks length of extra data

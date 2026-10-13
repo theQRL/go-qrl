@@ -8,8 +8,7 @@
   },
   "genesis": {
     "config": {
-      "chainId": 1,
-      "qrl2PQPrecompilesTime": 0
+      "chainId": 1
     },
     "timestamp": "0x0",
     "extraData": "0x",

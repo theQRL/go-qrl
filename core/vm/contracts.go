@@ -45,21 +45,9 @@ type PrecompiledContract interface {
 // trueWord is the template returned when a precompile verification succeeds.
 var trueWord = common.LeftPadBytes([]byte{1}, WordBytes)
 
-// PrecompiledContractsZond contains the default set of pre-compiled QRL
+// PrecompiledContractsZond contains the single set of pre-compiled QRL
 // contracts used in the Zond release.
 var PrecompiledContractsZond = map[common.Address]PrecompiledContract{
-	common.BytesToAddress([]byte{1}): &depositroot{},
-	common.BytesToAddress([]byte{2}): &sha256hash{},
-	common.BytesToAddress([]byte{3}): &mldsa87VerifyLegacy32{},
-	common.BytesToAddress([]byte{4}): &dataCopy{},
-	common.BytesToAddress([]byte{5}): &bigModExp{},
-	common.BytesToAddress([]byte{7}): &xmssVerify{},
-}
-
-// PrecompiledContractsQRL2PQ contains the QRL 2.0 post-quantum precompile set.
-// It updates the slot 3 message representative to 64 bytes and adds SHAKE256 at
-// slot 6.
-var PrecompiledContractsQRL2PQ = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
 	common.BytesToAddress([]byte{3}): &mldsa87Verify{},
@@ -70,30 +58,17 @@ var PrecompiledContractsQRL2PQ = map[common.Address]PrecompiledContract{
 }
 
 var (
-	PrecompiledAddressesZond = []common.Address{
-		common.BytesToAddress([]byte{1}),
-		common.BytesToAddress([]byte{2}),
-		common.BytesToAddress([]byte{3}),
-		common.BytesToAddress([]byte{4}),
-		common.BytesToAddress([]byte{5}),
-		common.BytesToAddress([]byte{7}),
-	}
-	PrecompiledAddressesQRL2PQ = []common.Address{
-		common.BytesToAddress([]byte{1}),
-		common.BytesToAddress([]byte{2}),
-		common.BytesToAddress([]byte{3}),
-		common.BytesToAddress([]byte{4}),
-		common.BytesToAddress([]byte{5}),
-		common.BytesToAddress([]byte{6}),
-		common.BytesToAddress([]byte{7}),
-	}
+	PrecompiledAddressesZond []common.Address
 )
 
-// ActivePrecompiles returns the precompiles enabled by the supplied chain rules.
-func ActivePrecompiles(rules params.Rules) []common.Address {
-	if rules.IsQRL2PQPrecompiles {
-		return PrecompiledAddressesQRL2PQ
+func init() {
+	for k := range PrecompiledContractsZond {
+		PrecompiledAddressesZond = append(PrecompiledAddressesZond, k)
 	}
+}
+
+// ActivePrecompiles returns the precompiles enabled from Zond genesis.
+func ActivePrecompiles(_ params.Rules) []common.Address {
 	return PrecompiledAddressesZond
 }
 
@@ -174,9 +149,7 @@ func (c *depositroot) Run(input []byte) ([]byte, error) {
 
 const (
 	// mldsa87VerifyDigestLength is the width of the message representative:
-	// one QRVM word, matching the SHAKE256 precompile output. Earlier builds
-	// read common.HashLength (32 bytes); the 64-byte width is the interface
-	// ratified for the next testnet release.
+	// one 64-byte QRVM word, matching the SHAKE256 precompile output.
 	mldsa87VerifyDigestLength        = WordBytes
 	mldsa87VerifyDigestOffset        = 0
 	mldsa87VerifyPublicKeyOffset     = mldsa87VerifyDigestOffset + mldsa87VerifyDigestLength
@@ -191,42 +164,22 @@ const (
 // representative using the supplied public key and context.
 type mldsa87Verify struct{}
 
-// mldsa87VerifyLegacy32 preserves the 32-byte slot 3 interface used before the
-// QRL 2.0 post-quantum precompile activation.
-type mldsa87VerifyLegacy32 struct{}
-
 func (*mldsa87Verify) RequiredGas([]byte) uint64 {
 	return params.MLDSA87VerifyGas
 }
 
-func (*mldsa87VerifyLegacy32) RequiredGas([]byte) uint64 {
-	return params.MLDSA87VerifyGas
-}
-
 func (*mldsa87Verify) Run(input []byte) ([]byte, error) {
-	return runMLDSA87Verification(input, mldsa87VerifyDigestLength)
-}
-
-func (*mldsa87VerifyLegacy32) Run(input []byte) ([]byte, error) {
-	return runMLDSA87Verification(input, common.HashLength)
-}
-
-func runMLDSA87Verification(input []byte, digestLength int) ([]byte, error) {
-	publicKeyOffset := digestLength
-	signatureOffset := publicKeyOffset + cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES
-	contextLengthOffset := signatureOffset + cryptomldsa87.CRYPTO_BYTES
-	contextOffset := contextLengthOffset + 1
-	if len(input) < contextOffset {
+	if len(input) < mldsa87VerifyMinInputLength {
 		return nil, nil
 	}
 
-	context := input[contextOffset:]
-	if len(context) != int(input[contextLengthOffset]) {
+	context := input[mldsa87VerifyContextOffset:]
+	if len(context) != int(input[mldsa87VerifyContextLengthOffset]) {
 		return nil, nil
 	}
 
-	digest := input[:publicKeyOffset]
-	publicKeyBytes := input[publicKeyOffset:signatureOffset]
+	digest := input[mldsa87VerifyDigestOffset:mldsa87VerifyPublicKeyOffset]
+	publicKeyBytes := input[mldsa87VerifyPublicKeyOffset:mldsa87VerifySignatureOffset]
 
 	// The key comes straight from calldata, so it never passes through the
 	// wallet-layer constructor. ParsePublicKey is the only way to obtain a
@@ -238,7 +191,7 @@ func runMLDSA87Verification(input []byte, digestLength int) ([]byte, error) {
 		return nil, nil
 	}
 
-	signatureBytes := input[signatureOffset:contextLengthOffset]
+	signatureBytes := input[mldsa87VerifySignatureOffset:mldsa87VerifyContextLengthOffset]
 	signature := [cryptomldsa87.CRYPTO_BYTES]byte(signatureBytes)
 
 	if !cryptomldsa87.Verify(context, digest, signature, publicKey) {

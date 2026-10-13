@@ -19,7 +19,6 @@ package params
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/theQRL/go-qrl/common"
 )
@@ -32,7 +31,8 @@ var (
 	TestnetGenesisHash = common.HexToHash("0xf496c30579f6efe724bb180ce2f113a9de8f0a2c9ef583bd12008959892a08dd")
 )
 
-func newUint64(val uint64) *uint64 { return &val }
+// NOTE(rgeraldes24): unused atm
+// func newUint64(val uint64) *uint64 { return &val }
 
 var (
 	// MainnetChainConfig is the chain parameters to run a node on the main network.
@@ -51,21 +51,18 @@ var (
 	// AllBeaconProtocolChanges contains every protocol change (QIPs) introduced
 	// and accepted by the QRL core developers into the Beacon consensus.
 	AllBeaconProtocolChanges = &ChainConfig{
-		ChainID:               big.NewInt(1337),
-		QRL2PQPrecompilesTime: newUint64(0),
+		ChainID: big.NewInt(1337),
 	}
 
 	AllDevChainProtocolChanges = &ChainConfig{
-		ChainID:               big.NewInt(1337),
-		IsDevMode:             true,
-		QRL2PQPrecompilesTime: newUint64(0),
+		ChainID:   big.NewInt(1337),
+		IsDevMode: true,
 	}
 
 	// TestChainConfig contains every protocol change (QIPs) introduced
 	// and accepted by the QRL core developers for testing proposes.
 	TestChainConfig = &ChainConfig{
-		ChainID:               big.NewInt(1),
-		QRL2PQPrecompilesTime: newUint64(0),
+		ChainID: big.NewInt(1),
 	}
 
 	// NonActivatedConfig defines the chain configuration without activating
@@ -89,8 +86,7 @@ var NetworkNames = map[string]string{
 type ChainConfig struct {
 	ChainID *big.Int `json:"chainId"` // chainId identifies the current chain and is used for replay protection
 
-	IsDevMode             bool    `json:"isDev,omitempty"`
-	QRL2PQPrecompilesTime *uint64 `json:"qrl2PQPrecompilesTime,omitempty"`
+	IsDevMode bool `json:"isDev,omitempty"`
 }
 
 // Description returns a human-readable description of ChainConfig.
@@ -104,9 +100,6 @@ func (c *ChainConfig) Description() string {
 	}
 	banner += fmt.Sprintf("Chain ID:  %v (%s)\n", c.ChainID, network)
 	banner += "Consensus: Beacon (proof-of-stake)\n"
-	if c.QRL2PQPrecompilesTime != nil {
-		banner += fmt.Sprintf("QRL2 PQ precompiles: @%d\n", *c.QRL2PQPrecompilesTime)
-	}
 	banner += "\n"
 
 	return banner
@@ -117,19 +110,19 @@ func (c *ChainConfig) Description() string {
 func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, time uint64) *ConfigCompatError {
 	var (
 		bhead = new(big.Int).SetUint64(height)
-		btime = time
+		// btime = time
 	)
 	// Iterate checkCompatible to find the lowest conflict.
 	var lasterr *ConfigCompatError
 	for {
-		err := c.checkCompatible(newcfg, bhead, btime)
+		err := c.checkCompatible(newcfg /*, bhead, btime*/)
 		if err == nil || (lasterr != nil && err.RewindToBlock == lasterr.RewindToBlock && err.RewindToTime == lasterr.RewindToTime) {
 			break
 		}
 		lasterr = err
 
 		if err.RewindToTime > 0 {
-			btime = err.RewindToTime
+			// btime = err.RewindToTime
 		} else {
 			bhead.SetUint64(err.RewindToBlock)
 		}
@@ -147,9 +140,7 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 		optional  bool     // if true, the fork may be nil and next fork is still allowed
 	}
 	var lastFork fork
-	for _, cur := range []fork{
-		{name: "QRL2 PQ precompiles", timestamp: c.QRL2PQPrecompilesTime},
-	} {
+	for _, cur := range []fork{} {
 		if lastFork.name != "" {
 			switch {
 			// Non-optional forks must all be present in the chain config up to the last defined fork
@@ -187,18 +178,9 @@ func (c *ChainConfig) CheckConfigForkOrder() error {
 	return nil
 }
 
-func (c *ChainConfig) checkCompatible(newcfg *ChainConfig, _ *big.Int, headTimestamp uint64) *ConfigCompatError {
+func (c *ChainConfig) checkCompatible(newcfg *ChainConfig /*, headNumber *big.Int, headTimestamp uint64*/) *ConfigCompatError {
 	if !configBlockEqual(c.ChainID, newcfg.ChainID) {
 		return newBlockCompatError("chain ID", c.ChainID, newcfg.ChainID)
-	}
-	if (isTimestampForked(c.QRL2PQPrecompilesTime, headTimestamp) ||
-		isTimestampForked(newcfg.QRL2PQPrecompilesTime, headTimestamp)) &&
-		!configTimestampEqual(c.QRL2PQPrecompilesTime, newcfg.QRL2PQPrecompilesTime) {
-		return newTimestampCompatError(
-			"QRL2 PQ precompiles fork timestamp",
-			c.QRL2PQPrecompilesTime,
-			newcfg.QRL2PQPrecompilesTime,
-		)
 	}
 
 	return nil
@@ -222,17 +204,6 @@ func configBlockEqual(x, y *big.Int) bool {
 		return x == nil
 	}
 	return x.Cmp(y) == 0
-}
-
-func configTimestampEqual(x, y *uint64) bool {
-	if x == nil {
-		return y == nil
-	}
-	return y != nil && *x == *y
-}
-
-func isTimestampForked(s *uint64, head uint64) bool {
-	return s != nil && head >= *s
 }
 
 // ConfigCompatError is raised if the locally-stored blockchain is initialised with a
@@ -275,39 +246,11 @@ func newBlockCompatError(what string, storedblock, newblock *big.Int) *ConfigCom
 	return err
 }
 
-func newTimestampCompatError(what string, storedtime, newtime *uint64) *ConfigCompatError {
-	var rew *uint64
-	switch {
-	case storedtime == nil:
-		rew = newtime
-	case newtime == nil || *storedtime < *newtime:
-		rew = storedtime
-	default:
-		rew = newtime
-	}
-	err := &ConfigCompatError{
-		What:       what,
-		StoredTime: storedtime,
-		NewTime:    newtime,
-	}
-	if rew != nil && *rew > 0 {
-		err.RewindToTime = *rew - 1
-	}
-	return err
-}
-
 func (err *ConfigCompatError) Error() string {
 	if err.StoredBlock != nil {
 		return fmt.Sprintf("mismatching %s in database (have block %d, want block %d, rewindto block %d)", err.What, err.StoredBlock, err.NewBlock, err.RewindToBlock)
 	}
-	return fmt.Sprintf("mismatching %s in database (have timestamp %s, want timestamp %s, rewindto timestamp %d)", err.What, formatTimestamp(err.StoredTime), formatTimestamp(err.NewTime), err.RewindToTime)
-}
-
-func formatTimestamp(timestamp *uint64) string {
-	if timestamp == nil {
-		return "<nil>"
-	}
-	return strconv.FormatUint(*timestamp, 10)
+	return fmt.Sprintf("mismatching %s in database (have timestamp %d, want timestamp %d, rewindto timestamp %d)", err.What, err.StoredTime, err.NewTime, err.RewindToTime)
 }
 
 // Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions
@@ -316,8 +259,7 @@ func formatTimestamp(timestamp *uint64) string {
 // Rules is a one time interface meaning that it shouldn't be used in between transition
 // phases.
 type Rules struct {
-	ChainID             *big.Int
-	IsQRL2PQPrecompiles bool
+	ChainID *big.Int
 }
 
 // Rules ensures c's ChainID is not nil.
@@ -327,7 +269,6 @@ func (c *ChainConfig) Rules(num *big.Int, timestamp uint64) Rules {
 		chainID = new(big.Int)
 	}
 	return Rules{
-		ChainID:             new(big.Int).Set(chainID),
-		IsQRL2PQPrecompiles: isTimestampForked(c.QRL2PQPrecompilesTime, timestamp),
+		ChainID: new(big.Int).Set(chainID),
 	}
 }

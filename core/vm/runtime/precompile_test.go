@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/theQRL/go-qrl/core/vm"
-	"github.com/theQRL/go-qrl/params"
 	cryptomldsa87 "github.com/theQRL/go-qrllib/crypto/ml_dsa_87"
 )
 
@@ -49,7 +48,7 @@ func TestMLDSA87VerifyPrecompileStaticCall(t *testing.T) {
 		byte(vm.PUSH1), 0,
 		byte(vm.RETURN),
 	}
-	output, _, err := Execute(code, input, &Config{ChainConfig: params.AllBeaconProtocolChanges})
+	output, _, err := Execute(code, input, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
