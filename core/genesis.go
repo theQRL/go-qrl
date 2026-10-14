@@ -221,11 +221,11 @@ type genesisSpecMarshaling struct {
 }
 
 type genesisAccountMarshaling struct {
-	Code       hexutil.Bytes
-	Balance    *math.HexOrDecimal256
-	Nonce      math.HexOrDecimal64
-	Storage    map[storageJSON]storageValue64JSON
-	PrivateKey hexutil.Bytes
+	Code    hexutil.Bytes
+	Balance *math.HexOrDecimal256
+	Nonce   math.HexOrDecimal64
+	Storage map[storageJSON]storageValue64JSON
+	Seed    hexutil.Bytes
 }
 
 // storageJSON represents a 256-bit byte array (storage key) that allows less
