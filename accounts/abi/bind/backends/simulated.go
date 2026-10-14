@@ -613,8 +613,7 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call qrl.CallMsg, h
 	// Backfill the legacy gasPrice for QRVM execution, unless we're all zeroes
 	gasPrice := new(big.Int)
 	if call.GasFeeCap.BitLen() > 0 || call.GasTipCap.BitLen() > 0 {
-		head := b.blockchain.CurrentHeader()
-		gasPrice = math.BigMin(new(big.Int).Add(call.GasTipCap, head.BaseFee), call.GasFeeCap)
+		gasPrice = math.BigMin(new(big.Int).Add(call.GasTipCap, header.BaseFee), call.GasFeeCap)
 	}
 
 	// Ensure message is initialized properly.
