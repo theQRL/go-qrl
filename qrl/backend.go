@@ -308,7 +308,6 @@ func (s *QRL) Downloader() *downloader.Downloader { return s.handler.downloader 
 func (s *QRL) Synced() bool                       { return s.handler.synced.Load() }
 func (s *QRL) SetSynced()                         { s.handler.enableSyncedFeatures() }
 func (s *QRL) ArchiveMode() bool                  { return s.config.NoPruning }
-func (s *QRL) BloomIndexer() *core.ChainIndexer   { return s.bloomIndexer }
 
 // Protocols returns all the currently configured
 // network protocols to start.
