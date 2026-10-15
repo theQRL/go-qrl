@@ -42,10 +42,6 @@ func (api *MinerAPI) SetExtra(extra string) (bool, error) {
 
 // SetGasPrice sets the minimum accepted gas price for the miner.
 func (api *MinerAPI) SetGasPrice(gasPrice hexutil.Big) bool {
-	api.q.lock.Lock()
-	api.q.gasPrice = (*big.Int)(&gasPrice)
-	api.q.lock.Unlock()
-
 	api.q.txPool.SetGasTip((*big.Int)(&gasPrice))
 	api.q.Miner().SetGasTip((*big.Int)(&gasPrice))
 	return true

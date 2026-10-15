@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"slices"
 	"sync/atomic"
-	"time"
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
@@ -146,11 +145,6 @@ type Block struct {
 	// caches
 	hash atomic.Pointer[common.Hash]
 	size atomic.Uint64
-
-	// These fields are used by package qrl to track
-	// inter-peer block relay.
-	ReceivedAt   time.Time
-	ReceivedFrom any
 }
 
 // "external" block encoding. used for qrl protocol, etc.

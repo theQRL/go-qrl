@@ -47,7 +47,6 @@ type Backend interface {
 	FeeHistory(ctx context.Context, blockCount uint64, lastBlock rpc.BlockNumber, rewardPercentiles []float64) (*big.Int, [][]*big.Int, []*big.Int, []float64, error)
 	ChainDb() qrldb.Database
 	AccountManager() *accounts.Manager
-	ExtRPCEnabled() bool
 	RPCGasCap() uint64             // global gas cap for qrl_call over rpc: DoS protection
 	RPCQRVMTimeout() time.Duration // global timeout for qrl_call over rpc: DoS protection
 	RPCTxFeeCap() float64          // global tx fee cap for all transaction related APIs

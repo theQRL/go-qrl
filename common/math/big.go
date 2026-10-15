@@ -253,17 +253,6 @@ func ReadBits(bigint *big.Int, buf []byte) {
 	}
 }
 
-// U256 encodes x as a 256 bit two's complement number. This operation is destructive.
-func U256(x *big.Int) *big.Int {
-	return x.And(x, tt256m1)
-}
-
-// U256Bytes converts a big Int into a 256bit QRVM number.
-// This operation is destructive.
-func U256Bytes(n *big.Int) []byte {
-	return PaddedBigBytes(U256(n), 32)
-}
-
 // U512 encodes x as a 512 bit two's complement number. This operation is destructive.
 func U512(x *big.Int) *big.Int {
 	return x.And(x, tt512m1)

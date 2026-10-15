@@ -26,7 +26,6 @@ import (
 	"time"
 
 	natpmp "github.com/jackpal/go-nat-pmp"
-	"github.com/theQRL/go-qrl/log"
 )
 
 // Interface An implementation of nat.Interface can map local ports to ports
@@ -87,44 +86,6 @@ func Parse(spec string) (Interface, error) {
 		return PMP(ip), nil
 	default:
 		return nil, fmt.Errorf("unknown mechanism %q", parts[0])
-	}
-}
-
-const (
-	DefaultMapTimeout = 10 * time.Minute
-)
-
-// Map adds a port mapping on m and keeps it alive until c is closed.
-// This function is typically invoked in its own goroutine.
-//
-// Note that Map does not handle the situation where the NAT interface assigns a different
-// external port than the requested one.
-func Map(m Interface, c <-chan struct{}, protocol string, extport, intport int, name string) {
-	log := log.New("proto", protocol, "extport", extport, "intport", intport, "interface", m)
-	refresh := time.NewTimer(DefaultMapTimeout)
-	defer func() {
-		refresh.Stop()
-		log.Debug("Deleting port mapping")
-		m.DeleteMapping(protocol, extport, intport)
-	}()
-	if _, err := m.AddMapping(protocol, extport, intport, name, DefaultMapTimeout); err != nil {
-		log.Debug("Couldn't add port mapping", "err", err)
-	} else {
-		log.Info("Mapped network port")
-	}
-	for {
-		select {
-		case _, ok := <-c:
-			if !ok {
-				return
-			}
-		case <-refresh.C:
-			log.Trace("Refreshing port mapping")
-			if _, err := m.AddMapping(protocol, extport, intport, name, DefaultMapTimeout); err != nil {
-				log.Debug("Couldn't add port mapping", "err", err)
-			}
-			refresh.Reset(DefaultMapTimeout)
-		}
 	}
 }
 

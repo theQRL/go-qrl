@@ -19,14 +19,12 @@ package console
 import (
 	"encoding/json"
 	"errors"
-	"io"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/dop251/goja"
 	"github.com/theQRL/go-qrl/common/hexutil"
-	"github.com/theQRL/go-qrl/console/prompt"
 	"github.com/theQRL/go-qrl/internal/jsre"
 	"github.com/theQRL/go-qrl/rpc"
 )
@@ -34,17 +32,13 @@ import (
 // bridge is a collection of JavaScript utility methods to bride the .js runtime
 // environment and the Go RPC connection backing the remote method calls.
 type bridge struct {
-	client   *rpc.Client         // RPC client to execute QRL requests through
-	prompter prompt.UserPrompter // Input prompter to allow interactive user feedback
-	printer  io.Writer           // Output writer to serialize any display strings to
+	client *rpc.Client // RPC client to execute QRL requests through
 }
 
 // newBridge creates a new JavaScript wrapper around an RPC client.
-func newBridge(client *rpc.Client, prompter prompt.UserPrompter, printer io.Writer) *bridge {
+func newBridge(client *rpc.Client) *bridge {
 	return &bridge{
-		client:   client,
-		prompter: prompter,
-		printer:  printer,
+		client: client,
 	}
 }
 

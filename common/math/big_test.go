@@ -169,32 +169,3 @@ func TestReadBits(t *testing.T) {
 	check("0000000000012345000000000000000000000000000000000000FEFCF3F8F0")
 	check("18F8F8F1000111000110011100222004330052300000000000000000FEFCF3F8F0")
 }
-
-func TestU256(t *testing.T) {
-	tests := []struct{ x, y *big.Int }{
-		{x: big.NewInt(0), y: big.NewInt(0)},
-		{x: big.NewInt(1), y: big.NewInt(1)},
-		{x: BigPow(2, 255), y: BigPow(2, 255)},
-		{x: BigPow(2, 256), y: big.NewInt(0)},
-		{x: new(big.Int).Add(BigPow(2, 256), big.NewInt(1)), y: big.NewInt(1)},
-		// negative values
-		{x: big.NewInt(-1), y: new(big.Int).Sub(BigPow(2, 256), big.NewInt(1))},
-		{x: big.NewInt(-2), y: new(big.Int).Sub(BigPow(2, 256), big.NewInt(2))},
-		{x: BigPow(2, -255), y: big.NewInt(1)},
-	}
-	for _, test := range tests {
-		if y := U256(new(big.Int).Set(test.x)); y.Cmp(test.y) != 0 {
-			t.Errorf("U256(%x) = %x, want %x", test.x, y, test.y)
-		}
-	}
-}
-
-func TestU256Bytes(t *testing.T) {
-	ubytes := make([]byte, 32)
-	ubytes[31] = 1
-
-	unsigned := U256Bytes(big.NewInt(1))
-	if !bytes.Equal(unsigned, ubytes) {
-		t.Errorf("expected %x got %x", ubytes, unsigned)
-	}
-}

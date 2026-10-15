@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/big"
 	"runtime"
-	"sync"
 
 	"github.com/theQRL/go-qrl/accounts"
 	"github.com/theQRL/go-qrl/common"
@@ -82,15 +81,12 @@ type QRL struct {
 
 	APIBackend *QRLAPIBackend
 
-	miner    *miner.Miner
-	gasPrice *big.Int
+	miner *miner.Miner
 
 	networkID     uint64
 	netRPCService *qrlapi.NetAPI
 
 	p2pServer *p2p.Server
-
-	lock sync.RWMutex // Protects the variadic fields (e.g. gas price and etherbase)
 
 	shutdownTracker *shutdowncheck.ShutdownTracker // Tracks if and when the node has shutdown ungracefully
 }
@@ -145,7 +141,6 @@ func New(stack *node.Node, config *qrlconfig.Config) (*QRL, error) {
 		engine:            engine,
 		closeBloomHandler: make(chan struct{}),
 		networkID:         networkID,
-		gasPrice:          config.Miner.GasPrice,
 		bloomRequests:     make(chan chan *bloombits.Retrieval),
 		bloomIndexer:      core.NewBloomIndexer(chainDb, params.BloomBitsBlocks, params.BloomConfirms),
 		p2pServer:         stack.Server(),
@@ -217,7 +212,7 @@ func New(stack *node.Node, config *qrlconfig.Config) (*QRL, error) {
 	qrl.miner = miner.New(qrl, config.Miner, qrl.engine)
 	qrl.miner.SetExtra(makeExtraData(config.Miner.ExtraData))
 
-	qrl.APIBackend = &QRLAPIBackend{stack.Config().ExtRPCEnabled(), qrl, nil}
+	qrl.APIBackend = &QRLAPIBackend{qrl, nil}
 
 	gpoParams := config.GPO
 	if gpoParams.Default == nil {
