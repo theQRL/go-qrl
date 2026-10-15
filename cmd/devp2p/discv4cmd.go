@@ -186,20 +186,21 @@ func discv4ResolveJSON(ctx *cli.Context) error {
 		inputSet = loadNodesJSON(nodesFile)
 	}
 
-	// Add extra nodes from command line arguments.
-	var nodeargs []*qnode.Node
+	// Add extra nodes from command line arguments. They are added to the input
+	// set so they count as crawl input even when the nodes file doesn't exist
+	// yet and no bootnodes are configured.
 	for i := 1; i < ctx.NArg(); i++ {
 		n, err := parseNode(ctx.Args().Get(i))
 		if err != nil {
 			exit(err)
 		}
-		nodeargs = append(nodeargs, n)
+		inputSet.add(n)
 	}
 
 	disc, config := startV4(ctx)
 	defer disc.Close()
 
-	c, err := newCrawler(inputSet, config.Bootnodes, disc, qnode.IterNodes(nodeargs))
+	c, err := newCrawler(inputSet, config.Bootnodes, disc)
 	if err != nil {
 		return err
 	}

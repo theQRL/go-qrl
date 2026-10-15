@@ -102,7 +102,8 @@ var (
 
 func rlpxPing(ctx *cli.Context) error {
 	n := getNodeArg(ctx)
-	fd, err := net.Dial("tcp", fmt.Sprintf("%v:%d", n.IP(), n.TCP()))
+	addr := &net.TCPAddr{IP: n.IP(), Port: n.TCP()}
+	fd, err := net.Dial("tcp", addr.String())
 	if err != nil {
 		return err
 	}

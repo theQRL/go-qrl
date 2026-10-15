@@ -348,7 +348,10 @@ The remote node should neither contact the injected node nor return it from late
 
 	checkNoContact := func(phase string) {
 		buf := make([]byte, 1280)
-		if err := fakeL.SetReadDeadline(time.Now()); err != nil {
+		// The deadline must be in the future: a deadline that has already
+		// passed makes ReadFrom fail with a timeout without ever delivering
+		// queued packets, which would turn this check into a no-op.
+		if err := fakeL.SetReadDeadline(time.Now().Add(waitTime)); err != nil {
 			t.Fatal(err)
 		}
 		for {

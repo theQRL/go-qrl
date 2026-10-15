@@ -53,7 +53,8 @@ func (s *Suite) dial() (*Conn, error) {
 // dialAs attempts to dial a given node and perform a handshake using the given
 // private key.
 func (s *Suite) dialAs(key *ecdsa.PrivateKey) (*Conn, error) {
-	fd, err := net.Dial("tcp", fmt.Sprintf("%v:%d", s.Dest.IP(), s.Dest.TCP()))
+	addr := &net.TCPAddr{IP: s.Dest.IP(), Port: s.Dest.TCP()}
+	fd, err := net.Dial("tcp", addr.String())
 	if err != nil {
 		return nil, err
 	}
