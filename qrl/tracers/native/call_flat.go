@@ -95,7 +95,7 @@ type flatCallTracer struct {
 	config            flatCallTracerConfig
 	ctx               *tracers.Context // Holds tracer context data
 	interrupt         atomic.Bool      // Atomic flag to signal execution interruption
-	activePrecompiles []common.Address // Updated on CaptureStart based on given rules
+	activePrecompiles []common.Address // Updated on CaptureStart
 }
 
 type flatCallTracerConfig struct {
@@ -131,9 +131,8 @@ func (t *flatCallTracer) CaptureStart(env *vm.QRVM, from common.Address, to comm
 		return
 	}
 	t.tracer.CaptureStart(env, from, to, create, input, gas, value)
-	// Update list of precompiles based on current block
-	rules := env.ChainConfig().Rules(env.Context.BlockNumber, env.Context.Time)
-	t.activePrecompiles = vm.ActivePrecompiles(rules)
+	// Update list of precompiles
+	t.activePrecompiles = vm.ActivePrecompiles()
 }
 
 // CaptureEnd is called after the call finishes to finalize the tracing.

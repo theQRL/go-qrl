@@ -129,24 +129,3 @@ func TestCheckCompatible(t *testing.T) {
 		}
 	}
 }
-
-// NOTE(rgeraldes24): not valid at the moment
-/*
-func TestConfigRules(t *testing.T) {
-	c := &ChainConfig{
-		ZondTime: newUint64(500),
-	}
-	var stamp uint64
-	if r := c.Rules(big.NewInt(0), true, stamp); r.IsZond {
-		t.Errorf("expected %v to not be zond", stamp)
-	}
-	stamp = 500
-	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsZond {
-		t.Errorf("expected %v to be zond", stamp)
-	}
-	stamp = math.MaxInt64
-	if r := c.Rules(big.NewInt(0), true, stamp); !r.IsZond {
-		t.Errorf("expected %v to be zond", stamp)
-	}
-}
-*/

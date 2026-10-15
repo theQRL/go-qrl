@@ -591,13 +591,8 @@ func opCreate(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]
 	}
 
 	res, addr, returnGas, suberr := interpreter.qrvm.Create(scope.Contract, input, gas, bigVal)
-	// Push item on the stack based on the returned error. If the ruleset is
-	// homestead we must check for CodeStoreOutOfGasError (homestead only
-	// rule) and treat as an error, if the ruleset is frontier we must
-	// ignore this error and pretend the operation was successful.
-	if suberr == ErrCodeStoreOutOfGas {
-		stackvalue.Clear()
-	} else if suberr != nil && suberr != ErrCodeStoreOutOfGas {
+	// Push item on the stack based on the returned error.
+	if suberr != nil {
 		stackvalue.Clear()
 	} else {
 		stackvalue.SetBytes(addr.Bytes())

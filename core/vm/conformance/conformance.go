@@ -131,8 +131,7 @@ func execute(code, input []byte, gasLimit uint64) (Result, error) {
 
 	vmenv := vm.NewQRVM(vmctx, txctx, statedb, cfg, vm.Config{})
 
-	rules := cfg.Rules(vmctx.BlockNumber, vmctx.Time)
-	statedb.Prepare(rules, origin, vmctx.Coinbase, &contract, vm.ActivePrecompiles(rules), nil)
+	statedb.Prepare(origin, vmctx.Coinbase, &contract, vm.ActivePrecompiles(), nil)
 	statedb.CreateAccount(contract)
 	statedb.SetCode(contract, code)
 

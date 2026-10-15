@@ -16,16 +16,6 @@
 
 package vm
 
-import (
-	"github.com/theQRL/go-qrl/params"
-)
-
-// LookupInstructionSet returns the instructionset for the fork configured by
-// the rules.
-func LookupInstructionSet(rules params.Rules) (JumpTable, error) {
-	return newZondInstructionSet(), nil
-}
-
 // Stack returns the minimum and maximum stack requirements.
 func (op *operation) Stack() (int, int) {
 	return op.minStack, op.maxStack

@@ -21,7 +21,6 @@ import (
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core/types"
-	"github.com/theQRL/go-qrl/params"
 )
 
 // StateDB is a QRVM database for full state querying.
@@ -63,7 +62,7 @@ type StateDB interface {
 	// AddSlotToAccessList adds the given (address,slot) to the access list. This operation is safe to perform
 	// even if the feature/fork is not active yet
 	AddSlotToAccessList(addr common.Address, slot common.Hash)
-	Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
+	Prepare(sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
 
 	RevertToSnapshot(int)
 	Snapshot() int

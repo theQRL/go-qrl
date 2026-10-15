@@ -70,7 +70,6 @@ var (
 	NonActivatedConfig = &ChainConfig{
 		ChainID: big.NewInt(1),
 	}
-	TestRules = TestChainConfig.Rules(new(big.Int), 0)
 )
 
 // NetworkNames are user friendly names to use in the chain spec banner.
@@ -236,24 +235,4 @@ func (err *ConfigCompatError) Error() string {
 		return fmt.Sprintf("mismatching %s in database (have block %d, want block %d, rewindto block %d)", err.What, err.StoredBlock, err.NewBlock, err.RewindToBlock)
 	}
 	return fmt.Sprintf("mismatching %s in database (have timestamp %d, want timestamp %d, rewindto timestamp %d)", err.What, err.StoredTime, err.NewTime, err.RewindToTime)
-}
-
-// Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions
-// that do not have or require information about the block.
-//
-// Rules is a one time interface meaning that it shouldn't be used in between transition
-// phases.
-type Rules struct {
-	ChainID *big.Int
-}
-
-// Rules ensures c's ChainID is not nil.
-func (c *ChainConfig) Rules(num *big.Int, timestamp uint64) Rules {
-	chainID := c.ChainID
-	if chainID == nil {
-		chainID = new(big.Int)
-	}
-	return Rules{
-		ChainID: new(big.Int).Set(chainID),
-	}
 }
