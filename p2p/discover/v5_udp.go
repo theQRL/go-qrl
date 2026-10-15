@@ -41,8 +41,6 @@ const (
 	lookupRequestLimit      = 3  // max requests against a single node during lookup
 	findnodeResultLimit     = 16 // applies in FINDNODE handler
 	totalNodesResponseLimit = 5  // applies in waitForNodes
-
-	respTimeoutV5 = 700 * time.Millisecond
 )
 
 // codecV5 is implemented by v5wire.Codec (and testCodec).
@@ -51,11 +49,20 @@ const (
 // encoding/decoding and with the handshake; the UDPv5 object handles higher-level concerns.
 type codecV5 interface {
 	// Encode encodes a packet.
-	Encode(qnode.ID, string, v5wire.Packet, *v5wire.Whoareyou) ([]byte, v5wire.Nonce, error)
+	//
+	// If the underlying type of 'p' is *v5wire.Whoareyou, a Whoareyou challenge packet is
+	// encoded. If the 'challenge' parameter is non-nil, the packet is encoded as a
+	// handshake message packet. Otherwise, the packet will be encoded as an ordinary
+	// message packet.
+	Encode(id qnode.ID, addr string, p v5wire.Packet, challenge *v5wire.Whoareyou) ([]byte, v5wire.Nonce, error)
 
 	// Decode decodes a packet. It returns a *v5wire.Unknown packet if decryption fails.
 	// The *qnode.Node return value is non-nil when the input contains a handshake response.
-	Decode([]byte, string) (qnode.ID, *qnode.Node, v5wire.Packet, error)
+	Decode(b []byte, addr string) (qnode.ID, *qnode.Node, v5wire.Packet, error)
+
+	// CurrentChallenge returns the most recent WHOAREYOU challenge that was encoded to given node.
+	// This will return a non-nil value if there is an active handshake attempt with the node, and nil otherwise.
+	CurrentChallenge(id qnode.ID, addr string) *v5wire.Whoareyou
 }
 
 // UDPv5 is the implementation of protocol version 5.
@@ -70,6 +77,7 @@ type UDPv5 struct {
 	log          log.Logger
 	clock        mclock.Clock
 	validSchemes qnr.IdentityScheme
+	respTimeout  time.Duration
 
 	// misc buffers used during message handling
 	logcontext []any
@@ -157,6 +165,7 @@ func newUDPv5(conn UDPConn, ln *qnode.LocalNode, cfg Config) (*UDPv5, error) {
 		log:          cfg.Log,
 		validSchemes: cfg.ValidSchemes,
 		clock:        cfg.Clock,
+		respTimeout:  cfg.V5RespTimeout,
 		// channels into dispatch
 		packetInCh:    make(chan ReadPacket, 1),
 		readNextCh:    make(chan struct{}, 1),
@@ -239,7 +248,7 @@ func (t *UDPv5) AllNodes() []*qnode.Node {
 	return nodes
 }
 
-// LocalNode returns the current local node running the
+// LocalNode returns the current local Node running the
 // protocol.
 func (t *UDPv5) LocalNode() *qnode.LocalNode {
 	return t.localNode
@@ -443,7 +452,7 @@ func (t *UDPv5) verifyResponseNode(c *callV5, r *qnr.Record, distances []uint, s
 		}
 	}
 	if _, ok := seen[node.ID()]; ok {
-		return nil, fmt.Errorf("duplicate record")
+		return nil, errors.New("duplicate record")
 	}
 	seen[node.ID()] = struct{}{}
 	return node, nil
@@ -575,7 +584,7 @@ func (t *UDPv5) startResponseTimeout(c *callV5) {
 		timer mclock.Timer
 		done  = make(chan struct{})
 	)
-	timer = t.clock.AfterFunc(respTimeoutV5, func() {
+	timer = t.clock.AfterFunc(t.respTimeout, func() {
 		<-done
 		select {
 		case t.respTimeoutCh <- &callTimeout{c, timer}:
@@ -768,6 +777,19 @@ func (t *UDPv5) handle(p v5wire.Packet, fromID qnode.ID, fromAddr *net.UDPAddr) 
 
 // handleUnknown initiates a handshake by responding with WHOAREYOU.
 func (t *UDPv5) handleUnknown(p *v5wire.Unknown, fromID qnode.ID, fromAddr *net.UDPAddr) {
+	currentChallenge := t.codec.CurrentChallenge(fromID, fromAddr.String())
+	if currentChallenge != nil {
+		// This case happens when the sender issues multiple concurrent requests.
+		// Since we only support one in-progress handshake at a time, we need to tell
+		// them which handshake attempt they need to complete. We tell them to use the
+		// existing handshake attempt since the response to that one might still be in
+		// transit.
+		t.log.Debug("Repeating discv5 handshake challenge", "id", fromID, "addr", fromAddr)
+		t.sendResponse(fromID, fromAddr, currentChallenge)
+		return
+	}
+
+	// Send a fresh challenge.
 	challenge := &v5wire.Whoareyou{Nonce: p.Nonce}
 	crand.Read(challenge.IDNonce[:])
 	if n := t.getNode(fromID); n != nil {
@@ -819,9 +841,8 @@ func (t *UDPv5) matchWithCall(fromID qnode.ID, nonce v5wire.Nonce) (*callV5, err
 // handlePing sends a PONG response.
 func (t *UDPv5) handlePing(p *v5wire.Ping, fromID qnode.ID, fromAddr *net.UDPAddr) {
 	remoteIP := fromAddr.IP
-	// Handle IPv4 mapped IPv6 addresses in the
-	// event the local node is binded to an
-	// ipv6 interface.
+	// Handle IPv4 mapped IPv6 addresses in the event the local node is binded
+	// to an ipv6 interface.
 	if remoteIP.To4() != nil {
 		remoteIP = remoteIP.To4()
 	}

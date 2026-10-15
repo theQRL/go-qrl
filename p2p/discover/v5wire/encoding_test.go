@@ -248,24 +248,53 @@ func TestHandshake_BadHandshakeAttack(t *testing.T) {
 	net.nodeA.expectDecode(t, WhoareyouPacket, whoareyou)
 
 	// A -> B   FINDNODE
-	incorrect_challenge := &Whoareyou{
+	incorrectChallenge := &Whoareyou{
 		IDNonce:   [16]byte{5, 6, 7, 8, 9, 6, 11, 12},
 		RecordSeq: challenge.RecordSeq,
 		Node:      challenge.Node,
 		sent:      challenge.sent,
 	}
-	incorrect_findnode, _ := net.nodeA.encodeWithChallenge(t, net.nodeB, incorrect_challenge, &Findnode{})
-	incorrect_findnode2 := make([]byte, len(incorrect_findnode))
-	copy(incorrect_findnode2, incorrect_findnode)
+	incorrectFindNode, _ := net.nodeA.encodeWithChallenge(t, net.nodeB, incorrectChallenge, &Findnode{})
+	incorrectFindNode2 := make([]byte, len(incorrectFindNode))
+	copy(incorrectFindNode2, incorrectFindNode)
 
-	net.nodeB.expectDecodeErr(t, errInvalidNonceSig, incorrect_findnode)
+	net.nodeB.expectDecodeErr(t, errInvalidNonceSig, incorrectFindNode)
 
 	// Reject new findnode as previous handshake is now deleted.
-	net.nodeB.expectDecodeErr(t, errUnexpectedHandshake, incorrect_findnode2)
+	net.nodeB.expectDecodeErr(t, errUnexpectedHandshake, incorrectFindNode2)
 
 	// The findnode packet is again rejected even with a valid challenge this time.
 	findnode, _ := net.nodeA.encodeWithChallenge(t, net.nodeB, challenge, &Findnode{})
 	net.nodeB.expectDecodeErr(t, errUnexpectedHandshake, findnode)
+}
+
+func TestEncodeWhoareyouResend(t *testing.T) {
+	t.Parallel()
+	net := newHandshakeTest()
+	defer net.close()
+
+	// A -> B   WHOAREYOU
+	challenge := &Whoareyou{
+		Nonce:     Nonce{1, 2, 3, 4},
+		IDNonce:   testIDnonce,
+		RecordSeq: 0,
+	}
+	enc, _ := net.nodeA.encode(t, net.nodeB, challenge)
+	net.nodeB.expectDecode(t, WhoareyouPacket, enc)
+	whoareyou1 := bytes.Clone(enc)
+
+	if len(challenge.ChallengeData) == 0 {
+		t.Fatal("ChallengeData not assigned by encode")
+	}
+
+	// A -> B   WHOAREYOU
+	// Send the same challenge again. This should produce exactly
+	// the same bytes as the first send.
+	enc, _ = net.nodeA.encode(t, net.nodeB, challenge)
+	whoareyou2 := bytes.Clone(enc)
+	if !bytes.Equal(whoareyou2, whoareyou1) {
+		t.Fatal("re-encoded challenge not equal to first")
+	}
 }
 
 // This test checks some malformed packets.
@@ -283,9 +312,38 @@ func TestDecodeErrorsV5(t *testing.T) {
 	b = make([]byte, 63)
 	net.nodeA.expectDecodeErr(t, errInvalidHeader, b)
 
-	// TODO some more tests would be nice :)
-	// - check invalid authdata sizes
-	// - check invalid handshake data sizes
+	t.Run("invalid-handshake-datasize", func(t *testing.T) {
+		requiredNumber := 108
+
+		testDataFile := filepath.Join("testdata", "v5.1-ping-handshake"+".txt")
+		enc := hexFile(testDataFile)
+		//delete some byte from handshake to make it invalid
+		enc = enc[:len(enc)-requiredNumber]
+		net.nodeB.expectDecodeErr(t, errMsgTooShort, enc)
+	})
+
+	t.Run("invalid-auth-datasize", func(t *testing.T) {
+		testPacket := []byte{}
+		testDataFiles := []string{"v5.1-whoareyou", "v5.1-ping-handshake"}
+		for counter, name := range testDataFiles {
+			file := filepath.Join("testdata", name+".txt")
+			enc := hexFile(file)
+			if counter == 0 {
+				//make whoareyou header
+				testPacket = enc[:sizeofStaticPacketData-1]
+				testPacket = append(testPacket, 255)
+			}
+			if counter == 1 {
+				//append invalid auth size
+				testPacket = append(testPacket, enc[sizeofStaticPacketData:]...)
+			}
+		}
+
+		wantErr := "invalid auth size"
+		if _, err := net.nodeB.decode(testPacket); strings.HasSuffix(err.Error(), wantErr) {
+			t.Fatal(fmt.Errorf("(%s) got err %q, want %q", net.nodeB.ln.ID().TerminalString(), err, wantErr))
+		}
+	})
 }
 
 // This test checks that all test vectors can be decoded.

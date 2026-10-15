@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/p2p/dnsdisc"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/urfave/cli/v2"
@@ -249,22 +250,14 @@ func dnsNukeRoute53(ctx *cli.Context) error {
 	return client.deleteDomain(ctx.Args().First())
 }
 
-// TODO(now.youtrack.cloud/issue/TGZ-6)
-// loadSigningKey loads da private key in Ethereum keystore format.
+// loadSigningKey loads a private key from a node key file, as written by
+// 'devp2p key generate'.
 func loadSigningKey(keyfile string) *ecdsa.PrivateKey {
-	/*
-		keyjson, err := os.ReadFile(keyfile)
-		if err != nil {
-			exit(fmt.Errorf("failed to read the keyfile at '%s': %v", keyfile, err))
-		}
-		password, _ := prompt.Stdin.PromptPassword("Please enter the password for '" + keyfile + "': ")
-		key, err := keystore.DecryptKey(keyjson, password)
-		if err != nil {
-			exit(fmt.Errorf("error decrypting key: %v", err))
-		}
-		return key.PrivateKey
-	*/
-	return nil
+	key, err := crypto.LoadECDSA(keyfile)
+	if err != nil {
+		exit(fmt.Errorf("failed to load the key file at '%s': %v", keyfile, err))
+	}
+	return key
 }
 
 // dnsClient configures the DNS discovery client from command line flags.

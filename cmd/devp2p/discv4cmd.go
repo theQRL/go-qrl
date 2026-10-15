@@ -114,7 +114,7 @@ var (
 	}
 	extAddrFlag = &cli.StringFlag{
 		Name:  "extaddr",
-		Usage: "UDP endpoint announced in QNR. You can provide a bare IP address or IP:port as the value of this flag.",
+		Usage: "UDP endpoint announced in QNR. You can provide a bare IP address or IP:port as the value of this flag. Provide a comma-separated pair to announce both an IPv4 and an IPv6 endpoint.",
 	}
 	crawlTimeoutFlag = &cli.DurationFlag{
 		Name:  "timeout",
@@ -143,7 +143,7 @@ var discoveryNodeFlags = []cli.Flag{
 
 func discv4Ping(ctx *cli.Context) error {
 	n := getNodeArg(ctx)
-	disc := startV4(ctx)
+	disc, _ := startV4(ctx)
 	defer disc.Close()
 
 	start := time.Now()
@@ -156,7 +156,7 @@ func discv4Ping(ctx *cli.Context) error {
 
 func discv4RequestRecord(ctx *cli.Context) error {
 	n := getNodeArg(ctx)
-	disc := startV4(ctx)
+	disc, _ := startV4(ctx)
 	defer disc.Close()
 
 	respN, err := disc.RequestQNR(n)
@@ -169,7 +169,7 @@ func discv4RequestRecord(ctx *cli.Context) error {
 
 func discv4Resolve(ctx *cli.Context) error {
 	n := getNodeArg(ctx)
-	disc := startV4(ctx)
+	disc, _ := startV4(ctx)
 	defer disc.Close()
 
 	fmt.Println(disc.Resolve(n).String())
@@ -196,10 +196,13 @@ func discv4ResolveJSON(ctx *cli.Context) error {
 		nodeargs = append(nodeargs, n)
 	}
 
-	// Run the crawler.
-	disc := startV4(ctx)
+	disc, config := startV4(ctx)
 	defer disc.Close()
-	c := newCrawler(inputSet, disc, qnode.IterNodes(nodeargs))
+
+	c, err := newCrawler(inputSet, config.Bootnodes, disc, qnode.IterNodes(nodeargs))
+	if err != nil {
+		return err
+	}
 	c.revalidateInterval = 0
 	output := c.run(0, 1)
 	writeNodesJSON(nodesFile, output)
@@ -211,14 +214,18 @@ func discv4Crawl(ctx *cli.Context) error {
 		return errors.New("need nodes file as argument")
 	}
 	nodesFile := ctx.Args().First()
-	var inputSet nodeSet
+	inputSet := make(nodeSet)
 	if common.FileExist(nodesFile) {
 		inputSet = loadNodesJSON(nodesFile)
 	}
 
-	disc := startV4(ctx)
+	disc, config := startV4(ctx)
 	defer disc.Close()
-	c := newCrawler(inputSet, disc, disc.RandomNodes())
+
+	c, err := newCrawler(inputSet, config.Bootnodes, disc, disc.RandomNodes())
+	if err != nil {
+		return err
+	}
 	c.revalidateInterval = 10 * time.Minute
 	output := c.run(ctx.Duration(crawlTimeoutFlag.Name), ctx.Int(crawlParallelismFlag.Name))
 	writeNodesJSON(nodesFile, output)
@@ -229,7 +236,7 @@ func discv4Crawl(ctx *cli.Context) error {
 func discv4Test(ctx *cli.Context) error {
 	// Configure test package globals.
 	if !ctx.IsSet(remoteQnodeFlag.Name) {
-		return fmt.Errorf("Missing -%v", remoteQnodeFlag.Name)
+		return fmt.Errorf("missing -%v", remoteQnodeFlag.Name)
 	}
 	v4test.Remote = ctx.String(remoteQnodeFlag.Name)
 	v4test.Listen1 = ctx.String(testListen1Flag.Name)
@@ -238,14 +245,14 @@ func discv4Test(ctx *cli.Context) error {
 }
 
 // startV4 starts an ephemeral discovery V4 node.
-func startV4(ctx *cli.Context) *discover.UDPv4 {
+func startV4(ctx *cli.Context) (*discover.UDPv4, discover.Config) {
 	ln, config := makeDiscoveryConfig(ctx)
 	socket := listen(ctx, ln)
 	disc, err := discover.ListenV4(socket, ln, config)
 	if err != nil {
 		exit(err)
 	}
-	return disc
+	return disc, config
 }
 
 func makeDiscoveryConfig(ctx *cli.Context) (*qnode.LocalNode, discover.Config) {
@@ -300,36 +307,60 @@ func parseExtAddr(spec string) (ip net.IP, port int, ok bool) {
 
 func listen(ctx *cli.Context, ln *qnode.LocalNode) *net.UDPConn {
 	addr := ctx.String(listenAddrFlag.Name)
+	extAddr := ctx.String(extAddrFlag.Name)
+	var (
+		socket net.PacketConn
+		err    error
+	)
 	if addr == "" {
-		addr = "0.0.0.0:0"
+		// Dual-stack socket, falling back to IPv4-only where IPv6 is unavailable.
+		if socket, err = net.ListenPacket("udp", "[::]:0"); err != nil {
+			socket, err = net.ListenPacket("udp", "0.0.0.0:0")
+		}
+	} else {
+		socket, err = net.ListenPacket("udp", addr)
 	}
-	socket, err := net.ListenPacket("udp4", addr)
 	if err != nil {
 		exit(err)
 	}
 
-	// Configure UDP endpoint in QNR from listener address.
+	// Configure the QNR endpoint from the listener address, but only without an
+	// explicit -extaddr: otherwise we'd announce a fallback IP for an address
+	// family the user didn't specify (e.g. loopback IPv4 on an IPv6-only node).
 	usocket := socket.(*net.UDPConn)
 	uaddr := socket.LocalAddr().(*net.UDPAddr)
-	if uaddr.IP.IsUnspecified() {
-		ln.SetFallbackIP(net.IP{127, 0, 0, 1})
-	} else {
-		ln.SetFallbackIP(uaddr.IP)
+	if extAddr == "" {
+		if uaddr.IP.IsUnspecified() {
+			ln.SetFallbackIP(net.IP{127, 0, 0, 1})
+		} else {
+			ln.SetFallbackIP(uaddr.IP)
+		}
 	}
 	ln.SetFallbackUDP(uaddr.Port)
 
-	// If a QNR endpoint is set explicitly on the command-line, override
-	// the information from the listening address. Note this is careful not
-	// to set the UDP port if the external address doesn't have it.
-	extAddr := ctx.String(extAddrFlag.Name)
+	// Override with explicit -extaddr address(es). A static IP is set per family,
+	// and all specs share one UDP port because the node has a single socket.
 	if extAddr != "" {
-		ip, port, ok := parseExtAddr(extAddr)
-		if !ok {
-			exit(fmt.Errorf("-%s: invalid external address %q", extAddrFlag.Name, extAddr))
+		var extPort int
+		for spec := range strings.SplitSeq(extAddr, ",") {
+			spec = strings.TrimSpace(spec)
+			if spec == "" {
+				continue
+			}
+			ip, port, ok := parseExtAddr(spec)
+			if !ok {
+				exit(fmt.Errorf("-%s: invalid external address %q", extAddrFlag.Name, spec))
+			}
+			ln.SetStaticIP(ip)
+			if port != 0 {
+				if extPort != 0 && port != extPort {
+					exit(fmt.Errorf("-%s: all addresses must announce the same UDP port, got %d and %d", extAddrFlag.Name, extPort, port))
+				}
+				extPort = port
+			}
 		}
-		ln.SetStaticIP(ip)
-		if port != 0 {
-			ln.SetFallbackUDP(port)
+		if extPort != 0 {
+			ln.SetFallbackUDP(extPort)
 		}
 	}
 

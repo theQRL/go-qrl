@@ -17,6 +17,7 @@
 package main
 
 import (
+	"errors"
 	"maps"
 	"sync"
 	"sync/atomic"
@@ -52,7 +53,14 @@ type resolver interface {
 	RequestQNR(*qnode.Node) (*qnode.Node, error)
 }
 
-func newCrawler(input nodeSet, disc resolver, iters ...qnode.Iterator) *crawler {
+func newCrawler(input nodeSet, bootnodes []*qnode.Node, disc resolver, iters ...qnode.Iterator) (*crawler, error) {
+	if len(input) == 0 {
+		input.add(bootnodes...)
+	}
+	if len(input) == 0 {
+		return nil, errors.New("no input nodes to start crawling")
+	}
+
 	c := &crawler{
 		input:     input,
 		output:    make(nodeSet, len(input)),
@@ -66,7 +74,7 @@ func newCrawler(input nodeSet, disc resolver, iters ...qnode.Iterator) *crawler 
 	// Copy input to output initially. Any nodes that fail validation
 	// will be dropped from output during the run.
 	maps.Copy(c.output, input)
-	return c
+	return c, nil
 }
 
 func (c *crawler) run(timeout time.Duration, nthreads int) nodeSet {

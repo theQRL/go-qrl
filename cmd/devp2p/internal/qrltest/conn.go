@@ -1,7 +1,21 @@
+// Copyright 2023 The go-ethereum Authors
+// This file is part of go-ethereum.
+//
+// go-ethereum is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// go-ethereum is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with go-ethereum. If not, see <http://www.gnu.org/licenses/>.
+
 package qrltest
 
-// TODO(now.youtrack.cloud/issue/TGZ-6)
-/*
 import (
 	"crypto/ecdsa"
 	"errors"
@@ -14,9 +28,9 @@ import (
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/p2p"
 	"github.com/theQRL/go-qrl/p2p/rlpx"
-	"github.com/theQRL/go-qrl/rlp"
-	"github.com/theQRL/go-qrl/qrl/protocols/snap"
 	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
+	"github.com/theQRL/go-qrl/qrl/protocols/snap"
+	"github.com/theQRL/go-qrl/rlp"
 )
 
 var (
@@ -39,8 +53,7 @@ func (s *Suite) dial() (*Conn, error) {
 // dialAs attempts to dial a given node and perform a handshake using the given
 // private key.
 func (s *Suite) dialAs(key *ecdsa.PrivateKey) (*Conn, error) {
-	tcpEndpoint, _ := s.Dest.TCPEndpoint()
-	fd, err := net.Dial("tcp", tcpEndpoint.String())
+	fd, err := net.Dial("tcp", fmt.Sprintf("%v:%d", s.Dest.IP(), s.Dest.TCP()))
 	if err != nil {
 		return nil, err
 	}
@@ -52,10 +65,9 @@ func (s *Suite) dialAs(key *ecdsa.PrivateKey) (*Conn, error) {
 		return nil, err
 	}
 	conn.caps = []p2p.Cap{
-		{Name: "eth", Version: 67},
-		{Name: "eth", Version: 68},
+		{Name: "qrl", Version: 1},
 	}
-	conn.ourHighestProtoVersion = 68
+	conn.ourHighestProtoVersion = 1
 	return &conn, nil
 }
 
@@ -116,11 +128,16 @@ func (c *Conn) Write(proto Proto, code uint64, msg any) error {
 	return err
 }
 
-// ReadQrl reads a Qrl sub-protocol wire message.
-func (c *Conn) ReadQrl() (any, error) {
+var errDisc error = errors.New("disconnect")
+
+// ReadQRL reads an QRL sub-protocol wire message.
+func (c *Conn) ReadQRL() (any, error) {
 	c.SetReadDeadline(time.Now().Add(timeout))
 	for {
 		code, data, _, err := c.Conn.Read()
+		if code == discMsg {
+			return nil, errDisc
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +145,7 @@ func (c *Conn) ReadQrl() (any, error) {
 			c.Write(baseProto, pongMsg, []byte{})
 			continue
 		}
-		if getProto(code) != ethProto {
+		if getProto(code) != qrlProto {
 			// Read until qrl message.
 			continue
 		}
@@ -176,7 +193,7 @@ func (c *Conn) ReadSnap() (any, error) {
 			// Read until snap message.
 			continue
 		}
-		code -= baseProtoLen + ethProtoLen
+		code -= baseProtoLen + qrlProtoLen
 
 		var msg any
 		switch int(code) {
@@ -204,6 +221,18 @@ func (c *Conn) ReadSnap() (any, error) {
 		}
 		return msg, nil
 	}
+}
+
+// dialAndPeer creates a peer connection and runs the handshake.
+func (s *Suite) dialAndPeer(status *qrl.StatusPacket) (*Conn, error) {
+	c, err := s.dial()
+	if err != nil {
+		return nil, err
+	}
+	if err = c.peer(s.chain, status); err != nil {
+		c.Close()
+	}
+	return c, err
 }
 
 // peer performs both the protocol handshake and the status message
@@ -245,7 +274,7 @@ func (c *Conn) handshake() error {
 		if msg.Version >= 5 {
 			c.SetSnappy(true)
 		}
-		c.negotiateEthProtocol(msg.Caps)
+		c.negotiateQRLProtocol(msg.Caps)
 		if c.negotiatedProtoVersion == 0 {
 			return fmt.Errorf("could not negotiate qrl protocol (remote caps: %v, local qrl version: %v)", msg.Caps, c.ourHighestProtoVersion)
 		}
@@ -259,14 +288,14 @@ func (c *Conn) handshake() error {
 	}
 }
 
-// negotiateEthProtocol sets the Conn's qrl protocol version to highest
+// negotiateQRLProtocol sets the Conn's qrl protocol version to highest
 // advertised capability from peer.
-func (c *Conn) negotiateEthProtocol(caps []p2p.Cap) {
+func (c *Conn) negotiateQRLProtocol(caps []p2p.Cap) {
 	var highestEthVersion uint
 	var highestSnapVersion uint
 	for _, capability := range caps {
 		switch capability.Name {
-		case "eth":
+		case "qrl":
 			if capability.Version > highestEthVersion && capability.Version <= c.ourHighestProtoVersion {
 				highestEthVersion = capability.Version
 			}
@@ -295,19 +324,18 @@ loop:
 				return fmt.Errorf("error decoding status packet: %w", err)
 			}
 			if have, want := msg.Head, chain.blocks[chain.Len()-1].Hash(); have != want {
-				return fmt.Errorf("wrong head block in status, want:  %#x (block %d) have %#x",
+				return fmt.Errorf("wrong head block in status, want: %#x (block %d) have %#x",
 					want, chain.blocks[chain.Len()-1].NumberU64(), have)
-			}
-			if have, want := msg.TD.Cmp(chain.TD()), 0; have != want {
-				return fmt.Errorf("wrong TD in status: have %v want %v", have, want)
 			}
 			if have, want := msg.ForkID, chain.ForkID(); !reflect.DeepEqual(have, want) {
 				return fmt.Errorf("wrong fork ID in status: have %v, want %v", have, want)
 			}
-			if have, want := msg.ProtocolVersion, c.ourHighestProtoVersion; have != uint32(want) {
-				return fmt.Errorf("wrong protocol version: have %v, want %v", have, want)
+			for _, cap := range c.caps {
+				if cap.Name == "qrl" && cap.Version == uint(msg.ProtocolVersion) {
+					break loop
+				}
 			}
-			break loop
+			return fmt.Errorf("wrong protocol version: have %v, want %v", msg.ProtocolVersion, c.caps)
 		case discMsg:
 			var msg []p2p.DiscReason
 			if rlp.DecodeBytes(data, &msg); len(msg) == 0 {
@@ -341,4 +369,3 @@ loop:
 	}
 	return nil
 }
-*/

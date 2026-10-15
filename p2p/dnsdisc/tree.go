@@ -162,6 +162,9 @@ func MakeTree(seq uint, nodes []*qnode.Node, links []string) (*Tree, error) {
 		if len(n.Record().Signature()) == 0 {
 			return nil, fmt.Errorf("can't add node %v: unsigned node record", n.ID())
 		}
+		if err := checkRecordPorts(n.Record()); err != nil {
+			return nil, fmt.Errorf("can't add node %v: %v", n.ID(), err)
+		}
 	}
 
 	// Create the leaf list.
@@ -388,6 +391,29 @@ func parseQNR(e string, validSchemes qnr.IdentityScheme) (entry, error) {
 		return nil, entryError{"qnr", err}
 	}
 	return &qnrEntry{n}, nil
+}
+
+var portKeys = []string{
+	qnr.TCP(0).QNRKey(), qnr.TCP6(0).QNRKey(),
+	qnr.UDP(0).QNRKey(), qnr.UDP6(0).QNRKey(),
+}
+
+// checkRecordPorts verifies that port entries, if present, decode as a uint16.
+// qnr.Record keeps undecodable pairs as raw RLP, so an out-of-range port in a record
+// from an external source would otherwise round-trip into a signed tree and fail to
+// decode for consumers that read the port strictly.
+func checkRecordPorts(r *qnr.Record) error {
+	for _, key := range portKeys {
+		var port uint16
+		err := r.Load(qnr.WithEntry(key, &port))
+		if qnr.IsNotFound(err) {
+			continue
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func isValidHash(s string) bool {
