@@ -437,7 +437,7 @@ func (z *Int) Mod(x, y *Int) *Int {
 	return z
 }
 
-// SDiv sets z = x / y with EVM signed semantics (truncate toward zero).
+// SDiv sets z = x / y with QRVM signed semantics (truncate toward zero).
 // Result is 0 when y == 0.
 func (z *Int) SDiv(x, y *Int) *Int {
 	if y.IsZero() {
@@ -453,7 +453,7 @@ func (z *Int) SDiv(x, y *Int) *Int {
 	return z
 }
 
-// SMod sets z = x mod y with EVM signed semantics (result takes the sign of x).
+// SMod sets z = x mod y with QRVM signed semantics (result takes the sign of x).
 // Result is 0 when y == 0.
 func (z *Int) SMod(x, y *Int) *Int {
 	if y.IsZero() {

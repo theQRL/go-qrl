@@ -68,7 +68,7 @@ func LatestSignerForChainID(chainID *big.Int) Signer {
 func SignTx(tx *Transaction, s Signer, w wallet.Wallet) (*Transaction, error) {
 	// Check that chain ID of tx matches the signer. We also accept ID zero here,
 	// because it indicates that the chain ID was not specified in the tx.
-	// NOTE(rgeraldes24): chain ID is filled in in the WithSignatureAndPublicKey method
+	// NOTE(rgeraldes24): chain ID is filled in in the WithAuthValues method
 	// below if its not specified in the transaction
 	if tx.ChainId().Sign() != 0 && tx.ChainId().Cmp(s.ChainID()) != 0 {
 		return nil, fmt.Errorf("%w: have %d want %d", ErrInvalidChainId, tx.ChainId(), s.ChainID())

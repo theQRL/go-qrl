@@ -381,7 +381,7 @@ func (c *Config) GetKeyStoreDir() (string, bool, error) {
 	isEphemeral := false
 	if keydir == "" {
 		// There is no datadir.
-		keydir, err = os.MkdirTemp("", "go-ethereum-keystore")
+		keydir, err = os.MkdirTemp("", "go-qrl-keystore")
 		isEphemeral = true
 	}
 
