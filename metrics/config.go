@@ -35,7 +35,7 @@ type Config struct {
 	InfluxDBOrganization string `toml:",omitempty"`
 }
 
-// DefaultConfig is the default config for metrics used in go-ethereum.
+// DefaultConfig is the default config for metrics used in go-qrl.
 var DefaultConfig = Config{
 	Enabled:          false,
 	EnabledExpensive: false,

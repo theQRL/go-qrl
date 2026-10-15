@@ -313,8 +313,8 @@ func (ks *KeyStore) SignTx(a accounts.Account, tx *types.Transaction, chainID *b
 }
 
 // SignHashWithPassphrase signs hash if the private key matching the given address
-// can be decrypted with the given passphrase. The produced signature is in the
-// [R || S || V] format where V is 0 or 1.
+// can be decrypted with the given passphrase. The produced signature is an
+// ML-DSA-87 signature.
 func (ks *KeyStore) SignHashWithPassphrase(a accounts.Account, passphrase string, hash []byte) (signature []byte, err error) {
 	_, key, err := ks.getDecryptedKey(a, passphrase)
 	if err != nil {
