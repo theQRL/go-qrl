@@ -188,7 +188,7 @@ func makeBenchBlock() *Block {
 		w, _     = wallet.Generate(wallet.ML_DSA_87)
 		txs      = make([]*Transaction, 70)
 		receipts = make([]*Receipt, len(txs))
-		signer   = LatestSigner(params.TestChainConfig)
+		signer   = NewZondSigner(params.TestChainConfig.ChainID)
 	)
 	header := &Header{
 		Number:   math.BigPow(2, 9),

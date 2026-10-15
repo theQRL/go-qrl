@@ -392,7 +392,7 @@ func testSubscribePendingTransactions(t *testing.T, client *rpc.Client) {
 		GasFeeCap: big.NewInt(100000000000),
 		Data:      nil,
 	})
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewZondSigner(chainID)
 	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
@@ -429,7 +429,7 @@ func testSubscribeFullPendingTransactions(t *testing.T, client *rpc.Client) {
 		GasFeeCap: big.NewInt(100000000000),
 		Data:      nil,
 	})
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewZondSigner(chainID)
 	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)

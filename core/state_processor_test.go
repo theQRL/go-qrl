@@ -52,7 +52,7 @@ func TestStateProcessorErrors(t *testing.T) {
 		config = &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		}
-		signer  = types.LatestSigner(config)
+		signer  = types.NewZondSigner(config.ChainID)
 		wallet1 = testutil.LoadAccount(t, "dave").Wallet(t)
 		wallet2 = testutil.LoadAccount(t, "eve").Wallet(t)
 	)
@@ -322,7 +322,7 @@ func TestStateProcessorRejectsNonEmptyExtraParams(t *testing.T) {
 		config = &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		}
-		signer  = types.LatestSigner(config)
+		signer  = types.NewZondSigner(config.ChainID)
 		wallet1 = testutil.LoadAccount(t, "dave").Wallet(t)
 		from    = common.Address(wallet1.GetAddress())
 		db      = rawdb.NewMemoryDatabase()

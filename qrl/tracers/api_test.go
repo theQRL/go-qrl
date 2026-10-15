@@ -167,7 +167,7 @@ func (b *testBackend) StateAtTransaction(ctx context.Context, block *types.Block
 		return nil, vm.BlockContext{}, statedb, release, nil
 	}
 	// Recompute transactions up to the target index.
-	signer := types.MakeSigner(b.chainConfig)
+	signer := types.NewZondSigner(b.chainConfig.ChainID)
 	for idx, tx := range block.Transactions() {
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
 		txContext := core.NewQRVMTxContext(msg)

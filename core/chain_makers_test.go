@@ -46,7 +46,7 @@ func TestGenerateWithdrawalChain(t *testing.T) {
 			GasLimit: 5_000_000,
 		}
 		gendb  = rawdb.NewMemoryDatabase()
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 		db     = rawdb.NewMemoryDatabase()
 	)
 

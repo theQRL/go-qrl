@@ -127,7 +127,7 @@ var (
 	}
 	BetaNetFlag = &cli.BoolFlag{
 		Name:     "betanet",
-		Usage:    "BetaNet network: pre-configured proof-of-work test network",
+		Usage:    "BetaNet network: pre-configured test network",
 		Category: flags.QRLCategory,
 	}
 	TestnetFlag = &cli.BoolFlag{
@@ -138,7 +138,7 @@ var (
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
 		Name:     "dev",
-		Usage:    "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
+		Usage:    "Ephemeral development network with a pre-funded developer account",
 		Category: flags.DevCategory,
 	}
 	DeveloperPeriodFlag = &cli.Uint64Flag{

@@ -135,7 +135,7 @@ func (tc *testChain) generate(n int, seed byte, parent *types.Block) {
 		block.SetCoinbase(common.Address{seed})
 		// Include transactions to the miner to make blocks more interesting.
 		if parent == tc.blocks[0] && i%22 == 0 {
-			signer := types.MakeSigner(params.TestChainConfig)
+			signer := types.NewZondSigner(params.TestChainConfig.ChainID)
 
 			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: block.BaseFee(), Data: nil}), signer, testWallet)
 			if err != nil {

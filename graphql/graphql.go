@@ -392,7 +392,7 @@ func (t *Transaction) From(ctx context.Context, args BlockNumberArgs) *Account {
 	if tx == nil {
 		return nil
 	}
-	signer := types.LatestSigner(t.r.backend.ChainConfig())
+	signer := types.NewZondSigner(t.r.backend.ChainConfig().ChainID)
 	from, _ := types.Sender(signer, tx)
 	return &Account{
 		r:             t.r,

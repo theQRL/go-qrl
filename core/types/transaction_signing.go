@@ -24,7 +24,6 @@ import (
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/crypto/pqcrypto"
 	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
-	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrllib/wallet/common/wallettype"
 )
 
@@ -35,33 +34,6 @@ var ErrInvalidChainId = errors.New("invalid chain id for signer")
 type sigCache struct {
 	signer Signer
 	from   common.Address
-}
-
-// MakeSigner returns a Signer based on the given chain config and block number.
-func MakeSigner(config *params.ChainConfig) Signer {
-	return NewZondSigner(config.ChainID)
-}
-
-// LatestSigner returns the 'most permissive' Signer available for the given chain
-// configuration. Specifically, this enables support of all types of transacrions
-// when their respective forks are scheduled to occur at any block number (or time)
-// in the chain config.
-//
-// Use this in transaction-handling code where the current block number is unknown. If you
-// have the current block number available, use MakeSigner instead.
-func LatestSigner(config *params.ChainConfig) Signer {
-	return NewZondSigner(config.ChainID)
-}
-
-// LatestSignerForChainID returns a signer for the current QRL transaction format.
-// The chain ID binds transaction signatures to a network and prevents cross-chain
-// replay.
-//
-// Use this in transaction-handling code where the current block number and fork
-// configuration are unknown. If you have a ChainConfig, use LatestSigner instead.
-// If you have a ChainConfig and know the current block number, use MakeSigner instead.
-func LatestSignerForChainID(chainID *big.Int) Signer {
-	return NewZondSigner(chainID)
 }
 
 // SignTx signs the transaction using the given ML-DSA-87 signer and wallet.

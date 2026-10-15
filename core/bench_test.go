@@ -78,7 +78,7 @@ func genValueTx(nbytes int) func(int, *BlockGen) {
 		toaddr := common.Address{}
 		data := make([]byte, nbytes)
 		gas, _ := IntrinsicGas(data, nil, false)
-		signer := types.MakeSigner(gen.config)
+		signer := types.NewZondSigner(gen.config.ChainID)
 		baseFee := big.NewInt(0)
 		if gen.header.BaseFee != nil {
 			baseFee = gen.header.BaseFee
@@ -122,7 +122,7 @@ func genTxRing(naccounts int) func(int, *BlockGen) {
 		if gen.header.BaseFee != nil {
 			baseFee = gen.header.BaseFee
 		}
-		signer := types.MakeSigner(gen.config)
+		signer := types.NewZondSigner(gen.config.ChainID)
 		for {
 			gas -= params.TxGas
 			if gas < params.TxGas {

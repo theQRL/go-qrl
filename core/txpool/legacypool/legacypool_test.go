@@ -93,7 +93,7 @@ func transaction(nonce uint64, gaslimit uint64, wallet wallet.Wallet) *types.Tra
 }
 
 func dynamicFeeTx(nonce uint64, gaslimit uint64, gasFee *big.Int, tip *big.Int, wallet wallet.Wallet) *types.Transaction {
-	tx, _ := types.SignNewTx(wallet, types.LatestSignerForChainID(params.TestChainConfig.ChainID), &types.DynamicFeeTx{
+	tx, _ := types.SignNewTx(wallet, types.NewZondSigner(params.TestChainConfig.ChainID), &types.DynamicFeeTx{
 		ChainID:    params.TestChainConfig.ChainID,
 		Nonce:      nonce,
 		GasTipCap:  tip,
@@ -311,7 +311,7 @@ func TestRejectNonEmptyExtraParams(t *testing.T) {
 	testAddBalance(pool, addr, big.NewInt(1000000))
 
 	tx := dynamicFeeTx(0, 100000, big.NewInt(1), big.NewInt(1), wallet)
-	signer := types.LatestSignerForChainID(params.TestChainConfig.ChainID)
+	signer := types.NewZondSigner(params.TestChainConfig.ChainID)
 	tampered, err := tx.WithAuthValues(signer, tx.RawSignatureValue(), tx.RawPublicKeyValue(), tx.Descriptor(), []byte{0x01})
 	if err != nil {
 		t.Fatalf("re-wrap with extra params: %v", err)

@@ -619,7 +619,7 @@ func BenchmarkWriteAncientBlocks(b *testing.B) {
 // makeTestBlocks creates fake blocks for the ancient write benchmark.
 func makeTestBlocks(tb testing.TB, nblock int, txsPerBlock int) []*types.Block {
 	wallet := testutil.LoadAccount(tb, "alice").Wallet(tb)
-	signer := types.LatestSignerForChainID(big.NewInt(8))
+	signer := types.NewZondSigner(big.NewInt(8))
 
 	// Create transactions.
 	txs := make([]*types.Transaction, txsPerBlock)
