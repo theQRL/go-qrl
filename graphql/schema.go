@@ -212,7 +212,7 @@ const schema string = `
         # LogsBloom is a bloom filter that can be used to check if a block may
         # contain log entries matching a filter.
         logsBloom: Bytes!
-        # Random is the hash that was used as an input to the PoW process.
+        # Random is the randomness value provided by the consensus layer (prevRandao).
         random: Bytes32!
         # Transactions is a list of transactions associated with this block. If
         # transactions are unavailable for this block, this field will be null.

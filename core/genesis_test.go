@@ -225,7 +225,7 @@ func TestGenesis_Commit(t *testing.T) {
 	}
 
 	if blk.BaseFee().Cmp(genesisBlock.BaseFee()) != 0 {
-		t.Errorf("inequal difficulty; stored: %v, genesisBlock: %v", blk.BaseFee(), genesisBlock.BaseFee())
+		t.Errorf("inequal base fee; stored: %v, genesisBlock: %v", blk.BaseFee(), genesisBlock.BaseFee())
 	}
 }
 

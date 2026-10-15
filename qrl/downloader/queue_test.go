@@ -36,9 +36,8 @@ import (
 )
 
 // makeChain creates a chain of n blocks starting at and including parent.
-// the returned hash chain is ordered head->parent. In addition, every 3rd block
-// contains a transaction and every 5th an uncle to allow testing correct block
-// reassembly.
+// the returned hash chain is ordered head->parent. In addition, every 2nd block
+// contains a transaction to allow testing correct block reassembly.
 func makeChain(n int, seed byte, parent *types.Block, empty bool) ([]*types.Block, []types.Receipts) {
 	blocks, receipts := core.GenerateChain(params.TestChainConfig, parent, beacon.NewFaker(), testDB, n, func(i int, block *core.BlockGen) {
 		block.SetCoinbase(common.Address{seed})

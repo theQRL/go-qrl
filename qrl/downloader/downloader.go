@@ -666,9 +666,6 @@ func (d *Downloader) processHeaders(origin uint64) error {
 
 				// In case of header only syncing, validate the chunk immediately
 				if mode == SnapSync {
-					// Although the received headers might be all valid, a legacy
-					// PoW/PoA sync must not accept post-merge headers. Make sure
-					// that any transition is rejected at this point.
 					if len(chunkHeaders) > 0 {
 						if n, err := d.blockchain.InsertHeaderChain(chunkHeaders); err != nil {
 							log.Warn("Invalid header encountered", "number", chunkHeaders[n].Number, "hash", chunkHashes[n], "parent", chunkHeaders[n].ParentHash, "err", err)

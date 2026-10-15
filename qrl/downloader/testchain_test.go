@@ -129,8 +129,7 @@ func (tc *testChain) copy(newlen int) *testChain {
 
 // generate creates a chain of n blocks starting at and including parent.
 // the returned hash chain is ordered head->parent. In addition, every 22th block
-// contains a transaction and every 5th an uncle to allow testing correct block
-// reassembly.
+// contains a transaction to allow testing correct block reassembly.
 func (tc *testChain) generate(n int, seed byte, parent *types.Block) {
 	blocks, _ := core.GenerateChain(testGspec.Config, parent, beacon.NewFaker(), testDB, n, func(i int, block *core.BlockGen) {
 		block.SetCoinbase(common.Address{seed})
