@@ -404,12 +404,6 @@ web3._extend({
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
-			name: 'resend',
-			call: 'qrl_resend',
-			params: 3,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
-		}),
-		new web3._extend.Method({
 			name: 'signTransaction',
 			call: 'qrl_signTransaction',
 			params: 1,

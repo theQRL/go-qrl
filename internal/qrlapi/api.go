@@ -1552,61 +1552,6 @@ func (s *TransactionAPI) PendingTransactions() ([]*RPCTransaction, error) {
 	return transactions, nil
 }
 
-// TODO(now.youtrack.cloud/issue/TGZ-11)
-/*
-// Resend accepts an existing transaction and a new gas price and limit. It will remove
-// the given transaction from the pool and reinsert it with the new gas price and limit.
-func (s *TransactionAPI) Resend(ctx context.Context, sendArgs TransactionArgs, gasPrice *hexutil.Big, gasLimit *hexutil.Uint64) (common.Hash, error) {
-	if sendArgs.Nonce == nil {
-		return common.Hash{}, errors.New("missing transaction nonce in transaction spec")
-	}
-	if err := sendArgs.setDefaults(ctx, s.b); err != nil {
-		return common.Hash{}, err
-	}
-	matchTx := sendArgs.toTransaction()
-
-	// Before replacing the old transaction, ensure the _new_ transaction fee is reasonable.
-	var price = matchTx.GasPrice()
-	if gasPrice != nil {
-		price = gasPrice.ToInt()
-	}
-	var gas = matchTx.Gas()
-	if gasLimit != nil {
-		gas = uint64(*gasLimit)
-	}
-	if err := checkTxFee(price, gas, s.b.RPCTxFeeCap()); err != nil {
-		return common.Hash{}, err
-	}
-	// Iterate the pending list for replacement
-	pending, err := s.b.GetPoolTransactions()
-	if err != nil {
-		return common.Hash{}, err
-	}
-	for _, p := range pending {
-		wantSigHash := s.signer.Hash(matchTx)
-		pFrom, err := types.Sender(s.signer, p)
-		if err == nil && pFrom == sendArgs.from() && s.signer.Hash(p) == wantSigHash {
-			// Match. Re-sign and send the transaction.
-			if gasPrice != nil && (*big.Int)(gasPrice).Sign() != 0 {
-				sendArgs.GasPrice = gasPrice
-			}
-			if gasLimit != nil && *gasLimit != 0 {
-				sendArgs.Gas = gasLimit
-			}
-			signedTx, err := s.sign(sendArgs.from(), sendArgs.toTransaction())
-			if err != nil {
-				return common.Hash{}, err
-			}
-			if err = s.b.SendTx(ctx, signedTx); err != nil {
-				return common.Hash{}, err
-			}
-			return signedTx.Hash(), nil
-		}
-	}
-	return common.Hash{}, fmt.Errorf("transaction %#x not found", matchTx.Hash())
-}
-*/
-
 // DebugAPI is the collection of QRL APIs exposed over the debugging
 // namespace.
 type DebugAPI struct {
