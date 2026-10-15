@@ -322,16 +322,6 @@ func NewBlockWithHeader(header *Header) *Block {
 	return &Block{header: CopyHeader(header)}
 }
 
-// WithSeal returns a new block with the data from b but the header replaced with
-// the sealed one.
-func (b *Block) WithSeal(header *Header) *Block {
-	return &Block{
-		header:       CopyHeader(header),
-		transactions: b.transactions,
-		withdrawals:  b.withdrawals,
-	}
-}
-
 // WithBody returns a new block with the original header and a deep copy of the
 // provided body.
 func (b *Block) WithBody(body Body) *Block {
