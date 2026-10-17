@@ -17,11 +17,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
 )
 
 var customGenesisTests = []struct {
@@ -59,6 +64,48 @@ var customGenesisTests = []struct {
 		query:  "qrl.getBlock(0).extraData",
 		result: "0x0000000000001339",
 	},
+}
+
+func TestGenesisImportScratchDirectory(t *testing.T) {
+	for _, scheme := range []string{"hash", "path"} {
+		t.Run(scheme, func(t *testing.T) {
+			datadir, scratch := t.TempDir(), t.TempDir()
+			source := filepath.Join(t.TempDir(), "genesis.json")
+			input := fmt.Sprintf(`{"config":{"chainId":9876},"gasLimit":30000000,"alloc":{%q:{"balance":"0x1234","code":"0x6000","nonce":1,"storage":{"0x01":"0x%s"}}}}`, common.Address{1}.Hex(), strings.Repeat("ab", 64))
+			if err := os.WriteFile(source, []byte(input), 0600); err != nil {
+				t.Fatal(err)
+			}
+			init := runGqrl(t, "--datadir", datadir, "init", "--state.scheme", scheme, "--work-dir", scratch, source)
+			init.ExpectExit()
+			if init.ExitStatus() != 0 {
+				t.Fatal(init.StderrText())
+			}
+			dump := runGqrl(t, "--datadir", datadir, "dumpgenesis")
+			output := dump.Output()
+			dump.WaitExit()
+			var want, got core.Genesis
+			if err := json.Unmarshal([]byte(input), &want); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(output, &got); err != nil {
+				t.Fatalf("invalid dump: %v\n%s", err, output)
+			}
+			if got.ToBlock().Hash() != want.ToBlock().Hash() {
+				t.Fatal("CLI changed genesis")
+			}
+			if err := os.WriteFile(source, []byte(input[:len(input)-1]), 0600); err != nil {
+				t.Fatal(err)
+			}
+			bad := runGqrl(t, "--datadir", datadir, "init", "--work-dir", scratch, source)
+			bad.ExpectExit()
+			if bad.ExitStatus() == 0 {
+				t.Fatal("CLI accepted truncated genesis")
+			}
+			if entries, err := os.ReadDir(scratch); err != nil || len(entries) != 0 {
+				t.Fatalf("CLI left scratch files: %v", err)
+			}
+		})
+	}
 }
 
 // Tests that initializing Gqrl with a custom genesis block and chain definitions
