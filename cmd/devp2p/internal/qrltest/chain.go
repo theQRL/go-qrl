@@ -181,7 +181,7 @@ func (c *Chain) Balance(addr common.Address) *big.Int {
 // SignTx signs a transaction for the specified from account, so long as that
 // account was in the accounts dump.
 func (c *Chain) SignTx(from common.Address, tx *types.Transaction) (*types.Transaction, error) {
-	signer := types.LatestSigner(c.config)
+	signer := types.NewZondSigner(c.config.ChainID)
 	acc, ok := c.senders[from]
 	if !ok {
 		return nil, fmt.Errorf("account not available for signing: %s", from)

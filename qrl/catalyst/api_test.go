@@ -80,7 +80,7 @@ func generateChain(n int) (*core.Genesis, []*types.Block) {
 			Gas:       params.TxGas,
 			GasFeeCap: big.NewInt(2 * params.InitialBaseFee),
 			GasTipCap: big.NewInt(params.Shor),
-			Data:      nil}), types.LatestSigner(&config), testWallet)
+			Data:      nil}), types.NewZondSigner(config.ChainID), testWallet)
 		g.AddTx(tx)
 		testNonce++
 	}
@@ -279,7 +279,7 @@ func TestNewBlock(t *testing.T) {
 	for range 10 {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root())
 		nonce := statedb.GetNonce(testAddr)
-		signer := types.LatestSigner(qrlservice.BlockChain().Config())
+		signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		tx := types.NewTx(&types.DynamicFeeTx{
 			Nonce:     nonce,
 			Value:     new(big.Int),
@@ -460,7 +460,7 @@ func TestFullAPI(t *testing.T) {
 	callback := func(parent *types.Header) {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root)
 		nonce := statedb.GetNonce(testAddr)
-		signer := types.LatestSigner(qrlservice.BlockChain().Config())
+		signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		tx := types.NewTx(&types.DynamicFeeTx{
 			Nonce: nonce,
 			Value: new(big.Int),
@@ -537,7 +537,7 @@ func TestNewPayloadOnInvalidChain(t *testing.T) {
 	var (
 		api    = NewConsensusAPI(qrlservice)
 		parent = qrlservice.BlockChain().CurrentBlock()
-		signer = types.LatestSigner(qrlservice.BlockChain().Config())
+		signer = types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		// This QRVM code generates a log when the contract is created.
 		logCode = common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
 	)
@@ -1119,7 +1119,7 @@ func setupBodies(t *testing.T) (*node.Node, *qrl.QRL, []*types.Block) {
 	callback := func(parent *types.Header) {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root)
 		nonce := statedb.GetNonce(testAddr)
-		signer := types.LatestSigner(qrlservice.BlockChain().Config())
+		signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		tx := types.NewTx(&types.DynamicFeeTx{
 			Nonce: nonce,
 			Value: new(big.Int),

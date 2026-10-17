@@ -83,7 +83,7 @@ func flatCallTracerTestRunner(tracerName string, filename string, dirPath string
 	if err := tx.UnmarshalBinary(common.FromHex(test.Input)); err != nil {
 		return fmt.Errorf("failed to parse testcase input: %v", err)
 	}
-	signer := types.MakeSigner(test.Genesis.Config)
+	signer := types.NewZondSigner(test.Genesis.Config.ChainID)
 	origin, _ := signer.Sender(tx)
 	txContext := vm.TxContext{
 		Origin:   origin,

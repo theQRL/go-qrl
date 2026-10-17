@@ -36,7 +36,7 @@ func BenchmarkTransactionTrace(b *testing.B) {
 	from := wallet.GetAddress()
 	gas := uint64(1000000) // 1M gas
 	to := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef")
-	signer := types.LatestSignerForChainID(big.NewInt(1337))
+	signer := types.NewZondSigner(big.NewInt(1337))
 	tx, err := types.SignNewTx(wallet, signer,
 		&types.DynamicFeeTx{
 			Nonce:     1,

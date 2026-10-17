@@ -58,7 +58,7 @@ func NewQRLAPI(b Backend) *QRLAPI {
 	return &QRLAPI{b}
 }
 
-// GasPrice returns a suggestion for a gas price for legacy transactions.
+// GasPrice returns a suggestion for a gas price.
 func (s *QRLAPI) GasPrice(ctx context.Context) (*hexutil.Big, error) {
 	tipcap, err := s.b.SuggestGasTipCap(ctx)
 	if err != nil {
@@ -534,7 +534,7 @@ func (api *BlockChainAPI) GetBlockReceipts(ctx context.Context, blockNrOrHash rp
 	}
 
 	// Derive the sender.
-	signer := types.MakeSigner(api.b.ChainConfig())
+	signer := types.NewZondSigner(api.b.ChainConfig().ChainID)
 
 	result := make([]map[string]any, len(receipts))
 	for i, receipt := range receipts {
@@ -1017,7 +1017,7 @@ type RPCTransaction struct {
 // newRPCTransaction returns a transaction that will serialize to the RPC
 // representation, with the given location metadata set (if available).
 func newRPCTransaction(tx *types.Transaction, blockHash common.Hash, blockNumber uint64, index uint64, baseFee *big.Int, config *params.ChainConfig) *RPCTransaction {
-	signer := types.MakeSigner(config)
+	signer := types.NewZondSigner(config.ChainID)
 	from, _ := types.Sender(signer, tx)
 	publicKey := tx.RawPublicKeyValue()
 	signature := tx.RawSignatureValue()
@@ -1209,7 +1209,7 @@ type TransactionAPI struct {
 func NewTransactionAPI(b Backend, nonceLock *AddrLocker) *TransactionAPI {
 	// The signer used by the API should always be the 'latest' known one because we expect
 	// signers to be backwards-compatible with old transactions.
-	signer := types.LatestSigner(b.ChainConfig())
+	signer := types.NewZondSigner(b.ChainConfig().ChainID)
 	return &TransactionAPI{b, nonceLock, signer}
 }
 
@@ -1340,7 +1340,7 @@ func (s *TransactionAPI) GetTransactionReceipt(ctx context.Context, hash common.
 	receipt := receipts[index]
 
 	// Derive the sender.
-	signer := types.MakeSigner(s.b.ChainConfig())
+	signer := types.NewZondSigner(s.b.ChainConfig().ChainID)
 	return marshalReceipt(receipt, blockHash, blockNumber, signer, tx, int(index)), nil
 }
 
@@ -1400,7 +1400,7 @@ func SubmitTransaction(ctx context.Context, b Backend, tx *types.Transaction) (c
 		return common.Hash{}, err
 	}
 	// Print a log with full tx details for manual investigations and interventions
-	signer := types.MakeSigner(b.ChainConfig())
+	signer := types.NewZondSigner(b.ChainConfig().ChainID)
 	from, err := types.Sender(signer, tx)
 	if err != nil {
 		return common.Hash{}, err

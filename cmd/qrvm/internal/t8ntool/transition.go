@@ -177,13 +177,13 @@ func Transition(ctx *cli.Context) error {
 	if txs, err = loadTransactions(txStr, inputData, chainConfig); err != nil {
 		return err
 	}
-	if err := applyLondonChecks(&prestate.Env, chainConfig); err != nil {
+	if err := applyBaseFeeChecks(&prestate.Env, chainConfig); err != nil {
 		return err
 	}
 	if err := applyZondChecks(&prestate.Env, chainConfig); err != nil {
 		return err
 	}
-	if err := applyMergeChecks(&prestate.Env, chainConfig); err != nil {
+	if err := applyRandomChecks(&prestate.Env, chainConfig); err != nil {
 		return err
 	}
 	// Run the test and aggregate the result
@@ -302,18 +302,18 @@ func loadTransactions(txStr string, inputData *input, chainConfig *params.ChainC
 		txsWithKeys = inputData.Txs
 	}
 	// We may have to sign the transactions.
-	signer := types.MakeSigner(chainConfig)
+	signer := types.NewZondSigner(chainConfig.ChainID)
 	return signUnsignedTransactions(txsWithKeys, signer)
 }
 
-func applyLondonChecks(env *stEnv, chainConfig *params.ChainConfig) error {
+func applyBaseFeeChecks(env *stEnv, chainConfig *params.ChainConfig) error {
 	// Sanity check, to not `panic` in state_transition
 	if env.BaseFee != nil {
 		// Already set, base fee has precedent over parent base fee.
 		return nil
 	}
 	if env.ParentBaseFee == nil || env.Number == 0 {
-		return NewError(ErrorConfig, errors.New("EIP-1559 config but missing 'parentBaseFee' in env section"))
+		return NewError(ErrorConfig, errors.New("missing 'parentBaseFee' in env section"))
 	}
 	env.BaseFee = eip1559.CalcBaseFee(chainConfig, &types.Header{
 		Number:   new(big.Int).SetUint64(env.Number - 1),
@@ -331,9 +331,9 @@ func applyZondChecks(env *stEnv, chainConfig *params.ChainConfig) error {
 	return nil
 }
 
-func applyMergeChecks(env *stEnv, chainConfig *params.ChainConfig) error {
+func applyRandomChecks(env *stEnv, chainConfig *params.ChainConfig) error {
 	if env.Random == nil {
-		return NewError(ErrorConfig, errors.New("post-merge requires currentRandom to be defined in env"))
+		return NewError(ErrorConfig, errors.New("currentRandom must be defined in env"))
 	}
 	return nil
 }

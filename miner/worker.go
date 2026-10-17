@@ -170,7 +170,7 @@ func (miner *Miner) makeEnv(parent *types.Header, header *types.Header, coinbase
 	}
 	// Note the passed coinbase may be different with header.Coinbase.
 	return &environment{
-		signer:   types.MakeSigner(miner.chainConfig),
+		signer:   types.NewZondSigner(miner.chainConfig.ChainID),
 		state:    state,
 		coinbase: coinbase,
 		header:   header,
