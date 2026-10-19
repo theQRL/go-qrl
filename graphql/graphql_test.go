@@ -199,7 +199,7 @@ func TestGraphQLBlockSerializationEIP2718(t *testing.T) {
 		},
 		BaseFee: big.NewInt(params.InitialBaseFee),
 	}
-	signer := types.LatestSigner(genesis.Config)
+	signer := types.NewZondSigner(genesis.Config.ChainID)
 	var txHashes []common.Hash
 	newGQLService(t, stack, genesis, 1, func(i int, gen *core.BlockGen) {
 		gen.SetCoinbase(common.Address{1})
@@ -303,7 +303,7 @@ func TestGraphQLConcurrentResolvers(t *testing.T) {
 				},
 			},
 		}
-		signer = types.LatestSigner(genesis.Config)
+		signer = types.NewZondSigner(genesis.Config.ChainID)
 		stack  = createNode(t)
 	)
 	defer stack.Close()
@@ -388,7 +388,7 @@ func TestWithdrawals(t *testing.T) {
 				wallet.GetAddress(): {Balance: big.NewInt(params.Quanta)},
 			},
 		}
-		signer = types.LatestSigner(genesis.Config)
+		signer = types.NewZondSigner(genesis.Config.ChainID)
 		stack  = createNode(t)
 	)
 	defer stack.Close()

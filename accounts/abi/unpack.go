@@ -28,10 +28,6 @@ import (
 )
 
 var (
-	// MaxUint256 is the maximum value that can be represented by a uint256.
-	MaxUint256 = new(big.Int).Sub(new(big.Int).Lsh(common.Big1, 256), common.Big1)
-	// MaxInt256 is the maximum value that can be represented by a int256.
-	MaxInt256 = new(big.Int).Sub(new(big.Int).Lsh(common.Big1, 255), common.Big1)
 	// MaxUint512 is the maximum value that can be represented by a uint512.
 	MaxUint512 = new(big.Int).Sub(new(big.Int).Lsh(common.Big1, 512), common.Big1)
 )

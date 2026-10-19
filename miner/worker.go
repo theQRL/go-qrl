@@ -35,9 +35,7 @@ import (
 )
 
 var (
-	errBlockInterruptedByNewHead  = errors.New("new head arrived while building block")
-	errBlockInterruptedByRecommit = errors.New("recommit interrupt while building block")
-	errBlockInterruptedByTimeout  = errors.New("timeout while building block")
+	errBlockInterruptedByTimeout = errors.New("timeout while building block")
 )
 
 // environment is the worker's current environment and holds all
@@ -56,8 +54,6 @@ type environment struct {
 
 const (
 	commitInterruptNone int32 = iota
-	commitInterruptNewHead
-	commitInterruptResubmit
 	commitInterruptTimeout
 )
 
@@ -174,7 +170,7 @@ func (miner *Miner) makeEnv(parent *types.Header, header *types.Header, coinbase
 	}
 	// Note the passed coinbase may be different with header.Coinbase.
 	return &environment{
-		signer:   types.MakeSigner(miner.chainConfig),
+		signer:   types.NewZondSigner(miner.chainConfig.ChainID),
 		state:    state,
 		coinbase: coinbase,
 		header:   header,
@@ -328,10 +324,6 @@ func totalFees(block *types.Block, receipts []*types.Receipt) *big.Int {
 // The given signal must be a valid interruption signal.
 func signalToErr(signal int32) error {
 	switch signal {
-	case commitInterruptNewHead:
-		return errBlockInterruptedByNewHead
-	case commitInterruptResubmit:
-		return errBlockInterruptedByRecommit
 	case commitInterruptTimeout:
 		return errBlockInterruptedByTimeout
 	default:

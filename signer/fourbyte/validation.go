@@ -48,8 +48,7 @@ func (db *Database) ValidateTransaction(selector *string, tx *apitypes.SendTxArg
 	// Contract creation doesn't validate call data, handle first
 	if tx.To == nil {
 		// Contract creation should contain sufficient data to deploy a contract. A
-		// typical error is omitting sender due to some quirk in the javascript call
-		// e.g. https://github.com/theQRL/go-qrl/issues/16106.
+		// typical error is omitting sender due to some quirk in the javascript call.
 		if len(data) == 0 {
 			// Prevent sending quanta into black hole (show stopper)
 			if tx.Value.ToInt().Cmp(big.NewInt(0)) > 0 {

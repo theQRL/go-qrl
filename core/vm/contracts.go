@@ -67,8 +67,9 @@ func init() {
 	}
 }
 
-// ActivePrecompiles returns the precompiles enabled from Zond genesis.
-func ActivePrecompiles(_ params.Rules) []common.Address {
+// ActivePrecompiles returns the precompiles enabled from Zond genesis. The
+// current protocol has no fork-dependent precompile sets.
+func ActivePrecompiles() []common.Address {
 	return PrecompiledAddressesZond
 }
 

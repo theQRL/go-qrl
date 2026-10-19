@@ -17,13 +17,11 @@
 package params
 
 const (
-	GasLimitBoundDivisor uint64 = 1024     // The bound divisor of the gas limit, used in update calculations.
-	MinGasLimit          uint64 = 5000     // Minimum the gas limit may ever be.
-	MaxGasLimit          uint64 = 20000000 // Maximum the gas limit
-	GenesisGasLimit      uint64 = 4712388  // Gas limit of the Genesis block.
+	MinGasLimit     uint64 = 5000     // Minimum the gas limit may ever be.
+	MaxGasLimit     uint64 = 20000000 // Maximum the gas limit
+	GenesisGasLimit uint64 = 4712388  // Gas limit of the Genesis block.
 
 	MaximumExtraDataSize  uint64 = 32    // Maximum size extra data may be after Genesis.
-	SloadGas              uint64 = 50    // Multiplied by the number of 32-byte words that are copied (round up) for any *COPY operation and added.
 	CallValueTransferGas  uint64 = 9000  // Paid for CALL when the value transfer is non-zero.
 	CallNewAccountGas     uint64 = 25000 // Paid for CALL when the destination address didn't exist prior.
 	TxGas                 uint64 = 21000 // Per transaction not creating a contract. NOTE: Not payable on data of calls between transactions.
@@ -37,10 +35,9 @@ const (
 	Keccak256WordGas uint64 = 6  // Once per word of the KECCAK256 operation's data.
 	InitCodeWordGas  uint64 = 2  // Once per word of the init code when creating a contract.
 
-	SstoreSentryGasEIP2200            uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed
-	SstoreSetGasEIP2200               uint64 = 20000 // Once per SSTORE operation from clean zero to non-zero
-	SstoreResetGasEIP2200             uint64 = 5000  // Once per SSTORE operation from clean non-zero to something else
-	SstoreClearsScheduleRefundEIP2200 uint64 = 15000 // Once per SSTORE operation for clearing an originally existing storage slot
+	SstoreSentryGasEIP2200 uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed
+	SstoreSetGasEIP2200    uint64 = 20000 // Once per SSTORE operation from clean zero to non-zero
+	SstoreResetGasEIP2200  uint64 = 5000  // Once per SSTORE operation from clean non-zero to something else
 
 	ColdAccountAccessCostEIP2929 = uint64(2600) // COLD_ACCOUNT_ACCESS_COST
 	ColdSloadCostEIP2929         = uint64(2100) // COLD_SLOAD_COST
@@ -69,9 +66,6 @@ const (
 	TxAccessListAddressGas    uint64 = 2400 // Per address specified in EIP 2930 access list
 	TxAccessListStorageKeyGas uint64 = 1900 // Per storage key specified in EIP 2930 access list
 
-	// These have been changed during the course of the chain
-	SloadGasEIP2200 uint64 = 800 // Cost of SLOAD
-
 	// EXP has a dynamic portion depending on the size of the exponent
 	ExpByteEIP158 uint64 = 50 // was raised to 50 during Eip158
 
@@ -97,6 +91,5 @@ const (
 
 	// The Refund Quotient is the cap on how much of the used gas can be refunded. Before EIP-3529,
 	// up to half the consumed gas could be refunded. Redefined as 1/5th in EIP-3529
-	RefundQuotient        uint64 = 2
 	RefundQuotientEIP3529 uint64 = 5
 )

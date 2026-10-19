@@ -610,11 +610,10 @@ func (b *SimulatedBackend) callContract(ctx context.Context, call qrl.CallMsg, h
 	if call.GasTipCap == nil {
 		call.GasTipCap = new(big.Int)
 	}
-	// Backfill the legacy gasPrice for QRVM execution, unless we're all zeroes
+	// Backfill the gasPrice for QRVM execution, unless we're all zeroes
 	gasPrice := new(big.Int)
 	if call.GasFeeCap.BitLen() > 0 || call.GasTipCap.BitLen() > 0 {
-		head := b.blockchain.CurrentHeader()
-		gasPrice = math.BigMin(new(big.Int).Add(call.GasTipCap, head.BaseFee), call.GasFeeCap)
+		gasPrice = math.BigMin(new(big.Int).Add(call.GasTipCap, header.BaseFee), call.GasFeeCap)
 	}
 
 	// Ensure message is initialized properly.
@@ -664,7 +663,7 @@ func (b *SimulatedBackend) SendTransaction(ctx context.Context, tx *types.Transa
 		return errors.New("could not fetch parent")
 	}
 	// Check transaction validity
-	signer := types.MakeSigner(b.blockchain.Config())
+	signer := types.NewZondSigner(b.blockchain.Config().ChainID)
 	sender, err := types.Sender(signer, tx)
 	if err != nil {
 		return fmt.Errorf("invalid transaction: %v", err)

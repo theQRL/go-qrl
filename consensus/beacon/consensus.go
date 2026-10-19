@@ -42,7 +42,7 @@ var (
 
 // Beacon is a consensus engine that uses the proof-of-stake algorithm.
 type Beacon struct {
-	fakeFail  *uint64        // Block number which fails PoW check even in fake mode
+	fakeFail  *uint64        // Block number which fails header verification even in fake mode
 	fakeDelay *time.Duration // Time delay to sleep for before returning from verify
 	fakeFull  bool           // Accepts everything as valid
 }

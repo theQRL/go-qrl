@@ -129,14 +129,13 @@ func (tc *testChain) copy(newlen int) *testChain {
 
 // generate creates a chain of n blocks starting at and including parent.
 // the returned hash chain is ordered head->parent. In addition, every 22th block
-// contains a transaction and every 5th an uncle to allow testing correct block
-// reassembly.
+// contains a transaction to allow testing correct block reassembly.
 func (tc *testChain) generate(n int, seed byte, parent *types.Block) {
 	blocks, _ := core.GenerateChain(testGspec.Config, parent, beacon.NewFaker(), testDB, n, func(i int, block *core.BlockGen) {
 		block.SetCoinbase(common.Address{seed})
 		// Include transactions to the miner to make blocks more interesting.
 		if parent == tc.blocks[0] && i%22 == 0 {
-			signer := types.MakeSigner(params.TestChainConfig)
+			signer := types.NewZondSigner(params.TestChainConfig.ChainID)
 
 			tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{Nonce: block.TxNonce(testAddress), To: &common.Address{seed}, Value: big.NewInt(1000), Gas: params.TxGas, GasFeeCap: block.BaseFee(), Data: nil}), signer, testWallet)
 			if err != nil {

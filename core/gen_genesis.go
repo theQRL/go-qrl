@@ -37,12 +37,7 @@ func (g Genesis) MarshalJSON() ([]byte, error) {
 	enc.GasLimit = math.HexOrDecimal64(g.GasLimit)
 	enc.Mixhash = g.Mixhash
 	enc.Coinbase = g.Coinbase
-	if g.Alloc != nil {
-		enc.Alloc = make(map[common.Address]GenesisAccount, len(g.Alloc))
-		for k, v := range g.Alloc {
-			enc.Alloc[k] = v
-		}
-	}
+	enc.Alloc = g.Alloc
 	enc.Number = math.HexOrDecimal64(g.Number)
 	enc.GasUsed = math.HexOrDecimal64(g.GasUsed)
 	enc.ParentHash = g.ParentHash
@@ -91,10 +86,7 @@ func (g *Genesis) UnmarshalJSON(input []byte) error {
 	if dec.Alloc == nil {
 		return errors.New("missing required field 'alloc' for Genesis")
 	}
-	g.Alloc = make(GenesisAlloc, len(dec.Alloc))
-	for k, v := range dec.Alloc {
-		g.Alloc[common.Address(k)] = v
-	}
+	g.Alloc = dec.Alloc
 	if dec.Number != nil {
 		g.Number = uint64(*dec.Number)
 	}

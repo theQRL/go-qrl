@@ -39,7 +39,7 @@ var (
 	MainnetChainConfig = &ChainConfig{
 		ChainID: big.NewInt(1),
 	}
-	// TestnetChainConfig contains the chain parameters to run a node on the BetaNet test network.
+	// TestnetChainConfig contains the chain parameters to run a node on the Testnet test network.
 	TestnetChainConfig = &ChainConfig{
 		ChainID: big.NewInt(1337),
 	}
@@ -70,7 +70,6 @@ var (
 	NonActivatedConfig = &ChainConfig{
 		ChainID: big.NewInt(1),
 	}
-	TestRules = TestChainConfig.Rules(new(big.Int), 0)
 )
 
 // NetworkNames are user friendly names to use in the chain spec banner.
@@ -135,43 +134,28 @@ func (c *ChainConfig) CheckCompatible(newcfg *ChainConfig, height uint64, time u
 func (c *ChainConfig) CheckConfigForkOrder() error {
 	type fork struct {
 		name      string
-		block     *big.Int // forks up to - and including the merge - were defined with block numbers
-		timestamp *uint64  // forks after the merge are scheduled using timestamps
-		optional  bool     // if true, the fork may be nil and next fork is still allowed
+		timestamp *uint64 // forks are scheduled using timestamps
+		optional  bool    // if true, the fork may be nil and next fork is still allowed
 	}
 	var lastFork fork
 	for _, cur := range []fork{} {
 		if lastFork.name != "" {
 			switch {
 			// Non-optional forks must all be present in the chain config up to the last defined fork
-			case lastFork.block == nil && lastFork.timestamp == nil && (cur.block != nil || cur.timestamp != nil):
-				if cur.block != nil {
-					return fmt.Errorf("unsupported fork ordering: %v not enabled, but %v enabled at block %v",
-						lastFork.name, cur.name, cur.block)
-				} else {
-					return fmt.Errorf("unsupported fork ordering: %v not enabled, but %v enabled at timestamp %v",
-						lastFork.name, cur.name, cur.timestamp)
-				}
+			case lastFork.timestamp == nil && cur.timestamp != nil:
+				return fmt.Errorf("unsupported fork ordering: %v not enabled, but %v enabled at timestamp %v",
+					lastFork.name, cur.name, *cur.timestamp)
 
-			// Fork (whether defined by block or timestamp) must follow the fork definition sequence
-			case (lastFork.block != nil && cur.block != nil) || (lastFork.timestamp != nil && cur.timestamp != nil):
-				if lastFork.block != nil && lastFork.block.Cmp(cur.block) > 0 {
-					return fmt.Errorf("unsupported fork ordering: %v enabled at block %v, but %v enabled at block %v",
-						lastFork.name, lastFork.block, cur.name, cur.block)
-				} else if lastFork.timestamp != nil && *lastFork.timestamp > *cur.timestamp {
+			// Forks must follow the fork definition sequence
+			case lastFork.timestamp != nil && cur.timestamp != nil:
+				if *lastFork.timestamp > *cur.timestamp {
 					return fmt.Errorf("unsupported fork ordering: %v enabled at timestamp %v, but %v enabled at timestamp %v",
-						lastFork.name, lastFork.timestamp, cur.name, cur.timestamp)
-				}
-
-				// Timestamp based forks can follow block based ones, but not the other way around
-				if lastFork.timestamp != nil && cur.block != nil {
-					return fmt.Errorf("unsupported fork ordering: %v used timestamp ordering, but %v reverted to block ordering",
-						lastFork.name, cur.name)
+						lastFork.name, *lastFork.timestamp, cur.name, *cur.timestamp)
 				}
 			}
 		}
 		// If it was optional and not set, then ignore it
-		if !cur.optional || (cur.block != nil || cur.timestamp != nil) {
+		if !cur.optional || cur.timestamp != nil {
 			lastFork = cur
 		}
 	}
@@ -251,24 +235,4 @@ func (err *ConfigCompatError) Error() string {
 		return fmt.Sprintf("mismatching %s in database (have block %d, want block %d, rewindto block %d)", err.What, err.StoredBlock, err.NewBlock, err.RewindToBlock)
 	}
 	return fmt.Sprintf("mismatching %s in database (have timestamp %d, want timestamp %d, rewindto timestamp %d)", err.What, err.StoredTime, err.NewTime, err.RewindToTime)
-}
-
-// Rules wraps ChainConfig and is merely syntactic sugar or can be used for functions
-// that do not have or require information about the block.
-//
-// Rules is a one time interface meaning that it shouldn't be used in between transition
-// phases.
-type Rules struct {
-	ChainID *big.Int
-}
-
-// Rules ensures c's ChainID is not nil.
-func (c *ChainConfig) Rules(num *big.Int, timestamp uint64) Rules {
-	chainID := c.ChainID
-	if chainID == nil {
-		chainID = new(big.Int)
-	}
-	return Rules{
-		ChainID: new(big.Int).Set(chainID),
-	}
 }

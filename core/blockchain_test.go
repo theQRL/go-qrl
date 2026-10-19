@@ -685,7 +685,7 @@ func testFastVsFullChains(t *testing.T, scheme string) {
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 	)
 	_, blocks, receipts := GenerateChainWithGenesis(gspec, beacon.NewFaker(), 1024, func(i int, block *BlockGen) {
 		block.SetCoinbase(common.Address{0x00})
@@ -937,7 +937,7 @@ func testChainTxReorgs(t *testing.T, scheme string) {
 				addr3: {Balance: big.NewInt(1000000000000000000)},
 			},
 		}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 	)
 
 	// Create two transactions shared between the chains:
@@ -1051,7 +1051,7 @@ func testLogReorgs(t *testing.T, scheme string) {
 		// this code generates a log
 		code   = common.Hex2Bytes("60006000c06001601160003960016000f300")
 		gspec  = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(1000000000000000000)}}}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 	)
 
 	blockchain, _ := NewBlockChain(rawdb.NewMemoryDatabase(), DefaultCacheConfigWithScheme(scheme), gspec, beacon.NewFaker(), vm.Config{}, nil)
@@ -1115,7 +1115,7 @@ func testLogRebirth(t *testing.T, scheme string) {
 		wallet1       = testutil.LoadAccount(t, "alice").Wallet(t)
 		addr1         = wallet1.GetAddress()
 		gspec         = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{addr1: {Balance: big.NewInt(1000000000000000000)}}}
-		signer        = types.LatestSigner(gspec.Config)
+		signer        = types.NewZondSigner(gspec.Config.ChainID)
 		engine        = beacon.NewFaker()
 		blockchain, _ = NewBlockChain(rawdb.NewMemoryDatabase(), DefaultCacheConfigWithScheme(scheme), gspec, engine, vm.Config{}, nil)
 	)
@@ -1304,7 +1304,7 @@ func testEIP161AccountRemoval(t *testing.T, scheme string) {
 		var (
 			tx     *types.Transaction
 			err    error
-			signer = types.LatestSigner(gspec.Config)
+			signer = types.NewZondSigner(gspec.Config.ChainID)
 		)
 
 		switch i {
@@ -1942,7 +1942,7 @@ func TestTransactionIndices(t *testing.T) {
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 	)
 	_, blocks, receipts := GenerateChainWithGenesis(gspec, beacon.NewFaker(), 128, func(i int, block *BlockGen) {
 		tx := types.NewTx(&types.DynamicFeeTx{
@@ -2049,7 +2049,7 @@ func testSkipStaleTxIndicesInSnapSync(t *testing.T, scheme string) {
 		address = wallet.GetAddress()
 		funds   = big.NewInt(1000000000000000000)
 		gspec   = &Genesis{Config: params.TestChainConfig, Alloc: GenesisAlloc{address: {Balance: funds}}}
-		signer  = types.LatestSigner(gspec.Config)
+		signer  = types.NewZondSigner(gspec.Config.ChainID)
 	)
 	_, blocks, receipts := GenerateChainWithGenesis(gspec, beacon.NewFaker(), 128, func(i int, block *BlockGen) {
 		tx := types.NewTx(&types.DynamicFeeTx{
@@ -2407,7 +2407,7 @@ func testAccessListGas(t *testing.T, scheme string) {
 		b.SetCoinbase(common.Address{1})
 
 		// One transaction to 0xAAAA
-		signer := types.LatestSigner(gspec.Config)
+		signer := types.NewZondSigner(gspec.Config.ChainID)
 		tx, _ := types.SignNewTx(wallet, signer, &types.DynamicFeeTx{
 			ChainID:   gspec.Config.ChainID,
 			Nonce:     0,
@@ -2489,7 +2489,7 @@ func testDynamicFeeTxAccounting(t *testing.T, scheme string) {
 		}
 	)
 
-	signer := types.LatestSigner(gspec.Config)
+	signer := types.NewZondSigner(gspec.Config.ChainID)
 
 	genDb, blocks, _ := GenerateChainWithGenesis(gspec, engine, 1, func(i int, b *BlockGen) {
 		b.SetCoinbase(common.Address{1})
@@ -2608,7 +2608,7 @@ func testSetCanonical(t *testing.T, scheme string) {
 			Alloc:   GenesisAlloc{address: {Balance: funds}},
 			BaseFee: big.NewInt(params.InitialBaseFee),
 		}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 		engine = beacon.NewFaker()
 	)
 	// Generate and import the canonical chain
@@ -3071,7 +3071,7 @@ func TestEIP3651(t *testing.T) {
 		}
 	)
 
-	signer := types.LatestSigner(gspec.Config)
+	signer := types.NewZondSigner(gspec.Config.ChainID)
 
 	_, blocks, _ := GenerateChainWithGenesis(gspec, engine, 1, func(i int, b *BlockGen) {
 		b.SetCoinbase(aa)

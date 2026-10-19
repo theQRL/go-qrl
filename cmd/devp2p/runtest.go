@@ -37,6 +37,33 @@ var (
 		Usage:    "Output test results in TAP format",
 		Category: flags.TestingCategory,
 	}
+
+	// for qrl/snap tests
+	testChainDirFlag = &cli.PathFlag{
+		Name:     "chain",
+		Usage:    "Test chain directory (required)",
+		Category: flags.TestingCategory,
+		Required: true,
+	}
+	testNodeFlag = &cli.StringFlag{
+		Name:     "node",
+		Usage:    "Peer-to-Peer endpoint (QNR) of the test node (required)",
+		Category: flags.TestingCategory,
+		Required: true,
+	}
+	testNodeJWTFlag = &cli.StringFlag{
+		Name:     "jwtsecret",
+		Usage:    "JWT secret for the engine API of the test node (required)",
+		Category: flags.TestingCategory,
+		Required: true,
+	}
+	testNodeEngineFlag = &cli.StringFlag{
+		Name:     "engineapi",
+		Usage:    "Engine API endpoint of the test node (required)",
+		Category: flags.TestingCategory,
+		Required: true,
+	}
+
 	// These two are specific to the discovery tests.
 	testListen1Flag = &cli.StringFlag{
 		Name:     "listen1",

@@ -250,7 +250,7 @@ func New(config Config, chain BlockChain) *LegacyPool {
 		config:          config,
 		chain:           chain,
 		chainconfig:     chain.Config(),
-		signer:          types.LatestSigner(chain.Config()),
+		signer:          types.NewZondSigner(chain.Config().ChainID),
 		pending:         make(map[common.Address]*list),
 		queue:           make(map[common.Address]*list),
 		beats:           make(map[common.Address]time.Time),

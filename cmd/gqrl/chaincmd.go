@@ -51,6 +51,7 @@ var (
 		Flags: slices.Concat([]cli.Flag{
 			utils.CachePreimagesFlag,
 			utils.StateSchemeFlag,
+			&cli.StringFlag{Name: "work-dir", Usage: "Scratch directory on disk for genesis import (default: datadir)"},
 		}, utils.DatabasePathFlags),
 		Description: `
 The init command initializes a new genesis block and definition for the network.
@@ -160,13 +161,13 @@ func initGenesis(ctx *cli.Context) error {
 	}
 	defer file.Close()
 
-	genesis := new(core.Genesis)
-	if err := json.NewDecoder(file).Decode(genesis); err != nil {
-		utils.Fatalf("invalid genesis file: %v", err)
-	}
 	// Open and initialise both full node database
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
+	workDir := ctx.String("work-dir")
+	if workDir == "" {
+		workDir = stack.DataDir()
+	}
 
 	for _, name := range []string{"chaindata"} {
 		chaindb, err := stack.OpenDatabaseWithFreezer(name, 0, 0, ctx.String(utils.AncientFlag.Name), "", false)
@@ -178,9 +179,9 @@ func initGenesis(ctx *cli.Context) error {
 		triedb := utils.MakeTrieDatabase(ctx, chaindb, ctx.Bool(utils.CachePreimagesFlag.Name), false)
 		defer triedb.Close()
 
-		_, hash, err := core.SetupGenesisBlock(chaindb, triedb, genesis)
+		_, hash, err := core.SetupGenesisBlockFromJSON(chaindb, triedb, file, workDir)
 		if err != nil {
-			utils.Fatalf("Failed to write genesis block: %v", err)
+			return fmt.Errorf("failed to write genesis block: %w", err)
 		}
 		log.Info("Successfully wrote genesis state", "database", name, "hash", hash)
 	}

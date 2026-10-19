@@ -27,6 +27,7 @@ import (
 	"errors"
 	"fmt"
 	"hash"
+	"slices"
 
 	"github.com/theQRL/go-qrl/common/mclock"
 	zcipher "github.com/theQRL/go-qrl/crypto/cipher"
@@ -190,6 +191,17 @@ func (c *Codec) Encode(id qnode.ID, addr string, packet Packet, challenge *Whoar
 	)
 	switch {
 	case packet.Kind() == WhoareyouPacket:
+		w := packet.(*Whoareyou)
+		if len(w.ChallengeData) > 0 {
+			// This WHOAREYOU packet was encoded before, so it's a resend.
+			// The unmasked packet content is stored in w.ChallengeData.
+			// Just apply the masking again to finish encoding.
+			c.buf.Reset()
+			c.buf.Write(w.ChallengeData)
+			copy(head.IV[:], w.ChallengeData)
+			enc := applyMasking(id, head.IV, c.buf.Bytes())
+			return enc, w.Nonce, nil
+		}
 		head, err = c.encodeWhoareyou(id, packet.(*Whoareyou))
 	case challenge != nil:
 		// We have an unanswered challenge, send handshake.
@@ -218,32 +230,40 @@ func (c *Codec) Encode(id qnode.ID, addr string, packet Packet, challenge *Whoar
 
 	// Store sent WHOAREYOU challenges.
 	if challenge, ok := packet.(*Whoareyou); ok {
-		challenge.ChallengeData = bytesCopy(&c.buf)
+		challenge.ChallengeData = slices.Clone(c.buf.Bytes())
+		enc, err := c.EncodeRaw(id, head, msgData)
+		if err != nil {
+			return nil, Nonce{}, err
+		}
 		c.sc.storeSentHandshake(id, addr, challenge)
-	} else if msgData == nil {
+		return enc, head.Nonce, err
+	}
+
+	if msgData == nil {
 		headerData := c.buf.Bytes()
 		msgData, err = c.encryptMessage(session, packet, &head, headerData)
 		if err != nil {
 			return nil, Nonce{}, err
 		}
 	}
-
 	enc, err := c.EncodeRaw(id, head, msgData)
 	return enc, head.Nonce, err
 }
 
 // EncodeRaw encodes a packet with the given header.
 func (c *Codec) EncodeRaw(id qnode.ID, head Header, msgdata []byte) ([]byte, error) {
+	// header
 	c.writeHeaders(&head)
-
-	// Apply masking.
-	masked := c.buf.Bytes()[sizeofMaskingIV:]
-	mask := head.mask(id)
-	mask.XORKeyStream(masked[:], masked[:])
-
-	// Write message data.
+	applyMasking(id, head.IV, c.buf.Bytes())
+	// message data
 	c.buf.Write(msgdata)
 	return c.buf.Bytes(), nil
+}
+
+// CurrentChallenge returns the latest challenge sent to the given node.
+// This will return non-nil while a handshake is in progress.
+func (c *Codec) CurrentChallenge(id qnode.ID, addr string) *Whoareyou {
+	return c.sc.getHandshake(id, addr)
 }
 
 func (c *Codec) writeHeaders(head *Header) {
@@ -308,7 +328,6 @@ func (c *Codec) encodeWhoareyou(toID qnode.ID, packet *Whoareyou) (Header, error
 
 	// Create header.
 	head := c.makeHeader(toID, flagWhoareyou, 0)
-	head.AuthData = bytesCopy(&c.buf)
 	head.Nonce = packet.Nonce
 
 	// Encode auth data.
@@ -368,11 +387,11 @@ func (c *Codec) makeHandshakeAuth(toID qnode.ID, addr string, challenge *Whoarey
 	// key is part of the ID nonce signature.
 	var remotePubkey = new(ecdsa.PublicKey)
 	if err := challenge.Node.Load((*qnode.Secp256k1)(remotePubkey)); err != nil {
-		return nil, nil, fmt.Errorf("can't find secp256k1 key for recipient")
+		return nil, nil, errors.New("can't find secp256k1 key for recipient")
 	}
 	ephkey, err := c.sc.ephemeralKeyGen()
 	if err != nil {
-		return nil, nil, fmt.Errorf("can't generate ephemeral key")
+		return nil, nil, errors.New("can't generate ephemeral key")
 	}
 	ephpubkey := EncodePubkey(&ephkey.PublicKey)
 	auth.pubkey = ephpubkey[:]
@@ -396,7 +415,7 @@ func (c *Codec) makeHandshakeAuth(toID qnode.ID, addr string, challenge *Whoarey
 	// Create session keys.
 	sec := deriveKeys(sha256.New, ephkey, remotePubkey, c.localnode.ID(), challenge.Node.ID(), cdata)
 	if sec == nil {
-		return nil, nil, fmt.Errorf("key derivation failed")
+		return nil, nil, errors.New("key derivation failed")
 	}
 	return auth, sec, err
 }
@@ -413,7 +432,7 @@ func (c *Codec) encodeMessageHeader(toID qnode.ID, s *session) (Header, error) {
 	auth := messageAuthData{SrcID: c.localnode.ID()}
 	c.buf.Reset()
 	binary.Write(&c.buf, binary.BigEndian, &auth)
-	head.AuthData = bytesCopy(&c.buf)
+	head.AuthData = slices.Clone(c.buf.Bytes())
 	head.Nonce = nonce
 	return head, err
 }
@@ -446,7 +465,7 @@ func (c *Codec) Decode(inputData []byte, addr string) (src qnode.ID, n *qnode.No
 	// Unmask the static header.
 	var head Header
 	copy(head.IV[:], input[:sizeofMaskingIV])
-	mask := head.mask(c.localnode.ID())
+	mask := createMask(c.localnode.ID(), head.IV)
 	staticHeader := input[sizeofMaskingIV:sizeofStaticPacketData]
 	mask.XORKeyStream(staticHeader, staticHeader)
 
@@ -658,16 +677,17 @@ func (h *StaticHeader) checkValid(packetLen int, protocolID [6]byte) error {
 }
 
 // mask returns a cipher for 'masking' / 'unmasking' packet headers.
-func (h *Header) mask(destID qnode.ID) cipher.Stream {
+func createMask(destID qnode.ID, iv [16]byte) cipher.Stream {
 	block, err := aes.NewCipher(destID[:16])
 	if err != nil {
 		panic("can't create cipher")
 	}
-	return cipher.NewCTR(block, h.IV[:])
+	return cipher.NewCTR(block, iv[:])
 }
 
-func bytesCopy(r *bytes.Buffer) []byte {
-	b := make([]byte, r.Len())
-	copy(b, r.Bytes())
-	return b
+func applyMasking(destID qnode.ID, iv [16]byte, packet []byte) []byte {
+	masked := packet[sizeofMaskingIV:]
+	mask := createMask(destID, iv)
+	mask.XORKeyStream(masked[:], masked[:])
+	return packet
 }

@@ -91,8 +91,6 @@ type QRVM struct {
 
 	// chainConfig contains information about the current chain
 	chainConfig *params.ChainConfig
-	// chain rules contains the chain rules for the current epoch
-	chainRules params.Rules
 	// virtual machine configuration options used to initialise the
 	// qrvm.
 	Config Config
@@ -116,7 +114,6 @@ func NewQRVM(blockCtx BlockContext, txCtx TxContext, statedb StateDB, chainConfi
 		StateDB:     statedb,
 		Config:      config,
 		chainConfig: chainConfig,
-		chainRules:  chainConfig.Rules(blockCtx.BlockNumber, blockCtx.Time),
 	}
 	qrvm.interpreter = NewQRVMInterpreter(qrvm)
 	return qrvm
@@ -148,9 +145,6 @@ func (qrvm *QRVM) Interpreter() *QRVMInterpreter {
 // SetBlockContext updates the block context of the QRVM.
 func (qrvm *QRVM) SetBlockContext(blockCtx BlockContext) {
 	qrvm.Context = blockCtx
-	num := blockCtx.BlockNumber
-	timestamp := blockCtx.Time
-	qrvm.chainRules = qrvm.chainConfig.Rules(num, timestamp)
 }
 
 // Call executes the contract associated with the addr with the given input as

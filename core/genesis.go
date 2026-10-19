@@ -22,8 +22,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"maps"
 	"math/big"
+	"path/filepath"
 	"strings"
 
 	"github.com/theQRL/go-qrl/common"
@@ -61,6 +63,9 @@ type Genesis struct {
 	GasUsed    uint64      `json:"gasUsed"`
 	ParentHash common.Hash `json:"parentHash"`
 	BaseFee    *big.Int    `json:"baseFeePerGas"`
+
+	// Used only during a streamed import; Alloc remains nil in that path.
+	stream *streamedGenesis
 }
 
 func ReadGenesis(db qrldb.Database) (*Genesis, error) {
@@ -69,13 +74,29 @@ func ReadGenesis(db qrldb.Database) (*Genesis, error) {
 	if (stored == common.Hash{}) {
 		return nil, fmt.Errorf("invalid genesis hash in database: %x", stored)
 	}
-	blob := rawdb.ReadGenesisStateSpec(db, stored)
-	if blob == nil {
-		return nil, errors.New("genesis state missing from db")
+	source, err := rawdb.OpenGenesisJSON(db, stored)
+	if err != nil {
+		return nil, err
 	}
-	if len(blob) != 0 {
-		if err := genesis.Alloc.UnmarshalJSON(blob); err != nil {
-			return nil, fmt.Errorf("could not unmarshal genesis state json: %s", err)
+	if source != nil {
+		// This API returns an in-memory Genesis. The init and state-recovery
+		// paths use the streaming importer instead.
+		d := json.NewDecoder(source)
+		if err := d.Decode(&genesis); err != nil {
+			return nil, err
+		}
+		if _, err := d.Token(); err != io.EOF {
+			return nil, fmt.Errorf("invalid stored genesis ending: %v", err)
+		}
+	} else {
+		blob := rawdb.ReadGenesisStateSpec(db, stored)
+		if blob == nil {
+			return nil, errors.New("genesis state missing from db")
+		}
+		if len(blob) != 0 {
+			if err := genesis.Alloc.UnmarshalJSON(blob); err != nil {
+				return nil, fmt.Errorf("could not unmarshal genesis state json: %s", err)
+			}
 		}
 	}
 	genesis.Config = rawdb.ReadChainConfig(db, stored)
@@ -172,6 +193,25 @@ func (ga *GenesisAlloc) flush(db qrldb.Database, triedb *trie.Database, blockhas
 // CommitGenesisState loads the stored genesis state with the given block
 // hash and commits it into the provided trie database.
 func CommitGenesisState(db qrldb.Database, triedb *trie.Database, blockhash common.Hash) error {
+	source, err := rawdb.OpenGenesisJSON(db, blockhash)
+	if err != nil {
+		return err
+	}
+	if source != nil {
+		var workDir string
+		if ancient, err := db.AncientDatadir(); err == nil && ancient != "" {
+			workDir = filepath.Dir(ancient)
+		}
+		g, err := prepareGenesisJSON(source, workDir, triedb.Scheme(), triedb.PreimagesEnabled())
+		if err != nil {
+			return err
+		}
+		defer g.stream.close()
+		if hash := g.ToBlock().Hash(); hash != blockhash {
+			return &GenesisMismatchError{Stored: blockhash, New: hash}
+		}
+		return g.stream.flush(db, triedb, blockhash)
+	}
 	var alloc GenesisAlloc
 	blob := rawdb.ReadGenesisStateSpec(db, blockhash)
 	if len(blob) != 0 {
@@ -221,11 +261,11 @@ type genesisSpecMarshaling struct {
 }
 
 type genesisAccountMarshaling struct {
-	Code       hexutil.Bytes
-	Balance    *math.HexOrDecimal256
-	Nonce      math.HexOrDecimal64
-	Storage    map[storageJSON]storageValue64JSON
-	PrivateKey hexutil.Bytes
+	Code    hexutil.Bytes
+	Balance *math.HexOrDecimal256
+	Nonce   math.HexOrDecimal64
+	Storage map[storageJSON]storageValue64JSON
+	Seed    hexutil.Bytes
 }
 
 // storageJSON represents a 256-bit byte array (storage key) that allows less
@@ -424,9 +464,15 @@ func (g *Genesis) configOrDefault(ghash common.Hash) *params.ChainConfig {
 
 // ToBlock returns the genesis block according to genesis specification.
 func (g *Genesis) ToBlock() *types.Block {
-	root, err := g.Alloc.deriveHash()
-	if err != nil {
-		panic(err)
+	var root common.Hash
+	if g.stream != nil {
+		root = g.stream.root
+	} else {
+		var err error
+		root, err = g.Alloc.deriveHash()
+		if err != nil {
+			panic(err)
+		}
 	}
 	head := &types.Header{
 		Number:     new(big.Int).SetUint64(g.Number),
@@ -475,16 +521,28 @@ func (g *Genesis) Commit(db qrldb.Database, triedb *trie.Database) (*types.Block
 	// All the checks has passed, flush the states derived from the genesis
 	// specification as well as the specification itself into the provided
 	// database.
-	if err := g.Alloc.flush(db, triedb, block.Hash()); err != nil {
+	if g.stream != nil {
+		if err := g.stream.flush(db, triedb, block.Hash()); err != nil {
+			return nil, err
+		}
+	} else {
+		if err := g.Alloc.flush(db, triedb, block.Hash()); err != nil {
+			return nil, err
+		}
+	}
+	// Publish the block, heads and configuration together only after state and
+	// the complete recovery source have been written successfully.
+	batch := db.NewBatch()
+	rawdb.WriteBlock(batch, block)
+	rawdb.WriteReceipts(batch, block.Hash(), block.NumberU64(), nil)
+	rawdb.WriteCanonicalHash(batch, block.Hash(), block.NumberU64())
+	rawdb.WriteHeadBlockHash(batch, block.Hash())
+	rawdb.WriteHeadFastBlockHash(batch, block.Hash())
+	rawdb.WriteHeadHeaderHash(batch, block.Hash())
+	rawdb.WriteChainConfig(batch, block.Hash(), config)
+	if err := batch.Write(); err != nil {
 		return nil, err
 	}
-	rawdb.WriteBlock(db, block)
-	rawdb.WriteReceipts(db, block.Hash(), block.NumberU64(), nil)
-	rawdb.WriteCanonicalHash(db, block.Hash(), block.NumberU64())
-	rawdb.WriteHeadBlockHash(db, block.Hash())
-	rawdb.WriteHeadFastBlockHash(db, block.Hash())
-	rawdb.WriteHeadHeaderHash(db, block.Hash())
-	rawdb.WriteChainConfig(db, block.Hash(), config)
 	return block, nil
 }
 

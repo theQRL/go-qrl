@@ -59,7 +59,7 @@ import (
 func testTransactionMarshal(t *testing.T, tests []txData, config *params.ChainConfig) {
 	t.Parallel()
 	var (
-		signer = types.LatestSigner(config)
+		signer = types.NewZondSigner(config.ChainID)
 		wallet = testutil.LoadAccount(t, "alice").DeterministicWallet(t)
 	)
 
@@ -149,7 +149,7 @@ func TestRPCTransactionPreservesExtraParams(t *testing.T) {
 
 	var (
 		config  = params.AllBeaconProtocolChanges
-		signer  = types.LatestSigner(config)
+		signer  = types.NewZondSigner(config.ChainID)
 		to      = common.Address{0xaa}
 		paramsB = []byte{0x01, 0x02}
 	)
@@ -362,7 +362,6 @@ func (b testBackend) FeeHistory(ctx context.Context, blockCount uint64, lastBloc
 }
 func (b testBackend) ChainDb() qrldb.Database           { return b.db }
 func (b testBackend) AccountManager() *accounts.Manager { return nil }
-func (b testBackend) ExtRPCEnabled() bool               { return false }
 func (b testBackend) RPCGasCap() uint64                 { return 10000000 }
 func (b testBackend) RPCQRVMTimeout() time.Duration     { return time.Second }
 func (b testBackend) RPCTxFeeCap() float64              { return 0 }
@@ -808,7 +807,7 @@ func TestRPCMarshalBlock(t *testing.T) {
 	var (
 		txs    []*types.Transaction
 		to     = common.BytesToAddress([]byte{0x11})
-		signer = types.LatestSigner(params.MainnetChainConfig)
+		signer = types.NewZondSigner(params.MainnetChainConfig.ChainID)
 		wallet = testutil.LoadAccount(t, "alice").DeterministicWallet(t)
 	)
 	for i := uint64(1); i <= 4; i++ {
@@ -1161,7 +1160,7 @@ func setupReceiptBackend(t *testing.T, genBlocks int) (*testBackend, []common.Ha
 				contract: {Balance: big.NewInt(params.Quanta), Code: receiptLogContractCode()},
 			},
 		}
-		signer   = types.LatestSignerForChainID(params.TestChainConfig.ChainID)
+		signer   = types.NewZondSigner(params.TestChainConfig.ChainID)
 		txHashes = make([]common.Hash, genBlocks)
 	)
 
@@ -1295,7 +1294,7 @@ func TestSendRawTransactionRejectsNonEmptyExtraParams(t *testing.T) {
 	}
 	backend := newTestBackend(t, 0, genesis, beacon.NewFaker(), nil)
 	api := NewTransactionAPI(backend, new(AddrLocker))
-	signer := types.LatestSignerForChainID(params.TestChainConfig.ChainID)
+	signer := types.NewZondSigner(params.TestChainConfig.ChainID)
 
 	tx, err := types.SignTx(types.NewTx(&types.DynamicFeeTx{
 		Nonce:     0,

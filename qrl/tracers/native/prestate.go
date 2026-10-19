@@ -66,7 +66,6 @@ type prestateTracer struct {
 	interrupt atomic.Bool // Atomic flag to signal execution interruption
 	reason    error       // Textual reason for the interruption
 	created   map[common.Address]bool
-	deleted   map[common.Address]bool
 }
 
 type prestateTracerConfig struct {
@@ -85,7 +84,6 @@ func newPrestateTracer(ctx *tracers.Context, cfg json.RawMessage) (tracers.Trace
 		post:    state{},
 		config:  config,
 		created: make(map[common.Address]bool),
-		deleted: make(map[common.Address]bool),
 	}, nil
 }
 
@@ -191,10 +189,6 @@ func (t *prestateTracer) CaptureTxEnd(restGas uint64) {
 	}
 
 	for addr, state := range t.pre {
-		// The deleted account's state is pruned from `post` but kept in `pre`
-		if _, ok := t.deleted[addr]; ok {
-			continue
-		}
 		modified := false
 		postAccount := &account{Storage: make(map[common.Hash]common.StorageValue64)}
 		newBalance := t.env.StateDB.GetBalance(addr)

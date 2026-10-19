@@ -140,6 +140,7 @@ var filterFlags = map[string]nodeFilterC{
 	"-min-age":     {1, minAgeFilter},
 	"-qrl-network": {1, qrlFilter},
 	"-snap":        {0, snapFilter},
+	"-dialable":    {0, dialableFilter},
 }
 
 // parseFilters parses nodeFilters from args.
@@ -252,6 +253,16 @@ func snapFilter(args []string) (nodeFilter, error) {
 			Tail []rlp.RawValue `rlp:"tail"`
 		}
 		return n.N.Load(qnr.WithEntry("snap", &snap)) == nil
+	}
+	return f, nil
+}
+
+func dialableFilter(args []string) (nodeFilter, error) {
+	f := func(n nodeJSON) bool {
+		var tcp, tcp6 uint16
+		n.N.Load((*qnr.TCP)(&tcp))
+		n.N.Load((*qnr.TCP6)(&tcp6))
+		return tcp != 0 || tcp6 != 0
 	}
 	return f, nil
 }

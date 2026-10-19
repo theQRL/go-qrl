@@ -123,7 +123,6 @@ type ConsensusAPI struct {
 }
 
 // NewConsensusAPI creates a new consensus api for the given backend.
-// The underlying blockchain needs to have a valid terminal total difficulty set.
 func NewConsensusAPI(qrl *qrl.QRL) *ConsensusAPI {
 	api := newConsensusAPIWithoutHeartbeat(qrl)
 	go api.heartbeat()
@@ -239,7 +238,7 @@ func (api *ConsensusAPI) forkchoiceUpdated(update engine.ForkchoiceStateV1, payl
 	api.qrl.SetSynced()
 
 	// If the beacon client also advertised a finalized block, mark the local
-	// chain final and completely in PoS mode.
+	// chain final.
 	if update.FinalizedBlockHash != (common.Hash{}) {
 		// If the finalized block is not in our canonical tree, something is wrong
 		finalBlock := api.qrl.BlockChain().GetBlockByHash(update.FinalizedBlockHash)
@@ -335,7 +334,7 @@ func (api *ConsensusAPI) newPayload(params engine.ExecutableData) (engine.Payloa
 	// The locking here is, strictly, not required. Without these locks, this can happen:
 	//
 	// 1. NewPayload( execdata-N ) is invoked from the CL. It goes all the way down to
-	//      api.eth.BlockChain().InsertBlockWithoutSetHead, where it is blocked on
+	//      api.qrl.BlockChain().InsertBlockWithoutSetHead, where it is blocked on
 	//      e.g database compaction.
 	// 2. The call times out on the CL layer, which issues another NewPayload (execdata-N) call.
 	//    Similarly, this also get stuck on the same place. Importantly, since the

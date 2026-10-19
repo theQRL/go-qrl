@@ -20,7 +20,8 @@ corresponding to the given node key and address information.
 
 The devp2p command can create and publish DNS discovery node lists.
 
-Run `devp2p dns sign <directory>` to update the signature of a DNS discovery tree.
+Run `devp2p dns sign <directory> <keyfile>` to update the signature of a DNS discovery tree.
+The key file is a node key file, as created by `devp2p key generate`.
 
 Run `devp2p dns sync <qnrtree-URL>` to download a complete DNS discovery tree.
 
@@ -46,6 +47,7 @@ set to standard output. The following filters are supported:
 - `-min-age <duration>` filters nodes by 'first seen' time
 - `-qrl-network <mainnet>` filters nodes by "qrl" QNR entry
 - `-snap` filters nodes by snap protocol support
+- `-dialable` filters nodes that have a TCP port
 
 For example, given a node set in `nodes.json`, you could create a filtered set containing
 up to 20 qrl mainnet nodes which also support snap sync using this command:
@@ -107,19 +109,29 @@ Start the test by running `devp2p discv5 test -listen1 127.0.0.1 -listen2 127.0.
 
 The QRL Protocol test suite is a conformance test suite for the qrl protocol.
 
-To run the qrl protocol test suite against your implementation, the node needs to be initialized as such:
+To run the qrl protocol test suite against your implementation, the node needs to be initialized
+with our test chain. The chain files are located in `./cmd/devp2p/internal/qrltest/testdata`.
 
-1. initialize the gqrl node with the `genesis.json` file contained in the `testdata` directory
-2. import the `halfchain.rlp` file in the `testdata` directory
-3. run gqrl with the following flags:
-```
-gqrl --datadir <datadir> --nodiscover --nat=none --networkid 19763 --verbosity 5
-```
+1. initialize the gqrl node with the `genesis.json` file
+2. import blocks from `chain.rlp`
+3. run the client using the resulting database. For gqrl, use a command like the one below:
 
-Then, run the following command, replacing `<qnode>` with the qnode of the gqrl node:
- ```
- devp2p rlpx qrl-test <qnode> cmd/devp2p/internal/qrltest/testdata/chain.rlp cmd/devp2p/internal/qrltest/testdata/genesis.json
-```
+    gqrl \
+        --datadir <datadir>            \
+        --nodiscover                   \
+        --nat=none                     \
+        --networkid 19763              \
+        --verbosity 5                  \
+        --authrpc.jwtsecret jwt.secret
+
+Note that the tests also require access to the engine API.
+The test suite can now be executed using the devp2p tool.
+
+    devp2p rlpx qrl-test \
+        --chain internal/qrltest/testdata   \
+        --node qnode://....                 \
+        --engineapi http://127.0.0.1:8551   \
+        --jwtsecret $(cat jwt.secret)
 
 Repeat the above process (re-initialising the node) in order to run the QRL Protocol test suite again.
 

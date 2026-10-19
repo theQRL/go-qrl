@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: MIT
+pragma hyperion >=0.1.0;
+
+/// @notice Genesis-funded redemption of the final legacy QRL mainnet state.
+/// @dev Storage is populated by the genesis builder. There is no initializer,
+/// administrator, upgrade, or withdrawal path other than authenticated claims.
+contract LegacyQRLMigration {
+    // Each scalar occupies a complete 64-byte QRVM storage word. Slot numbers
+    // are checked by compile.py and used by the Go genesis builder.
+    uint512 public snapshotHeight;                    // 0
+    uint512 public snapshotBlockHash;                 // 1
+    uint512 public snapshotCommitment;                // 2
+    uint512 public targetChainId;                     // 3
+    uint512 public totalUnclaimed;                    // 4
+    mapping(uint512 => uint512) public remaining;      // 5: account ID -> balance
+    mapping(uint512 => uint512) public accountKind;    // 6: 1 XMSS, 2 multisig
+    mapping(uint512 => mapping(uint512 => uint512)) public usedOTS; // 7: signer -> word -> bitmap
+    mapping(uint512 => uint512) public treeHeight;     // 8: signer -> XMSS height
+    mapping(uint512 => uint512) public threshold;      // 9: multisig -> threshold
+    mapping(uint512 => mapping(uint512 => uint512)) public weight; // 10: multisig -> signer -> weight
+
+    event Redeemed(uint512 indexed accountId, address indexed recipient, uint512 amount);
+
+    function accountId(bytes memory legacyAddress) public pure returns (uint512) {
+        require(legacyAddress.length == 39, "legacy address length");
+        return uint512(uint256(sha256(legacyAddress)));
+    }
+
+    function legacyAddress(bytes memory publicKey) public pure returns (bytes memory) {
+        require(publicKey.length == 67, "XMSS public key length");
+        bytes memory body = abi.encodePacked(publicKey[0], publicKey[1], publicKey[2], sha256(publicKey));
+        return abi.encodePacked(body, bytes4(uint32(uint256(sha256(body)))));
+    }
+
+    /// @notice Sign these exact bytes with an unused XMSS key, without an
+    /// additional wallet-specific prefix or hash. The recipient is authenticated
+    /// even when a third party pays transaction gas and submits the claim.
+    function claimMessage(bytes memory source, address recipient) public view returns (bytes memory) {
+        require(source.length == 39, "legacy address length");
+        require(recipient != address(0) && recipient != address(this), "invalid recipient");
+        require(block.chainid == targetChainId, "wrong target chain");
+        return abi.encodePacked(
+            "QRL-XMSS-MIGRATION-V1", targetChainId, address(this),
+            bytes32(uint256(snapshotBlockHash)), bytes32(uint256(snapshotCommitment)),
+            source, recipient
+        );
+    }
+
+    function claim(bytes calldata publicKey, bytes calldata signature, address payable recipient) external {
+        bytes memory source = legacyAddress(publicKey);
+        uint512 id = accountId(source);
+        require(accountKind[id] == 1, "not an XMSS allocation");
+        uint512 amount = remaining[id];
+        require(amount != 0, "nothing to redeem");
+        _verifyAndConsume(id, publicKey, signature, claimMessage(source, recipient));
+        _pay(id, amount, recipient);
+    }
+
+    /// @notice Signatories must be sorted by their numeric account ID, with no
+    /// duplicates. Each signature authorizes this multisig account's entire
+    /// balance to the same recipient, preserving its original weighted threshold.
+    function claimMultisig(
+        bytes calldata source, bytes[] calldata publicKeys,
+        bytes[] calldata signatures, address payable recipient
+    ) external {
+        uint512 id = accountId(source);
+        require(accountKind[id] == 2, "not a multisig allocation");
+        uint512 amount = remaining[id];
+        require(amount != 0, "nothing to redeem");
+        require(publicKeys.length == signatures.length && publicKeys.length != 0, "signature count");
+        bytes memory message = claimMessage(source, recipient);
+        uint512 accumulated;
+        uint512 previous;
+        for (uint256 i; i < publicKeys.length; ++i) {
+            uint512 signer = accountId(legacyAddress(publicKeys[i]));
+            require(i == 0 || signer > previous, "duplicate or unordered signer");
+            previous = signer;
+            uint512 votes = weight[id][signer];
+            require(votes != 0, "not a signatory");
+            _verifyAndConsume(signer, publicKeys[i], signatures[i], message);
+            accumulated += votes;
+        }
+        // Legacy creation permits threshold zero. The nonempty signature list
+        // and positive membership weights still require an original signatory.
+        require(accumulated >= threshold[id], "insufficient weight");
+        _pay(id, amount, recipient);
+    }
+
+    function _verifyAndConsume(
+        uint512 signer, bytes memory publicKey, bytes memory signature, bytes memory message
+    ) private {
+        require(signature.length >= 4, "signature length");
+        uint512 height = treeHeight[signer];
+        require(height >= 4 && height == (uint8(publicKey[1]) & 15) * 2, "unknown XMSS signer");
+        uint512 index;
+        for (uint256 i; i < 4; ++i) index = (index << 8) | uint8(signature[i]);
+        require(index < (uint512(1) << height), "OTS index out of range");
+        uint512 word = index / 512;
+        uint512 mask = uint512(1) << (index % 512);
+        require((usedOTS[signer][word] & mask) == 0, "OTS index already used");
+        require(xmssverify(message, signature, publicKey), "invalid XMSS signature");
+        usedOTS[signer][word] |= mask;
+    }
+
+    function _pay(uint512 id, uint512 amount, address payable recipient) private {
+        // Consume the entitlement before calling the recipient. A failed payout
+        // reverts both the entitlement and every newly consumed OTS index.
+        remaining[id] = 0;
+        totalUnclaimed -= amount;
+        require(amount <= type(uint256).max, "balance overflow");
+        (bool success,) = recipient.call{value: uint256(amount)}("");
+        require(success, "payout failed");
+        emit Redeemed(id, recipient, amount);
+    }
+}

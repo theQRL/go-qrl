@@ -127,7 +127,7 @@ var (
 	}
 	BetaNetFlag = &cli.BoolFlag{
 		Name:     "betanet",
-		Usage:    "BetaNet network: pre-configured proof-of-work test network",
+		Usage:    "BetaNet network: pre-configured test network",
 		Category: flags.QRLCategory,
 	}
 	TestnetFlag = &cli.BoolFlag{
@@ -138,7 +138,7 @@ var (
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
 		Name:     "dev",
-		Usage:    "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
+		Usage:    "Ephemeral development network with a pre-funded developer account",
 		Category: flags.DevCategory,
 	}
 	DeveloperPeriodFlag = &cli.Uint64Flag{
@@ -313,7 +313,7 @@ var (
 	// Performance tuning settings
 	CacheFlag = &cli.IntFlag{
 		Name:     "cache",
-		Usage:    "Megabytes of memory allocated to internal caching (default = 4096 mainnet full node, 128 light mode)",
+		Usage:    "Megabytes of memory allocated to internal caching (default = 4096 mainnet full node)",
 		Value:    1024,
 		Category: flags.PerfCategory,
 	}
@@ -1118,32 +1118,6 @@ func MakeDatabaseHandles(max int) int {
 		Fatalf("Failed to raise file descriptor allowance: %v", err)
 	}
 	return int(raised / 2) // Leave half for networking and other stuff
-}
-
-// MakeAddress converts an account specified directly as a Q-prefixed
-// hex-encoded string or a key index in the key store to an internal account
-// representation.
-func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error) {
-	// If the specified account is a valid address, return it
-	if addr, err := common.NewAddressFromString(account); err == nil {
-		return accounts.Account{Address: addr}, nil
-	}
-	// Otherwise try to interpret the account as a keystore index
-	index, err := strconv.Atoi(account)
-	if err != nil || index < 0 {
-		return accounts.Account{}, fmt.Errorf("invalid account address or index %q", account)
-	}
-	log.Warn("-------------------------------------------------------------------")
-	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
-	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `gqrl account list`)")
-	log.Warn("-------------------------------------------------------------------")
-
-	accs := ks.Accounts()
-	if len(accs) <= index {
-		return accounts.Account{}, fmt.Errorf("index %d higher than number of accounts %d", index, len(accs))
-	}
-	return accs[index], nil
 }
 
 // setEtherbase retrieves the etherbase from the directly specified command line flags.

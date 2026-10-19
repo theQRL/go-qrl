@@ -236,7 +236,7 @@ func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIn
 		return nil, vm.BlockContext{}, statedb, release, nil
 	}
 	// Recompute transactions up to the target index.
-	signer := types.MakeSigner(qrl.blockchain.Config())
+	signer := types.NewZondSigner(qrl.blockchain.Config().ChainID)
 	for idx, tx := range block.Transactions() {
 		// Assemble the transaction call message and return if the requested offset
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())

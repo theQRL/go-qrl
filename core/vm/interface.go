@@ -21,7 +21,6 @@ import (
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core/types"
-	"github.com/theQRL/go-qrl/params"
 )
 
 // StateDB is a QRVM database for full state querying.
@@ -49,7 +48,6 @@ type StateDB interface {
 	SetState(common.Address, common.Hash, common.StorageValue64)
 
 	// Exist reports whether the given account exists in state.
-	// Notably this should also return true for self-destructed accounts.
 	Exist(common.Address) bool
 	// Empty returns whether the given account is empty. Empty
 	// is defined according to EIP161 (balance = nonce = code = 0).
@@ -63,23 +61,11 @@ type StateDB interface {
 	// AddSlotToAccessList adds the given (address,slot) to the access list. This operation is safe to perform
 	// even if the feature/fork is not active yet
 	AddSlotToAccessList(addr common.Address, slot common.Hash)
-	Prepare(rules params.Rules, sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
+	Prepare(sender, coinbase common.Address, dest *common.Address, precompiles []common.Address, txAccesses types.AccessList)
 
 	RevertToSnapshot(int)
 	Snapshot() int
 
 	AddLog(*types.Log)
 	AddPreimage(common.Hash, []byte)
-}
-
-// CallContext provides a basic interface for the QRVM calling conventions. The QRVM
-// depends on this context being implemented for doing subcalls and initialising new QRVM contracts.
-type CallContext interface {
-	// Call calls another contract.
-	Call(env *QRVM, me ContractRef, addr common.Address, data []byte, gas, value *big.Int) ([]byte, error)
-	// DelegateCall takes another contracts code and execute within our own context.
-	// Sender and value are propagated from parent to child scope.
-	DelegateCall(env *QRVM, me ContractRef, addr common.Address, data []byte, gas *big.Int) ([]byte, error)
-	// Create creates a new contract
-	Create(env *QRVM, me ContractRef, data []byte, gas, value *big.Int) ([]byte, common.Address, error)
 }

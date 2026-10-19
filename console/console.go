@@ -41,7 +41,6 @@ import (
 )
 
 var (
-	// u: unlock, s: signXX, sendXX, n: newAccount, i: importXX
 	onlyWhitespace = regexp.MustCompile(`^\s*$`)
 	exit           = regexp.MustCompile(`^\s*exit\s*;*\s*$`)
 )
@@ -130,7 +129,7 @@ func (c *Console) init(preload []string) error {
 	c.initConsoleObject()
 
 	// Initialize the JavaScript <-> Go RPC bridge.
-	bridge := newBridge(c.client, c.prompter, c.printer)
+	bridge := newBridge(c.client)
 	if err := c.initWeb3(bridge); err != nil {
 		return err
 	}

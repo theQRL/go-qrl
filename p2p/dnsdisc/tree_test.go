@@ -23,6 +23,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/theQRL/go-qrl/common/hexutil"
 	"github.com/theQRL/go-qrl/p2p/qnode"
+	"github.com/theQRL/go-qrl/p2p/qnr"
 )
 
 func TestParseRoot(t *testing.T) {
@@ -147,5 +148,22 @@ func TestMakeTree(t *testing.T) {
 	txt := tree.ToTXT("")
 	if len(txt) < len(nodes)+1 {
 		t.Fatal("too few TXT records in output")
+	}
+}
+
+func TestMakeTreeRejectsUndecodablePort(t *testing.T) {
+	keys := testKeys(1)
+
+	oversized := new(qnr.Record)
+	oversized.Set(qnr.WithEntry("udp", uint32(70000)))
+	if err := qnode.SignV4(oversized, keys[0]); err != nil {
+		t.Fatal(err)
+	}
+	n, err := qnode.New(qnode.ValidSchemes, oversized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := MakeTree(1, []*qnode.Node{n}, nil); err == nil {
+		t.Errorf("MakeTree accepted record with out-of-range port: %s", n.String())
 	}
 }

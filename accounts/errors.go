@@ -29,10 +29,6 @@ var ErrUnknownAccount = errors.New("unknown account")
 // provides the specified wallet.
 var ErrUnknownWallet = errors.New("unknown wallet")
 
-// ErrInvalidPassphrase is returned when a decryption operation receives a bad
-// passphrase.
-var ErrInvalidPassphrase = errors.New("invalid password")
-
 // AuthNeededError is returned by backends for signing requests where the user
 // is required to provide further authentication before signing can succeed.
 //

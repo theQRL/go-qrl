@@ -331,7 +331,6 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 	var (
 		msg              = st.msg
 		sender           = vm.AccountRef(msg.From)
-		rules            = st.qrvm.ChainConfig().Rules(st.qrvm.Context.BlockNumber, st.qrvm.Context.Time)
 		contractCreation = msg.To == nil
 	)
 
@@ -357,7 +356,7 @@ func (st *StateTransition) TransitionDb() (*ExecutionResult, error) {
 
 	// Execute the preparatory steps for state transition which includes:
 	// - prepare accessList
-	st.state.Prepare(rules, msg.From, st.qrvm.Context.Coinbase, msg.To, vm.ActivePrecompiles(rules), msg.AccessList)
+	st.state.Prepare(msg.From, st.qrvm.Context.Coinbase, msg.To, vm.ActivePrecompiles(), msg.AccessList)
 
 	var (
 		ret   []byte
