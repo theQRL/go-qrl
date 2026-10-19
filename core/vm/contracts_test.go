@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/theQRL/go-qrl/common"
-	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/params"
 	cryptomldsa87 "github.com/theQRL/go-qrllib/crypto/ml_dsa_87"
 )
@@ -59,6 +58,7 @@ func precompileAddress(n string) string {
 }
 
 func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
+	t.Helper()
 	contractAddr := common.MustParseAddress(addr)
 	p := allPrecompiles[contractAddr]
 	in := common.Hex2Bytes(test.Input)
@@ -75,7 +75,7 @@ func testPrecompiled(addr string, test precompiledTest, t *testing.T) {
 		// Verify that the precompile did not touch the input buffer
 		exp := common.Hex2Bytes(test.Input)
 		if !bytes.Equal(in, exp) {
-			t.Errorf("Precompiled %v modified input data", addr)
+			t.Errorf("Precompiled %T modified input data", p)
 		}
 	})
 }
@@ -385,7 +385,9 @@ func TestPrecompiledMLDSA87VerifyRejectsInvalidInput(t *testing.T) {
 // every QRL client; the FIPS 204 primitive deliberately does not.
 func TestPrecompiledMLDSA87VerifyRejectsWeakKey(t *testing.T) {
 	context := []byte("QRL")
-	digest := crypto.Keccak256([]byte("QRL weak-key forgery test"))
+	// The digest spans the full message representative so verification reaches
+	// the public-key check after validating the frame length.
+	digest := sha3.SumSHAKE256([]byte("QRL weak-key forgery test"), mldsa87VerifyDigestLength)
 	tests := []struct {
 		name string
 		rho  byte
@@ -478,7 +480,7 @@ func newRawMLDSA87VerifyInput(tb testing.TB, context []byte) []byte {
 	if err != nil {
 		tb.Fatal(err)
 	}
-	digest := crypto.Keccak256([]byte("QRL raw ML-DSA-87 precompile test"))
+	digest := sha3.SumSHAKE256([]byte("QRL raw ML-DSA-87 precompile test"), mldsa87VerifyDigestLength)
 	signature, err := signer.Sign(context, digest)
 	if err != nil {
 		tb.Fatal(err)
@@ -494,7 +496,8 @@ func newRawMLDSA87VerifyInput(tb testing.TB, context []byte) []byte {
 
 func runMLDSA87Verify(t *testing.T, input []byte) []byte {
 	t.Helper()
-	output, remaining, err := RunPrecompiledContract(new(mldsa87Verify), input, params.MLDSA87VerifyGas)
+	p := allPrecompiles[common.MustParseAddress(precompileAddress("03"))]
+	output, remaining, err := RunPrecompiledContract(p, input, params.MLDSA87VerifyGas)
 	if err != nil {
 		t.Fatal(err)
 	}

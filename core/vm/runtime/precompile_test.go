@@ -5,30 +5,29 @@ package runtime
 
 import (
 	"bytes"
+	"crypto/sha3"
 	"testing"
 
 	"github.com/theQRL/go-qrl/core/vm"
-	"github.com/theQRL/go-qrl/crypto"
-	"github.com/theQRL/go-qrl/crypto/pqcrypto"
-	pqwallet "github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
-	walletcommon "github.com/theQRL/go-qrllib/wallet/common"
+	cryptomldsa87 "github.com/theQRL/go-qrllib/crypto/ml_dsa_87"
 )
 
 func TestMLDSA87VerifyPrecompileStaticCall(t *testing.T) {
-	wallet, err := pqwallet.Generate(pqwallet.ML_DSA_87)
+	signer, err := cryptomldsa87.New()
 	if err != nil {
 		t.Fatal(err)
 	}
-	digest := crypto.Keccak256([]byte("QRL ML-DSA-87 runtime test"))
-	signature, err := pqcrypto.Sign(digest, wallet)
+	digest := sha3.SumSHAKE256([]byte("QRL ML-DSA-87 runtime test"), vm.WordBytes)
+	context := []byte("QRL runtime precompile test")
+	signature, err := signer.Sign(context, digest)
 	if err != nil {
 		t.Fatal(err)
 	}
+	publicKey := signer.GetPK()
 	var input []byte
 	input = append(input, digest...)
-	input = append(input, wallet.GetPK()...)
-	input = append(input, signature...)
-	context := walletcommon.SigningContext(wallet.GetDescriptor())
+	input = append(input, publicKey[:]...)
+	input = append(input, signature[:]...)
 	input = append(input, byte(len(context)))
 	input = append(input, context...)
 

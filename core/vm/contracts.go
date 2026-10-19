@@ -19,6 +19,7 @@ package vm
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/sha3"
 	"encoding/binary"
 	gomath "math"
 	"math/big"
@@ -41,10 +42,10 @@ type PrecompiledContract interface {
 	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
 }
 
-// trueWord is returned when a precompile verification succeeds.
+// trueWord is the template returned when a precompile verification succeeds.
 var trueWord = common.LeftPadBytes([]byte{1}, WordBytes)
 
-// PrecompiledContractsZond contains the default set of pre-compiled QRL
+// PrecompiledContractsZond contains the single set of pre-compiled QRL
 // contracts used in the Zond release.
 var PrecompiledContractsZond = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
@@ -52,6 +53,7 @@ var PrecompiledContractsZond = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{3}): &mldsa87Verify{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 	common.BytesToAddress([]byte{5}): &bigModExp{},
+	common.BytesToAddress([]byte{6}): &shake256hash{},
 	common.BytesToAddress([]byte{7}): &xmssVerify{},
 }
 
@@ -147,8 +149,11 @@ func (c *depositroot) Run(input []byte) ([]byte, error) {
 }
 
 const (
+	// mldsa87VerifyDigestLength is the width of the message representative:
+	// one 64-byte QRVM word, matching the SHAKE256 precompile output.
+	mldsa87VerifyDigestLength        = WordBytes
 	mldsa87VerifyDigestOffset        = 0
-	mldsa87VerifyPublicKeyOffset     = mldsa87VerifyDigestOffset + common.HashLength
+	mldsa87VerifyPublicKeyOffset     = mldsa87VerifyDigestOffset + mldsa87VerifyDigestLength
 	mldsa87VerifySignatureOffset     = mldsa87VerifyPublicKeyOffset + cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES
 	mldsa87VerifyContextLengthOffset = mldsa87VerifySignatureOffset + cryptomldsa87.CRYPTO_BYTES
 	mldsa87VerifyContextOffset       = mldsa87VerifyContextLengthOffset + 1
@@ -156,8 +161,8 @@ const (
 	mldsa87VerifyMaxContextLength    = 255
 )
 
-// mldsa87Verify verifies an ML-DSA-87 signature over a fixed-size digest using
-// the supplied public key and context.
+// mldsa87Verify verifies an ML-DSA-87 signature over a fixed 64-byte message
+// representative using the supplied public key and context.
 type mldsa87Verify struct{}
 
 func (*mldsa87Verify) RequiredGas([]byte) uint64 {
@@ -194,7 +199,7 @@ func (*mldsa87Verify) Run(input []byte) ([]byte, error) {
 		return nil, nil
 	}
 
-	return trueWord, nil
+	return common.CopyBytes(trueWord), nil
 }
 
 // xmssVerify verifies an XMSS signature produced by a legacy QRL wallet with
@@ -401,6 +406,26 @@ func (c *sha256hash) RequiredGas(input []byte) uint64 {
 func (c *sha256hash) Run(input []byte) ([]byte, error) {
 	h := sha256.Sum256(input)
 	return h[:], nil
+}
+
+// shake256hash implements SHAKE256 with a fixed 512-bit output.
+type shake256hash struct{}
+
+// RequiredGas returns the gas required to execute the precompiled contract.
+func (*shake256hash) RequiredGas(input []byte) uint64 {
+	return shake256Gas(uint64(len(input)))
+}
+
+func shake256Gas(inputLength uint64) uint64 {
+	words := toWordSize(inputLength)
+	if words > (gomath.MaxUint64-params.Shake256BaseGas)/params.Shake256PerWordGas {
+		return gomath.MaxUint64
+	}
+	return words*params.Shake256PerWordGas + params.Shake256BaseGas
+}
+
+func (*shake256hash) Run(input []byte) ([]byte, error) {
+	return sha3.SumSHAKE256(input, 64), nil
 }
 
 // data copy implemented as a native contract.

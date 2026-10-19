@@ -183,6 +183,21 @@ func TestGenesisHashes(t *testing.T) {
 	}
 }
 
+func TestDeveloperGenesisFundsPrecompiles(t *testing.T) {
+	faucet := common.BytesToAddress([]byte{0xff})
+	genesis := DeveloperGenesisBlock(30_000_000, faucet)
+	for slot := byte(1); slot <= 7; slot++ {
+		address := common.BytesToAddress([]byte{slot})
+		account, ok := genesis.Alloc[address]
+		if !ok {
+			t.Fatalf("precompile slot %d is missing from developer genesis", slot)
+		}
+		if account.Balance == nil || account.Balance.Cmp(big.NewInt(1)) != 0 {
+			t.Fatalf("precompile slot %d balance is %v, want 1", slot, account.Balance)
+		}
+	}
+}
+
 // TestGenesisExtraDataLen checks length of extra data
 // should be exactly 32 bytes
 func TestGenesisExtraDataLen(t *testing.T) {
