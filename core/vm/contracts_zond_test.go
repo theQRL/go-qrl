@@ -111,7 +111,7 @@ func TestZondPrecompileRegistryConsistency(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("Zond precompile addresses: got %v, want %v", got, want)
 	}
-	if !reflect.DeepEqual(ActivePrecompiles(params.Rules{}), PrecompiledAddressesZond) {
+	if !reflect.DeepEqual(ActivePrecompiles(), PrecompiledAddressesZond) {
 		t.Error("active precompile addresses must match the Zond address list")
 	}
 }
