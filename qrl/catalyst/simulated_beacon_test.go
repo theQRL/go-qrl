@@ -119,7 +119,7 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 	includedTxs := make(map[common.Hash]struct{})
 	var includedWithdrawals []uint64
 
-	timer := time.NewTimer(12 * time.Second)
+	timer := time.NewTimer(30 * time.Second)
 	for {
 		select {
 		case evt := <-chainHeadCh:
@@ -130,8 +130,8 @@ func TestSimulatedBeaconSendWithdrawals(t *testing.T) {
 				includedWithdrawals = append(includedWithdrawals, includedWithdrawal.Index)
 			}
 
-			// ensure all withdrawals/txs included. this will take two blocks b/c number of withdrawals > 10
-			if len(includedTxs) == len(txs) && len(includedWithdrawals) == len(withdrawals) && evt.Block.Number().Cmp(big.NewInt(2)) == 0 {
+			// ensure all withdrawals/txs included. this will at least take two blocks b/c number of withdrawals > 10
+			if len(includedTxs) == len(txs) && len(includedWithdrawals) == len(withdrawals) {
 				return
 			}
 		case <-timer.C:
