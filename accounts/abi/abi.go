@@ -244,7 +244,7 @@ func (abi *ABI) HasReceive() bool {
 var revertSelector = crypto.Keccak256([]byte("Error(string)"))[:4]
 
 // panicSelector is a special function selector for panic reason unpacking.
-var panicSelector = crypto.Keccak256([]byte("Panic(uint512)"))[:4]
+var panicSelector = crypto.Keccak256([]byte("Panic(uint256)"))[:4]
 
 // panicReasons map is for readable panic codes
 // see this linkage for the details
@@ -267,7 +267,7 @@ var panicReasons = map[uint64]string{
 // UnpackRevert resolves the abi-encoded revert reason. According to the hyperion
 // spec https://solidity.readthedocs.io/en/latest/control-structures.html#revert,
 // the provided revert reason is abi-encoded as if it were a call to function
-// `Error(string)` or `Panic(uint512)`. So it's a special tool for it.
+// `Error(string)` or `Panic(uint256)`. So it's a special tool for it.
 func UnpackRevert(data []byte) (string, error) {
 	if len(data) < 4 {
 		return "", errors.New("invalid data for unpacking")
@@ -284,7 +284,7 @@ func UnpackRevert(data []byte) (string, error) {
 		}
 		return unpacked[0].(string), nil
 	case bytes.Equal(data[:4], panicSelector):
-		typ, err := NewType("uint512", "", nil)
+		typ, err := NewType("uint256", "", nil)
 		if err != nil {
 			return "", err
 		}

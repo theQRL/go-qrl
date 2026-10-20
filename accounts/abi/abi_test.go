@@ -1164,11 +1164,11 @@ func TestUnpackRevert(t *testing.T) {
 		}
 		return append(append([]byte{}, revertSelector...), body...)
 	}
-	// Helper: encode revert payload for Panic(uint512 code).
+	// Helper: encode revert payload for Panic(uint256 code).
 	panicPayload := func(code *big.Int) []byte {
-		uintTy, err := NewType("uint512", "", nil)
+		uintTy, err := NewType("uint256", "", nil)
 		if err != nil {
-			t.Fatalf("build uint512 type: %v", err)
+			t.Fatalf("build uint256 type: %v", err)
 		}
 		body, err := (Arguments{{Type: uintTy}}).Pack(code)
 		if err != nil {
@@ -1188,6 +1188,8 @@ func TestUnpackRevert(t *testing.T) {
 		{revert("revert reason"), "revert reason", nil},
 		{panicPayload(big.NewInt(0)), "generic panic", nil},
 		{panicPayload(big.NewInt(0xff)), "unknown panic code: 0xff", nil},
+		// The old 512-bit signature is a different custom error, not a compiler panic.
+		{append(crypto.Keccak256([]byte("Panic(uint512)"))[:4], make([]byte, 64)...), "", errors.New("invalid data for unpacking")},
 	}
 	for index, c := range cases {
 		t.Run(fmt.Sprintf("case %d", index), func(t *testing.T) {
