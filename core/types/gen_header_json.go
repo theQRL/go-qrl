@@ -28,8 +28,8 @@ func (h Header) MarshalJSON() ([]byte, error) {
 		Time            hexutil.Uint64 `json:"timestamp"        gencodec:"required"`
 		Extra           hexutil.Bytes  `json:"extraData"        gencodec:"required"`
 		Random          common.Hash    `json:"prevRandao"`
-		BaseFee         *hexutil.Big   `json:"baseFeePerGas" rlp:"optional"`
-		WithdrawalsHash *common.Hash   `json:"withdrawalsRoot" rlp:"optional"`
+		BaseFee         *hexutil.Big   `json:"baseFeePerGas"`
+		WithdrawalsHash *common.Hash   `json:"withdrawalsRoot"`
 		Hash            common.Hash    `json:"hash"`
 	}
 	var enc Header
@@ -66,8 +66,8 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 		Time            *hexutil.Uint64 `json:"timestamp"        gencodec:"required"`
 		Extra           *hexutil.Bytes  `json:"extraData"        gencodec:"required"`
 		Random          *common.Hash    `json:"prevRandao"`
-		BaseFee         *hexutil.Big    `json:"baseFeePerGas" rlp:"optional"`
-		WithdrawalsHash *common.Hash    `json:"withdrawalsRoot" rlp:"optional"`
+		BaseFee         *hexutil.Big    `json:"baseFeePerGas"`
+		WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"`
 	}
 	var dec Header
 	if err := json.Unmarshal(input, &dec); err != nil {
