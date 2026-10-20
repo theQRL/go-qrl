@@ -95,20 +95,6 @@ func testSetupGenesis(t *testing.T, scheme string) {
 			wantHash:   customghash,
 			wantConfig: customg.Config,
 		},
-		// TODO(now.youtrack.cloud/issue/TGZ-16)
-		/*
-			{
-				name: "custom block in DB, genesis == goerli",
-				fn: func(db qrldb.Database) (*params.ChainConfig, common.Hash, error) {
-					tdb := trie.NewDatabase(db, newDbConfig(scheme))
-					customg.Commit(db, tdb)
-					return SetupGenesisBlock(db, tdb, DefaultGoerliGenesisBlock())
-				},
-				wantErr:    &GenesisMismatchError{Stored: customghash, New: params.GoerliGenesisHash},
-				wantHash:   params.GoerliGenesisHash,
-				wantConfig: params.GoerliChainConfig,
-			},
-		*/
 		{
 			name: "compatible config in DB",
 			fn: func(db qrldb.Database) (*params.ChainConfig, common.Hash, error) {
@@ -197,6 +183,21 @@ func TestGenesisHashes(t *testing.T) {
 	}
 }
 
+func TestDeveloperGenesisFundsPrecompiles(t *testing.T) {
+	faucet := common.BytesToAddress([]byte{0xff})
+	genesis := DeveloperGenesisBlock(30_000_000, faucet)
+	for slot := byte(1); slot <= 7; slot++ {
+		address := common.BytesToAddress([]byte{slot})
+		account, ok := genesis.Alloc[address]
+		if !ok {
+			t.Fatalf("precompile slot %d is missing from developer genesis", slot)
+		}
+		if account.Balance == nil || account.Balance.Cmp(big.NewInt(1)) != 0 {
+			t.Fatalf("precompile slot %d balance is %v, want 1", slot, account.Balance)
+		}
+	}
+}
+
 // TestGenesisExtraDataLen checks length of extra data
 // should be exactly 32 bytes
 func TestGenesisExtraDataLen(t *testing.T) {
@@ -239,7 +240,7 @@ func TestGenesis_Commit(t *testing.T) {
 	}
 
 	if blk.BaseFee().Cmp(genesisBlock.BaseFee()) != 0 {
-		t.Errorf("inequal difficulty; stored: %v, genesisBlock: %v", blk.BaseFee(), genesisBlock.BaseFee())
+		t.Errorf("inequal base fee; stored: %v, genesisBlock: %v", blk.BaseFee(), genesisBlock.BaseFee())
 	}
 }
 

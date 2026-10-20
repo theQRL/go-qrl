@@ -37,12 +37,12 @@ var (
 		Logs: []*Log{
 			{
 				Address: common.BytesToAddress([]byte{0x11}),
-				Topics:  []common.LogTopic{common.HexToLogTopic("dead"), common.HexToLogTopic("beef")},
+				Topics:  []common.LogTopic{common.BytesToRightAlignedLogTopic(common.FromHex("dead")), common.BytesToRightAlignedLogTopic(common.FromHex("beef"))},
 				Data:    []byte{0x01, 0x00, 0xff},
 			},
 			{
 				Address: common.BytesToAddress([]byte{0x01, 0x11}),
-				Topics:  []common.LogTopic{common.HexToLogTopic("dead"), common.HexToLogTopic("beef")},
+				Topics:  []common.LogTopic{common.BytesToRightAlignedLogTopic(common.FromHex("dead")), common.BytesToRightAlignedLogTopic(common.FromHex("beef"))},
 				Data:    []byte{0x01, 0x00, 0xff},
 			},
 		},
@@ -111,7 +111,7 @@ var (
 			Logs: []*Log{
 				{
 					Address: common.BytesToAddress([]byte{0x11}),
-					Topics:  []common.LogTopic{common.HexToLogTopic("dead"), common.HexToLogTopic("beef")},
+					Topics:  []common.LogTopic{common.BytesToRightAlignedLogTopic(common.FromHex("dead")), common.BytesToRightAlignedLogTopic(common.FromHex("beef"))},
 					// derived fields:
 					BlockNumber: blockNumber.Uint64(),
 					TxHash:      txs[0].Hash(),
@@ -121,7 +121,7 @@ var (
 				},
 				{
 					Address: common.BytesToAddress([]byte{0x01, 0x11}),
-					Topics:  []common.LogTopic{common.HexToLogTopic("dead"), common.HexToLogTopic("beef")},
+					Topics:  []common.LogTopic{common.BytesToRightAlignedLogTopic(common.FromHex("dead")), common.BytesToRightAlignedLogTopic(common.FromHex("beef"))},
 					// derived fields:
 					BlockNumber: blockNumber.Uint64(),
 					TxHash:      txs[0].Hash(),
@@ -141,12 +141,12 @@ var (
 		},
 		&Receipt{
 			Type:              DynamicFeeTxType,
-			PostState:         common.Hash{2}.Bytes(),
+			Status:            ReceiptStatusSuccessful,
 			CumulativeGasUsed: 3,
 			Logs: []*Log{
 				{
 					Address: common.BytesToAddress([]byte{0x22}),
-					Topics:  []common.LogTopic{common.HexToLogTopic("dead"), common.HexToLogTopic("beef")},
+					Topics:  []common.LogTopic{common.BytesToRightAlignedLogTopic(common.FromHex("dead")), common.BytesToRightAlignedLogTopic(common.FromHex("beef"))},
 					// derived fields:
 					BlockNumber: blockNumber.Uint64(),
 					TxHash:      txs[1].Hash(),
@@ -156,7 +156,7 @@ var (
 				},
 				{
 					Address: common.BytesToAddress([]byte{0x02, 0x22}),
-					Topics:  []common.LogTopic{common.HexToLogTopic("dead"), common.HexToLogTopic("beef")},
+					Topics:  []common.LogTopic{common.BytesToRightAlignedLogTopic(common.FromHex("dead")), common.BytesToRightAlignedLogTopic(common.FromHex("beef"))},
 					// derived fields:
 					BlockNumber: blockNumber.Uint64(),
 					TxHash:      txs[1].Hash(),
@@ -175,7 +175,7 @@ var (
 		},
 		&Receipt{
 			Type:              DynamicFeeTxType,
-			PostState:         common.Hash{3}.Bytes(),
+			Status:            ReceiptStatusSuccessful,
 			CumulativeGasUsed: 6,
 			Logs:              []*Log{},
 			// derived fields:
@@ -188,7 +188,7 @@ var (
 		},
 		&Receipt{
 			Type:              DynamicFeeTxType,
-			PostState:         common.Hash{4}.Bytes(),
+			Status:            ReceiptStatusSuccessful,
 			CumulativeGasUsed: 10,
 			Logs:              []*Log{},
 			// derived fields:
@@ -201,7 +201,7 @@ var (
 		},
 		&Receipt{
 			Type:              DynamicFeeTxType,
-			PostState:         common.Hash{5}.Bytes(),
+			Status:            ReceiptStatusSuccessful,
 			CumulativeGasUsed: 15,
 			Logs:              []*Log{},
 			// derived fields:
@@ -215,12 +215,51 @@ var (
 	}
 )
 
+func TestRejectPostStateReceipt(t *testing.T) {
+	type encodedReceipt struct {
+		Status            []byte
+		CumulativeGasUsed uint64
+		Bloom             Bloom
+		Logs              []*Log
+	}
+	payload, err := rlp.EncodeToBytes(&encodedReceipt{
+		Status:            common.Hash{2}.Bytes(),
+		CumulativeGasUsed: 1,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	raw := append([]byte{DynamicFeeTxType}, payload...)
+	if err := new(Receipt).UnmarshalBinary(raw); err == nil {
+		t.Fatal("expected error decoding a pre-Byzantium post-state receipt")
+	}
+}
+
 func TestDecodeEmptyTypedReceipt(t *testing.T) {
 	input := []byte{0x80}
 	var r Receipt
 	err := rlp.DecodeBytes(input, &r)
 	if err != errShortTypedReceipt {
 		t.Fatal("wrong error:", err)
+	}
+}
+
+func TestReceiptSizeCountsLogTopicLength(t *testing.T) {
+	withoutTopic := (&Receipt{
+		Logs: []*Log{{
+			Data: []byte{0x01, 0x02, 0x03},
+		}},
+	}).Size()
+
+	withTopic := (&Receipt{
+		Logs: []*Log{{
+			Topics: []common.LogTopic{{}},
+			Data:   []byte{0x01, 0x02, 0x03},
+		}},
+	}).Size()
+
+	if diff := withTopic - withoutTopic; diff != common.StorageSize(common.LogTopicLength) {
+		t.Fatalf("receipt topic size mismatch: have %d, want %d", uint64(diff), common.LogTopicLength)
 	}
 }
 

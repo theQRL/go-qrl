@@ -23,6 +23,13 @@ import (
 	"github.com/theQRL/go-qrl/common/uint512"
 )
 
+const (
+	// WordBits is the VM word width in bits.
+	WordBits = uint512.WordBits
+	// WordBytes is the VM word width in bytes.
+	WordBytes = uint512.WordBytes
+)
+
 // calcMemSize64 calculates the required memory size, and returns
 // the size and whether the result overflowed uint64
 func calcMemSize64(off, l *uint512.Int) (uint64, bool) {
@@ -62,16 +69,17 @@ func getData(data []byte, start uint64, size uint64) []byte {
 }
 
 // toWordSize returns the ceiled word size required for memory expansion.
-// The VM word is 64 bytes.
+// The VM word is WordBytes bytes.
 func toWordSize(size uint64) uint64 {
-	if size > math.MaxUint64-63 {
-		return math.MaxUint64/64 + 1
+	const wordBytes = uint64(WordBytes)
+	if size > math.MaxUint64-(wordBytes-1) {
+		return math.MaxUint64/wordBytes + 1
 	}
 
-	return (size + 63) / 64
+	return (size + wordBytes - 1) / wordBytes
 }
 
-// stackToAddress extracts a 64-byte address from a 512-bit stack value.
+// stackToAddress extracts an address from a stack word.
 func stackToAddress(val *uint512.Int) common.Address {
 	b := val.Bytes64()
 	return common.BytesToAddress(b[:])

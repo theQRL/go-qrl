@@ -64,6 +64,17 @@ func MLDSA87VerifySignatureWithDefaultDescriptor(sig []byte, msg []byte, pk []by
 	return MLDSA87VerifySignature(sig, msg, pk, desc.ToDescriptor())
 }
 
+// MLDSA87PublicKeyToAddress derives the account address of an ML-DSA-87 public
+// key under the default descriptor, the only descriptor accepted for ML-DSA-87
+// signatures.
+func MLDSA87PublicKeyToAddress(pk []byte) (common.Address, error) {
+	desc, err := walletmldsa87.NewMLDSA87Descriptor()
+	if err != nil {
+		return common.Address{}, err
+	}
+	return PublicKeyAndDescriptorToAddress(pk, desc.ToDescriptor())
+}
+
 func Sign(digestHash []byte, w wallet.Wallet) ([]byte, error) {
 	if len(digestHash) != DigestLength {
 		return nil, fmt.Errorf("hash is required to be exactly %d bytes (%d)", DigestLength, len(digestHash))

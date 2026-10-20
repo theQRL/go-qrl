@@ -116,22 +116,25 @@ func minerTestGenesisBlock(gasLimit uint64, faucet common.Address) *core.Genesis
 		Alloc: map[common.Address]core.GenesisAccount{
 			common.BytesToAddress([]byte{1}): {Balance: big.NewInt(1)}, // Deposit
 			common.BytesToAddress([]byte{2}): {Balance: big.NewInt(1)}, // SHA256
-			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // Identity
-			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // ModExp
+			common.BytesToAddress([]byte{3}): {Balance: big.NewInt(1)}, // MLDSA87Verify
+			common.BytesToAddress([]byte{4}): {Balance: big.NewInt(1)}, // Identity
+			common.BytesToAddress([]byte{5}): {Balance: big.NewInt(1)}, // ModExp
+			common.BytesToAddress([]byte{6}): {Balance: big.NewInt(1)}, // SHAKE256
+			common.BytesToAddress([]byte{7}): {Balance: big.NewInt(1)}, // XMSSVerify
 			faucet:                           {Balance: new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 256), big.NewInt(9))},
 		},
 	}
 }
 
 func createMiner(t *testing.T) *Miner {
-	feeRecipient, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000123456789")
+	feeRecipient := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012345678")
 	config := Config{
 		PendingFeeRecipient: feeRecipient,
 	}
 	// Create chainConfig
 	chainDB := rawdb.NewMemoryDatabase()
 	triedb := trie.NewDatabase(chainDB, nil)
-	faucet, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012345")
+	faucet := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000012345")
 	genesis := minerTestGenesisBlock(11_500_000, faucet)
 	chainConfig, _, err := core.SetupGenesisBlock(chainDB, triedb, genesis)
 	if err != nil {

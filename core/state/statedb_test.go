@@ -537,7 +537,7 @@ func TestTouchDelete(t *testing.T) {
 // See https://github.com/theQRL/go-qrl/pull/15225#issuecomment-380191512
 func TestCopyOfCopy(t *testing.T) {
 	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aaaa99aabbccddeeff001122334455667788")
+	addr := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000aaaa99aabbccddeeff001122334455667788")
 	state.SetBalance(addr, big.NewInt(42))
 
 	if got := state.Copy().GetBalance(addr).Uint64(); got != 42 {
@@ -557,7 +557,7 @@ func TestCopyCommitCopy(t *testing.T) {
 	state, _ := New(types.EmptyRootHash, tdb, nil)
 
 	// Create an account and check if the retrieved balance is correct
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
+	addr := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
 	skey := common.HexToHash("aaa")
 	sval := common.HexToStorageValue64("bbb")
 
@@ -630,7 +630,7 @@ func TestCopyCopyCommitCopy(t *testing.T) {
 	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
 	// Create an account and check if the retrieved balance is correct
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
+	addr := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
 	skey := common.HexToHash("aaa")
 	sval := common.HexToStorageValue64("bbb")
 
@@ -699,7 +699,7 @@ func TestCommitCopy(t *testing.T) {
 	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
 	// Create an account and check if the retrieved balance is correct
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
+	addr := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
 	skey := common.HexToHash("aaa")
 	sval := common.HexToStorageValue64("bbb")
 
@@ -807,7 +807,7 @@ func testMissingTrieNodes(t *testing.T, scheme string) {
 func TestStateDBAccessList(t *testing.T) {
 	// Some helpers
 	addr := func(a string) common.Address {
-		addr, _ := common.NewAddressFromString(a)
+		addr := common.MustParseAddress(a)
 		return addr
 	}
 	slot := func(a string) common.Hash {
@@ -1027,7 +1027,7 @@ func TestResetObject(t *testing.T) {
 		db       = NewDatabaseWithNodeDB(disk, tdb)
 		snaps, _ = snapshot.New(snapshot.Config{CacheSize: 10}, disk, tdb, types.EmptyRootHash)
 		state, _ = New(types.EmptyRootHash, db, snaps)
-		addr, _  = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
+		addr     = common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
 		slotA    = common.HexToHash("0x1")
 		slotB    = common.HexToHash("0x2")
 	)
@@ -1061,7 +1061,7 @@ func TestDeleteStorage(t *testing.T) {
 		db       = NewDatabaseWithNodeDB(disk, tdb)
 		snaps, _ = snapshot.New(snapshot.Config{CacheSize: 10}, disk, tdb, types.EmptyRootHash)
 		state, _ = New(types.EmptyRootHash, db, snaps)
-		addr, _  = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
+		addr     = common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
 	)
 	// Initialize account and populate storage
 	state.SetBalance(addr, big.NewInt(1))

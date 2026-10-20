@@ -319,7 +319,7 @@ func (l *list) Add(tx *types.Transaction, priceBump uint64) (bool, *types.Transa
 
 		// We have to ensure that both the new fee cap and tip are higher than the
 		// old ones as well as checking the percentage threshold to ensure that
-		// this is accurate for low (Wei-level) gas price replacements.
+		// this is accurate for low (planck-level) gas price replacements.
 		if tx.GasFeeCapIntCmp(thresholdFeeCap) < 0 || tx.GasTipCapIntCmp(thresholdTip) < 0 {
 			return false, nil
 		}

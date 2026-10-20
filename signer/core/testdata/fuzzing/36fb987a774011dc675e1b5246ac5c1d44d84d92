@@ -1,6 +1,6 @@
 {
   "types": {
-    "EIP712Domain": [
+    "QRLTypedDataDomain": [
       {
         "name": "name",
         "type": "string"

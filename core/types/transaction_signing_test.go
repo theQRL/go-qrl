@@ -25,9 +25,10 @@ import (
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/crypto/pqcrypto"
 	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
+	"github.com/theQRL/go-qrllib/wallet/common/wallettype"
 )
 
-func TestEIP155ChainId(t *testing.T) {
+func TestSignerChainID(t *testing.T) {
 	wallet, _ := wallet.Generate(wallet.ML_DSA_87)
 	addr := common.Address(wallet.GetAddress())
 
@@ -112,7 +113,7 @@ func TestZondSigner_Sender(t *testing.T) {
 
 		s2 := NewZondSigner(common.Big2)
 		_, err = s2.Sender(signed)
-		if !errors.Is(err, ErrInvalidChainId) && err == nil {
+		if !errors.Is(err, ErrInvalidChainId) {
 			t.Fatalf("expected chain id error; got %v", err)
 		}
 	})
@@ -135,8 +136,10 @@ func TestZondSigner_Sender(t *testing.T) {
 			t.Fatalf("re-wrap with bad descriptor: %v", err)
 		}
 		_, err = signer.Sender(tampered)
-		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
-			t.Fatalf("expected bad signature error; got %v", err)
+		// The reserved descriptor bytes must be zero, so this is rejected while
+		// validating the descriptor, before any signature verification.
+		if err == nil || !strings.Contains(err.Error(), "descriptor") {
+			t.Fatalf("expected invalid descriptor error; got %v", err)
 		}
 	})
 	t.Run("error/mutated-signature", func(t *testing.T) {
@@ -157,8 +160,120 @@ func TestZondSigner_Sender(t *testing.T) {
 			t.Fatalf("re-wrap with bad signature: %v", err)
 		}
 		_, err = signer.Sender(tampered)
-		if !errors.Is(err, pqcrypto.ErrBadSignature) && err == nil {
+		if !errors.Is(err, pqcrypto.ErrBadSignature) {
 			t.Fatalf("expected bad signature error; got %v", err)
+		}
+	})
+	t.Run("error/wrong-public-key", func(t *testing.T) {
+		t.Parallel()
+
+		signerWallet, err := wallet.Generate(wallet.ML_DSA_87)
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		otherWallet, err := wallet.Generate(wallet.ML_DSA_87)
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		signer := NewZondSigner(big.NewInt(7))
+		tx := mkTx(big.NewInt(7))
+		signed, sig, _, desc := signTx(t, signer, tx, signerWallet)
+
+		// A valid signature from one key carried with another key's public key
+		// must not authenticate the other key's address.
+		otherPK := otherWallet.GetPK()
+		tampered, err := signed.WithAuthValues(signer, sig, otherPK[:], desc, extraParams)
+		if err != nil {
+			t.Fatalf("re-wrap with other public key: %v", err)
+		}
+		_, err = signer.Sender(tampered)
+		if !errors.Is(err, pqcrypto.ErrBadSignature) {
+			t.Fatalf("expected bad signature error; got %v", err)
+		}
+	})
+	t.Run("error/unsupported-wallet-type", func(t *testing.T) {
+		t.Parallel()
+
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		signer := NewZondSigner(big.NewInt(7))
+		tx := mkTx(big.NewInt(7))
+		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
+
+		for _, typ := range []byte{byte(wallettype.SPHINCSPLUS_256S), 0x7f} {
+			bad := append([]byte{}, desc...)
+			bad[0] = typ
+			tampered, err := signed.WithAuthValues(signer, sig, pk, bad, extraParams)
+			if err != nil {
+				t.Fatalf("re-wrap with wallet type %#x: %v", typ, err)
+			}
+			_, err = signer.Sender(tampered)
+			if err == nil || !strings.HasPrefix(err.Error(), "unsupported wallet type in descriptor") {
+				t.Fatalf("wallet type %#x: expected unsupported wallet type error; got %v", typ, err)
+			}
+		}
+	})
+	t.Run("error/zero-t1-public-key", func(t *testing.T) {
+		t.Parallel()
+
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		signer := NewZondSigner(big.NewInt(7))
+		tx := mkTx(big.NewInt(7))
+		signed, sig, pk, desc := signTx(t, signer, tx, wallet)
+
+		// A public key whose t1 component is all zero is universally forgeable
+		// and must never authenticate a sender, whatever signature it carries.
+		for _, rho := range []byte{0x00, 0xab} {
+			zeroT1 := make([]byte, len(pk))
+			for i := 0; i < 32; i++ {
+				zeroT1[i] = rho
+			}
+			tampered, err := signed.WithAuthValues(signer, sig, zeroT1, desc, extraParams)
+			if err != nil {
+				t.Fatalf("re-wrap with zero-t1 public key: %v", err)
+			}
+			if _, err := signer.Sender(tampered); err == nil {
+				t.Fatalf("rho=%#x: zero-t1 public key authenticated a sender", rho)
+			}
+		}
+	})
+	t.Run("ok/sender-cache", func(t *testing.T) {
+		t.Parallel()
+
+		wallet, err := wallet.Generate(wallet.ML_DSA_87)
+		if err != nil {
+			t.Fatalf("wallet: %v", err)
+		}
+		chainID := big.NewInt(7)
+		signer := NewZondSigner(chainID)
+		tx := mkTx(chainID)
+		signed, _, _, _ := signTx(t, signer, tx, wallet)
+
+		want := common.Address(wallet.GetAddress())
+		if got, err := Sender(signer, signed); err != nil || got != want {
+			t.Fatalf("first Sender: got %x err %v", got.Bytes(), err)
+		}
+		cached, ok := signed.from.Load().(sigCache)
+		if !ok || cached.from != want || !cached.signer.Equal(signer) {
+			t.Fatalf("sender was not cached for the signer: %+v", cached)
+		}
+		if got, err := Sender(signer, signed); err != nil || got != want {
+			t.Fatalf("cached Sender: got %x err %v", got.Bytes(), err)
+		}
+
+		// A signer for another chain must not be served from the cache, and must
+		// not overwrite the cached entry with an error result.
+		if _, err := Sender(NewZondSigner(big.NewInt(8)), signed); !errors.Is(err, ErrInvalidChainId) {
+			t.Fatalf("other-chain Sender: expected chain id error; got %v", err)
+		}
+		cached, ok = signed.from.Load().(sigCache)
+		if !ok || cached.from != want || !cached.signer.Equal(signer) {
+			t.Fatalf("cache changed after a failed lookup: %+v", cached)
 		}
 	})
 	t.Run("error/non-empty-extra-params", func(t *testing.T) {
@@ -225,7 +340,6 @@ func TestZondSigner_Sender(t *testing.T) {
 			},
 		}
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 

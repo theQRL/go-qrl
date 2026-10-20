@@ -18,10 +18,10 @@ package main
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/theQRL/go-qrl/cmd/utils"
 	"github.com/theQRL/go-qrl/console"
-	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/urfave/cli/v2"
 )
 
@@ -32,11 +32,10 @@ var (
 		Action: localConsole,
 		Name:   "console",
 		Usage:  "Start an interactive JavaScript environment",
-		Flags:  flags.Merge(nodeFlags, rpcFlags, consoleFlags),
+		Flags:  slices.Concat(nodeFlags, rpcFlags, consoleFlags),
 		Description: `
 The Gqrl console is an interactive shell for the JavaScript runtime environment
-which exposes a node admin interface as well as the Ðapp JavaScript API.
-See https://geth.ethereum.org/docs/interacting-with-geth/javascript-console.`,
+which exposes a node admin interface as well as the Ðapp JavaScript API.`,
 	}
 
 	attachCommand = &cli.Command{
@@ -44,11 +43,10 @@ See https://geth.ethereum.org/docs/interacting-with-geth/javascript-console.`,
 		Name:      "attach",
 		Usage:     "Start an interactive JavaScript environment (connect to node)",
 		ArgsUsage: "[endpoint]",
-		Flags:     flags.Merge([]cli.Flag{utils.DataDirFlag, utils.HttpHeaderFlag}, consoleFlags),
+		Flags:     slices.Concat([]cli.Flag{utils.DataDirFlag, utils.HttpHeaderFlag}, consoleFlags),
 		Description: `
 The Gqrl console is an interactive shell for the JavaScript runtime environment
 which exposes a node admin interface as well as the Ðapp JavaScript API.
-See https://geth.ethereum.org/docs/interacting-with-geth/javascript-console.
 This command allows to open a console on a running gqrl node.`,
 	}
 )

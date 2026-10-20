@@ -266,6 +266,16 @@ func TestBadBlockStorage(t *testing.T) {
 	if len(badBlocks) != 0 {
 		t.Fatalf("Failed to delete bad blocks")
 	}
+
+	// An undecodable list is replaced by the next write
+	if err := db.Put(badBlockKey, []byte{0xc1, 0x80}); err != nil {
+		t.Fatal(err)
+	}
+	WriteBadBlock(db, block)
+	badBlocks = ReadAllBadBlocks(db)
+	if len(badBlocks) != 1 || badBlocks[0].Hash() != block.Hash() {
+		t.Fatalf("Undecodable bad blocks not replaced: have %v, want only %x", badBlocks, block.Hash())
+	}
 }
 
 // Tests that canonical numbers can be mapped to hashes and retrieved.
@@ -331,7 +341,7 @@ func TestBlockReceiptStorage(t *testing.T) {
 	db := NewMemoryDatabase()
 
 	// Create a live block since we need metadata to reconstruct the receipt
-	to1, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
+	to1 := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
 	tx1 := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     1,
 		To:        &to1,
@@ -340,7 +350,7 @@ func TestBlockReceiptStorage(t *testing.T) {
 		GasFeeCap: big.NewInt(1),
 		Data:      nil,
 	})
-	to2, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002")
+	to2 := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002")
 	tx2 := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     2,
 		To:        &to2,
@@ -369,7 +379,7 @@ func TestBlockReceiptStorage(t *testing.T) {
 
 	receipt2 := &types.Receipt{
 		Type:              0x02,
-		PostState:         common.Hash{2}.Bytes(),
+		Status:            types.ReceiptStatusSuccessful,
 		CumulativeGasUsed: 2,
 		Logs: []*types.Log{
 			{Address: common.BytesToAddress([]byte{0x22})},
@@ -609,7 +619,7 @@ func BenchmarkWriteAncientBlocks(b *testing.B) {
 // makeTestBlocks creates fake blocks for the ancient write benchmark.
 func makeTestBlocks(tb testing.TB, nblock int, txsPerBlock int) []*types.Block {
 	wallet := testutil.LoadAccount(tb, "alice").Wallet(tb)
-	signer := types.LatestSignerForChainID(big.NewInt(8))
+	signer := types.NewZondSigner(big.NewInt(8))
 
 	// Create transactions.
 	txs := make([]*types.Transaction, txsPerBlock)
@@ -686,7 +696,7 @@ func TestReadLogs(t *testing.T) {
 	db := NewMemoryDatabase()
 
 	// Create a live block since we need metadata to reconstruct the receipt
-	to1, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
+	to1 := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
 	tx1 := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     1,
 		To:        &to1,
@@ -695,7 +705,7 @@ func TestReadLogs(t *testing.T) {
 		GasFeeCap: big.NewInt(1),
 		Data:      nil,
 	})
-	to2, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002")
+	to2 := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002")
 	tx2 := types.NewTx(&types.DynamicFeeTx{
 		Nonce:     2,
 		To:        &to2,
@@ -722,7 +732,7 @@ func TestReadLogs(t *testing.T) {
 	receipt1.Bloom = types.CreateBloom(types.Receipts{receipt1})
 
 	receipt2 := &types.Receipt{
-		PostState:         common.Hash{2}.Bytes(),
+		Status:            types.ReceiptStatusSuccessful,
 		CumulativeGasUsed: 2,
 		Logs: []*types.Log{
 			{Address: common.BytesToAddress([]byte{0x22})},
@@ -779,8 +789,8 @@ func TestReadLogs(t *testing.T) {
 
 func TestDeriveLogFields(t *testing.T) {
 	// Create a few transactions to have receipts for
-	to2, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002")
-	to3, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003")
+	to2 := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002")
+	to3 := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000003")
 	txs := types.Transactions{
 		types.NewTx(&types.DynamicFeeTx{
 			Nonce:     1,

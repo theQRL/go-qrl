@@ -102,7 +102,7 @@ func TestExecute(t *testing.T) {
 
 func TestCall(t *testing.T) {
 	state, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	address, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a")
+	address := common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a")
 	state.SetCode(address, []byte{
 		byte(vm.PUSH1), 10,
 		byte(vm.PUSH1), 0,
@@ -183,23 +183,23 @@ func benchmarkQRVM_Create(bench *testing.B, code string) {
 
 func BenchmarkQRVM_CREATE_500(bench *testing.B) {
 	// initcode size 500K, repeatedly calls CREATE and then modifies the mem contents
-	benchmarkQRVM_Create(bench, "5b6207a120600080f0600152600056")
+	benchmarkQRVM_Create(bench, "5b6207a1206000a0f0600152600056")
 }
 func BenchmarkQRVM_CREATE2_500(bench *testing.B) {
 	// initcode size 500K, repeatedly calls CREATE2 and then modifies the mem contents
-	benchmarkQRVM_Create(bench, "5b586207a120600080f5600152600056")
+	benchmarkQRVM_Create(bench, "5b586207a1206000a0f5600152600056")
 }
 func BenchmarkQRVM_CREATE_1200(bench *testing.B) {
 	// initcode size 1200K, repeatedly calls CREATE and then modifies the mem contents
-	benchmarkQRVM_Create(bench, "5b62124f80600080f0600152600056")
+	benchmarkQRVM_Create(bench, "5b62124f806000a0f0600152600056")
 }
 func BenchmarkQRVM_CREATE2_1200(bench *testing.B) {
 	// initcode size 1200K, repeatedly calls CREATE2 and then modifies the mem contents
-	benchmarkQRVM_Create(bench, "5b5862124f80600080f5600152600056")
+	benchmarkQRVM_Create(bench, "5b5862124f806000a0f5600152600056")
 }
 
 func fakeHeader(n uint64, parentHash common.Hash) *types.Header {
-	coinbase, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef")
+	coinbase := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef")
 	header := types.Header{
 		Coinbase:   coinbase,
 		Number:     big.NewInt(int64(n)),
@@ -310,12 +310,12 @@ func benchmarkNonModifyingCode(gas uint64, code []byte, name string, tracerCode 
 		sender      = vm.AccountRef(cfg.Origin)
 	)
 	cfg.State.CreateAccount(destination)
-	eoa, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E0")
+	eoa := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000E0")
 	{
 		cfg.State.CreateAccount(eoa)
 		cfg.State.SetNonce(eoa, 100)
 	}
-	reverting, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000EE")
+	reverting := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000EE")
 	{
 		cfg.State.CreateAccount(reverting)
 		cfg.State.SetCode(reverting, []byte{

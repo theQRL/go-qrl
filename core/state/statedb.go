@@ -31,7 +31,6 @@ import (
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/metrics"
-	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/trie"
 	"github.com/theQRL/go-qrl/trie/trienode"
 	"github.com/theQRL/go-qrl/trie/triestate"
@@ -264,7 +263,6 @@ func (s *StateDB) SubRefund(gas uint64) {
 }
 
 // Exist reports whether the given account address exists in the state.
-// Notably this also returns true for self-destructed accounts.
 func (s *StateDB) Exist(addr common.Address) bool {
 	return s.getStateObject(addr) != nil
 }
@@ -571,9 +569,9 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 		if !prevdestruct {
 			s.stateObjectsDestruct[prev.address] = prev.origin
 		}
-		// There may be some cached account/storage data already since IntermediateRoot
-		// will be called for each transaction before byzantium fork which will always
-		// cache the latest account/storage data.
+		// There may be some cached account/storage data already if IntermediateRoot
+		// was called (for example at a block boundary), which caches the latest
+		// account/storage data.
 		prevAccount, ok := s.accountsOrigin[prev.address]
 		s.journal.append(resetObjectChange{
 			account:                &addr,
@@ -590,8 +588,6 @@ func (s *StateDB) createObject(addr common.Address) (newobj, prev *stateObject) 
 		delete(s.accountsOrigin, prev.address)
 		delete(s.storagesOrigin, prev.address)
 	}
-
-	newobj.created = true
 
 	s.setStateObject(newobj)
 	if prev != nil && !prev.deleted {
@@ -685,8 +681,8 @@ func (s *StateDB) Copy() *StateDB {
 	// along with their original values.
 	state.accounts = copySet(s.accounts)
 	state.storages = copy2DSet(s.storages)
-	state.accountsOrigin = copySet(state.accountsOrigin)
-	state.storagesOrigin = copy2DSet(state.storagesOrigin)
+	state.accountsOrigin = copySet(s.accountsOrigin)
+	state.storagesOrigin = copy2DSet(s.storagesOrigin)
 
 	// Deep copy the logs occurred in the scope of block
 	for hash, logs := range s.logs {
@@ -780,7 +776,6 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 		} else {
 			obj.finalise(true) // Prefetch slots in the background
 		}
-		obj.created = false
 		s.stateObjectsPending[addr] = struct{}{}
 		s.stateObjectsDirty[addr] = struct{}{}
 
@@ -797,8 +792,7 @@ func (s *StateDB) Finalise(deleteEmptyObjects bool) {
 }
 
 // IntermediateRoot computes the current root hash of the state trie.
-// It is called in between transactions to get the root hash that
-// goes into transaction receipts.
+// It is used for the block header state root.
 func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// Finalise all the dirty storage states and write them into the tries
 	s.Finalise(deleteEmptyObjects)
@@ -806,10 +800,6 @@ func (s *StateDB) IntermediateRoot(deleteEmptyObjects bool) common.Hash {
 	// If there was a trie prefetcher operating, it gets aborted and irrevocably
 	// modified after we start retrieving tries. Remove it from the statedb after
 	// this round of use.
-	//
-	// This is weird pre-byzantium since the first tx runs with a prefetcher and
-	// the remainder without, but pre-byzantium even the initial prefetcher is
-	// useless, so no sleep lost.
 	prefetcher := s.prefetcher
 	if s.prefetcher != nil {
 		defer func() {
@@ -1095,6 +1085,10 @@ func (s *StateDB) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, er
 	// Finalize any pending changes and merge everything into the tries
 	s.IntermediateRoot(deleteEmptyObjects)
 
+	// Short circuit if any error occurs within the IntermediateRoot.
+	if s.dbErr != nil {
+		return common.Hash{}, fmt.Errorf("commit aborted due to database error: %v", s.dbErr)
+	}
 	// Commit objects to the trie, measuring the elapsed time
 	var (
 		accountTrieNodesUpdated int
@@ -1175,7 +1169,7 @@ func (s *StateDB) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, er
 	// If snapshotting is enabled, update the snapshot tree with this new version
 	if s.snap != nil {
 		start := time.Now()
-		// Only update if there's a state transition (skip empty Clique blocks)
+		// Only update if there's a state transition
 		if parent := s.snap.Root(); parent != root {
 			if err := s.snaps.Update(root, parent, s.convertAccountSet(s.stateObjectsDestruct), s.accounts, s.storages); err != nil {
 				log.Warn("Failed to update snapshot tree", "from", parent, "to", root, "err", err)
@@ -1226,17 +1220,7 @@ func (s *StateDB) Commit(block uint64, deleteEmptyObjects bool) (common.Hash, er
 
 // Prepare handles the preparatory steps for executing a state transition with.
 // This method must be invoked before state transition.
-//
-// Berlin fork:
-// - Add sender to access list (2929)
-// - Add destination to access list (2929)
-// - Add precompiles to access list (2929)
-// - Add the contents of the optional tx access list (2930)
-//
-// Potential EIPs:
-// - Reset access list (Berlin)
-// - Add coinbase to access list (EIP-3651)
-func (s *StateDB) Prepare(rules params.Rules, sender, coinbase common.Address, dst *common.Address, precompiles []common.Address, list types.AccessList) {
+func (s *StateDB) Prepare(sender, coinbase common.Address, dst *common.Address, precompiles []common.Address, list types.AccessList) {
 	// Clear out any leftover from previous executions
 	al := newAccessList()
 	s.accessList = al

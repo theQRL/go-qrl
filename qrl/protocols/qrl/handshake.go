@@ -67,8 +67,6 @@ func (p *Peer) Handshake(network uint64, head common.Hash, genesis common.Hash, 
 			return p2p.DiscReadTimeout
 		}
 	}
-	p.head = status.Head
-
 	return nil
 }
 

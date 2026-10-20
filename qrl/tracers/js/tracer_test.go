@@ -20,15 +20,18 @@ import (
 	"encoding/json"
 	"errors"
 	"math/big"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/dop251/goja"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core/state"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrl/tracers"
+	assettracers "github.com/theQRL/go-qrl/qrl/tracers/js/internal/tracers"
 )
 
 type account struct{}
@@ -133,7 +136,10 @@ func TestTracer(t *testing.T) {
 			want: `"100000.21006"`,
 		}, {
 			code: "{res: null, step: function(log) {}, fault: function() {}, result: function() { return toWord('0xffaa') }}",
-			want: `{"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0,"10":0,"11":0,"12":0,"13":0,"14":0,"15":0,"16":0,"17":0,"18":0,"19":0,"20":0,"21":0,"22":0,"23":0,"24":0,"25":0,"26":0,"27":0,"28":0,"29":0,"30":255,"31":170}`,
+			want: `{"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0,"10":0,"11":0,"12":0,"13":0,"14":0,"15":0,"16":0,"17":0,"18":0,"19":0,"20":0,"21":0,"22":0,"23":0,"24":0,"25":0,"26":0,"27":0,"28":0,"29":0,"30":0,"31":0,"32":0,"33":0,"34":0,"35":0,"36":0,"37":0,"38":0,"39":0,"40":0,"41":0,"42":0,"43":0,"44":0,"45":0,"46":0,"47":0,"48":0,"49":0,"50":0,"51":0,"52":0,"53":0,"54":0,"55":0,"56":0,"57":0,"58":0,"59":0,"60":0,"61":0,"62":255,"63":170}`,
+		}, {
+			code: "{res: null, step: function(log) {}, fault: function() {}, result: function() { return toWord('0xff0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40') }}",
+			want: `{"0":1,"1":2,"2":3,"3":4,"4":5,"5":6,"6":7,"7":8,"8":9,"9":10,"10":11,"11":12,"12":13,"13":14,"14":15,"15":16,"16":17,"17":18,"18":19,"19":20,"20":21,"21":22,"22":23,"23":24,"24":25,"25":26,"26":27,"27":28,"28":29,"29":30,"30":31,"31":32,"32":33,"33":34,"34":35,"35":36,"36":37,"37":38,"38":39,"39":40,"40":41,"41":42,"42":43,"43":44,"44":45,"45":46,"46":47,"47":48,"48":49,"49":50,"50":51,"51":52,"52":53,"53":54,"54":55,"55":56,"56":57,"57":58,"58":59,"59":60,"60":61,"61":62,"62":63,"63":64}`,
 		}, { // test feeding a buffer back into go
 			code: "{res: null, step: function(log) { var address = log.contract.getAddress(); this.res = toAddress(address); }, fault: function() {}, result: function() { return this.res }}",
 			want: `{"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":0,"7":0,"8":0,"9":0,"10":0,"11":0,"12":0,"13":0,"14":0,"15":0,"16":0,"17":0,"18":0,"19":0,"20":0,"21":0,"22":0,"23":0,"24":0,"25":0,"26":0,"27":0,"28":0,"29":0,"30":0,"31":0,"32":0,"33":0,"34":0,"35":0,"36":0,"37":0,"38":0,"39":0,"40":0,"41":0,"42":0,"43":0,"44":0,"45":0,"46":0,"47":0,"48":0,"49":0,"50":0,"51":0,"52":0,"53":0,"54":0,"55":0,"56":0,"57":0,"58":0,"59":0,"60":0,"61":0,"62":0,"63":0}`,
@@ -158,6 +164,203 @@ func TestTracer(t *testing.T) {
 			t.Errorf("testcase %d: expected return value to be \n'%s'\n\tgot\n'%s'\nerror to be\n'%s'\n\tgot\n'%s'\n\tcode: %v", i, tt.want, string(have), tt.fail, err, tt.code)
 		}
 	}
+}
+
+func TestQRVMDisTracerOpcodeRanges(t *testing.T) {
+	push0Ops := runQRVMDisTrace(t, []byte{byte(vm.PUSH0), byte(vm.STOP)})
+	if len(push0Ops) != 2 {
+		t.Fatalf("unexpected qrvmdis PUSH0 op count: have %d want 2", len(push0Ops))
+	}
+	if push0Ops[0].Op != int(vm.PUSH0) || push0Ops[0].Len != 1 || !slices.Equal(push0Ops[0].Result, []string{"0"}) {
+		t.Fatalf("unexpected PUSH0 trace result: %+v", push0Ops[0])
+	}
+
+	currentOps := runQRVMDisTrace(t, []byte{byte(vm.PUSH1), 0x01, byte(vm.PUSH1), 0x01, byte(vm.SHL), byte(vm.RETURNDATASIZE), byte(vm.STOP)})
+	if len(currentOps) != 5 {
+		t.Fatalf("unexpected qrvmdis current op count: have %d want 5", len(currentOps))
+	}
+	if currentOps[2].Op != int(vm.SHL) || !slices.Equal(currentOps[2].Result, []string{"2"}) {
+		t.Fatalf("unexpected SHL trace result: %+v", currentOps[2])
+	}
+	if currentOps[3].Op != int(vm.RETURNDATASIZE) || !slices.Equal(currentOps[3].Result, []string{"0"}) {
+		t.Fatalf("unexpected RETURNDATASIZE trace result: %+v", currentOps[3])
+	}
+
+	contract := []byte{byte(vm.PUSH33)}
+	contract = append(contract, make([]byte, 32)...)
+	contract = append(contract, 0x01, byte(vm.PUSH1), 0x02, byte(vm.DUP2), byte(vm.SWAP1), byte(vm.STOP))
+
+	ops := runQRVMDisTrace(t, contract)
+	if len(ops) != 5 {
+		t.Fatalf("unexpected qrvmdis op count: have %d want 5", len(ops))
+	}
+	if ops[0].Op != int(vm.PUSH33) || ops[0].Len != 34 || !slices.Equal(ops[0].Result, []string{"1"}) {
+		t.Fatalf("unexpected PUSH33 trace result: %+v", ops[0])
+	}
+	if ops[2].Op != int(vm.DUP2) || !slices.Equal(ops[2].Result, []string{"1", "2", "1"}) {
+		t.Fatalf("unexpected DUP2 trace result: %+v", ops[2])
+	}
+	if ops[3].Op != int(vm.SWAP1) || !slices.Equal(ops[3].Result, []string{"2", "1"}) {
+		t.Fatalf("unexpected SWAP1 trace result: %+v", ops[3])
+	}
+
+	endpointContract := []byte{byte(vm.PUSH64)}
+	endpointContract = append(endpointContract, make([]byte, 63)...)
+	endpointContract = append(endpointContract, 0x03)
+	for i := 1; i <= 16; i++ {
+		endpointContract = append(endpointContract, byte(vm.PUSH1), byte(i))
+	}
+	endpointContract = append(endpointContract, byte(vm.DUP16), byte(vm.PUSH1), 0x11, byte(vm.SWAP16), byte(vm.STOP))
+
+	endpointOps := runQRVMDisTrace(t, endpointContract)
+	if len(endpointOps) != 21 {
+		t.Fatalf("unexpected qrvmdis endpoint op count: have %d want 21", len(endpointOps))
+	}
+	if endpointOps[0].Op != int(vm.PUSH64) || endpointOps[0].Len != 65 || !slices.Equal(endpointOps[0].Result, []string{"3"}) {
+		t.Fatalf("unexpected PUSH64 trace result: %+v", endpointOps[0])
+	}
+	if endpointOps[17].Op != int(vm.DUP16) || !slices.Equal(endpointOps[17].Result, []string{"1", "10", "f", "e", "d", "c", "b", "a", "9", "8", "7", "6", "5", "4", "3", "2", "1"}) {
+		t.Fatalf("unexpected DUP16 trace result: %+v", endpointOps[17])
+	}
+	if endpointOps[19].Op != int(vm.SWAP16) || !slices.Equal(endpointOps[19].Result, []string{"2", "1", "10", "f", "e", "d", "c", "b", "a", "9", "8", "7", "6", "5", "4", "3", "11"}) {
+		t.Fatalf("unexpected SWAP16 trace result: %+v", endpointOps[19])
+	}
+}
+
+func TestQRVMDisTracerResultCounts(t *testing.T) {
+	resultCount := qrvmdisResultCount(t)
+	for i := 0; i <= 0xff; i++ {
+		op := vm.OpCode(byte(i))
+		name := op.String()
+		got := resultCount(op)
+		want, ok := expectedQRVMDisResultCount(op)
+		if strings.Contains(name, "not defined") {
+			if got != 0 {
+				t.Fatalf("undefined opcode %#x result count = %d, want 0", i, got)
+			}
+			continue
+		}
+		if !ok {
+			t.Fatalf("missing qrvmdis result-count expectation for %s (%#x)", name, i)
+		}
+		if got != want {
+			t.Fatalf("%s (%#x) result count = %d, want %d", name, i, got, want)
+		}
+	}
+}
+
+func qrvmdisResultCount(t *testing.T) func(vm.OpCode) int {
+	t.Helper()
+
+	tracerFiles, err := assettracers.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, ok := tracerFiles["qrvmdisTracer"]
+	if !ok {
+		t.Fatal("missing qrvmdisTracer asset")
+	}
+	runtime := goja.New()
+	value, err := runtime.RunString("(" + code + ")")
+	if err != nil {
+		t.Fatal(err)
+	}
+	obj := value.ToObject(runtime)
+	resultCount, ok := goja.AssertFunction(obj.Get("resultCount"))
+	if !ok {
+		t.Fatal("qrvmdisTracer resultCount is not callable")
+	}
+	return func(op vm.OpCode) int {
+		result, err := resultCount(value, runtime.ToValue(int(op)))
+		if err != nil {
+			t.Fatalf("resultCount(%#x): %v", byte(op), err)
+		}
+		return int(result.ToInteger())
+	}
+}
+
+func expectedQRVMDisResultCount(op vm.OpCode) (int, bool) {
+	switch {
+	case op >= vm.ADD && op <= vm.SIGNEXTEND:
+		return 1, true
+	case op >= vm.LT && op <= vm.SAR:
+		return 1, true
+	case op >= vm.ADDRESS && op <= vm.CALLDATASIZE:
+		return 1, true
+	case op >= vm.BLOCKHASH && op <= vm.BASEFEE:
+		return 1, true
+	case op == vm.PUSH0:
+		return 1, true
+	case op >= vm.PUSH1 && op <= vm.PUSH64:
+		return 1, true
+	case op >= vm.DUP1 && op <= vm.DUP16:
+		return int(op-vm.DUP1) + 2, true
+	case op >= vm.SWAP1 && op <= vm.SWAP16:
+		return int(op-vm.SWAP1) + 2, true
+	case op >= vm.LOG0 && op <= vm.LOG4:
+		return 0, true
+	}
+	switch op {
+	case vm.STOP,
+		vm.CALLDATACOPY,
+		vm.CODECOPY,
+		vm.EXTCODECOPY,
+		vm.RETURNDATACOPY,
+		vm.POP,
+		vm.MSTORE,
+		vm.MSTORE8,
+		vm.SSTORE,
+		vm.JUMP,
+		vm.JUMPI,
+		vm.JUMPDEST,
+		vm.RETURN,
+		vm.REVERT,
+		vm.INVALID:
+		return 0, true
+	case vm.KECCAK256,
+		vm.CODESIZE,
+		vm.GASPRICE,
+		vm.EXTCODESIZE,
+		vm.RETURNDATASIZE,
+		vm.EXTCODEHASH,
+		vm.MLOAD,
+		vm.SLOAD,
+		vm.PC,
+		vm.MSIZE,
+		vm.GAS,
+		vm.CREATE,
+		vm.CALL,
+		vm.DELEGATECALL,
+		vm.CREATE2,
+		vm.STATICCALL:
+		return 1, true
+	default:
+		return 0, false
+	}
+}
+
+type qrvmdisOp struct {
+	Op     int      `json:"op"`
+	Len    int      `json:"len"`
+	Result []string `json:"result"`
+}
+
+func runQRVMDisTrace(t *testing.T, contract []byte) []qrvmdisOp {
+	t.Helper()
+
+	tracer, err := tracers.DefaultDirectory.New("qrvmdisTracer", new(tracers.Context), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ret, err := runTrace(tracer, testCtx(), params.TestChainConfig, contract)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ops []qrvmdisOp
+	if err := json.Unmarshal(ret, &ops); err != nil {
+		t.Fatal(err)
+	}
+	return ops
 }
 
 func TestHalt(t *testing.T) {

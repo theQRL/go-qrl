@@ -42,7 +42,7 @@ var (
 	MaxHeaderFetch  = 192 // Number of block headers to be fetched per retrieval request
 	MaxReceiptFetch = 256 // Number of transaction receipts to allow fetching per request
 
-	maxQueuedHeaders           = 32 * 1024                        // [qrl/62] Maximum number of headers to queue for import (DOS protection)
+	maxQueuedHeaders           = 32 * 1024                        // Maximum number of headers to queue for import (DOS protection)
 	maxHeadersProcess          = 2048                             // Number of header download results to import at once into the chain
 	maxResultsProcess          = 2048                             // Number of content download results to import at once into the chain
 	fullMaxForkAncestry uint64 = params.FullImmutabilityThreshold // Maximum chain reorganisation (locally redeclared so tests can reduce it)
@@ -203,7 +203,7 @@ func New(stateDb qrldb.Database, mux *event.TypeMux, chain BlockChain, dropPeer 
 		stateSyncStart: make(chan *stateSync),
 		syncStartBlock: chain.CurrentSnapBlock().Number.Uint64(),
 	}
-	// Create the post-merge skeleton syncer and start the process
+	// Create the skeleton syncer and start the process
 	dl.skeleton = newSkeleton(stateDb, dl.peers, dropPeer, newBeaconBackfiller(dl, success))
 
 	go dl.stateFetcher()
@@ -469,19 +469,11 @@ func (d *Downloader) syncToHead() (err error) {
 		// recent data will be written to the active database and will wait for the
 		// freezer to migrate.
 		//
-		// If the network is post-merge, use either the last announced finalized
-		// block as the ancient limit, or if we haven't yet received one, the head-
-		// a max fork ancestry limit. One quirky case if we've already passed the
-		// finalized block, in which case the skeleton.Bounds will return nil and
-		// we'll revert to head - 90K. That's fine, we're finishing sync anyway.
-		//
-		// For non-merged networks, if there is a checkpoint available, then calculate
-		// the ancientLimit through that. Otherwise calculate the ancient limit through
-		// the advertised height of the remote peer. This most is mostly a fallback for
-		// legacy networks, but should eventually be dropped. TODO(karalabe).
-		//
-		// Beacon sync, use the latest finalized block as the ancient limit
-		// or a reasonable height if no finalized block is yet announced.
+		// Use either the last announced finalized block as the ancient limit, or
+		// if we haven't yet received one, the head - a max fork ancestry limit.
+		// One quirky case if we've already passed the finalized block, in which
+		// case the skeleton.Bounds will return nil and we'll revert to head - 90K.
+		// That's fine, we're finishing sync anyway.
 		if final != nil {
 			d.ancientLimit = final.Number.Uint64()
 		} else if height > fullMaxForkAncestry+1 {
@@ -494,9 +486,15 @@ func (d *Downloader) syncToHead() (err error) {
 
 		// If a part of blockchain data has already been written into active store,
 		// disable the ancient style insertion explicitly.
-		if origin >= frozen && frozen != 0 {
+		if origin >= frozen && origin != 0 {
 			d.ancientLimit = 0
-			log.Info("Disabling direct-ancient mode", "origin", origin, "ancient", frozen-1)
+			var ancient string
+			if frozen == 0 {
+				ancient = "null"
+			} else {
+				ancient = fmt.Sprintf("%d", frozen-1)
+			}
+			log.Info("Disabling direct-ancient mode", "origin", origin, "ancient", ancient)
 		} else if d.ancientLimit > 0 {
 			log.Debug("Enabling direct-ancient mode", "ancient", d.ancientLimit)
 		}
@@ -668,9 +666,6 @@ func (d *Downloader) processHeaders(origin uint64) error {
 
 				// In case of header only syncing, validate the chunk immediately
 				if mode == SnapSync {
-					// Although the received headers might be all valid, a legacy
-					// PoW/PoA sync must not accept post-merge headers. Make sure
-					// that any transition is rejected at this point.
 					if len(chunkHeaders) > 0 {
 						if n, err := d.blockchain.InsertHeaderChain(chunkHeaders); err != nil {
 							log.Warn("Invalid header encountered", "number", chunkHeaders[n].Number, "hash", chunkHashes[n], "parent", chunkHeaders[n].ParentHash, "err", err)
@@ -751,14 +746,13 @@ func (d *Downloader) importBlockResults(results []*fetchResult) error {
 	for i, result := range results {
 		blocks[i] = types.NewBlockWithHeader(result.Header).WithBody(result.body())
 	}
-	// Downloaded blocks are always regarded as trusted after the
-	// transition. Because the downloaded chain is guided by the
-	// consensus-layer.
+	// Downloaded blocks are always regarded as trusted, because the
+	// downloaded chain is guided by the consensus-layer.
 	if index, err := d.blockchain.InsertChain(blocks); err != nil {
 		if index < len(results) {
 			log.Debug("Downloaded item processing failed", "number", results[index].Header.Number, "hash", results[index].Header.Hash(), "err", err)
 
-			// In post-merge, notify the engine API of encountered bad chains
+			// Notify the engine API of encountered bad chains
 			if d.badBlock != nil {
 				head, _, _, err := d.skeleton.Bounds()
 				if err != nil {
@@ -1075,7 +1069,7 @@ func (d *Downloader) reportSnapSyncProgress(force bool) {
 	// Retrieve the current chain head and calculate the ETA
 	latest, _, _, err := d.skeleton.Bounds()
 	if err != nil {
-		// We're going to cheat for non-merged networks, but that's fine
+		// Fall back to the pivot header if the beacon bounds are unavailable
 		latest = d.pivotHeader
 	}
 	if latest == nil {

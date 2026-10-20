@@ -51,7 +51,7 @@ type fourByteTracer struct {
 	ids               map[string]int   // ids aggregates the 4byte ids found
 	interrupt         atomic.Bool      // Atomic flag to signal execution interruption
 	reason            error            // Textual reason for the interruption
-	activePrecompiles []common.Address // Updated on CaptureStart based on given rules
+	activePrecompiles []common.Address // Updated on CaptureStart
 }
 
 // newFourByteTracer returns a native go tracer which collects
@@ -76,9 +76,8 @@ func (t *fourByteTracer) store(id []byte, size int) {
 
 // CaptureStart implements the QRVMLogger interface to initialize the tracing operation.
 func (t *fourByteTracer) CaptureStart(env *vm.QRVM, from common.Address, to common.Address, create bool, input []byte, gas uint64, value *big.Int) {
-	// Update list of precompiles based on current block
-	rules := env.ChainConfig().Rules(env.Context.BlockNumber, env.Context.Time)
-	t.activePrecompiles = vm.ActivePrecompiles(rules)
+	// Update list of precompiles
+	t.activePrecompiles = vm.ActivePrecompiles()
 
 	// Save the outer calldata also
 	if len(input) >= 4 {

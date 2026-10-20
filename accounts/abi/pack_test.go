@@ -32,7 +32,6 @@ import (
 
 // TestPack tests the general pack/unpack tests in packing_test.go
 func TestPack(t *testing.T) {
-	
 	t.Parallel()
 	for i, test := range packUnpackTests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -47,7 +46,7 @@ func TestPack(t *testing.T) {
 				t.Fatalf("invalid ABI definition %s, %v", inDef, err)
 			}
 			var packed []byte
-			packed, err = inAbi.Pack("method", test.unpacked)
+			packed, err = inAbi.Pack("method", test.values()...)
 
 			if err != nil {
 				t.Fatalf("test %d (%v) failed: %v", i, test.def, err)
@@ -96,7 +95,7 @@ func TestMethodPack(t *testing.T) {
 
 	var addrC, addrD = common.Address{3}, common.Address{4}
 	sig = abi.Methods["sliceMultiAddress"].ID
-	sig = append(sig, common.LeftPadBytes([]byte{0x80}, 64)...)     // 2 head slots * 64 = 128
+	sig = append(sig, common.LeftPadBytes([]byte{0x80}, 64)...)       // 2 head slots * 64 = 128
 	sig = append(sig, common.LeftPadBytes([]byte{0x01, 0x40}, 64)...) // 128 + count + 2 elems = 320
 	sig = append(sig, common.LeftPadBytes([]byte{2}, 64)...)
 	sig = append(sig, common.LeftPadBytes(addrA[:], 64)...)
@@ -161,7 +160,7 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig = abi.Methods["nestedSlice"].ID
-	sig = append(sig, common.LeftPadBytes([]byte{0x40}, 64)...)       // 0x20 → 0x40
+	sig = append(sig, common.LeftPadBytes([]byte{0x40}, 64)...) // 0x20 → 0x40
 	sig = append(sig, common.LeftPadBytes([]byte{0x02}, 64)...)
 	sig = append(sig, common.LeftPadBytes([]byte{0x80}, 64)...)       // 0x40 → 0x80
 	sig = append(sig, common.LeftPadBytes([]byte{0x01, 0x40}, 64)...) // 0xa0 → 0x140

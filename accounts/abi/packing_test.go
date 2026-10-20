@@ -24,9 +24,17 @@ import (
 )
 
 type packUnpackTest struct {
-	def      string
-	unpacked any
-	packed   string
+	def       string
+	unpacked  any
+	arguments []any
+	packed    string
+}
+
+func (test packUnpackTest) values() []any {
+	if test.arguments != nil {
+		return test.arguments
+	}
+	return []any{test.unpacked}
 }
 
 func addressSlot(prefix byte) string {
@@ -36,6 +44,24 @@ func addressSlot(prefix byte) string {
 func fmtByte(b byte) string {
 	const hex = "0123456789abcdef"
 	return string([]byte{hex[b>>4], hex[b&0x0f]})
+}
+
+func functionValue(addressPrefix byte, selector [4]byte) [common.AddressLength + 4]byte {
+	var value [common.AddressLength + 4]byte
+	value[0] = addressPrefix
+	copy(value[common.AddressLength:], selector[:])
+	return value
+}
+
+func functionBytes(value [common.AddressLength + 4]byte) []byte {
+	encoded := make([]byte, 128)
+	copy(encoded[:common.AddressLength], value[:common.AddressLength])
+	copy(encoded[len(encoded)-4:], value[common.AddressLength:])
+	return encoded
+}
+
+func functionEncoding(value [common.AddressLength + 4]byte) string {
+	return common.Bytes2Hex(functionBytes(value))
 }
 
 var packUnpackTests = []packUnpackTest{
@@ -375,6 +401,16 @@ var packUnpackTests = []packUnpackTest{
 		def:      `[{"type": "bytes32"}]`,
 		unpacked: [32]byte{1},
 		packed:   "01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+	},
+	{
+		def:      `[{"type": "bytes33"}]`,
+		unpacked: [33]byte{0: 1, 32: 0x21},
+		packed:   "01000000000000000000000000000000000000000000000000000000000000002100000000000000000000000000000000000000000000000000000000000000",
+	},
+	{
+		def:      `[{"type": "bytes64"}]`,
+		unpacked: [64]byte{0: 1, 63: 0x40},
+		packed:   "01000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000040",
 	},
 	{
 		def:      `[{"type": "bytes32"}]`,
@@ -990,5 +1026,63 @@ var packUnpackTests = []packUnpackTest{
 			"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002" +
 			"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001" +
 			"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+	},
+	// Function values
+	{
+		def:      `[{"type":"function"}]`,
+		unpacked: functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef}),
+		packed:   functionEncoding(functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef})),
+	},
+	{
+		def: `[{"type":"function"},{"type":"string"}]`,
+		arguments: []any{
+			functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef}),
+			"hyperion",
+		},
+		packed: functionEncoding(functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef})) +
+			strings.Repeat("00", 63) + "c0" +
+			strings.Repeat("00", 63) + "08" +
+			"6879706572696f6e" + strings.Repeat("00", 56),
+	},
+	{
+		def: `[{"type":"function[2]"},{"type":"string"}]`,
+		arguments: []any{
+			[2][common.AddressLength + 4]byte{
+				functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef}),
+				functionValue(2, [4]byte{0xca, 0xfe, 0xba, 0xbe}),
+			},
+			"hyperion",
+		},
+		packed: functionEncoding(functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef})) +
+			functionEncoding(functionValue(2, [4]byte{0xca, 0xfe, 0xba, 0xbe})) +
+			strings.Repeat("00", 62) + "0140" +
+			strings.Repeat("00", 63) + "08" +
+			"6879706572696f6e" + strings.Repeat("00", 56),
+	},
+	{
+		def: `[{"type":"function[]"}]`,
+		unpacked: [][common.AddressLength + 4]byte{
+			functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef}),
+			functionValue(2, [4]byte{0xca, 0xfe, 0xba, 0xbe}),
+		},
+		packed: strings.Repeat("00", 63) + "40" +
+			strings.Repeat("00", 63) + "02" +
+			functionEncoding(functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef})) +
+			functionEncoding(functionValue(2, [4]byte{0xca, 0xfe, 0xba, 0xbe})),
+	},
+	{
+		def: `[{"components":[{"name":"callback","type":"function"},{"name":"note","type":"string"}],"type":"tuple"}]`,
+		unpacked: struct {
+			Callback [common.AddressLength + 4]byte
+			Note     string
+		}{
+			Callback: functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef}),
+			Note:     "hyperion",
+		},
+		packed: strings.Repeat("00", 63) + "40" +
+			functionEncoding(functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef})) +
+			strings.Repeat("00", 63) + "c0" +
+			strings.Repeat("00", 63) + "08" +
+			"6879706572696f6e" + strings.Repeat("00", 56),
 	},
 }

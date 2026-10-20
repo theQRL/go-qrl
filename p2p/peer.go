@@ -173,7 +173,6 @@ func (p *Peer) Fullname() string {
 
 // Caps returns the capabilities (supported subprotocols) of the remote peer.
 func (p *Peer) Caps() []Cap {
-	// TODO: maybe return copy
 	return p.rw.caps
 }
 
@@ -218,7 +217,7 @@ func (p *Peer) String() string {
 	return fmt.Sprintf("Peer %x %v", id[:8], p.RemoteAddr())
 }
 
-// Inbound returns true if the peer is an inbound connection
+// Inbound returns true if the peer is an inbound (not dialed) connection.
 func (p *Peer) Inbound() bool {
 	return p.rw.is(inboundConn)
 }
@@ -343,9 +342,7 @@ func (p *Peer) handle(msg Msg) error {
 	case msg.Code == discMsg:
 		// This is the last message. We don't need to discard or
 		// check errors because, the connection will be closed after it.
-		var m struct{ R DiscReason }
-		rlp.Decode(msg.Payload, &m)
-		return m.R
+		return decodeDisconnectMessage(msg.Payload)
 	case msg.Code < baseProtocolLength:
 		// ignore other base protocol messages
 		return msg.Discard()
@@ -368,6 +365,27 @@ func (p *Peer) handle(msg Msg) error {
 		}
 	}
 	return nil
+}
+
+// decodeDisconnectMessage decodes the payload of discMsg.
+func decodeDisconnectMessage(r io.Reader) (reason DiscReason) {
+	s := rlp.NewStream(r, 100)
+	k, _, err := s.Kind()
+	if err != nil {
+		return DiscInvalid
+	}
+	if k == rlp.List {
+		s.List()
+		err = s.Decode(&reason)
+	} else {
+		// Legacy path: some implementations, including gqrl, used to send the disconnect
+		// reason as a byte array by accident.
+		err = s.Decode(&reason)
+	}
+	if err != nil {
+		reason = DiscInvalid
+	}
+	return reason
 }
 
 func countMatchingProtocols(protocols []Protocol, caps []Cap) int {

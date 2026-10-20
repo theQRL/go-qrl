@@ -212,6 +212,8 @@ func (arguments Arguments) UnpackValues(data []byte) ([]any, error) {
 			// If we have a static tuple, like (uint256, bool, uint256), these are
 			// coded as just like uint256,bool,uint256
 			virtualArgs += getTypeSize(arg.Type)/64 - 1
+		} else if arg.Type.T == FunctionTy {
+			virtualArgs += getTypeSize(arg.Type)/64 - 1
 		}
 		retval = append(retval, marshalledValue)
 		index++

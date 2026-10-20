@@ -52,7 +52,6 @@ const (
 type Receipt struct {
 	// Consensus fields: These fields are defined by the Yellow Paper
 	Type              uint8  `json:"type,omitempty"`
-	PostState         []byte `json:"root"`
 	Status            uint64 `json:"status"`
 	CumulativeGasUsed uint64 `json:"cumulativeGasUsed" gencodec:"required"`
 	Bloom             Bloom  `json:"logsBloom"         gencodec:"required"`
@@ -73,7 +72,6 @@ type Receipt struct {
 
 type receiptMarshaling struct {
 	Type              hexutil.Uint64
-	PostState         hexutil.Bytes
 	Status            hexutil.Uint64
 	CumulativeGasUsed hexutil.Uint64
 	GasUsed           hexutil.Uint64
@@ -84,7 +82,7 @@ type receiptMarshaling struct {
 
 // receiptRLP is the consensus encoding of a receipt.
 type receiptRLP struct {
-	PostStateOrStatus []byte
+	Status            []byte
 	CumulativeGasUsed uint64
 	Bloom             Bloom
 	Logs              []*Log
@@ -92,13 +90,13 @@ type receiptRLP struct {
 
 // storedReceiptRLP is the storage encoding of a receipt.
 type storedReceiptRLP struct {
-	PostStateOrStatus []byte
+	Status            []byte
 	CumulativeGasUsed uint64
 	Logs              []*Log
 }
 
 // EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
-// into an RLP stream. If no post state is present, byzantium fork is assumed.
+// into an RLP stream. Receipts are status-only.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
 	data := &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs}
 	buf := encodeBufferPool.Get().(*bytes.Buffer)
@@ -148,7 +146,6 @@ func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 }
 
 // UnmarshalBinary decodes the consensus encoding of receipts.
-// It supports legacy RLP receipts and EIP-2718 typed receipts.
 func (r *Receipt) UnmarshalBinary(b []byte) error {
 	// It's an EIP2718 typed transaction envelope.
 	return r.decodeTyped(b)
@@ -175,40 +172,35 @@ func (r *Receipt) decodeTyped(b []byte) error {
 
 func (r *Receipt) setFromRLP(data receiptRLP) error {
 	r.CumulativeGasUsed, r.Bloom, r.Logs = data.CumulativeGasUsed, data.Bloom, data.Logs
-	return r.setStatus(data.PostStateOrStatus)
+	return r.setStatus(data.Status)
 }
 
-func (r *Receipt) setStatus(postStateOrStatus []byte) error {
+func (r *Receipt) setStatus(status []byte) error {
 	switch {
-	case bytes.Equal(postStateOrStatus, receiptStatusSuccessfulRLP):
+	case bytes.Equal(status, receiptStatusSuccessfulRLP):
 		r.Status = ReceiptStatusSuccessful
-	case bytes.Equal(postStateOrStatus, receiptStatusFailedRLP):
+	case bytes.Equal(status, receiptStatusFailedRLP):
 		r.Status = ReceiptStatusFailed
-	case len(postStateOrStatus) == len(common.Hash{}):
-		r.PostState = postStateOrStatus
 	default:
-		return fmt.Errorf("invalid receipt status %x", postStateOrStatus)
+		return fmt.Errorf("invalid receipt status %x", status)
 	}
 	return nil
 }
 
 func (r *Receipt) statusEncoding() []byte {
-	if len(r.PostState) == 0 {
-		if r.Status == ReceiptStatusFailed {
-			return receiptStatusFailedRLP
-		}
-		return receiptStatusSuccessfulRLP
+	if r.Status == ReceiptStatusFailed {
+		return receiptStatusFailedRLP
 	}
-	return r.PostState
+	return receiptStatusSuccessfulRLP
 }
 
 // Size returns the approximate memory used by all internal contents. It is used
 // to approximate and limit the memory consumption of various caches.
 func (r *Receipt) Size() common.StorageSize {
-	size := common.StorageSize(unsafe.Sizeof(*r)) + common.StorageSize(len(r.PostState))
+	size := common.StorageSize(unsafe.Sizeof(*r))
 	size += common.StorageSize(len(r.Logs)) * common.StorageSize(unsafe.Sizeof(Log{}))
 	for _, log := range r.Logs {
-		size += common.StorageSize(len(log.Topics)*common.HashLength + len(log.Data))
+		size += common.StorageSize(len(log.Topics)*common.LogTopicLength + len(log.Data))
 	}
 	return size
 }
@@ -242,7 +234,7 @@ func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
 	if err := s.Decode(&stored); err != nil {
 		return err
 	}
-	if err := (*Receipt)(r).setStatus(stored.PostStateOrStatus); err != nil {
+	if err := (*Receipt)(r).setStatus(stored.Status); err != nil {
 		return err
 	}
 	r.CumulativeGasUsed = stored.CumulativeGasUsed
@@ -276,7 +268,7 @@ func (rs Receipts) EncodeIndex(i int, w *bytes.Buffer) {
 // DeriveFields fills the receipts with their computed fields based on consensus
 // data and contextual infos like containing block and transactions.
 func (rs Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, number uint64, time uint64, baseFee *big.Int, txs []*Transaction) error {
-	signer := MakeSigner(config)
+	signer := NewZondSigner(config.ChainID)
 
 	logIndex := uint(0)
 	if len(txs) != len(rs) {

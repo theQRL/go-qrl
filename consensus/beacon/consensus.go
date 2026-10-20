@@ -42,7 +42,7 @@ var (
 
 // Beacon is a consensus engine that uses the proof-of-stake algorithm.
 type Beacon struct {
-	fakeFail  *uint64        // Block number which fails PoW check even in fake mode
+	fakeFail  *uint64        // Block number which fails header verification even in fake mode
 	fakeDelay *time.Duration // Time delay to sleep for before returning from verify
 	fakeFull  bool           // Accepts everything as valid
 }
@@ -101,13 +101,9 @@ func (beacon *Beacon) VerifyHeaders(chain consensus.ChainHeaderReader, headers [
 }
 
 // verifyHeader checks whether a header conforms to the consensus rules of the
-// stock QRL consensus engine. The difference between the beacon and classic is
-// (a) The following fields are expected to be constants:
-//
-//	to be the desired constants
-//
-// (b) we don't verify if a block is in the future anymore
-// (c) the extradata is limited to 32 bytes
+// stock QRL consensus engine. Note that
+// (a) we don't verify if a block is in the future
+// (b) the extradata is limited to 32 bytes
 func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, parent *types.Header) error {
 	// Ensure that the header's extra-data section is of a reasonable size
 	if len(header.Extra) > 32 {
@@ -117,7 +113,7 @@ func (beacon *Beacon) verifyHeader(chain consensus.ChainHeaderReader, header, pa
 	if header.Time <= parent.Time {
 		return errInvalidTimestamp
 	}
-	// Verify that the gas limit is <= 2^63-1
+	// Verify that the gas limit does not exceed the maximum
 	if header.GasLimit > params.MaxGasLimit {
 		return fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, params.MaxGasLimit)
 	}

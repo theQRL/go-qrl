@@ -31,11 +31,11 @@ import (
 	"github.com/theQRL/go-qrl/core/txpool/legacypool"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
+	"github.com/theQRL/go-qrl/internal/testutil"
 	"github.com/theQRL/go-qrl/p2p"
 	"github.com/theQRL/go-qrl/p2p/qnode"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrldb"
-	"github.com/theQRL/go-qrl/internal/testutil"
 )
 
 var (

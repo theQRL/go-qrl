@@ -36,8 +36,6 @@ import (
 )
 
 const (
-	// numberOfAccountsToDerive For hardware wallets, the number of accounts to derive
-	// numberOfAccountsToDerive = 10
 	// ExternalAPIVersion -- see extapi_changelog.md
 	ExternalAPIVersion = "6.1.0"
 	// InternalAPIVersion -- see intapi_changelog.md
@@ -82,8 +80,8 @@ type UIClientAPI interface {
 	// OnSignerStartup is invoked when the signer boots, and tells the UI info about external API location and version
 	// information
 	OnSignerStartup(info StartupInfo)
-	// OnInputRequired is invoked when clef requires user input, for example master password or
-	// pin-code for unlocking hardware wallets
+	// OnInputRequired is invoked when clef requires user input, for example an
+	// account password.
 	OnInputRequired(info UserInputRequest) (UserInputResponse, error)
 	// RegisterUIServer tells the UI to use the given UIServerAPI for ui->clef communication
 	RegisterUIServer(api *UIServerAPI)
@@ -147,8 +145,9 @@ func MetadataFromContext(ctx context.Context) Metadata {
 	if info.Transport != "" {
 		if info.Transport == "http" {
 			m.Scheme = info.HTTP.Version
+		} else {
+			m.Scheme = info.Transport
 		}
-		m.Scheme = info.Transport
 	}
 	if info.RemoteAddr != "" {
 		m.Remote = info.RemoteAddr
@@ -288,10 +287,10 @@ func (api *SignerAPI) newAccount() (common.Address, error) {
 	for i := range 3 {
 		resp, err := api.UI.OnInputRequired(UserInputRequest{
 			"New account password",
-			fmt.Sprintf("Please enter a password for the new account to be created (attempt %d of 3)", i),
+			fmt.Sprintf("Please enter a password for the new account to be created (attempt %d of 3)", i+1),
 			true})
 		if err != nil {
-			log.Warn("error obtaining password", "attempt", i, "error", err)
+			log.Warn("error obtaining password", "attempt", i+1, "error", err)
 			continue
 		}
 		if pwErr := ValidatePasswordFormat(resp.Text); pwErr != nil {

@@ -443,7 +443,7 @@ func (c *BoundContract) UnpackLog(out any, event string, log types.Log) error {
 	if len(log.Topics) == 0 {
 		return errNoEventSignature
 	}
-	if log.Topics[0] != common.BytesToEventSignatureLogTopic(c.abi.Events[event].ID.Bytes()) {
+	if log.Topics[0] != common.HashToLogTopic(c.abi.Events[event].ID) {
 		return errEventSignatureMismatch
 	}
 	if len(log.Data) > 0 {
@@ -466,7 +466,7 @@ func (c *BoundContract) UnpackLogIntoMap(out map[string]any, event string, log t
 	if len(log.Topics) == 0 {
 		return errNoEventSignature
 	}
-	if log.Topics[0] != common.BytesToEventSignatureLogTopic(c.abi.Events[event].ID.Bytes()) {
+	if log.Topics[0] != common.HashToLogTopic(c.abi.Events[event].ID) {
 		return errEventSignatureMismatch
 	}
 	if len(log.Data) > 0 {

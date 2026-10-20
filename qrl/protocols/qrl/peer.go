@@ -18,7 +18,6 @@ package qrl
 
 import (
 	"math/rand"
-	"sync"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/theQRL/go-qrl/common"
@@ -49,8 +48,6 @@ type Peer struct {
 	rw        p2p.MsgReadWriter // Input/output streams for snap
 	version   uint              // Protocol version negotiated
 
-	head common.Hash // Latest advertised head block hash
-
 	txpool      TxPool             // Transaction pool used by the broadcasters for liveness checks
 	knownTxs    *knownCache        // Set of transaction hashes known to be known by this peer
 	txBroadcast chan []common.Hash // Channel used to queue transaction propagation requests
@@ -61,7 +58,6 @@ type Peer struct {
 	resDispatch chan *response // Dispatch channel to fulfil pending requests and untrack them
 
 	term chan struct{} // Termination channel to stop the broadcasters
-	lock sync.RWMutex  // Mutex protecting the internal fields
 }
 
 // NewPeer creates a wrapper for a network connection and negotiated  protocol
@@ -104,23 +100,6 @@ func (p *Peer) ID() string {
 // Version retrieves the peer's negotiated `qrl` protocol version.
 func (p *Peer) Version() uint {
 	return p.version
-}
-
-// Head retrieves the current head hash of the peer.
-func (p *Peer) Head() (hash common.Hash) {
-	p.lock.RLock()
-	defer p.lock.RUnlock()
-
-	copy(hash[:], p.head[:])
-	return hash
-}
-
-// SetHead updates the head hash and total difficulty of the peer.
-func (p *Peer) SetHead(hash common.Hash) {
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	copy(p.head[:], hash[:])
 }
 
 // KnownTransaction returns whether peer is known to already have a transaction.

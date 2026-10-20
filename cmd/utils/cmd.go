@@ -32,9 +32,7 @@ import (
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core"
-	"github.com/theQRL/go-qrl/core/rawdb"
 	"github.com/theQRL/go-qrl/core/types"
-	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/internal/debug"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/node"
@@ -296,84 +294,6 @@ func ExportAppendChain(blockchain *core.BlockChain, fn string, first uint64, las
 		return err
 	}
 	log.Info("Exported blockchain to", "file", fn)
-	return nil
-}
-
-// ImportPreimages imports a batch of exported hash preimages into the database.
-// It's a part of the deprecated functionality, should be removed in the future.
-func ImportPreimages(db qrldb.Database, fn string) error {
-	log.Info("Importing preimages", "file", fn)
-
-	// Open the file handle and potentially unwrap the gzip stream
-	fh, err := os.Open(fn)
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	var reader io.Reader = bufio.NewReader(fh)
-	if strings.HasSuffix(fn, ".gz") {
-		if reader, err = gzip.NewReader(reader); err != nil {
-			return err
-		}
-	}
-	stream := rlp.NewStream(reader, 0)
-
-	// Import the preimages in batches to prevent disk thrashing
-	preimages := make(map[common.Hash][]byte)
-
-	for {
-		// Read the next entry and ensure it's not junk
-		var blob []byte
-
-		if err := stream.Decode(&blob); err != nil {
-			if err == io.EOF {
-				break
-			}
-			return err
-		}
-		// Accumulate the preimages and flush when enough ws gathered
-		preimages[crypto.Keccak256Hash(blob)] = common.CopyBytes(blob)
-		if len(preimages) > 1024 {
-			rawdb.WritePreimages(db, preimages)
-			preimages = make(map[common.Hash][]byte)
-		}
-	}
-	// Flush the last batch preimage data
-	if len(preimages) > 0 {
-		rawdb.WritePreimages(db, preimages)
-	}
-	return nil
-}
-
-// ExportPreimages exports all known hash preimages into the specified file,
-// truncating any data already present in the file.
-// It's a part of the deprecated functionality, should be removed in the future.
-func ExportPreimages(db qrldb.Database, fn string) error {
-	log.Info("Exporting preimages", "file", fn)
-
-	// Open the file handle and potentially wrap with a gzip stream
-	fh, err := os.OpenFile(fn, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
-	if err != nil {
-		return err
-	}
-	defer fh.Close()
-
-	var writer io.Writer = fh
-	if strings.HasSuffix(fn, ".gz") {
-		writer = gzip.NewWriter(writer)
-		defer writer.(*gzip.Writer).Close()
-	}
-	// Iterate over the preimages and export them
-	it := db.NewIterator([]byte("secure-key-"), nil)
-	defer it.Release()
-
-	for it.Next() {
-		if err := rlp.Encode(writer, it.Value()); err != nil {
-			return err
-		}
-	}
-	log.Info("Exported preimages", "file", fn)
 	return nil
 }
 

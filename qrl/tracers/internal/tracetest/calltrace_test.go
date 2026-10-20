@@ -117,7 +117,7 @@ func testCallTracer(tracerName string, dirPath string, t *testing.T) {
 			}
 			// Configure a blockchain with the given prestate
 			var (
-				signer    = types.MakeSigner(test.Genesis.Config)
+				signer    = types.NewZondSigner(test.Genesis.Config.ChainID)
 				origin, _ = signer.Sender(tx)
 				txContext = vm.TxContext{
 					Origin:   origin,
@@ -205,7 +205,7 @@ func benchTracer(tracerName string, test *callTracerTest, b *testing.B) {
 	if err := rlp.DecodeBytes(common.FromHex(test.Input), tx); err != nil {
 		b.Fatalf("failed to parse testcase input: %v", err)
 	}
-	signer := types.MakeSigner(test.Genesis.Config)
+	signer := types.NewZondSigner(test.Genesis.Config.ChainID)
 	msg, err := core.TransactionToMessage(tx, signer, nil)
 	if err != nil {
 		b.Fatalf("failed to prepare transaction for tracing: %v", err)
@@ -492,10 +492,21 @@ func TestInternals(t *testing.T) {
 			want:   `{"from":"Q00000000000000000000000000000000feed000000000000000000000000000000000000feed0000000000000000000000000000000000000000000000000000","gas":"0x13880","gasUsed":"0x54ff","to":"Q00000000000000000000000000000000deadbeef00000000000000000000000000000000deadbeef000000000000000000000000000000000000000000000000","input":"0x","logs":[{"address":"Q00000000000000000000000000000000deadbeef00000000000000000000000000000000deadbeef000000000000000000000000000000000000000000000000","topics":["0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042"],"data":"0x"}],"value":"0x0","type":"CALL"}`,
 		},
 		{
+			name: "CallTracer onlyTopCall withLog - LOG1",
+			code: []byte{
+				byte(vm.PUSH1), 0x42,
+				byte(vm.PUSH1), 0x00,
+				byte(vm.PUSH1), 0x00,
+				byte(vm.LOG1),
+			},
+			tracer: mkTracer("callTracer", json.RawMessage(`{"onlyTopCall":true,"withLog":true}`)),
+			want:   `{"from":"Q00000000000000000000000000000000feed000000000000000000000000000000000000feed0000000000000000000000000000000000000000000000000000","gas":"0x13880","gasUsed":"0x54ff","to":"Q00000000000000000000000000000000deadbeef00000000000000000000000000000000deadbeef000000000000000000000000000000000000000000000000","input":"0x","logs":[{"address":"Q00000000000000000000000000000000deadbeef00000000000000000000000000000000deadbeef000000000000000000000000000000000000000000000000","topics":["0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000042"],"data":"0x"}],"value":"0x0","type":"CALL"}`,
+		},
+		{
 			// 4byteTracer with inner CALL: the outer call has empty calldata
-			// so it contributes nothing; the inner CALL uses 36 bytes of
+			// so it contributes nothing; the inner CALL uses 68 bytes of
 			// (mostly zero) memory as args, so the tracer keys off the
-			// first four memory bytes and the 32-byte tail length.
+			// first four memory bytes and the 64-byte ABI tail length.
 			name: "FourByteTracer - inner CALL",
 			code: []byte{
 				// MSTORE8 writes the low byte of val at mem[0]. Writing
@@ -505,7 +516,7 @@ func TestInternals(t *testing.T) {
 				byte(vm.MSTORE8),
 				byte(vm.PUSH1), 0x00, // retSize
 				byte(vm.PUSH1), 0x00, // retOffset
-				byte(vm.PUSH1), 0x24, // argSize = 36
+				byte(vm.PUSH1), 0x44, // argSize = 68
 				byte(vm.PUSH1), 0x00, // argOffset
 				byte(vm.PUSH1), 0x00, // value = 0
 				byte(vm.PUSH1), 0xcc, // address 0xcc
@@ -513,7 +524,7 @@ func TestInternals(t *testing.T) {
 				byte(vm.CALL),
 			},
 			tracer: mkTracer("4byteTracer", nil),
-			want:   `{"0xef000000-32":1}`,
+			want:   `{"0xef000000-64":1}`,
 		},
 		{
 			// callTracer withLog: LOG2 with two topics and non-empty data.

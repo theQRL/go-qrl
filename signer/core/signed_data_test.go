@@ -35,7 +35,7 @@ import (
 )
 
 var typesStandard = apitypes.Types{
-	"EIP712Domain": {
+	"QRLTypedDataDomain": {
 		{
 			Name: "name",
 			Type: "string",
@@ -82,7 +82,7 @@ var typesStandard = apitypes.Types{
 var jsonTypedData = `
     {
       "types": {
-        "EIP712Domain": [
+        "QRLTypedDataDomain": [
           {
             "name": "name",
             "type": "string"
@@ -250,7 +250,7 @@ func TestDomainChainId(t *testing.T) {
 	t.Parallel()
 	withoutChainID := apitypes.TypedData{
 		Types: apitypes.Types{
-			"EIP712Domain": []apitypes.Type{
+			"QRLTypedDataDomain": []apitypes.Type{
 				{Name: "name", Type: "string"},
 			},
 		},
@@ -263,12 +263,12 @@ func TestDomainChainId(t *testing.T) {
 		t.Errorf("Expected the chainId key to not be present in the domain map")
 	}
 	// should encode successfully
-	if _, err := withoutChainID.HashStruct("EIP712Domain", withoutChainID.Domain.Map()); err != nil {
+	if _, err := withoutChainID.HashStruct("QRLTypedDataDomain", withoutChainID.Domain.Map()); err != nil {
 		t.Errorf("Expected the typedData to encode the domain successfully, got %v", err)
 	}
 	withChainID := apitypes.TypedData{
 		Types: apitypes.Types{
-			"EIP712Domain": []apitypes.Type{
+			"QRLTypedDataDomain": []apitypes.Type{
 				{Name: "name", Type: "string"},
 				{Name: "chainId", Type: "uint256"},
 			},
@@ -283,7 +283,7 @@ func TestDomainChainId(t *testing.T) {
 		t.Errorf("Expected the chainId key be present in the domain map")
 	}
 	// should encode successfully
-	if _, err := withChainID.HashStruct("EIP712Domain", withChainID.Domain.Map()); err != nil {
+	if _, err := withChainID.HashStruct("QRLTypedDataDomain", withChainID.Domain.Map()); err != nil {
 		t.Errorf("Expected the typedData to encode the domain successfully, got %v", err)
 	}
 }
@@ -295,30 +295,66 @@ func TestHashStruct(t *testing.T) {
 		t.Fatal(err)
 	}
 	mainHash := fmt.Sprintf("0x%s", common.Bytes2Hex(hash))
-	if mainHash != "0xeffdb2572b96cf174446b4b5e29ea4cdfe99bdc1062c0e74d3f0f02d0e3627df" {
+	if mainHash != "0x77abdbfc62ca407545b8fe30a4592c7f18b9624308e9311931582df2cee8e1a9" {
 		t.Errorf("Expected different hashStruct result (got %s)", mainHash)
 	}
 
-	hash, err = typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	hash, err = typedData.HashStruct("QRLTypedDataDomain", typedData.Domain.Map())
 	if err != nil {
 		t.Error(err)
 	}
 	domainHash := fmt.Sprintf("0x%s", common.Bytes2Hex(hash))
-	if domainHash != "0x924f059b0a641eed4ccf8aa0493fae0c3da1608bc27d6f3c1153c630564c2ceb" {
+	if domainHash != "0x79e5614c24184cf7bc90065f1f27e9a5f64ecccee56435164a64ed3c98dfd3a1" {
 		t.Errorf("Expected different domain hashStruct result (got %s)", domainHash)
+	}
+}
+
+func TestTypedDataAndHashGolden(t *testing.T) {
+	t.Parallel()
+	typedData := apitypes.TypedData{
+		Types: apitypes.Types{
+			"QRLTypedDataDomain": {
+				{Name: "name", Type: "string"},
+			},
+			"WideValues": {
+				{Name: "amount", Type: "uint512"},
+				{Name: "payload", Type: "bytes64"},
+			},
+		},
+		PrimaryType: "WideValues",
+		Domain: apitypes.TypedDataDomain{
+			Name: "QRL VM64 Golden",
+		},
+		Message: apitypes.TypedDataMessage{
+			"amount":  "0x" + strings.Repeat("fedcba9876543210", 8),
+			"payload": "0x" + strings.Repeat("0123456789abcdef", 8),
+		},
+	}
+
+	digest, _, err := apitypes.TypedDataAndHash(typedData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := hexutil.Encode(digest), "0x054b04b5b0976d8b58cb06fb10c1100af45cf46488d16842897e6b2a81ed6ed3"; got != want {
+		t.Fatalf("unexpected VM64 typed-data digest: got %s, want %s", got, want)
 	}
 }
 
 func TestEncodeType(t *testing.T) {
 	t.Parallel()
-	domainTypeEncoding := string(typedData.EncodeType("EIP712Domain"))
-	if domainTypeEncoding != "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)" {
+	domainTypeEncoding := string(typedData.EncodeType("QRLTypedDataDomain"))
+	if domainTypeEncoding != "QRLTypedDataDomain(string name,string version,uint256 chainId,address verifyingContract)" {
 		t.Errorf("Expected different encodeType result (got %s)", domainTypeEncoding)
 	}
 
 	mailTypeEncoding := string(typedData.EncodeType(typedData.PrimaryType))
 	if mailTypeEncoding != "Mail(Person from,Person to,string contents)Person(string name,address wallet)" {
 		t.Errorf("Expected different encodeType result (got %s)", mailTypeEncoding)
+	}
+
+	emptyTypedData := apitypes.TypedData{Types: apitypes.Types{"Empty": {}}}
+	if emptyTypeEncoding := string(emptyTypedData.EncodeType("Empty")); emptyTypeEncoding != "Empty()" {
+		t.Errorf("Expected empty type encoding Empty() (got %s)", emptyTypeEncoding)
 	}
 }
 
@@ -337,7 +373,7 @@ func TestEncodeData(t *testing.T) {
 		t.Fatal(err)
 	}
 	dataEncoding := fmt.Sprintf("0x%s", common.Bytes2Hex(hash))
-	if dataEncoding != "0xa0cedeb2dc280ba39b857546d74f5549c3a1d7bdc2dd96bf881f76108e23dac2f888d4475c55744d89f6b79a6379db848638f3413c2fc14e12365fe5d631d900c4820e22bb4840c5fd1609ee923f74d281c863bd07b0933743bced0b7c5381dcb5aadf3154a261abdd9086fc627b61efca26ae5702701d05cd2305f7c52a2fc8" {
+	if dataEncoding != "0xa0cedeb2dc280ba39b857546d74f5549c3a1d7bdc2dd96bf881f76108e23dac200000000000000000000000000000000000000000000000000000000000000005ff9606cfd3cf02dff608d92b16a99bf08b087ba3f7d50de6c94668c4d911863000000000000000000000000000000000000000000000000000000000000000094329683ebe350d70c5560224b7ce95ef5b12d253a28e2fc0f573da4570a44fc0000000000000000000000000000000000000000000000000000000000000000b5aadf3154a261abdd9086fc627b61efca26ae5702701d05cd2305f7c52a2fc80000000000000000000000000000000000000000000000000000000000000000" {
 		t.Errorf("Expected different encodeData result (got %s)", dataEncoding)
 	}
 }
@@ -359,7 +395,7 @@ func TestFormatter(t *testing.T) {
 }
 
 func sign(typedData apitypes.TypedData) ([]byte, []byte, error) {
-	domainSeparator, err := typedData.HashStruct("EIP712Domain", typedData.Domain.Map())
+	domainSeparator, err := typedData.HashStruct("QRLTypedDataDomain", typedData.Domain.Map())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -427,7 +463,7 @@ func TestFuzzerFiles(t *testing.T) {
 			t.Errorf("Test %d, file %v, json unmarshalling failed: %v", i, fInfo.Name(), err)
 			continue
 		}
-		_, err = typedData.EncodeData("EIP712Domain", typedData.Domain.Map(), 1)
+		_, err = typedData.EncodeData("QRLTypedDataDomain", typedData.Domain.Map(), 1)
 		if verbose && err != nil {
 			t.Logf("%d, EncodeData[1] err: %v\n", i, err)
 		}
@@ -442,7 +478,7 @@ func TestFuzzerFiles(t *testing.T) {
 var complexTypedData = `
 {
     "types": {
-        "EIP712Domain": [
+        "QRLTypedDataDomain": [
             {
                 "name": "chainId",
                 "type": "uint256"
@@ -584,7 +620,7 @@ func TestComplexTypedData(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expSigHash := common.FromHex("0xac3c843be9142fd326260349ab779f913083bb1b0d1d80010b55c3cd8d1e01eb")
+	expSigHash := common.FromHex("0x428ff10ebad404fcbdc5f2127cf6d09a563032d73d21908d15ac773f278fe78f")
 	if !bytes.Equal(expSigHash, sighash) {
 		t.Fatalf("Error, got %x, wanted %x", sighash, expSigHash)
 	}
@@ -593,7 +629,7 @@ func TestComplexTypedData(t *testing.T) {
 var complexTypedDataLCRefType = `
 {
     "types": {
-        "EIP712Domain": [
+        "QRLTypedDataDomain": [
             {
                 "name": "chainId",
                 "type": "uint256"
@@ -735,7 +771,7 @@ func TestComplexTypedDataWithLowercaseReftype(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expSigHash := common.FromHex("0x4f36ab9b7b50c6e7e91017a569cdfe8e4d8adb5e0901cb27f3d845879a8e5141")
+	expSigHash := common.FromHex("0x588de30f07eec7adda5c0772d92b4e8dbf6e04697be2ffba9f7866c10374dd14")
 	if !bytes.Equal(expSigHash, sighash) {
 		t.Fatalf("Error, got %x, wanted %x", sighash, expSigHash)
 	}

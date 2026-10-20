@@ -40,6 +40,83 @@ func TestBytesConversion(t *testing.T) {
 	}
 }
 
+func TestLogTopicAlignmentHelpers(t *testing.T) {
+	input := []byte{1, 2, 3}
+
+	rightAligned := BytesToRightAlignedLogTopic(input)
+	var wantRight LogTopic
+	copy(wantRight[LogTopicLength-len(input):], input)
+	if rightAligned != wantRight {
+		t.Fatalf("right-aligned topic mismatch: have %x want %x", rightAligned, wantRight)
+	}
+
+	leftAligned := BytesToLeftAlignedLogTopic(input)
+	var wantLeft LogTopic
+	copy(wantLeft[:], input)
+	if leftAligned != wantLeft {
+		t.Fatalf("left-aligned topic mismatch: have %x want %x", leftAligned, wantLeft)
+	}
+
+	var hash Hash
+	for i := range hash {
+		hash[i] = byte(i + 1)
+	}
+	topic := HashToLogTopic(hash)
+
+	// The hash occupies the high 32 bytes; the low 32 bytes are zero padding.
+	for i := 0; i < HashLength; i++ {
+		if topic[i] != hash[i] {
+			t.Fatalf("byte %d: expected %x got %x", i, hash[i], topic[i])
+		}
+	}
+	for i := HashLength; i < LogTopicLength; i++ {
+		if topic[i] != 0 {
+			t.Fatalf("byte %d: expected zero padding, got %x", i, topic[i])
+		}
+	}
+
+	var addr Address
+	for i := range addr {
+		addr[i] = byte(i + 1)
+	}
+	if got := AddressToLogTopic(addr); !bytes.Equal(got.Bytes(), addr.Bytes()) {
+		t.Fatalf("address topic mismatch: have %x want %x", got, addr)
+	}
+}
+
+func TestParseLogTopic(t *testing.T) {
+	// Complete topics are preserved verbatim, whatever their alignment.
+	for _, want := range []LogTopic{
+		BytesToRightAlignedLogTopic([]byte{1, 2, 3}),
+		BytesToLeftAlignedLogTopic([]byte{1, 2, 3}),
+	} {
+		got, err := ParseLogTopic(want.Hex())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Fatalf("topic changed during parsing: got %x, want %x", got, want)
+		}
+		if must := MustParseLogTopic(want.Hex()); must != want {
+			t.Fatalf("MustParseLogTopic mismatch: got %x, want %x", must, want)
+		}
+	}
+
+	// Anything but a 0x-prefixed string of exactly LogTopicLength bytes is rejected.
+	for _, invalid := range []string{
+		"",
+		"0x",
+		"0x010203",
+		"0x" + strings.Repeat("11", LogTopicLength-1),
+		"0x" + strings.Repeat("11", LogTopicLength+1),
+		strings.Repeat("11", LogTopicLength),
+	} {
+		if _, err := ParseLogTopic(invalid); err == nil {
+			t.Fatalf("expected error parsing %q", invalid)
+		}
+	}
+}
+
 func TestIsAddress(t *testing.T) {
 	tests := []struct {
 		str string
@@ -66,6 +143,60 @@ func TestIsAddress(t *testing.T) {
 				test.str, result, test.exp)
 		}
 	}
+}
+
+func TestIsHexEncodedHash(t *testing.T) {
+	tests := []struct {
+		str string
+		exp bool
+	}{
+		{strings.Repeat("5a", HashLength), true},
+		{"0x" + strings.Repeat("5a", HashLength), true},
+		{"0X" + strings.Repeat("5a", HashLength), true},
+		{strings.Repeat("0", 2*HashLength), true},
+		{"0x" + strings.Repeat("0", 2*HashLength), true},
+		{strings.Repeat("0", 2*HashLength-1), false},
+		{strings.Repeat("0", 2*HashLength+1), false},
+		{"0x" + strings.Repeat("0", 2*HashLength-1), false},
+		{"0x" + strings.Repeat("0", 2*HashLength+1), false},
+		{"0x" + strings.Repeat("0", 2*HashLength-1) + "x", false},
+		{"Q" + strings.Repeat("0", 2*HashLength), false},
+	}
+
+	for _, test := range tests {
+		if result := IsHexEncodedHash(test.str); result != test.exp {
+			t.Errorf("IsHexEncodedHash(%s) == %v; expected %v",
+				test.str, result, test.exp)
+		}
+	}
+}
+
+func TestMustParseAddress(t *testing.T) {
+	input := "Q" + strings.Repeat("5a", AddressLength)
+	if got, want := MustParseAddress(input), BytesToAddress(Hex2Bytes(strings.TrimPrefix(input, "Q"))); got != want {
+		t.Fatalf("unexpected address: got %s want %s", got, want)
+	}
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for invalid address")
+		}
+	}()
+	MustParseAddress("Q" + strings.Repeat("0", 40))
+}
+
+func TestMustParseMixedcaseAddress(t *testing.T) {
+	input := "Q" + strings.Repeat("5a", AddressLength)
+	if got := MustParseMixedcaseAddress(input); got.String() != input {
+		t.Fatalf("unexpected mixed-case address: got %s want %s", got, input)
+	}
+
+	defer func() {
+		if recover() == nil {
+			t.Fatal("expected panic for invalid mixed-case address")
+		}
+	}()
+	MustParseMixedcaseAddress("Q" + strings.Repeat("0", 40))
 }
 
 func TestHashJsonValidation(t *testing.T) {
@@ -142,7 +273,7 @@ func TestAddressHexQIP55Checksum(t *testing.T) {
 		{"Q" + strings.Repeat("0", 88) + "D1220a0cf47c7B9bE7a2e6bA89F429762E7b9ADb", "Q" + strings.Repeat("0", 88) + "d1220A0cf47c7B9BE7a2e6BA89f429762e7B9AdB"},
 	}
 	for i, test := range tests {
-		addr, _ := NewAddressFromString(test.Input)
+		addr := MustParseAddress(test.Input)
 		output := addr.Hex()
 		if output != test.Output {
 			t.Errorf("test #%d: failed to match when it should (%s != %s)", i, output, test.Output)
@@ -151,7 +282,7 @@ func TestAddressHexQIP55Checksum(t *testing.T) {
 }
 
 func BenchmarkAddressHex(b *testing.B) {
-	testAddr, _ := NewAddressFromString("Q" + strings.Repeat("0", 88) + "5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
+	testAddr := MustParseAddress("Q" + strings.Repeat("0", 88) + "5aaeb6053f3e94c9b9a09f33669435e7ef1beaed")
 	for b.Loop() {
 		testAddr.Hex()
 	}
@@ -188,10 +319,7 @@ func TestMixedcaseAccount_Address(t *testing.T) {
 		Valid bool
 	}
 	lowercase := "Q" + strings.Repeat("0", 88) + "ae967917c465db8578ca9024c205720b1a3651a9"
-	addr, err := NewAddressFromString(lowercase)
-	if err != nil {
-		t.Fatal(err)
-	}
+	addr := MustParseAddress(lowercase)
 	canonical := addr.Hex()
 	if err := json.Unmarshal([]byte(fmt.Sprintf(`[
 			{"A" : "%s", "Valid": true},

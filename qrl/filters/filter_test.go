@@ -40,7 +40,6 @@ import (
 func makeReceipt(addr common.Address) *types.Receipt {
 	receipt := &types.Receipt{
 		Type:              types.DynamicFeeTxType,
-		PostState:         common.CopyBytes(nil),
 		CumulativeGasUsed: 0,
 		Status:            types.ReceiptStatusSuccessful,
 	}
@@ -60,7 +59,7 @@ func BenchmarkFilters(b *testing.B) {
 		addr2   = common.BytesToAddress([]byte("jeff"))
 		addr3   = common.BytesToAddress([]byte("ethereum"))
 		addr4   = common.BytesToAddress([]byte("random addresses please"))
-		to, _   = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000999")
+		to      = common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000999")
 
 		gspec = &core.Genesis{
 			Alloc:   core.GenesisAlloc{addr1: {Balance: big.NewInt(1000000)}},
@@ -139,6 +138,9 @@ func TestFilters(t *testing.T) {
 		// fine.
 		bytecode = common.FromHex("60043536610084146100125760006000c1005b604435b060006000c200")
 
+		// Arbitrary 32-byte values passed to the contract as uint256
+		// indexed args, so they surface on chain as right-aligned numeric
+		// topics — not left-aligned hash topics, despite the Hash type.
 		hash1 = common.BytesToHash([]byte("topic1"))
 		hash2 = common.BytesToHash([]byte("topic2"))
 		hash3 = common.BytesToHash([]byte("topic3"))
@@ -271,7 +273,7 @@ func TestFilters(t *testing.T) {
 		tx := block.Transactions()[txIdx]
 		topics := make([]common.LogTopic, len(topicBytes))
 		for i, tb := range topicBytes {
-			topics[i] = common.BytesToLogTopic(tb)
+			topics[i] = common.BytesToRightAlignedLogTopic(tb)
 		}
 		return &types.Log{
 			Address:     addr,
@@ -301,7 +303,7 @@ func TestFilters(t *testing.T) {
 			want: mustJSON(mkLog(2, 0, 0, contract, hash2.Bytes(), hash1.Bytes())),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{contract}, [][]common.LogTopic{{common.BytesToLogTopic(hash1.Bytes()), common.BytesToLogTopic(hash2.Bytes()), common.BytesToLogTopic(hash3.Bytes()), common.BytesToLogTopic(hash4.Bytes())}}),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{contract}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash1.Bytes()), common.BytesToRightAlignedLogTopic(hash2.Bytes()), common.BytesToRightAlignedLogTopic(hash3.Bytes()), common.BytesToRightAlignedLogTopic(hash4.Bytes())}}),
 			want: mustJSON(
 				mkLog(1, 0, 0, contract, hash1.Bytes()),
 				mkLog(2, 0, 0, contract, hash2.Bytes(), hash1.Bytes()),
@@ -309,14 +311,14 @@ func TestFilters(t *testing.T) {
 			),
 		},
 		{
-			f: sys.NewRangeFilter(900, 999, []common.Address{contract}, [][]common.LogTopic{{common.BytesToLogTopic(hash3.Bytes())}}),
+			f: sys.NewRangeFilter(900, 999, []common.Address{contract}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash3.Bytes())}}),
 		},
 		{
-			f:    sys.NewRangeFilter(990, int64(rpc.LatestBlockNumber), []common.Address{contract2}, [][]common.LogTopic{{common.BytesToLogTopic(hash3.Bytes())}}),
+			f:    sys.NewRangeFilter(990, int64(rpc.LatestBlockNumber), []common.Address{contract2}, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash3.Bytes())}}),
 			want: mustJSON(mkLog(998, 0, 0, contract2, hash3.Bytes())),
 		},
 		{
-			f: sys.NewRangeFilter(1, 10, nil, [][]common.LogTopic{{common.BytesToLogTopic(hash1.Bytes()), common.BytesToLogTopic(hash2.Bytes())}}),
+			f: sys.NewRangeFilter(1, 10, nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic(hash1.Bytes()), common.BytesToRightAlignedLogTopic(hash2.Bytes())}}),
 			want: mustJSON(
 				mkLog(1, 0, 0, contract, hash1.Bytes()),
 				mkLog(1, 1, 1, contract2, hash1.Bytes()),
@@ -324,13 +326,13 @@ func TestFilters(t *testing.T) {
 			),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToLogTopic([]byte("fail"))}}),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic([]byte("fail"))}}),
 		},
 		{
 			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), []common.Address{common.BytesToAddress([]byte("failmenow"))}, nil),
 		},
 		{
-			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToLogTopic([]byte("fail"))}, {common.BytesToLogTopic(hash1.Bytes())}}),
+			f: sys.NewRangeFilter(0, int64(rpc.LatestBlockNumber), nil, [][]common.LogTopic{{common.BytesToRightAlignedLogTopic([]byte("fail"))}, {common.BytesToRightAlignedLogTopic(hash1.Bytes())}}),
 		},
 		{
 			f:    sys.NewRangeFilter(int64(rpc.LatestBlockNumber), int64(rpc.LatestBlockNumber), nil, nil),

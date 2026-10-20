@@ -55,6 +55,7 @@ type peerSet struct {
 
 	lock   sync.RWMutex
 	closed bool
+	quitCh chan struct{} // Quit channel to signal termination
 }
 
 // newPeerSet creates a new peer set to track the active participants.
@@ -63,6 +64,7 @@ func newPeerSet() *peerSet {
 		peers:    make(map[string]*qrlPeer),
 		snapWait: make(map[string]chan *snap.Peer),
 		snapPend: make(map[string]*snap.Peer),
+		quitCh:   make(chan struct{}),
 	}
 }
 
@@ -127,7 +129,15 @@ func (ps *peerSet) waitSnapExtension(peer *qrl.Peer) (*snap.Peer, error) {
 	ps.snapWait[id] = wait
 	ps.lock.Unlock()
 
-	return <-wait, nil
+	select {
+	case p := <-wait:
+		return p, nil
+	case <-ps.quitCh:
+		ps.lock.Lock()
+		delete(ps.snapWait, id)
+		ps.lock.Unlock()
+		return nil, errPeerSetClosed
+	}
 }
 
 // registerPeer injects a new `qrl` peer into the working set, or returns an error
@@ -220,6 +230,9 @@ func (ps *peerSet) close() {
 
 	for _, p := range ps.peers {
 		p.Disconnect(p2p.DiscQuitting)
+	}
+	if !ps.closed {
+		close(ps.quitCh)
 	}
 	ps.closed = true
 }

@@ -27,6 +27,7 @@ import (
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
+	"github.com/theQRL/go-qrl/common/uint512"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/qrl/tracers"
@@ -255,9 +256,8 @@ func (t *jsTracer) CaptureStart(env *vm.QRVM, from common.Address, to common.Add
 	}
 	t.ctx["value"] = valueBig
 	t.ctx["block"] = t.vm.ToValue(env.Context.BlockNumber.Uint64())
-	// Update list of precompiles based on current block
-	rules := env.ChainConfig().Rules(env.Context.BlockNumber, env.Context.Time)
-	t.activePrecompiles = vm.ActivePrecompiles(rules)
+	// Update list of precompiles
+	t.activePrecompiles = vm.ActivePrecompiles()
 }
 
 // CaptureState implements the Tracer interface to trace a single step of VM execution.
@@ -392,14 +392,13 @@ func (t *jsTracer) setBuiltinFunctions() {
 		return hexutil.Encode(b)
 	})
 	vm.Set("toWord", func(v goja.Value) goja.Value {
-		// TODO: add test with []byte len < 32 or > 32
 		b, err := t.fromBuf(vm, v, true)
 		if err != nil {
 			vm.Interrupt(err)
 			return nil
 		}
-		b = common.BytesToHash(b).Bytes()
-		res, err := t.toBuf(vm, b)
+		word := new(uint512.Int).SetBytes(b).Bytes64()
+		res, err := t.toBuf(vm, word[:])
 		if err != nil {
 			vm.Interrupt(err)
 			return nil

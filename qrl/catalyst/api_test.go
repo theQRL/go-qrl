@@ -72,7 +72,7 @@ func generateChain(n int) (*core.Genesis, []*types.Block) {
 	generate := func(i int, g *core.BlockGen) {
 		g.OffsetTime(5)
 		g.SetExtra([]byte("test"))
-		to, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a")
+		to := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a")
 		tx, _ := types.SignTx(types.NewTx(&types.DynamicFeeTx{
 			Nonce:     testNonce,
 			To:        &to,
@@ -80,7 +80,7 @@ func generateChain(n int) (*core.Genesis, []*types.Block) {
 			Gas:       params.TxGas,
 			GasFeeCap: big.NewInt(2 * params.InitialBaseFee),
 			GasTipCap: big.NewInt(params.Shor),
-			Data:      nil}), types.LatestSigner(&config), testWallet)
+			Data:      nil}), types.NewZondSigner(config.ChainID), testWallet)
 		g.AddTx(tx)
 		testNonce++
 	}
@@ -101,7 +101,7 @@ func TestAssembleBlock(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error signing transaction, err=%v", err)
 	}
-	qrlservice.TxPool().Add([]*types.Transaction{tx}, true, false)
+	qrlservice.TxPool().Add([]*types.Transaction{tx}, true, true)
 	blockParams := engine.PayloadAttributes{
 		Timestamp: blocks[9].Time() + 5,
 	}
@@ -158,7 +158,7 @@ func TestPrepareAndGetPayload(t *testing.T) {
 
 	// Put the 10th block's tx in the pool and produce a new block
 	txs := blocks[9].Transactions()
-	qrlservice.TxPool().Add(txs, true, false)
+	qrlservice.TxPool().Add(txs, true, true)
 	blockParams := engine.PayloadAttributes{
 		Timestamp:   blocks[8].Time() + 5,
 		Withdrawals: []*types.Withdrawal{},
@@ -172,15 +172,13 @@ func TestPrepareAndGetPayload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error preparing payload, err=%v", err)
 	}
-	// give the payload some time to be built
-	time.Sleep(100 * time.Millisecond)
 	payloadID := (&miner.BuildPayloadArgs{
 		Parent:       fcState.HeadBlockHash,
 		Timestamp:    blockParams.Timestamp,
 		FeeRecipient: blockParams.SuggestedFeeRecipient,
 		Random:       blockParams.Random,
 	}).Id()
-	execData, err := api.GetPayloadV2(payloadID)
+	execData, err := api.getPayload(payloadID, true)
 	if err != nil {
 		t.Fatalf("error getting payload, err=%v", err)
 	}
@@ -281,7 +279,7 @@ func TestNewBlock(t *testing.T) {
 	for range 10 {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root())
 		nonce := statedb.GetNonce(testAddr)
-		signer := types.LatestSigner(qrlservice.BlockChain().Config())
+		signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		tx := types.NewTx(&types.DynamicFeeTx{
 			Nonce:     nonce,
 			Value:     new(big.Int),
@@ -290,7 +288,7 @@ func TestNewBlock(t *testing.T) {
 			Data:      logCode,
 		})
 		signedTx, _ := types.SignTx(tx, signer, testWallet)
-		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, false)
+		qrlservice.TxPool().Add([]*types.Transaction{signedTx}, true, true)
 
 		execData, err := assembleWithTransactions(api, parent.Hash(), &engine.PayloadAttributes{
 			Timestamp: parent.Time() + 5,
@@ -441,6 +439,9 @@ func startQRLService(t *testing.T, genesis *core.Genesis, blocks []*types.Block)
 		n.Close()
 		t.Fatal("can't import test blocks:", err)
 	}
+	if err := qrlservice.TxPool().Sync(); err != nil {
+		t.Fatal("failed to sync txpool after initial blockchain import:", err)
+	}
 
 	qrlservice.SetSynced()
 	return n, qrlservice
@@ -459,7 +460,7 @@ func TestFullAPI(t *testing.T) {
 	callback := func(parent *types.Header) {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root)
 		nonce := statedb.GetNonce(testAddr)
-		signer := types.LatestSigner(qrlservice.BlockChain().Config())
+		signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		tx := types.NewTx(&types.DynamicFeeTx{
 			Nonce: nonce,
 			Value: new(big.Int),
@@ -536,7 +537,7 @@ func TestNewPayloadOnInvalidChain(t *testing.T) {
 	var (
 		api    = NewConsensusAPI(qrlservice)
 		parent = qrlservice.BlockChain().CurrentBlock()
-		signer = types.LatestSigner(qrlservice.BlockChain().Config())
+		signer = types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		// This QRVM code generates a log when the contract is created.
 		logCode = common.Hex2Bytes("60606040525b7f24ec1d3ff24c2f6ff210738839dbc339cd45a5294d85c79361016243157aae7b60405180905060405180910390a15b600a8060416000396000f360606040526008565b00")
 	)
@@ -914,7 +915,7 @@ func TestSimultaneousNewBlock(t *testing.T) {
 	}
 }
 
-// TestWithdrawals creates and verifies two post-Zond blocks. The first
+// TestWithdrawals creates and verifies two blocks. The first
 // includes zero withdrawals and the second includes two.
 func TestWithdrawals(t *testing.T) {
 	genesis, blocks := generateChain(10)
@@ -924,7 +925,7 @@ func TestWithdrawals(t *testing.T) {
 
 	api := NewConsensusAPI(qrlservice)
 
-	// 10: Build Zond block with no withdrawals.
+	// 10: Build block with no withdrawals.
 	parent := qrlservice.BlockChain().CurrentHeader()
 	blockParams := engine.PayloadAttributes{
 		Timestamp:   parent.Time + 5,
@@ -964,7 +965,7 @@ func TestWithdrawals(t *testing.T) {
 		t.Fatalf("invalid payload")
 	}
 
-	// 11: build zond block with withdrawal
+	// 11: build block with withdrawal
 	aa := common.Address{0xaa}
 	bb := common.Address{0xbb}
 	blockParams = engine.PayloadAttributes{
@@ -1118,7 +1119,7 @@ func setupBodies(t *testing.T) (*node.Node, *qrl.QRL, []*types.Block) {
 	callback := func(parent *types.Header) {
 		statedb, _ := qrlservice.BlockChain().StateAt(parent.Root)
 		nonce := statedb.GetNonce(testAddr)
-		signer := types.LatestSigner(qrlservice.BlockChain().Config())
+		signer := types.NewZondSigner(qrlservice.BlockChain().Config().ChainID)
 		tx := types.NewTx(&types.DynamicFeeTx{
 			Nonce: nonce,
 			Value: new(big.Int),
@@ -1140,12 +1141,12 @@ func setupBodies(t *testing.T) (*node.Node, *qrl.QRL, []*types.Block) {
 		}
 	}
 
-	postZondHeaders := setupBlocks(t, qrlservice, 10, parent, callback, withdrawals)
-	postZondBlocks := make([]*types.Block, len(postZondHeaders))
-	for i, header := range postZondHeaders {
-		postZondBlocks[i] = qrlservice.BlockChain().GetBlock(header.Hash(), header.Number.Uint64())
+	newHeaders := setupBlocks(t, qrlservice, 10, parent, callback, withdrawals)
+	newBlocks := make([]*types.Block, len(newHeaders))
+	for i, header := range newHeaders {
+		newBlocks[i] = qrlservice.BlockChain().GetBlock(header.Hash(), header.Number.Uint64())
 	}
-	return n, qrlservice, append(blocks, postZondBlocks...)
+	return n, qrlservice, append(blocks, newBlocks...)
 }
 
 func allHashes(blocks []*types.Block) []common.Hash {
@@ -1230,13 +1231,13 @@ func TestGetBlockBodiesByRange(t *testing.T) {
 			start:   1,
 			count:   1,
 		},
-		// First post-merge block
+		// Last block of the generated chain
 		{
 			results: []*types.Body{blocks[9].Body()},
 			start:   10,
 			count:   1,
 		},
-		// Pre & post merge blocks
+		// Generated and engine-built blocks
 		{
 			results: []*types.Body{blocks[7].Body(), blocks[8].Body(), blocks[9].Body(), blocks[10].Body()},
 			start:   8,

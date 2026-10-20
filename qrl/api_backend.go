@@ -43,9 +43,8 @@ import (
 
 // QRLAPIBackend implements qrlapi.Backend for full nodes
 type QRLAPIBackend struct {
-	extRPCEnabled bool
-	qrl           *QRL
-	gpo           *gasprice.Oracle
+	qrl *QRL
+	gpo *gasprice.Oracle
 }
 
 // ChainConfig returns the active chain configuration.
@@ -266,10 +265,6 @@ func (b *QRLAPIBackend) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) e
 	return b.qrl.BlockChain().SubscribeChainHeadEvent(ch)
 }
 
-func (b *QRLAPIBackend) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
-	return b.qrl.BlockChain().SubscribeChainSideEvent(ch)
-}
-
 func (b *QRLAPIBackend) SubscribeLogsEvent(ch chan<- []*types.Log) event.Subscription {
 	return b.qrl.BlockChain().SubscribeLogsEvent(ch)
 }
@@ -346,10 +341,6 @@ func (b *QRLAPIBackend) EventMux() *event.TypeMux {
 
 func (b *QRLAPIBackend) AccountManager() *accounts.Manager {
 	return b.qrl.AccountManager()
-}
-
-func (b *QRLAPIBackend) ExtRPCEnabled() bool {
-	return b.extRPCEnabled
 }
 
 func (b *QRLAPIBackend) RPCGasCap() uint64 {

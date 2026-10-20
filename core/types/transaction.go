@@ -30,9 +30,6 @@ import (
 )
 
 var (
-	// NOTE(rgeraldes24): unused for now
-	// ErrInvalidSig           = errors.New("invalid transaction v, r, s values")
-	// ErrUnexpectedProtection = errors.New("transaction type does not supported EIP-155 protected signatures")
 	ErrTxTypeNotSupported = errors.New("transaction type not supported")
 	ErrGasFeeCapTooLow    = errors.New("fee cap less than base fee")
 	errShortTypedTx       = errors.New("typed transaction too short")
@@ -187,44 +184,6 @@ func (tx *Transaction) setDecoded(inner TxData, size uint64) {
 		tx.size.Store(size)
 	}
 }
-
-// NOTE(rgeraldes24): unused at the moment
-/*
-func sanityCheckSignature(v *big.Int, r *big.Int, s *big.Int, maybeProtected bool) error {
-	if isProtectedV(v) && !maybeProtected {
-		return ErrUnexpectedProtection
-	}
-
-	var plainV byte
-	if isProtectedV(v) {
-		chainID := deriveChainId(v).Uint64()
-		plainV = byte(v.Uint64() - 35 - 2*chainID)
-	} else if maybeProtected {
-		// Only EIP-155 signatures can be optionally protected. Since
-		// we determined this v value is not protected, it must be a
-		// raw 27 or 28.
-		plainV = byte(v.Uint64() - 27)
-	} else {
-		// If the signature is not optionally protected, we assume it
-		// must already be equal to the recovery id.
-		plainV = byte(v.Uint64())
-	}
-	if !crypto.ValidateSignatureValues(plainV, r, s, false) {
-		return ErrInvalidSig
-	}
-
-	return nil
-}
-
-func isProtectedV(V *big.Int) bool {
-	if V.BitLen() <= 8 {
-		v := V.Uint64()
-		return v != 27 && v != 28 && v != 1 && v != 0
-	}
-	// anything not 27 or 28 is considered protected
-	return true
-}
-*/
 
 // Type returns the transaction type.
 func (tx *Transaction) Type() uint8 {

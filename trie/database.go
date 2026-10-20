@@ -174,6 +174,9 @@ func (db *Database) Scheme() string {
 	return db.backend.Scheme()
 }
 
+// PreimagesEnabled reports whether imports should persist trie key preimages.
+func (db *Database) PreimagesEnabled() bool { return db.preimages != nil }
+
 // Close flushes the dangling preimages to disk and closes the trie database.
 // It is meant to be called when closing the blockchain object, so that all
 // resources held can be released correctly.

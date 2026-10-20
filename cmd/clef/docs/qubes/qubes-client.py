@@ -1,6 +1,6 @@
 """
 This implements a dispatcher which listens to localhost:8550, and proxies
-requests via qrexec to the service qubes.EthSign on a target domain
+requests via qrexec to the service qubes.Clefsign on a target domain
 """
 
 import http.server
@@ -20,4 +20,3 @@ class Dispatcher(http.server.BaseHTTPRequestHandler):
 with socketserver.TCPServer(("",PORT), Dispatcher) as httpd:
     print("Serving at port", PORT)
     httpd.serve_forever()
-

@@ -51,7 +51,7 @@ type allocItemMisc struct {
 
 type allocItemStorageItem struct {
 	Key common.Hash
-	Val common.Hash
+	Val common.StorageValue64
 }
 
 func makelist(g *core.Genesis) []allocItem {

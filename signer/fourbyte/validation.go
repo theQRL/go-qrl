@@ -48,8 +48,7 @@ func (db *Database) ValidateTransaction(selector *string, tx *apitypes.SendTxArg
 	// Contract creation doesn't validate call data, handle first
 	if tx.To == nil {
 		// Contract creation should contain sufficient data to deploy a contract. A
-		// typical error is omitting sender due to some quirk in the javascript call
-		// e.g. https://github.com/theQRL/go-qrl/issues/16106.
+		// typical error is omitting sender due to some quirk in the javascript call.
 		if len(data) == 0 {
 			// Prevent sending quanta into black hole (show stopper)
 			if tx.Value.ToInt().Cmp(big.NewInt(0)) > 0 {
@@ -93,13 +92,13 @@ func (db *Database) ValidateCallData(selector *string, data []byte, messages *ap
 	if len(data) == 0 {
 		return
 	}
-	// Validate the call data that it has the 4byte prefix and the rest divisible by 32 bytes
+	// Validate the call data has the 4byte prefix and the rest is ABI-word aligned.
 	if len(data) < 4 {
 		messages.Warn("Transaction data is not valid ABI (missing the 4 byte call prefix)")
 		return
 	}
-	if n := len(data) - 4; n%32 != 0 {
-		messages.Warn(fmt.Sprintf("Transaction data is not valid ABI (length should be a multiple of 32 (was %d))", n))
+	if n := len(data) - 4; n%abiWordSize != 0 {
+		messages.Warn(fmt.Sprintf("Transaction data is not valid ABI (length should be a multiple of %d (was %d))", abiWordSize, n))
 	}
 	// If a custom method selector was provided, validate with that
 	if selector != nil {

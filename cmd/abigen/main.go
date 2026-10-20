@@ -26,6 +26,7 @@ import (
 
 	"github.com/theQRL/go-qrl/accounts/abi/bind"
 	"github.com/theQRL/go-qrl/cmd/utils"
+	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/compiler"
 	"github.com/theQRL/go-qrl/crypto"
 	"github.com/theQRL/go-qrl/internal/flags"
@@ -68,6 +69,15 @@ var (
 		Usage: "Comma separated aliases for function and event renaming, e.g. original1=alias1, original2=alias2",
 	}
 )
+
+const libraryPlaceholderPatternLength = 2*common.AddressLength - len("__$") - len("$__")
+
+func libraryPlaceholderPattern(name string) string {
+	hash := common.Bytes2Hex(crypto.Keccak256([]byte(name)))
+	// A Keccak hash gives 64 hex chars; the VM64 library placeholder needs 122.
+	hash += common.Bytes2Hex(crypto.Keccak256([]byte(hash)))
+	return hash[:libraryPlaceholderPatternLength]
+}
 
 var app = flags.NewApp("QRL ABI wrapper code generator")
 
@@ -185,12 +195,10 @@ func generate(c *cli.Context) error {
 			sigs = append(sigs, contract.Hashes)
 			types = append(types, typeName)
 
-			// Derive the library placeholder which is a 34 character prefix of the
-			// hex encoding of the keccak256 hash of the fully qualified library name.
+			// Derive the library placeholder matching Hyperion's 64-byte address slot.
 			// Note that the fully qualified library name is the path of its source
 			// file and the library name separated by ":".
-			libPattern := crypto.Keccak256Hash([]byte(name)).String()[2:36] // the first 2 chars are 0x
-			libs[libPattern] = typeName
+			libs[libraryPlaceholderPattern(name)] = typeName
 		}
 	}
 	// Extract all aliases from the flags

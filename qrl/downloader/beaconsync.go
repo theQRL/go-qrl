@@ -145,7 +145,7 @@ func (d *Downloader) SetBadBlockCallback(onBadBlock badBlockFn) {
 	d.badBlock = onBadBlock
 }
 
-// BeaconSync is the post-merge version of the chain synchronization, where the
+// BeaconSync is the beacon-driven version of the chain synchronization, where the
 // chain is not downloaded from genesis onward, rather from trusted head announces
 // backwards.
 //
@@ -165,7 +165,7 @@ func (d *Downloader) BeaconExtend(mode SyncMode, head *types.Header) error {
 	return d.beaconSync(mode, head, nil, false)
 }
 
-// beaconSync is the post-merge version of the chain synchronization, where the
+// beaconSync is the beacon-driven version of the chain synchronization, where the
 // chain is not downloaded from genesis onward, rather from trusted head announces
 // backwards.
 //
@@ -278,7 +278,7 @@ func (d *Downloader) fetchHeaders(from uint64) error {
 	}
 	// A part of headers are not in the skeleton space, try to resolve
 	// them from the local chain. Note the range should be very short
-	// and it should only happen when there are less than 64 post-merge
+	// and it should only happen when there are less than 64
 	// blocks in the network.
 	var localHeaders []*types.Header
 	if from < tail.Number.Uint64() {

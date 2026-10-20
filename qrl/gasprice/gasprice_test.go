@@ -130,7 +130,7 @@ func newTestBackend(t *testing.T, pending bool) *testBackend {
 			Config: &config,
 			Alloc:  core.GenesisAlloc{addr: {Balance: big.NewInt(math.MaxInt64)}},
 		}
-		signer = types.LatestSigner(gspec.Config)
+		signer = types.NewZondSigner(gspec.Config.ChainID)
 	)
 
 	engine := beacon.NewFaker()
@@ -178,14 +178,9 @@ func TestSuggestTipCap(t *testing.T) {
 		Default:    big.NewInt(params.Shor),
 	}
 	var cases = []struct {
-		fork   *big.Int // Zond fork number
 		expect *big.Int // Expected gasprice suggestion
 	}{
-		{nil, big.NewInt(params.Shor * int64(30))},
-		{big.NewInt(0), big.NewInt(params.Shor * int64(30))},  // Fork point in genesis
-		{big.NewInt(1), big.NewInt(params.Shor * int64(30))},  // Fork point in first block
-		{big.NewInt(32), big.NewInt(params.Shor * int64(30))}, // Fork point in last block
-		{big.NewInt(33), big.NewInt(params.Shor * int64(30))}, // Fork point in the future
+		{big.NewInt(params.Shor * int64(30))},
 	}
 	for _, c := range cases {
 		backend := newTestBackend(t, false)

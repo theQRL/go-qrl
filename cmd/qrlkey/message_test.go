@@ -40,7 +40,8 @@ func TestMessageSignVerify(t *testing.T) {
 Password: {{.InputLine "foobar"}}
 Repeat password: {{.InputLine "foobar"}}
 `)
-	generate.ExpectRegexp(`Address: (Q[0-9a-fA-F]{128})\n`)
+	_, addrMatches := generate.ExpectRegexp(`Address: (Q[0-9a-fA-F]{128})\n`)
+	address := addrMatches[1]
 	generate.ExpectExit()
 
 	// Sign a message.
@@ -65,11 +66,34 @@ Password: {{.InputLine "foobar"}}
 		utils.Fatalf("Error decrypting key: %v", err)
 	}
 
-	// Verify the message.
+	// Verify the message; the printed address must be the key's address.
 	publicKey := key.Wallet.GetPK()
 	verify := runQRLkey(t, "verifymessage", signature, common.Bytes2Hex(publicKey[:]), message)
+	_, verifyMatches := verify.ExpectRegexp(`
+Signature verification successful!
+Address: (Q[0-9a-fA-F]{128})
+`)
+	verify.ExpectExit()
+	if verifyMatches[1] != address {
+		t.Fatalf("verifymessage printed address %s, want %s", verifyMatches[1], address)
+	}
+
+	// Verify with the matching expected address.
+	verify = runQRLkey(t, "verifymessage", "--address", address, signature, common.Bytes2Hex(publicKey[:]), message)
 	verify.ExpectRegexp(`
 Signature verification successful!
+Address: ` + address + `
+`)
+	verify.ExpectExit()
+
+	// A different expected address must fail even though the signature is valid.
+	other := "Q" + "00" + address[3:]
+	if other == address {
+		other = "Q" + "11" + address[3:]
+	}
+	verify = runQRLkey(t, "verifymessage", "--address", other, signature, common.Bytes2Hex(publicKey[:]), message)
+	verify.ExpectRegexp(`
+Signature verification failed!
 `)
 	verify.ExpectExit()
 }

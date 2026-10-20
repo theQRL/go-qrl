@@ -16,19 +16,21 @@
 
 package qrltest
 
-// TODO(now.youtrack.cloud/issue/TGZ-6)
-/*
 import (
+	"path/filepath"
 	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/p2p"
+	"github.com/theQRL/go-qrl/qrl/protocols/qrl"
 )
 
-// TestEthProtocolNegotiation tests whether the test suite
+// TestQRLProtocolNegotiation tests whether the test suite
 // can negotiate the highest qrl protocol in a status message exchange
-func TestEthProtocolNegotiation(t *testing.T) {
+func TestQRLProtocolNegotiation(t *testing.T) {
+	t.Parallel()
 	var tests = []struct {
 		conn     *Conn
 		caps     []p2p.Cap
@@ -115,37 +117,33 @@ func TestEthProtocolNegotiation(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			tt.conn.negotiateEthProtocol(tt.caps)
+			tt.conn.negotiateQRLProtocol(tt.caps)
 			assert.Equal(t, tt.expected, uint32(tt.conn.negotiatedProtoVersion))
 		})
 	}
 }
 
-/*
-// TestChain_GetHeaders tests whether the test suite can correctly
+// TestChainGetHeaders tests whether the test suite can correctly
 // respond to a GetBlockHeaders request from a node.
-func TestChain_GetHeaders(t *testing.T) {
-	chainFile, err := filepath.Abs("./testdata/chain.rlp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	genesisFile, err := filepath.Abs("./testdata/genesis.json")
-	if err != nil {
-		t.Fatal(err)
-	}
+func TestChainGetHeaders(t *testing.T) {
+	t.Parallel()
 
-	chain, err := loadChain(chainFile, genesisFile)
+	dir, err := filepath.Abs("./testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	chain, err := NewChain(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var tests = []struct {
-		req      GetBlockHeaders
+		req      qrl.GetBlockHeadersPacket
 		expected []*types.Header
 	}{
 		{
-			req: GetBlockHeaders{
-				GetBlockHeadersPacket: &qrl.GetBlockHeadersPacket{
+			req: qrl.GetBlockHeadersPacket{
+				GetBlockHeadersRequest: &qrl.GetBlockHeadersRequest{
 					Origin:  qrl.HashOrNumber{Number: uint64(2)},
 					Amount:  uint64(5),
 					Skip:    1,
@@ -161,8 +159,8 @@ func TestChain_GetHeaders(t *testing.T) {
 			},
 		},
 		{
-			req: GetBlockHeaders{
-				GetBlockHeadersPacket: &qrl.GetBlockHeadersPacket{
+			req: qrl.GetBlockHeadersPacket{
+				GetBlockHeadersRequest: &qrl.GetBlockHeadersRequest{
 					Origin:  qrl.HashOrNumber{Number: uint64(chain.Len() - 1)},
 					Amount:  uint64(3),
 					Skip:    0,
@@ -176,8 +174,8 @@ func TestChain_GetHeaders(t *testing.T) {
 			},
 		},
 		{
-			req: GetBlockHeaders{
-				GetBlockHeadersPacket: &qrl.GetBlockHeadersPacket{
+			req: qrl.GetBlockHeadersPacket{
+				GetBlockHeadersRequest: &qrl.GetBlockHeadersRequest{
 					Origin:  qrl.HashOrNumber{Hash: chain.Head().Hash()},
 					Amount:  uint64(1),
 					Skip:    0,
@@ -186,6 +184,21 @@ func TestChain_GetHeaders(t *testing.T) {
 			},
 			expected: []*types.Header{
 				chain.Head().Header(),
+			},
+		},
+		{
+			req: qrl.GetBlockHeadersPacket{
+				GetBlockHeadersRequest: &qrl.GetBlockHeadersRequest{
+					Origin:  qrl.HashOrNumber{Number: uint64(10)},
+					Amount:  uint64(3),
+					Skip:    1,
+					Reverse: true,
+				},
+			},
+			expected: []*types.Header{
+				chain.blocks[10].Header(),
+				chain.blocks[8].Header(),
+				chain.blocks[6].Header(),
 			},
 		},
 	}
@@ -200,4 +213,3 @@ func TestChain_GetHeaders(t *testing.T) {
 		})
 	}
 }
-*/

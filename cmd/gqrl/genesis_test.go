@@ -17,11 +17,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core"
 )
 
 var customGenesisTests = []struct {
@@ -61,6 +66,48 @@ var customGenesisTests = []struct {
 	},
 }
 
+func TestGenesisImportScratchDirectory(t *testing.T) {
+	for _, scheme := range []string{"hash", "path"} {
+		t.Run(scheme, func(t *testing.T) {
+			datadir, scratch := t.TempDir(), t.TempDir()
+			source := filepath.Join(t.TempDir(), "genesis.json")
+			input := fmt.Sprintf(`{"config":{"chainId":9876},"gasLimit":30000000,"alloc":{%q:{"balance":"0x1234","code":"0x6000","nonce":1,"storage":{"0x01":"0x%s"}}}}`, common.Address{1}.Hex(), strings.Repeat("ab", 64))
+			if err := os.WriteFile(source, []byte(input), 0600); err != nil {
+				t.Fatal(err)
+			}
+			init := runGqrl(t, "--datadir", datadir, "init", "--state.scheme", scheme, "--work-dir", scratch, source)
+			init.ExpectExit()
+			if init.ExitStatus() != 0 {
+				t.Fatal(init.StderrText())
+			}
+			dump := runGqrl(t, "--datadir", datadir, "dumpgenesis")
+			output := dump.Output()
+			dump.WaitExit()
+			var want, got core.Genesis
+			if err := json.Unmarshal([]byte(input), &want); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(output, &got); err != nil {
+				t.Fatalf("invalid dump: %v\n%s", err, output)
+			}
+			if got.ToBlock().Hash() != want.ToBlock().Hash() {
+				t.Fatal("CLI changed genesis")
+			}
+			if err := os.WriteFile(source, []byte(input[:len(input)-1]), 0600); err != nil {
+				t.Fatal(err)
+			}
+			bad := runGqrl(t, "--datadir", datadir, "init", "--work-dir", scratch, source)
+			bad.ExpectExit()
+			if bad.ExitStatus() == 0 {
+				t.Fatal("CLI accepted truncated genesis")
+			}
+			if entries, err := os.ReadDir(scratch); err != nil || len(entries) != 0 {
+				t.Fatalf("CLI left scratch files: %v", err)
+			}
+		})
+	}
+}
+
 // Tests that initializing Gqrl with a custom genesis block and chain definitions
 // work properly.
 func TestCustomGenesis(t *testing.T) {
@@ -94,8 +141,8 @@ func TestCustomBackend(t *testing.T) {
 		t.Skip("Custom backends are only available on 64-bit platform")
 	}
 	// coinbase widens to 128 hex chars so the 64-byte IsAddress check accepts
-	// it; the genesis nonce expected from an invalid-backend init below
-	// then matches the default-mainnet genesis block hash.
+	// it; the genesis extra data expected from an invalid-backend init below
+	// then matches the default-mainnet genesis block.
 	genesis := `{
 		"alloc"      : {},
 		"coinbase"   : "Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -175,7 +222,7 @@ func TestCustomBackend(t *testing.T) {
 			initArgs:   []string{"--db.engine", "mssql"},
 			initExpect: `Fatal: Invalid choice for db.engine 'mssql', allowed 'leveldb' or 'pebble'`,
 			// Since the init fails, this will return the (default) mainnet genesis
-			// block nonce
+			// block extra data
 			execExpect: `0x11bbe8db4e347b4e8c937c1c8370e4b5ed33adb3db69cbdb7a38e1e50b1b82fa`,
 		},
 	} {

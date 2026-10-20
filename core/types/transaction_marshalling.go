@@ -141,14 +141,6 @@ func (tx *Transaction) UnmarshalJSON(input []byte) error {
 		}
 		itx.PublicKey = *dec.PublicKey
 
-		// TODO (cyyber): add sanity check later
-		//withSignature := itx.V.Sign() != 0 || itx.R.Sign() != 0 || itx.S.Sign() != 0
-		//if withSignature {
-		//	if err := sanityCheckSignature(itx.V, itx.R, itx.S, false); err != nil {
-		//		return err
-		//	}
-		//}
-
 	default:
 		return ErrTxTypeNotSupported
 	}

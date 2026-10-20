@@ -45,7 +45,7 @@ var (
 	testContract = common.BytesToAddress(common.FromHex("000000000000000000000000000000000000beef000000000000000000000000000000000000beef11223344556677"))
 	testEmpty    = common.BytesToAddress(common.FromHex("000000000000000000000000000000000000eeee000000000000000000000000000000000000eeee11223344556677"))
 	testSlot     = common.HexToHash("0xdeadbeef")
-	testValue    = common.BytesToStorageValue64(crypto.Keccak256Hash(testSlot[:]).Bytes())
+	testValue    = common.BytesToStorageValue64(bytes.Repeat([]byte{0x42}, common.StorageValue64Length))
 	testBalance  = big.NewInt(2e18)
 )
 
@@ -256,8 +256,11 @@ func testGetProof(t *testing.T, client *rpc.Client, addr common.Address) {
 		if proof.Key != testSlot.String() {
 			t.Fatalf("invalid storage proof key, want: %q, got: %q", testSlot.String(), proof.Key)
 		}
-		slotValue, _ := qrlcl.StorageAt(t.Context(), addr, common.HexToHash(proof.Key), nil)
-		if have, want := common.BigToHash(proof.Value), common.BytesToHash(slotValue); have != want {
+		slotValue, err := qrlcl.StorageAt(t.Context(), addr, common.HexToHash(proof.Key), nil)
+		if err != nil {
+			t.Fatalf("failed to fetch storage for %x: %v", addr, err)
+		}
+		if have, want := common.BytesToStorageValue64(proof.Value.Bytes()), common.BytesToStorageValue64(slotValue); have != want {
 			t.Fatalf("addr %x, invalid storage proof value: have: %v, want: %v", addr, have, want)
 		}
 	}
@@ -299,7 +302,7 @@ func testGetProofCanonicalizeKeys(t *testing.T, client *rpc.Client) {
 }
 
 func testGetProofNonExistent(t *testing.T, client *rpc.Client) {
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
+	addr := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001")
 	ec := New(client)
 	result, err := ec.GetProof(t.Context(), addr, nil, nil)
 	if err != nil {
@@ -389,7 +392,7 @@ func testSubscribePendingTransactions(t *testing.T, client *rpc.Client) {
 		GasFeeCap: big.NewInt(100000000000),
 		Data:      nil,
 	})
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewZondSigner(chainID)
 	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
@@ -426,7 +429,7 @@ func testSubscribeFullPendingTransactions(t *testing.T, client *rpc.Client) {
 		GasFeeCap: big.NewInt(100000000000),
 		Data:      nil,
 	})
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewZondSigner(chainID)
 	signedTx, err := types.SignTx(tx, signer, testWallet)
 	if err != nil {
 		t.Fatal(err)
@@ -484,10 +487,15 @@ func TestOverrideAccountMarshal(t *testing.T) {
 			// a non-nil but empty value.
 			Code:    []byte{},
 			Balance: big.NewInt(0),
-			State:   map[common.Hash]common.Hash{},
+			State:   map[common.Hash]common.StorageValue64{},
 			// For 'stateDiff' the behavior is different, empty map
 			// is ignored because it makes no difference.
-			StateDiff: map[common.Hash]common.Hash{},
+			StateDiff: map[common.Hash]common.StorageValue64{},
+		},
+		{0xdd}: {
+			StateDiff: map[common.Hash]common.StorageValue64{
+				{0x01}: common.BytesToStorageValue64(bytes.Repeat([]byte{0x22}, common.StorageValue64Length)),
+			},
 		},
 	}
 
@@ -511,6 +519,11 @@ func TestOverrideAccountMarshal(t *testing.T) {
   },
   "QaA000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {
     "nonce": "0x5"
+  },
+  "Qdd000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {
+    "stateDiff": {
+      "0x0100000000000000000000000000000000000000000000000000000000000000": "0x22222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222222"
+    }
   }
 }`
 

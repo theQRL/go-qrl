@@ -260,7 +260,7 @@ func accountUpdate(ctx *cli.Context) error {
 	for _, addr := range ctx.Args().Slice() {
 		addr, err := common.NewAddressFromString(addr)
 		if err != nil {
-			return errors.New("address must be specified in hexadecimal form")
+			return errors.New("address must be a Q-prefixed hex-encoded 64-byte QRL address")
 		}
 
 		account := accounts.Account{Address: addr}

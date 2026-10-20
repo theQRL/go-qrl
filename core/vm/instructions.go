@@ -192,7 +192,7 @@ func opMulmod(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]
 func opSHL(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	// Note, second operand is left in the stack; accumulate result into it, and no need to push it afterwards
 	shift, value := scope.Stack.pop(), scope.Stack.peek()
-	if shift.LtUint64(512) {
+	if shift.LtUint64(WordBits) {
 		value.Lsh(value, uint(shift.Uint64()))
 	} else {
 		value.Clear()
@@ -206,7 +206,7 @@ func opSHL(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byt
 func opSHR(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	// Note, second operand is left in the stack; accumulate result into it, and no need to push it afterwards
 	shift, value := scope.Stack.pop(), scope.Stack.peek()
-	if shift.LtUint64(512) {
+	if shift.LtUint64(WordBits) {
 		value.Rsh(value, uint(shift.Uint64()))
 	} else {
 		value.Clear()
@@ -219,7 +219,7 @@ func opSHR(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byt
 // and pushes on the stack arg2 shifted to the right by arg1 number of bits with sign extension.
 func opSAR(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	shift, value := scope.Stack.pop(), scope.Stack.peek()
-	if shift.GtUint64(512) {
+	if shift.GtUint64(WordBits) {
 		if value.Sign() >= 0 {
 			value.Clear()
 		} else {
@@ -283,7 +283,7 @@ func opCallValue(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) 
 func opCallDataLoad(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	x := scope.Stack.peek()
 	if offset, overflow := x.Uint64WithOverflow(); !overflow {
-		data := getData(scope.Contract.Input, offset, 64)
+		data := getData(scope.Contract.Input, offset, WordBytes)
 		x.SetBytes(data)
 	} else {
 		x.Clear()
@@ -489,7 +489,7 @@ func opPop(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byt
 func opMload(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]byte, error) {
 	v := scope.Stack.peek()
 	offset := int64(v.Uint64())
-	v.SetBytes(scope.Memory.GetPtr(offset, 64))
+	v.SetBytes(scope.Memory.GetPtr(offset, WordBytes))
 	return nil, nil
 }
 
@@ -591,13 +591,8 @@ func opCreate(pc *uint64, interpreter *QRVMInterpreter, scope *ScopeContext) ([]
 	}
 
 	res, addr, returnGas, suberr := interpreter.qrvm.Create(scope.Contract, input, gas, bigVal)
-	// Push item on the stack based on the returned error. If the ruleset is
-	// homestead we must check for CodeStoreOutOfGasError (homestead only
-	// rule) and treat as an error, if the ruleset is frontier we must
-	// ignore this error and pretend the operation was successful.
-	if suberr == ErrCodeStoreOutOfGas {
-		stackvalue.Clear()
-	} else if suberr != nil && suberr != ErrCodeStoreOutOfGas {
+	// Push item on the stack based on the returned error.
+	if suberr != nil {
 		stackvalue.Clear()
 	} else {
 		stackvalue.SetBytes(addr.Bytes())

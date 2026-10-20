@@ -311,7 +311,7 @@ func bindBasicType(kind abi.Type) string {
 	case abi.BytesTy:
 		return "[]byte"
 	case abi.FunctionTy:
-		return "[24]byte"
+		return "[68]byte"
 	default:
 		// string, bool types
 		return kind.String()
@@ -335,7 +335,8 @@ func bindType(kind abi.Type, structs map[string]*tmplStruct) string {
 }
 
 // bindTopicType converts a Hyperion topic type to a Go one. It is almost the same
-// functionality as for simple types, but dynamic types get converted to hashes.
+// functionality as for simple types, but dynamic types and function values get
+// converted to hashes.
 func bindTopicType(kind abi.Type, structs map[string]*tmplStruct) string {
 	bound := bindType(kind, structs)
 
@@ -343,9 +344,9 @@ func bindTopicType(kind abi.Type, structs map[string]*tmplStruct) string {
 	// parameters that are not value types i.e. arrays and structs are not
 	// stored directly but instead a keccak256-hash of an encoding is stored.
 	//
-	// We only convert strings and bytes to hash, still need to deal with
+	// We only convert strings, bytes and functions to hashes, still need to deal with
 	// array(both fixed-size and dynamic-size) and struct.
-	if bound == "string" || bound == "[]byte" {
+	if bound == "string" || bound == "[]byte" || kind.T == abi.FunctionTy {
 		bound = "common.Hash"
 	}
 	return bound

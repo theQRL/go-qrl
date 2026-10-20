@@ -132,13 +132,6 @@ type downloadTesterPeer struct {
 	chain          *core.BlockChain
 }
 
-// Head constructs a function to retrieve a peer's current head hash
-// and total difficulty.
-func (dlp *downloadTesterPeer) Head() common.Hash {
-	head := dlp.chain.CurrentBlock()
-	return head.Hash()
-}
-
 func unmarshalRlpHeaders(rlpdata []rlp.RawValue) []*types.Header {
 	var headers = make([]*types.Header, len(rlpdata))
 	for i, data := range rlpdata {

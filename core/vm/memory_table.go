@@ -37,7 +37,7 @@ func memoryExtCodeCopy(stack *Stack) (uint64, bool) {
 }
 
 func memoryMLoad(stack *Stack) (uint64, bool) {
-	return calcMemSize64WithUint(stack.Back(0), 64)
+	return calcMemSize64WithUint(stack.Back(0), uint64(WordBytes))
 }
 
 func memoryMStore8(stack *Stack) (uint64, bool) {
@@ -45,7 +45,7 @@ func memoryMStore8(stack *Stack) (uint64, bool) {
 }
 
 func memoryMStore(stack *Stack) (uint64, bool) {
-	return calcMemSize64WithUint(stack.Back(0), 64)
+	return calcMemSize64WithUint(stack.Back(0), uint64(WordBytes))
 }
 
 func memoryCreate(stack *Stack) (uint64, bool) {

@@ -78,6 +78,45 @@ func (i *HexOrDecimal256) MarshalText() ([]byte, error) {
 	return fmt.Appendf(nil, "%#x", (*big.Int)(i)), nil
 }
 
+// HexOrDecimal512 marshals big.Int as hex or decimal.
+type HexOrDecimal512 big.Int
+
+// NewHexOrDecimal512 creates a new HexOrDecimal512.
+func NewHexOrDecimal512(x int64) *HexOrDecimal512 {
+	b := big.NewInt(x)
+	h := HexOrDecimal512(*b)
+	return &h
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+//
+// It is similar to UnmarshalText, but allows parsing real decimals too, not just
+// quoted decimal strings.
+func (i *HexOrDecimal512) UnmarshalJSON(input []byte) error {
+	if len(input) > 1 && input[0] == '"' {
+		input = input[1 : len(input)-1]
+	}
+	return i.UnmarshalText(input)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (i *HexOrDecimal512) UnmarshalText(input []byte) error {
+	bigint, ok := ParseBig512(string(input))
+	if !ok {
+		return fmt.Errorf("invalid hex or decimal integer %q", input)
+	}
+	*i = HexOrDecimal512(*bigint)
+	return nil
+}
+
+// MarshalText implements encoding.TextMarshaler.
+func (i *HexOrDecimal512) MarshalText() ([]byte, error) {
+	if i == nil {
+		return []byte("0x0"), nil
+	}
+	return fmt.Appendf(nil, "%#x", (*big.Int)(i)), nil
+}
+
 // Decimal256 unmarshals big.Int as a decimal string. When unmarshalling,
 // it however accepts either "0x"-prefixed (hex encoded) or non-prefixed (decimal)
 type Decimal256 big.Int
@@ -140,6 +179,34 @@ func MustParseBig256(s string) *big.Int {
 	return v
 }
 
+// ParseBig512 parses s as a 512 bit integer in decimal or hexadecimal syntax.
+// Leading zeros are accepted. The empty string parses as zero.
+func ParseBig512(s string) (*big.Int, bool) {
+	if s == "" {
+		return new(big.Int), true
+	}
+	var bigint *big.Int
+	var ok bool
+	if len(s) >= 2 && (s[:2] == "0x" || s[:2] == "0X") {
+		bigint, ok = new(big.Int).SetString(s[2:], 16)
+	} else {
+		bigint, ok = new(big.Int).SetString(s, 10)
+	}
+	if ok && bigint.BitLen() > 512 {
+		bigint, ok = nil, false
+	}
+	return bigint, ok
+}
+
+// MustParseBig512 parses s as a 512 bit big integer and panics if the string is invalid.
+func MustParseBig512(s string) *big.Int {
+	v, ok := ParseBig512(s)
+	if !ok {
+		panic("invalid 512 bit integer: " + s)
+	}
+	return v
+}
+
 // BigPow returns a ** b as a big integer.
 func BigPow(a, b int64) *big.Int {
 	r := big.NewInt(a)
@@ -184,17 +251,6 @@ func ReadBits(bigint *big.Int, buf []byte) {
 			d >>= 8
 		}
 	}
-}
-
-// U256 encodes x as a 256 bit two's complement number. This operation is destructive.
-func U256(x *big.Int) *big.Int {
-	return x.And(x, tt256m1)
-}
-
-// U256Bytes converts a big Int into a 256bit QRVM number.
-// This operation is destructive.
-func U256Bytes(n *big.Int) []byte {
-	return PaddedBigBytes(U256(n), 32)
 }
 
 // U512 encodes x as a 512 bit two's complement number. This operation is destructive.

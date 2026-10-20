@@ -33,9 +33,13 @@ func toHexUint(h string) hexutil.Uint64 {
 	b := new(big.Int).SetBytes(common.FromHex(h))
 	return hexutil.Uint64(b.Uint64())
 }
+
 func dummyTxArgs(t txtestcase) *apitypes.SendTxArgs {
-	to, _ := common.NewMixedcaseAddressFromString(t.to)
-	from, _ := common.NewMixedcaseAddressFromString(t.from)
+	var to *common.MixedcaseAddress
+	if t.to != "" {
+		to = common.MustParseMixedcaseAddress(t.to)
+	}
+	from := common.MustParseMixedcaseAddress(t.from)
 	n := toHexUint(t.n)
 	gas := toHexUint(t.g)
 	maxFeePerGas := toHexBig(t.mfpg)

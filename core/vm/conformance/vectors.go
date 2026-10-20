@@ -20,6 +20,7 @@ package conformance
 //   0x16 AND         0x17 OR          0x18 XOR         0x19 NOT
 //   0x1a BYTE        0x1b SHL         0x1c SHR         0x1d SAR
 //   0x50 POP         0x51 MLOAD       0x52 MSTORE      0x53 MSTORE8
+//   0x54 SLOAD       0x55 SSTORE
 //   0x56 JUMP        0x57 JUMPI       0x5b JUMPDEST
 //   0x5f PUSH0
 //   0x60..0x7f PUSH1..PUSH32
@@ -56,6 +57,23 @@ func leftPad(s string, n int) string {
 		pad[i] = '0'
 	}
 	return string(pad) + s
+}
+
+// storageKeyLow is a storage key below 2^256.
+const storageKeyLow = "05"
+
+// pushStorageKeyHigh pushes 2^256 + 5 (PUSH33): a storage key whose low 256
+// bits equal storageKeyLow and whose bit 256 is set.
+const pushStorageKeyHigh = "80" + "01" + "00000000000000000000000000000000000000000000000000000000000000" + "05"
+
+// pushStorageKeyTopBit pushes 2^511 (PUSH1 1, PUSH2 511, SHL): a storage key
+// whose low 256 bits are zero.
+const pushStorageKeyTopBit = "6001" + "6101ff" + "1b"
+
+// sstoreValue42 stores 0x2a at the storage key currently on top of the stack.
+// SSTORE pops the key first, so the value is pushed underneath it.
+func sstoreValue42(pushKey string) string {
+	return "602a" + pushKey + "55"
 }
 
 // Vectors is the complete corpus exposed to test runners.
@@ -276,6 +294,59 @@ var Vectors = []Vector{
 		Name:              "MSTORE + MLOAD round-trip",
 		BytecodeHex:       "607b" + "6000" + "52" + "6000" + "51" + storeAndReturn64,
 		ExpectedReturnHex: expectedWord("7b"),
+	},
+
+	// --- storage keys (SSTORE / SLOAD) ---------------------------------
+	//
+	// Storage values are full 64-byte words, but storage keys are 32 bytes:
+	// SSTORE and SLOAD key storage by the low 256 bits of the 64-byte stack
+	// operand (see cmd/qrvm/README.md, "32-byte hashes/storage keys"). Keys
+	// that differ only above bit 255 therefore address the same slot, and a
+	// read through the aliased key is warm. Every runtime must agree on this,
+	// including the gas charged, or the storage root diverges.
+	{
+		Name:              "SSTORE + SLOAD round-trip, key below 2^256",
+		BytecodeHex:       sstoreValue42("60"+storageKeyLow) + "60" + storageKeyLow + "54" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   22224,
+	},
+	{
+		Name:              "SSTORE + SLOAD round-trip, key above 2^256",
+		BytecodeHex:       sstoreValue42(pushStorageKeyHigh) + pushStorageKeyHigh + "54" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   22224,
+	},
+	{
+		Name:              "SSTORE key 2^256+5, SLOAD key 5 -> same slot",
+		BytecodeHex:       sstoreValue42(pushStorageKeyHigh) + "60" + storageKeyLow + "54" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   22224,
+	},
+	{
+		Name:              "SSTORE key 5, SLOAD key 2^256+5 -> same slot",
+		BytecodeHex:       sstoreValue42("60"+storageKeyLow) + pushStorageKeyHigh + "54" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   22224,
+	},
+	{
+		Name:              "SSTORE key 2^511, SLOAD key 0 -> same slot",
+		BytecodeHex:       sstoreValue42(pushStorageKeyTopBit) + "6000" + "54" + storeAndReturn64,
+		ExpectedReturnHex: expectedWord("2a"),
+		ExpectedGasUsed:   22230,
+	},
+	{
+		// The value side keeps the full 64-byte word.
+		Name: "SSTORE + SLOAD keeps a full 64-byte value",
+		BytecodeHex: "9f" +
+			"0001020304050607" + "08090a0b0c0d0e0f" +
+			"1011121314151617" + "18191a1b1c1d1e1f" +
+			"2021222324252627" + "28292a2b2c2d2e2f" +
+			"3031323334353637" + "38393a3b3c3d3e3f" +
+			"60" + storageKeyLow + "55" + "60" + storageKeyLow + "54" + storeAndReturn64,
+		ExpectedReturnHex: "0001020304050607" + "08090a0b0c0d0e0f" +
+			"1011121314151617" + "18191a1b1c1d1e1f" +
+			"2021222324252627" + "28292a2b2c2d2e2f" +
+			"3031323334353637" + "38393a3b3c3d3e3f",
 	},
 
 	// --- error paths --------------------------------------------------

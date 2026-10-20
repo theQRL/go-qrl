@@ -35,7 +35,7 @@ import (
 // The values in those tests are from the Transaction Tests
 // at github.com/ethereum/tests.
 var (
-	testAddr, _ = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000b94f5374fce5edbc8e2a8697c15331677e6ebf0b99aabbccddeeff001122334455667788")
+	testAddr = common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000b94f5374fce5edbc8e2a8697c15331677e6ebf0b99aabbccddeeff001122334455667788")
 
 	emptyEip2718Tx = NewTx(&DynamicFeeTx{
 		ChainID:   big.NewInt(1),
@@ -158,16 +158,6 @@ func TestEIP2930Signer(t *testing.T) {
 			wantSignerHash: common.HexToHash("0dd9694ffcf29a75b23fd87a7a8e8517bec9b80f14d39272f2dae01c2e42b5ba"),
 			wantSenderErr:  ErrInvalidChainId,
 		},
-		// NOTE(rgeraldes24): not valid atm
-		/*
-			{
-				tx:             tx1,
-				signer:         signer1,
-				wantSenderErr:  ErrInvalidSig,
-				wantSignerHash: common.HexToHash("b6afee4d44e0392fb5d3204b350596d6677440bced7ebd998db73c9671527c57"),
-				wantHash:       common.HexToHash("1ccd12d8bbdb96ea391af49a35ab641e219b2dd638dea375f2bc94dd290f2549"),
-			},
-		*/
 		{
 			// This checks what happens when trying to sign an unsigned tx for the wrong chain.
 			tx:             tx1,
@@ -267,12 +257,6 @@ func TestEIP2718TransactionEncode(t *testing.T) {
 	}
 }
 
-func decodeTx(data []byte) (*Transaction, error) {
-	var tx Transaction
-	t, err := &tx, rlp.Decode(bytes.NewReader(data), &tx)
-	return t, err
-}
-
 // defaultTestWallet restores the wallet whose public key produced the
 // pre-signed RLP blobs hard-coded in the tests below. The seed cannot be
 // swapped for a testutil fixture without invalidating those signatures.
@@ -344,10 +328,10 @@ func TestTransactionCoding(t *testing.T) {
 		t.Fatalf("could not generate wallet: %v", err)
 	}
 	var (
-		signer       = NewZondSigner(common.Big1)
-		addr, _      = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
-		recipient, _ = common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d8799aabbccddeeff001122334455667788")
-		accesses     = AccessList{{Address: addr, StorageKeys: []common.Hash{{0}}}}
+		signer    = NewZondSigner(common.Big1)
+		addr      = common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
+		recipient = common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000095e7baea6a6c7c4c2dfeb977efac326af552d8799aabbccddeeff001122334455667788")
+		accesses  = AccessList{{Address: addr, StorageKeys: []common.Hash{{0}}}}
 	)
 	for i := range uint64(500) {
 		var txdata TxData
@@ -471,7 +455,7 @@ func assertEqual(orig *Transaction, cpy *Transaction) error {
 func TestTransactionSizes(t *testing.T) {
 	signer := NewZondSigner(big.NewInt(123))
 	wallet := testutil.LoadAccount(t, "alice").Wallet(t)
-	to, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
+	to := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000199aabbccddeeff001122334455667788")
 	for i, txdata := range []TxData{
 		&DynamicFeeTx{
 			ChainID:   big.NewInt(123),

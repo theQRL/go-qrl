@@ -25,6 +25,7 @@ import (
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/crypto/pqcrypto/wallet"
 	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/params"
 )
 
 func dynamicFeeValuedTransaction(nonce uint64, value int64, gasLimit uint64, gasFeeCap *big.Int, key wallet.Wallet) *types.Transaction {
@@ -86,7 +87,7 @@ func TestTransactionFutureAttack(t *testing.T) {
 
 	// Create the pool to test the limit enforcement with
 	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	blockchain := newTestBlockChain(eip1559Config, 1000000, statedb, new(event.Feed))
+	blockchain := newTestBlockChain(params.TestChainConfig, 1000000, statedb, new(event.Feed))
 	config := testTxPoolConfig
 	config.GlobalQueue = 100
 	config.GlobalSlots = 100
@@ -123,7 +124,7 @@ func TestTransactionFuture1559(t *testing.T) {
 	t.Parallel()
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	blockchain := newTestBlockChain(eip1559Config, 1000000, statedb, new(event.Feed))
+	blockchain := newTestBlockChain(params.TestChainConfig, 1000000, statedb, new(event.Feed))
 	pool := New(testTxPoolConfig, blockchain)
 	pool.Init(new(big.Int).SetUint64(testTxPoolConfig.PriceLimit), blockchain.CurrentBlock(), makeAddressReserver())
 	defer pool.Close()
@@ -156,7 +157,7 @@ func TestTransactionZAttack(t *testing.T) {
 	t.Parallel()
 	// Create the pool to test the pricing enforcement with
 	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	blockchain := newTestBlockChain(eip1559Config, 1000000, statedb, new(event.Feed))
+	blockchain := newTestBlockChain(params.TestChainConfig, 1000000, statedb, new(event.Feed))
 	pool := New(testTxPoolConfig, blockchain)
 	pool.Init(new(big.Int).SetUint64(testTxPoolConfig.PriceLimit), blockchain.CurrentBlock(), makeAddressReserver())
 	defer pool.Close()
@@ -224,7 +225,7 @@ func TestTransactionZAttack(t *testing.T) {
 func BenchmarkFutureAttack(b *testing.B) {
 	// Create the pool to test the limit enforcement with
 	statedb, _ := state.New(types.EmptyRootHash, state.NewDatabase(rawdb.NewMemoryDatabase()), nil)
-	blockchain := newTestBlockChain(eip1559Config, 1000000, statedb, new(event.Feed))
+	blockchain := newTestBlockChain(params.TestChainConfig, 1000000, statedb, new(event.Feed))
 	config := testTxPoolConfig
 	config.GlobalQueue = 100
 	config.GlobalSlots = 100

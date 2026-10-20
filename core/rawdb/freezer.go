@@ -59,7 +59,7 @@ const freezerTableSize = 2 * 1000 * 1000 * 1000
 //
 //   - The append-only nature ensures that disk writes are minimized.
 //   - The memory mapping ensures we can max out system memory for caching without
-//     reserving it for go-ethereum. This would also reduce the memory requirements
+//     reserving it for go-qrl. This would also reduce the memory requirements
 //     of Gqrl, and thus also GC overhead.
 type Freezer struct {
 	frozen atomic.Uint64 // Number of blocks already frozen

@@ -92,7 +92,7 @@ type rejectedTx struct {
 
 // Apply applies a set of transactions to a pre-state
 func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
-	txs types.Transactions, miningReward int64,
+	txs types.Transactions,
 	getTracerFn func(txIndex int, txHash common.Hash) (tracer vm.QRVMLogger, err error)) (*state.StateDB, *ExecutionResult, error) {
 	// Capture errors for BLOCKHASH operation, if we haven't been supplied the
 	// required blockhashes
@@ -110,7 +110,7 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 	}
 	var (
 		statedb     = MakePreState(rawdb.NewMemoryDatabase(), pre.Pre)
-		signer      = types.MakeSigner(chainConfig)
+		signer      = types.NewZondSigner(chainConfig.ChainID)
 		gaspool     = new(core.GasPool)
 		blockHash   = common.Hash{0x13, 0x37}
 		rejectedTxs []*rejectedTx
@@ -177,12 +177,11 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 
 		// Receipt:
 		{
-			var root []byte
 			statedb.Finalise(true)
 
-			// Create a new receipt for the transaction, storing the intermediate root and
+			// Create a new receipt for the transaction, storing the status and
 			// gas used by the tx.
-			receipt := &types.Receipt{Type: tx.Type(), PostState: root, CumulativeGasUsed: gasUsed}
+			receipt := &types.Receipt{Type: tx.Type(), CumulativeGasUsed: gasUsed}
 			if msgResult.Failed() {
 				receipt.Status = types.ReceiptStatusFailed
 			} else {
@@ -209,19 +208,6 @@ func (pre *Prestate) Apply(vmConfig vm.Config, chainConfig *params.ChainConfig,
 		txIndex++
 	}
 	statedb.IntermediateRoot(true)
-	// Add mining reward? (-1 means rewards are disabled)
-	if miningReward >= 0 {
-		// Add mining reward. The mining reward may be `0`, which only makes a difference in the cases
-		// where
-		// - the coinbase self-destructed, or
-		// - there are only 'bad' transactions, which aren't executed. In those cases,
-		//   the coinbase gets no txfee, so isn't created, and thus needs to be touched
-		var (
-			blockReward = big.NewInt(miningReward)
-			minerReward = new(big.Int).Set(blockReward)
-		)
-		statedb.AddBalance(pre.Env.Coinbase, minerReward)
-	}
 	// Apply withdrawals
 	for _, w := range pre.Env.Withdrawals {
 		// Amount is in shor, turn into planck

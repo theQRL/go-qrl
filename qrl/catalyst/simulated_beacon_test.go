@@ -24,6 +24,7 @@ import (
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core"
 	"github.com/theQRL/go-qrl/core/types"
+	"github.com/theQRL/go-qrl/internal/testutil"
 	"github.com/theQRL/go-qrl/miner"
 	"github.com/theQRL/go-qrl/node"
 	"github.com/theQRL/go-qrl/p2p"
@@ -31,7 +32,6 @@ import (
 	"github.com/theQRL/go-qrl/qrl"
 	"github.com/theQRL/go-qrl/qrl/downloader"
 	"github.com/theQRL/go-qrl/qrl/qrlconfig"
-	"github.com/theQRL/go-qrl/internal/testutil"
 )
 
 func startSimulatedBeaconQRLService(t *testing.T, genesis *core.Genesis) (*node.Node, *qrl.QRL, *SimulatedBeacon) {

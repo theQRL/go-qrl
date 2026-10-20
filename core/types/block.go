@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"slices"
 	"sync/atomic"
-	"time"
 
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/hexutil"
@@ -146,11 +145,6 @@ type Block struct {
 	// caches
 	hash atomic.Pointer[common.Hash]
 	size atomic.Uint64
-
-	// These fields are used by package qrl to track
-	// inter-peer block relay.
-	ReceivedAt   time.Time
-	ReceivedFrom any
 }
 
 // "external" block encoding. used for qrl protocol, etc.
@@ -326,16 +320,6 @@ func (c *writeCounter) Write(b []byte) (int, error) {
 // will not affect the block.
 func NewBlockWithHeader(header *Header) *Block {
 	return &Block{header: CopyHeader(header)}
-}
-
-// WithSeal returns a new block with the data from b but the header replaced with
-// the sealed one.
-func (b *Block) WithSeal(header *Header) *Block {
-	return &Block{
-		header:       CopyHeader(header),
-		transactions: b.transactions,
-		withdrawals:  b.withdrawals,
-	}
 }
 
 // WithBody returns a new block with the original header and a deep copy of the

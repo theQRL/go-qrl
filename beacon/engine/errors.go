@@ -61,7 +61,7 @@ var (
 
 	// INVALID is returned by the engine API in the following calls:
 	//   - newPayloadV1:       if the payload failed to execute on top of the local chain
-	//   - forkchoiceUpdateV1: if the new head is unknown, pre-merge, or reorg to it fails
+	//   - forkchoiceUpdateV1: if the new head is unknown or reorg to it fails
 	INVALID = "INVALID"
 
 	// SYNCING is returned by the engine API in the following calls:

@@ -142,13 +142,13 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		select {
 		case err := <-errc:
 			if err != nil {
-				t.Fatalf("frontier nofork <-> profork failed: %v", err)
+				t.Fatalf("genesis nofork <-> profork failed: %v", err)
 			}
 		case <-time.After(250 * time.Millisecond):
-			t.Fatalf("frontier nofork <-> profork handler timeout")
+			t.Fatalf("genesis nofork <-> profork handler timeout")
 		}
 	}
-	// Progress into Homestead. Fork's match, so we don't care what the future holds
+	// Progress to block #1. Forks match, so we don't care what the future holds
 	chainNoFork.InsertChain(blocksNoFork[:1])
 	chainProFork.InsertChain(blocksProFork[:1])
 
@@ -173,50 +173,12 @@ func testForkIDSplit(t *testing.T, protocol uint) {
 		select {
 		case err := <-errc:
 			if err != nil {
-				t.Fatalf("homestead nofork <-> profork failed: %v", err)
+				t.Fatalf("block #1 nofork <-> profork failed: %v", err)
 			}
 		case <-time.After(250 * time.Millisecond):
-			t.Fatalf("homestead nofork <-> profork handler timeout")
+			t.Fatalf("block #1 nofork <-> profork handler timeout")
 		}
 	}
-	// NOTE(rgeraldes24): revisit upon new fork
-	/*
-		// Progress into Spurious. Forks mismatch, signalling differing chains, reject
-		chainNoFork.InsertChain(blocksNoFork[1:2])
-		chainProFork.InsertChain(blocksProFork[1:2])
-
-		p2pNoFork, p2pProFork = p2p.MsgPipe()
-		defer p2pNoFork.Close()
-		defer p2pProFork.Close()
-
-		peerNoFork = qrl.NewPeer(protocol, p2p.NewPeerPipe(qnode.ID{1}, "", nil, p2pNoFork), p2pNoFork, nil)
-		peerProFork = qrl.NewPeer(protocol, p2p.NewPeerPipe(qnode.ID{2}, "", nil, p2pProFork), p2pProFork, nil)
-		defer peerNoFork.Close()
-		defer peerProFork.Close()
-
-		errc = make(chan error, 2)
-		go func(errc chan error) {
-			errc <- qrlNoFork.runQRLPeer(peerProFork, func(peer *qrl.Peer) error { return nil })
-		}(errc)
-		go func(errc chan error) {
-			errc <- qrlProFork.runQRLPeer(peerNoFork, func(peer *qrl.Peer) error { return nil })
-		}(errc)
-
-		var successes int
-		for i := range 2 {
-			select {
-			case err := <-errc:
-				if err == nil {
-					successes++
-					if successes == 2 { // Only one side disconnects
-						t.Fatalf("fork ID rejection didn't happen")
-					}
-				}
-			case <-time.After(250 * time.Millisecond):
-				t.Fatalf("split peers not rejected")
-			}
-		}
-	*/
 }
 
 // Tests that received transactions are added to the local pool.

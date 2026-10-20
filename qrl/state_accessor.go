@@ -236,7 +236,7 @@ func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIn
 		return nil, vm.BlockContext{}, statedb, release, nil
 	}
 	// Recompute transactions up to the target index.
-	signer := types.MakeSigner(qrl.blockchain.Config())
+	signer := types.NewZondSigner(qrl.blockchain.Config().ChainID)
 	for idx, tx := range block.Transactions() {
 		// Assemble the transaction call message and return if the requested offset
 		msg, _ := core.TransactionToMessage(tx, signer, block.BaseFee())
@@ -252,7 +252,6 @@ func (qrl *QRL) stateAtTransaction(ctx context.Context, block *types.Block, txIn
 			return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction %#x failed: %v", tx.Hash(), err)
 		}
 		// Ensure any modifications are committed to the state
-		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
 		statedb.Finalise(true)
 	}
 	return nil, vm.BlockContext{}, nil, nil, fmt.Errorf("transaction index %d out of range for block %#x", txIndex, block.Hash())

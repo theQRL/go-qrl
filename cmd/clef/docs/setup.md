@@ -100,7 +100,7 @@ On the `client` qube, we need to create a listener which will receive the reques
 
 """
 This implements a dispatcher which listens to localhost:8550, and proxies
-requests via qrexec to the service qubes.EthSign on a target domain
+requests via qrexec to the service qubes.Clefsign on a target domain
 """
 
 import http.server
@@ -195,4 +195,3 @@ ever connects to a local network between your computer and the device itself.
 
 Needless to say, while this model should be fairly secure against remote attacks, an attacker with physical access
 to the USB Armory would trivially be able to extract the contents of the device filesystem. 
-

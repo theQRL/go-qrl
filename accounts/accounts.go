@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"math/big"
 
-	qrl "github.com/theQRL/go-qrl"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/event"
@@ -41,8 +40,7 @@ const (
 	MimetypeTextPlain         = "text/plain"
 )
 
-// Wallet represents a software or hardware wallet that might contain one or more
-// accounts (derived from the same seed).
+// Wallet represents a software wallet that might contain one or more accounts.
 type Wallet interface {
 	// URL retrieves the canonical path under which this wallet is reachable. It is
 	// used by upper layers to define a sorting order over all wallets from multiple
@@ -54,57 +52,18 @@ type Wallet interface {
 	// encountered.
 	Status() (string, error)
 
-	// Open initializes access to a wallet instance. It is not meant to unlock or
-	// decrypt account keys, rather simply to establish a connection to hardware
-	// wallets and/or to access derivation seeds.
-	//
-	// The passphrase parameter may or may not be used by the implementation of a
-	// particular wallet instance. The reason there is no passwordless open method
-	// is to strive towards a uniform wallet handling, oblivious to the different
-	// backend providers.
-	//
-	// Please note, if you open a wallet, you must close it to release any allocated
-	// resources (especially important when working with hardware wallets).
-	Open(passphrase string) error
-
-	// Close releases any resources held by an open wallet instance.
-	Close() error
-
-	// Accounts retrieves the list of signing accounts the wallet is currently aware
-	// of. For hierarchical deterministic wallets, the list will not be exhaustive,
-	// rather only contain the accounts explicitly pinned during account derivation.
+	// Accounts retrieves the list of signing accounts the wallet is currently aware of.
 	Accounts() []Account
 
 	// Contains returns whether an account is part of this particular wallet or not.
 	Contains(account Account) bool
-
-	// Derive attempts to explicitly derive a hierarchical deterministic account at
-	// the specified derivation path. If requested, the derived account will be added
-	// to the wallet's tracked account list.
-	Derive(path DerivationPath, pin bool) (Account, error)
-
-	// SelfDerive sets a base account derivation path from which the wallet attempts
-	// to discover non zero accounts and automatically add them to list of tracked
-	// accounts.
-	//
-	// Note, self derivation will increment the last component of the specified path
-	// opposed to descending into a child path to allow discovering accounts starting
-	// from non zero components.
-	//
-	// Some hardware wallets switched derivation paths through their evolution, so
-	// this method supports providing multiple bases to discover old user accounts
-	// too. Only the last base will be used to derive the next empty account.
-	//
-	// You can disable automatic account discovery by calling SelfDerive with a nil
-	// chain state reader.
-	SelfDerive(bases []DerivationPath, chain qrl.ChainStateReader)
 
 	// SignData requests the wallet to sign the hash of the given data
 	// It looks up the account specified either solely via its address contained within,
 	// or optionally with the aid of any location metadata from the embedded URL field.
 	//
 	// If the wallet requires additional authentication to sign the request (e.g.
-	// a password to decrypt the account, or a PIN code to verify the transaction),
+	// a password to decrypt the account),
 	// an AuthNeededError instance will be returned, containing infos for the user
 	// about which fields or actions are needed. The user may retry by providing
 	// the needed details via SignDataWithPassphrase, or by other means (e.g. unlock
@@ -123,13 +82,11 @@ type Wallet interface {
 	// or optionally with the aid of any location metadata from the embedded URL field.
 	//
 	// If the wallet requires additional authentication to sign the request (e.g.
-	// a password to decrypt the account, or a PIN code to verify the transaction),
+	// a password to decrypt the account),
 	// an AuthNeededError instance will be returned, containing infos for the user
 	// about which fields or actions are needed. The user may retry by providing
 	// the needed details via SignTextWithPassphrase, or by other means (e.g. unlock
 	// the account in a keystore).
-	//
-	// This method should return the signature in 'canonical' format, with v 0 or 1.
 	SignText(account Account, text []byte) ([]byte, error)
 
 	// SignTextWithPassphrase is identical to Signtext, but also takes a password
@@ -141,7 +98,7 @@ type Wallet interface {
 	// or optionally with the aid of any location metadata from the embedded URL field.
 	//
 	// If the wallet requires additional authentication to sign the request (e.g.
-	// a password to decrypt the account, or a PIN code to verify the transaction),
+	// a password to decrypt the account),
 	// an AuthNeededError instance will be returned, containing infos for the user
 	// about which fields or actions are needed. The user may retry by providing
 	// the needed details via SignTxWithPassphrase, or by other means (e.g. unlock
@@ -157,14 +114,9 @@ type Wallet interface {
 type Backend interface {
 	// Wallets retrieves the list of wallets the backend is currently aware of.
 	//
-	// The returned wallets are not opened by default. For software HD wallets this
-	// means that no base seeds are decrypted, and for hardware wallets that no actual
-	// connection is established.
-	//
 	// The resulting wallet list will be sorted alphabetically based on its internal
-	// URL assigned by the backend. Since wallets (especially hardware) may come and
-	// go, the same wallet might appear at a different positions in the list during
-	// subsequent retrievals.
+	// URL assigned by the backend. Wallets may come and go, so the same wallet might
+	// appear at a different position in the list during subsequent retrievals.
 	Wallets() []Wallet
 
 	// Subscribe creates an async subscription to receive notifications when the
@@ -208,10 +160,6 @@ const (
 	// WalletArrived is fired when a new wallet is detected either via a
 	// filesystem event in the keystore.
 	WalletArrived WalletEventType = iota
-
-	// WalletOpened is fired when a wallet is successfully opened with the purpose
-	// of starting any background processes such as automatic key derivation.
-	WalletOpened
 
 	// WalletDropped is fired when a wallet is removed or disconnected due to a
 	// filesystem event in the keystore. This event indicates that the wallet

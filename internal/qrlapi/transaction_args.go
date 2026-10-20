@@ -46,7 +46,6 @@ type TransactionArgs struct {
 
 	// We accept "data" and "input" for backwards-compatibility reasons.
 	// "input" is the newer name and should be preferred by clients.
-	// Issue detail: https://github.com/theQRL/go-qrl/issues/15628
 	Data  *hexutil.Bytes `json:"data"`
 	Input *hexutil.Bytes `json:"input"`
 
@@ -131,29 +130,27 @@ func (args *TransactionArgs) setDefaults(ctx context.Context, b Backend) error {
 
 // setFeeDefaults fills in default fee values for unspecified tx fields.
 func (args *TransactionArgs) setFeeDefaults(ctx context.Context, b Backend) error {
-	// If the tx has completely specified a fee mechanism, no default is needed. This allows users
-	// who are not yet synced past London to get defaults for other tx values. See
-	// https://github.com/theQRL/go-qrl/pull/23274 for more information.
-	eip1559ParamsSet := args.MaxFeePerGas != nil && args.MaxPriorityFeePerGas != nil
-	if eip1559ParamsSet {
-		// Sanity check the EIP-1559 fee parameters if present.
+	// If the tx has completely specified a fee mechanism, no default is needed.
+	feeParamsSet := args.MaxFeePerGas != nil && args.MaxPriorityFeePerGas != nil
+	if feeParamsSet {
+		// Sanity check the fee parameters if present.
 		if args.MaxFeePerGas.ToInt().Cmp(args.MaxPriorityFeePerGas.ToInt()) < 0 {
 			return fmt.Errorf("maxFeePerGas (%v) < maxPriorityFeePerGas (%v)", args.MaxFeePerGas, args.MaxPriorityFeePerGas)
 		}
 		return nil
 	}
-	// Now attempt to fill in default value depending on whether London is active or not.
+	// Now attempt to fill in default values.
 	head := b.CurrentHeader()
-	// London is active, set maxPriorityFeePerGas and maxFeePerGas.
-	if err := args.setLondonFeeDefaults(ctx, head, b); err != nil {
+	// Set maxPriorityFeePerGas and maxFeePerGas.
+	if err := args.setDynamicFeeDefaults(ctx, head, b); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// setLondonFeeDefaults fills in reasonable default fee values for unspecified fields.
-func (args *TransactionArgs) setLondonFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
+// setDynamicFeeDefaults fills in reasonable default fee values for unspecified fields.
+func (args *TransactionArgs) setDynamicFeeDefaults(ctx context.Context, head *types.Header, b Backend) error {
 	// Set maxPriorityFeePerGas if it is missing.
 	if args.MaxPriorityFeePerGas == nil {
 		tip, err := b.SuggestGasTipCap(ctx)
@@ -208,7 +205,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*
 		gasTipCap *big.Int
 	)
 
-	// BaseFee is always required in go-qrl (post-London only).
+	// BaseFee is always required in go-qrl.
 	if baseFee == nil {
 		return nil, errors.New("missing BaseFee")
 	}
@@ -221,7 +218,7 @@ func (args *TransactionArgs) ToMessage(globalGasCap uint64, baseFee *big.Int) (*
 	if args.MaxPriorityFeePerGas != nil {
 		gasTipCap = args.MaxPriorityFeePerGas.ToInt()
 	}
-	// Backfill the legacy gasPrice for QRVM execution, unless we're all zeroes
+	// Backfill the gasPrice for QRVM execution, unless we're all zeroes
 	gasPrice = new(big.Int).Set(gasFeeCap)
 	if gasFeeCap.BitLen() > 0 || gasTipCap.BitLen() > 0 {
 		gasPrice = math.BigMin(new(big.Int).Add(gasTipCap, baseFee), gasFeeCap)

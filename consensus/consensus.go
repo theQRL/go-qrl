@@ -44,15 +44,6 @@ type ChainHeaderReader interface {
 	GetHeaderByHash(hash common.Hash) *types.Header
 }
 
-// ChainReader defines a small collection of methods needed to access the local
-// blockchain during header.
-type ChainReader interface {
-	ChainHeaderReader
-
-	// GetBlock retrieves a block from the database by hash and number.
-	GetBlock(hash common.Hash, number uint64) *types.Block
-}
-
 // Engine is an algorithm agnostic consensus engine.
 type Engine interface {
 	// Author retrieves the QRL address of the account that minted the given

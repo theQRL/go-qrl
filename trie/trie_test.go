@@ -719,15 +719,15 @@ func TestTinyTrie(t *testing.T) {
 	_, accounts := makeAccounts(5)
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	trie.MustUpdate(common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000001337"), accounts[3])
-	if exp, root := common.HexToHash("8c6a85a4d9fda98feff88450299e574e5378e32391f75a055d470ac0653f1005"), trie.Hash(); exp != root {
+	if exp, root := common.HexToHash("f0ec73783c59c4e3f67c299f1c399588b36de9c6cd9063748a6066820b4175e3"), trie.Hash(); exp != root {
 		t.Errorf("1: got %x, exp %x", root, exp)
 	}
 	trie.MustUpdate(common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000001338"), accounts[4])
-	if exp, root := common.HexToHash("ec63b967e98a5720e7f720482151963982890d82c9093c0d486b7eb8883a66b1"), trie.Hash(); exp != root {
+	if exp, root := common.HexToHash("81dac7d1dec37df6413fb26994f53e027ddc4bacbb02f553a18bb805e438f228"), trie.Hash(); exp != root {
 		t.Errorf("2: got %x, exp %x", root, exp)
 	}
 	trie.MustUpdate(common.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000001339"), accounts[4])
-	if exp, root := common.HexToHash("0608c1d1dc3905fa22204c7a0e43644831c3b6d3def0f274be623a948197e64a"), trie.Hash(); exp != root {
+	if exp, root := common.HexToHash("2969bb273a50842b3c30421a6ed982aafe262eaafc97b93a53d7fd5afc3cd9a0"), trie.Hash(); exp != root {
 		t.Errorf("3: got %x, exp %x", root, exp)
 	}
 	checktr := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
@@ -751,7 +751,7 @@ func TestCommitAfterHash(t *testing.T) {
 	trie.Hash()
 	trie.Commit(false)
 	root := trie.Hash()
-	exp := common.HexToHash("72f9d3f3fe1e1dd7b8936442e7642aef76371472d94319900790053c493f3fe6")
+	exp := common.HexToHash("ac983053da3b8170be1b4272e53aa8f29f5c80a3f0c877fc95c5971b6c089d09")
 	if exp != root {
 		t.Errorf("got %x, exp %x", root, exp)
 	}
@@ -761,15 +761,13 @@ func TestCommitAfterHash(t *testing.T) {
 	}
 }
 
-func makeAccounts(size int) (addresses [][20]byte, accounts [][]byte) {
+func makeAccounts(size int) (addresses []common.Address, accounts [][]byte) {
 	// Make the random benchmark deterministic
 	random := rand.New(rand.NewSource(0))
 	// Create a realistic account trie to hash
-	addresses = make([][20]byte, size)
+	addresses = make([]common.Address, size)
 	for i := range addresses {
-		data := make([]byte, 20)
-		random.Read(data)
-		copy(addresses[i][:], data)
+		random.Read(addresses[i][:])
 	}
 	accounts = make([][]byte, len(addresses))
 	for i := range accounts {
@@ -849,9 +847,9 @@ func TestCommitSequence(t *testing.T) {
 		count           int
 		expWriteSeqHash []byte
 	}{
-		{20, common.FromHex("873c78df73d60e59d4a2bcf3716e8bfe14554549fea2fc147cb54129382a8066")},
-		{200, common.FromHex("ba03d891bb15408c940eea5ee3d54d419595102648d02774a0268d892add9c8e")},
-		{2000, common.FromHex("f7a184f20df01c94f09537401d11e68d97ad0c00115233107f51b9c287ce60c7")},
+		{20, common.FromHex("04ee29cc9ace94774bcaac4aac03b0d8fe80c001fad14da66fe95ea04439b52d")},
+		{200, common.FromHex("a5bed49f30759b4b07df790d225f4b8f6034e37a28aaa2af90ddb5e0b0d4a5da")},
+		{2000, common.FromHex("dbd43b168e1a0a40c0afb68d8e8c9ac3f21a28733e5d63ddef1dadd90e91f0b9")},
 	} {
 		addresses, accounts := makeAccounts(tc.count)
 		// This spongeDb is used to check the sequence of disk-db-writes
@@ -1053,7 +1051,7 @@ func BenchmarkHashFixedSize(b *testing.B) {
 	})
 }
 
-func benchmarkHashFixedSize(b *testing.B, addresses [][20]byte, accounts [][]byte) {
+func benchmarkHashFixedSize(b *testing.B, addresses []common.Address, accounts [][]byte) {
 	b.ReportAllocs()
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	for i := range addresses {
@@ -1104,7 +1102,7 @@ func BenchmarkCommitAfterHashFixedSize(b *testing.B) {
 	})
 }
 
-func benchmarkCommitAfterHashFixedSize(b *testing.B, addresses [][20]byte, accounts [][]byte) {
+func benchmarkCommitAfterHashFixedSize(b *testing.B, addresses []common.Address, accounts [][]byte) {
 	b.ReportAllocs()
 	trie := NewEmpty(NewDatabase(rawdb.NewMemoryDatabase(), nil))
 	for i := range addresses {
@@ -1156,7 +1154,7 @@ func BenchmarkDerefRootFixedSize(b *testing.B) {
 	})
 }
 
-func benchmarkDerefRootFixedSize(b *testing.B, addresses [][20]byte, accounts [][]byte) {
+func benchmarkDerefRootFixedSize(b *testing.B, addresses []common.Address, accounts [][]byte) {
 	b.ReportAllocs()
 	triedb := NewDatabase(rawdb.NewMemoryDatabase(), nil)
 	trie := NewEmpty(triedb)
@@ -1187,8 +1185,8 @@ func TestDecodeNode(t *testing.T) {
 	t.Parallel()
 
 	var (
-		hash  = make([]byte, 20)
-		elems = make([]byte, 20)
+		hash  = make([]byte, common.HashLength)
+		elems = make([]byte, common.HashLength)
 	)
 	for range 5000000 {
 		prng.Read(hash)

@@ -14,7 +14,7 @@ import (
 )
 
 // MarshalTOML marshals as TOML.
-func (c Config) MarshalTOML() (any, error) {
+func (c Config) MarshalTOML() (interface{}, error) {
 	type Config struct {
 		Genesis                 *core.Genesis `toml:",omitempty"`
 		NetworkId               uint64
@@ -23,7 +23,6 @@ func (c Config) MarshalTOML() (any, error) {
 		SnapDiscoveryURLs       []string
 		NoPruning               bool
 		NoPrefetch              bool
-		TxLookupLimit           uint64                 `toml:",omitempty"`
 		TransactionHistory      uint64                 `toml:",omitempty"`
 		StateHistory            uint64                 `toml:",omitempty"`
 		StateScheme             string                 `toml:",omitempty"`
@@ -81,7 +80,7 @@ func (c Config) MarshalTOML() (any, error) {
 }
 
 // UnmarshalTOML unmarshals from TOML.
-func (c *Config) UnmarshalTOML(unmarshal func(any) error) error {
+func (c *Config) UnmarshalTOML(unmarshal func(interface{}) error) error {
 	type Config struct {
 		Genesis                 *core.Genesis `toml:",omitempty"`
 		NetworkId               *uint64
@@ -90,7 +89,6 @@ func (c *Config) UnmarshalTOML(unmarshal func(any) error) error {
 		SnapDiscoveryURLs       []string
 		NoPruning               *bool
 		NoPrefetch              *bool
-		TxLookupLimit           *uint64                `toml:",omitempty"`
 		TransactionHistory      *uint64                `toml:",omitempty"`
 		StateHistory            *uint64                `toml:",omitempty"`
 		StateScheme             *string                `toml:",omitempty"`

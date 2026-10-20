@@ -17,12 +17,8 @@
 package core
 
 import (
-	crand "crypto/rand"
 	"errors"
 	"fmt"
-	"math"
-	"math/big"
-	mrand "math/rand"
 	"sync/atomic"
 	"time"
 
@@ -48,9 +44,9 @@ const (
 // HeaderChain is responsible for maintaining the header chain including the
 // header query and updating.
 //
-// The components maintained by headerchain includes: (1) total difficulty
-// (2) header (3) block hash -> number mapping (4) canonical number -> hash mapping
-// and (5) head header flag.
+// The components maintained by headerchain includes: (1) header
+// (2) block hash -> number mapping (3) canonical number -> hash mapping
+// and (4) head header flag.
 //
 // It is not thread safe either, the encapsulating chain structures should do
 // the necessary mutex locking/unlocking.
@@ -67,25 +63,18 @@ type HeaderChain struct {
 
 	procInterrupt func() bool
 
-	rand   *mrand.Rand
 	engine consensus.Engine
 }
 
 // NewHeaderChain creates a new HeaderChain structure. ProcInterrupt points
 // to the parent's interrupt semaphore.
 func NewHeaderChain(chainDb qrldb.Database, config *params.ChainConfig, engine consensus.Engine, procInterrupt func() bool) (*HeaderChain, error) {
-	// Seed a fast but crypto originating random generator
-	seed, err := crand.Int(crand.Reader, big.NewInt(math.MaxInt64))
-	if err != nil {
-		return nil, err
-	}
 	hc := &HeaderChain{
 		config:        config,
 		chainDb:       chainDb,
 		headerCache:   lru.NewCache[common.Hash, *types.Header](headerCacheLimit),
 		numberCache:   lru.NewCache[common.Hash, uint64](numberCacheLimit),
 		procInterrupt: procInterrupt,
-		rand:          mrand.New(mrand.NewSource(seed.Int64())),
 		engine:        engine,
 	}
 	hc.genesisHeader = hc.GetHeaderByNumber(0)
@@ -242,12 +231,11 @@ func (hc *HeaderChain) WriteHeaders(headers []*types.Header) (int, error) {
 }
 
 // writeHeadersAndSetHead writes a batch of block headers and applies the last
-// header as the chain head if the fork choicer says it's ok to update the chain.
+// header as the chain head.
 // Note: This method is not concurrent-safe with inserting blocks simultaneously
 // into the chain, as side effects caused by reorganisations cannot be emulated
 // without the real blocks. Hence, writing headers directly should only be done
-// in two scenarios: pure-header mode of operation (light clients), or properly
-// separated header/block phases (non-archive clients).
+// with properly separated header/block phases (non-archive clients).
 func (hc *HeaderChain) writeHeadersAndSetHead(headers []*types.Header) (*headerWriteResult, error) {
 	inserted, err := hc.WriteHeaders(headers)
 	if err != nil {
@@ -320,8 +308,8 @@ func (hc *HeaderChain) ValidateHeaderChain(chain []*types.Header) (int, error) {
 // This insert is all-or-nothing. If this returns an error, no headers were written,
 // otherwise they were all processed successfully.
 //
-// The returned 'write status' says if the inserted headers are part of the canonical chain
-// or a side chain.
+// The returned 'write status' says if the inserted headers were applied to the
+// canonical chain or were already part of it.
 func (hc *HeaderChain) InsertHeaderChain(chain []*types.Header, start time.Time) (WriteStatus, error) {
 	if hc.procInterrupt() {
 		return 0, errors.New("aborted")
@@ -415,7 +403,7 @@ func (hc *HeaderChain) GetHeaderByHash(hash common.Hash) *types.Header {
 
 // HasHeader checks if a block header is present in the database or not.
 // In theory, if header is present in the database, all relative components
-// like td and hash->number should be present too.
+// like hash->number should be present too.
 func (hc *HeaderChain) HasHeader(hash common.Hash, number uint64) bool {
 	if hc.numberCache.Contains(hash) || hc.headerCache.Contains(hash) {
 		return true
@@ -622,9 +610,3 @@ func (hc *HeaderChain) Config() *params.ChainConfig { return hc.config }
 
 // Engine retrieves the header chain's consensus engine.
 func (hc *HeaderChain) Engine() consensus.Engine { return hc.engine }
-
-// GetBlock implements consensus.ChainReader, and returns nil for every input as
-// a header chain does not have blocks available for retrieval.
-func (hc *HeaderChain) GetBlock(hash common.Hash, number uint64) *types.Block {
-	return nil
-}

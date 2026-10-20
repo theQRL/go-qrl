@@ -350,7 +350,7 @@ func (api *FilterAPI) GetLogs(ctx context.Context, crit FilterCriteria) ([]*type
 		if crit.ToBlock != nil {
 			end = crit.ToBlock.Int64()
 		}
-		if begin > 0 && end > 0 && begin > end {
+		if begin >= 0 && end >= 0 && begin > end {
 			return nil, errInvalidBlockRange
 		}
 		// Construct the range filter
@@ -557,7 +557,7 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 
 			case string:
 				// match specific topic
-				top, err := decodeTopic(topic)
+				top, err := common.ParseLogTopic(topic)
 				if err != nil {
 					return err
 				}
@@ -575,7 +575,7 @@ func (args *FilterCriteria) UnmarshalJSON(data []byte) error {
 						break
 					}
 					if topic, ok := rawTopic.(string); ok {
-						parsed, err := decodeTopic(topic)
+						parsed, err := common.ParseLogTopic(topic)
 						if err != nil {
 							return err
 						}
@@ -599,12 +599,4 @@ func decodeAddress(s string) (common.Address, error) {
 		err = fmt.Errorf("hex has invalid length %d after decoding; expected %d for address", len(b), common.AddressLength)
 	}
 	return common.BytesToAddress(b), err
-}
-
-func decodeTopic(s string) (common.LogTopic, error) {
-	b, err := hexutil.Decode(s)
-	if err == nil && len(b) != common.LogTopicLength {
-		err = fmt.Errorf("hex has invalid length %d after decoding; expected %d for topic", len(b), common.LogTopicLength)
-	}
-	return common.BytesToLogTopic(b), err
 }

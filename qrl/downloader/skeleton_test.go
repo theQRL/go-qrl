@@ -190,10 +190,6 @@ func (p *skeletonTestPeer) RequestHeadersByNumber(origin uint64, amount int, ski
 	return req, nil
 }
 
-func (p *skeletonTestPeer) Head() common.Hash {
-	panic("skeleton sync must not request the remote head")
-}
-
 func (p *skeletonTestPeer) RequestHeadersByHash(common.Hash, int, int, bool, chan *qrl.Response) (*qrl.Request, error) {
 	panic("skeleton sync must not request headers by hash")
 }

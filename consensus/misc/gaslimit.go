@@ -22,9 +22,8 @@ import (
 	"github.com/theQRL/go-qrl/params"
 )
 
-// VerifyGaslimit verifies the header gas limit according increase/decrease
-// in relation to the parent gas limit.
-func VerifyGaslimit(parentGasLimit, headerGasLimit uint64) error {
+// VerifyGaslimit verifies the header gas limit is within the allowed bounds.
+func VerifyGaslimit(headerGasLimit uint64) error {
 	if headerGasLimit > params.MaxGasLimit {
 		return fmt.Errorf("invalid gas limit beyond %d", params.MaxGasLimit)
 	}

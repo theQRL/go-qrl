@@ -206,6 +206,65 @@ func TestMarshalBig(t *testing.T) {
 	}
 }
 
+var unmarshalU512Tests = []unmarshalTest{
+	// invalid encoding
+	{input: "", wantErr: errJSONEOF},
+	{input: "null", wantErr: errNonString(u512T)},
+	{input: "10", wantErr: errNonString(u512T)},
+	{input: `"0"`, wantErr: wrapTypeError(ErrMissingPrefix, u512T)},
+	{input: `"0x"`, wantErr: wrapTypeError(ErrEmptyNumber, u512T)},
+	{input: `"0x01"`, wantErr: wrapTypeError(ErrLeadingZero, u512T)},
+	{input: `"0x` + string(bytes.Repeat([]byte{'f'}, 129)) + `"`, wantErr: wrapTypeError(ErrBig512Range, u512T)},
+	{input: `"0xx"`, wantErr: wrapTypeError(ErrSyntax, u512T)},
+	{input: `"0x1zz01"`, wantErr: wrapTypeError(ErrSyntax, u512T)},
+
+	// valid encoding
+	{input: `""`, want: big.NewInt(0)},
+	{input: `"0x0"`, want: big.NewInt(0)},
+	{input: `"0x2"`, want: big.NewInt(2)},
+	{input: `"0x` + string(bytes.Repeat([]byte{'f'}, 64)) + `"`, want: referenceBig(string(bytes.Repeat([]byte{'f'}, 64)))},
+	{input: `"0x` + string(bytes.Repeat([]byte{'f'}, 128)) + `"`, want: referenceBig(string(bytes.Repeat([]byte{'f'}, 128)))},
+}
+
+var encodeU512Tests = []marshalTest{
+	{referenceBig("0"), "0x0"},
+	{referenceBig("2"), "0x2"},
+	{referenceBig(string(bytes.Repeat([]byte{'f'}, 64))), "0x" + string(bytes.Repeat([]byte{'f'}, 64))},
+	{referenceBig(string(bytes.Repeat([]byte{'f'}, 128))), "0x" + string(bytes.Repeat([]byte{'f'}, 128))},
+}
+
+func TestUnmarshalU512(t *testing.T) {
+	for _, test := range unmarshalU512Tests {
+		var v U512
+		err := json.Unmarshal([]byte(test.input), &v)
+		if !checkError(t, test.input, err, test.wantErr) {
+			continue
+		}
+		if test.want != nil && test.want.(*big.Int).Cmp((*big.Int)(&v)) != 0 {
+			t.Errorf("input %s: value mismatch: got %x, want %x", test.input, (*big.Int)(&v), test.want)
+		}
+	}
+}
+
+func TestMarshalU512(t *testing.T) {
+	for _, test := range encodeU512Tests {
+		in := test.input.(*big.Int)
+		out, err := json.Marshal((*U512)(in))
+		if err != nil {
+			t.Errorf("%d: %v", in, err)
+			continue
+		}
+		if want := `"` + test.want + `"`; string(out) != want {
+			t.Errorf("%d: MarshalJSON output mismatch: got %q, want %q", in, out, want)
+			continue
+		}
+		if out := (*U512)(in).String(); out != test.want {
+			t.Errorf("%x: String mismatch: got %q, want %q", in, out, test.want)
+			continue
+		}
+	}
+}
+
 var unmarshalUint64Tests = []unmarshalTest{
 	// invalid encoding
 	{input: "", wantErr: errJSONEOF},

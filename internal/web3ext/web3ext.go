@@ -353,11 +353,6 @@ web3._extend({
 			inputFormatter:[null, null],
 		}),
 		new web3._extend.Method({
-			name: 'freezeClient',
-			call: 'debug_freezeClient',
-			params: 1,
-		}),
-		new web3._extend.Method({
 			name: 'getAccessibleState',
 			call: 'debug_getAccessibleState',
 			params: 2,
@@ -409,12 +404,6 @@ web3._extend({
 			inputFormatter: [web3._extend.formatters.inputAddressFormatter, null]
 		}),
 		new web3._extend.Method({
-			name: 'resend',
-			call: 'qrl_resend',
-			params: 3,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter, web3._extend.utils.fromDecimal, web3._extend.utils.fromDecimal]
-		}),
-		new web3._extend.Method({
 			name: 'signTransaction',
 			call: 'qrl_signTransaction',
 			params: 1,
@@ -426,12 +415,6 @@ web3._extend({
 			params: 2,
 			inputFormatter: [web3._extend.formatters.inputCallFormatter, web3._extend.formatters.inputBlockNumberFormatter],
 			outputFormatter: web3._extend.utils.toDecimal
-		}),
-		new web3._extend.Method({
-			name: 'submitTransaction',
-			call: 'qrl_submitTransaction',
-			params: 1,
-			inputFormatter: [web3._extend.formatters.inputTransactionFormatter]
 		}),
 		new web3._extend.Method({
 			name: 'fillTransaction',

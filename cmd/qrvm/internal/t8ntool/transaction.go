@@ -105,7 +105,7 @@ func Transaction(ctx *cli.Context) error {
 			return NewError(ErrorIO, errors.New("only rlp supported"))
 		}
 	}
-	signer := types.MakeSigner(chainConfig)
+	signer := types.NewZondSigner(chainConfig.ChainID)
 	// We now have the transactions in 'body', which is supposed to be an
 	// rlp list of transactions
 	it, err := rlp.NewListIterator([]byte(body))
@@ -150,16 +150,12 @@ func Transaction(ctx *cli.Context) error {
 			r.Error = errors.New("nonce exceeds 2^64-1")
 		case tx.Value().BitLen() > 256:
 			r.Error = errors.New("value exceeds 256 bits")
-		case tx.GasPrice().BitLen() > 256:
-			r.Error = errors.New("gasPrice exceeds 256 bits")
 		case tx.GasTipCap().BitLen() > 256:
 			r.Error = errors.New("maxPriorityFeePerGas exceeds 256 bits")
 		case tx.GasFeeCap().BitLen() > 256:
 			r.Error = errors.New("maxFeePerGas exceeds 256 bits")
 		case tx.GasFeeCap().Cmp(tx.GasTipCap()) < 0:
 			r.Error = errors.New("maxFeePerGas < maxPriorityFeePerGas")
-		case new(big.Int).Mul(tx.GasPrice(), new(big.Int).SetUint64(tx.Gas())).BitLen() > 256:
-			r.Error = errors.New("gas * gasPrice exceeds 256 bits")
 		case new(big.Int).Mul(tx.GasFeeCap(), new(big.Int).SetUint64(tx.Gas())).BitLen() > 256:
 			r.Error = errors.New("gas * maxFeePerGas exceeds 256 bits")
 		}

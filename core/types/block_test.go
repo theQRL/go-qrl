@@ -39,7 +39,7 @@ import (
 // blob is no longer valid, but canonicality of the encoding still is.
 func TestBlockEncoding(t *testing.T) {
 	roundTripBlockEncoding(t, func(signer Signer, w wallet.Wallet) *Transaction {
-		to, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
+		to := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
 		tx, err := SignNewTx(w, signer, &DynamicFeeTx{
 			ChainID:   signer.ChainID(),
 			Nonce:     9,
@@ -61,7 +61,7 @@ func TestBlockEncoding(t *testing.T) {
 // to exercise the EIP-1559 encoding path.
 func TestEIP1559BlockEncoding(t *testing.T) {
 	roundTripBlockEncoding(t, func(signer Signer, w wallet.Wallet) *Transaction {
-		to, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
+		to := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
 		tx, err := SignNewTx(w, signer, &DynamicFeeTx{
 			ChainID:   signer.ChainID(),
 			Nonce:     18,
@@ -88,7 +88,7 @@ func TestEIP1559BlockEncoding(t *testing.T) {
 // — same invariants, a different transaction shape.
 func TestEIP2718BlockEncoding(t *testing.T) {
 	roundTripBlockEncoding(t, func(signer Signer, w wallet.Wallet) *Transaction {
-		to, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
+		to := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
 		tx, err := SignNewTx(w, signer, &DynamicFeeTx{
 			ChainID:   signer.ChainID(),
 			Nonce:     42,
@@ -188,7 +188,7 @@ func makeBenchBlock() *Block {
 		w, _     = wallet.Generate(wallet.ML_DSA_87)
 		txs      = make([]*Transaction, 70)
 		receipts = make([]*Receipt, len(txs))
-		signer   = LatestSigner(params.TestChainConfig)
+		signer   = NewZondSigner(params.TestChainConfig.ChainID)
 	)
 	header := &Header{
 		Number:   math.BigPow(2, 9),
@@ -216,7 +216,6 @@ func makeBenchBlock() *Block {
 		txs[i] = signedTx
 		receipts[i] = &Receipt{
 			Type:              DynamicFeeTxType,
-			PostState:         common.CopyBytes(make([]byte, 32)),
 			CumulativeGasUsed: tx.Gas(),
 			Status:            ReceiptStatusSuccessful,
 		}
@@ -288,7 +287,7 @@ func TestMaxBlockSize(t *testing.T) {
 	gasLimit := params.MaxGasLimit
 	numTxs := gasLimit / params.TxGas
 
-	to, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
+	to := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000009a9070028361F7AAbeB3f2F2Dc07F82C4a98A02a99aabbccddeeff001122334455667788")
 
 	txs := make([]*Transaction, numTxs)
 	for i := uint64(0); i < numTxs; i++ {

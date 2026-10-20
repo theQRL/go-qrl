@@ -108,9 +108,9 @@ var (
 	trieNodeStoragePrefix = []byte("O") // trieNodeStoragePrefix + accountHash + hexPath -> trie node
 	stateIDPrefix         = []byte("L") // stateIDPrefix + state root -> state id
 
-	PreimagePrefix = []byte("secure-key-")       // PreimagePrefix + hash -> preimage
-	configPrefix   = []byte("ethereum-config-")  // config prefix for the db
-	genesisPrefix  = []byte("ethereum-genesis-") // genesis state prefix for the db
+	PreimagePrefix = []byte("secure-key-")  // PreimagePrefix + hash -> preimage
+	configPrefix   = []byte("qrl-config-")  // config prefix for the db
+	genesisPrefix  = []byte("qrl-genesis-") // genesis state prefix for the db
 
 	// BloomBitsIndexPrefix is the data table of a chain indexer to track its progress
 	BloomBitsIndexPrefix = []byte("iB")

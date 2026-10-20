@@ -54,21 +54,6 @@ func sigToPub(hash, sig []byte) (*secp256k1.PublicKey, error) {
 	return pub, err
 }
 
-// SigToPub returns the public key that created the given signature.
-func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
-	pub, err := sigToPub(hash, sig)
-	if err != nil {
-		return nil, err
-	}
-	// We need to explicitly set the curve here, because we're wrapping
-	// the original curve to add (un-)marshalling
-	return &ecdsa.PublicKey{
-		Curve: S256(),
-		X:     pub.X(),
-		Y:     pub.Y(),
-	}, nil
-}
-
 // Sign calculates an ECDSA signature.
 //
 // This function is susceptible to chosen plaintext attacks that can leak

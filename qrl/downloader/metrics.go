@@ -25,7 +25,6 @@ import (
 var (
 	headerInMeter      = metrics.NewRegisteredMeter("qrl/downloader/headers/in", nil)
 	headerReqTimer     = metrics.NewRegisteredTimer("qrl/downloader/headers/req", nil)
-	headerDropMeter    = metrics.NewRegisteredMeter("qrl/downloader/headers/drop", nil)
 	headerTimeoutMeter = metrics.NewRegisteredMeter("qrl/downloader/headers/timeout", nil)
 
 	bodyInMeter      = metrics.NewRegisteredMeter("qrl/downloader/bodies/in", nil)

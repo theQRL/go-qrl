@@ -242,14 +242,13 @@ func (l *StructLogger) GetResult() (json.RawMessage, error) {
 	failed := l.err != nil
 	returnData := common.CopyBytes(l.output)
 	// Return data when successful and revert reason when reverted, otherwise empty.
-	returnVal := fmt.Sprintf("%x", returnData)
 	if failed && l.err != vm.ErrExecutionReverted {
-		returnVal = ""
+		returnData = []byte{}
 	}
 	return json.Marshal(&ExecutionResult{
 		Gas:         l.usedGas,
 		Failed:      failed,
-		ReturnValue: returnVal,
+		ReturnValue: returnData,
 		StructLogs:  formatLogs(l.StructLogs()),
 	})
 }
@@ -403,7 +402,7 @@ func (*mdLogger) CaptureTxEnd(restGas uint64) {}
 type ExecutionResult struct {
 	Gas         uint64         `json:"gas"`
 	Failed      bool           `json:"failed"`
-	ReturnValue string         `json:"returnValue"`
+	ReturnValue hexutil.Bytes  `json:"returnValue"`
 	StructLogs  []StructLogRes `json:"structLogs"`
 }
 

@@ -124,7 +124,7 @@ func (api *SignerAPI) determineSignatureFormat(ctx context.Context, contentType 
 		}
 		req = &SignDataRequest{ContentType: mediaType, Rawdata: []byte(msg), Messages: messages, Hash: sighash}
 	case apitypes.DataTyped.Mime:
-		// EIP-712 conformant typed data
+		// QRL typed structured data
 		var err error
 		req, err = typedDataRequest(data)
 		if err != nil {
@@ -161,7 +161,7 @@ func SignTextValidator(validatorData apitypes.ValidatorData) (hexutil.Bytes, str
 	return crypto.Keccak256([]byte(msg)), msg
 }
 
-// SignTypedData signs EIP-712 conformant typed data
+// SignTypedData signs QRL typed structured data.
 // hash = keccak256("\x19${byteVersion}${domainSeparator}${hashStruct(message)}")
 // It returns
 // - the signature,

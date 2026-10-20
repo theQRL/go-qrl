@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 	"strconv"
 	"sync/atomic"
 	"time"
@@ -34,7 +35,6 @@ import (
 	"github.com/theQRL/go-qrl/core/state"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/crypto"
-	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/metrics"
 	"github.com/theQRL/go-qrl/node"
@@ -48,9 +48,10 @@ var (
 		Name:      "init",
 		Usage:     "Bootstrap and initialize a new genesis block",
 		ArgsUsage: "<genesisPath>",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CachePreimagesFlag,
 			utils.StateSchemeFlag,
+			&cli.StringFlag{Name: "work-dir", Usage: "Scratch directory on disk for genesis import (default: datadir)"},
 		}, utils.DatabasePathFlags),
 		Description: `
 The init command initializes a new genesis block and definition for the network.
@@ -74,7 +75,7 @@ if one is set.  Otherwise it prints the genesis from the datadir.`,
 		Name:      "import",
 		Usage:     "Import a blockchain file",
 		ArgsUsage: "<filename> (<filename 2> ... <filename N>) ",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CacheFlag,
 			utils.SyncModeFlag,
 			utils.GCModeFlag,
@@ -111,7 +112,7 @@ processing will proceed even if an individual RLP-file import failure occurs.`,
 		Name:      "export",
 		Usage:     "Export blockchain into file",
 		ArgsUsage: "<filename> [<blockNumFirst> <blockNumLast>]",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CacheFlag,
 			utils.SyncModeFlag,
 			utils.StateSchemeFlag,
@@ -128,7 +129,7 @@ be gzipped.`,
 		Name:      "dump",
 		Usage:     "Dump a specific block from storage",
 		ArgsUsage: "[? <blockHash> | <blockNum>]",
-		Flags: flags.Merge([]cli.Flag{
+		Flags: slices.Concat([]cli.Flag{
 			utils.CacheFlag,
 			utils.IterativeOutputFlag,
 			utils.ExcludeCodeFlag,
@@ -160,13 +161,13 @@ func initGenesis(ctx *cli.Context) error {
 	}
 	defer file.Close()
 
-	genesis := new(core.Genesis)
-	if err := json.NewDecoder(file).Decode(genesis); err != nil {
-		utils.Fatalf("invalid genesis file: %v", err)
-	}
 	// Open and initialise both full node database
 	stack, _ := makeConfigNode(ctx)
 	defer stack.Close()
+	workDir := ctx.String("work-dir")
+	if workDir == "" {
+		workDir = stack.DataDir()
+	}
 
 	for _, name := range []string{"chaindata"} {
 		chaindb, err := stack.OpenDatabaseWithFreezer(name, 0, 0, ctx.String(utils.AncientFlag.Name), "", false)
@@ -178,9 +179,9 @@ func initGenesis(ctx *cli.Context) error {
 		triedb := utils.MakeTrieDatabase(ctx, chaindb, ctx.Bool(utils.CachePreimagesFlag.Name), false)
 		defer triedb.Close()
 
-		_, hash, err := core.SetupGenesisBlock(chaindb, triedb, genesis)
+		_, hash, err := core.SetupGenesisBlockFromJSON(chaindb, triedb, file, workDir)
 		if err != nil {
-			utils.Fatalf("Failed to write genesis block: %v", err)
+			return fmt.Errorf("failed to write genesis block: %w", err)
 		}
 		log.Info("Successfully wrote genesis state", "database", name, "hash", hash)
 	}
@@ -376,11 +377,11 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node) (*state.DumpConfig, qrl
 	}
 	startArg := ctx.String(utils.StartKeyFlag.Name)
 	var start common.Hash
-	switch len(startArg) {
-	case 0: // common.Hash
-	case 64, 66:
+	switch {
+	case startArg == "": // common.Hash
+	case common.IsHexEncodedHash(startArg):
 		start = common.BytesToHash(common.FromHex(startArg))
-	case 41:
+	case common.IsAddress(startArg):
 		addr, err := common.NewAddressFromString(startArg)
 		if err != nil {
 			return nil, nil, common.Hash{}, err
@@ -388,7 +389,7 @@ func parseDumpConfig(ctx *cli.Context, stack *node.Node) (*state.DumpConfig, qrl
 		start = crypto.Keccak256Hash(addr.Bytes())
 		log.Info("Converting start-address to hash", "address", addr, "hash", start.Hex())
 	default:
-		return nil, nil, common.Hash{}, fmt.Errorf("invalid start argument: %x. 20 or 32 hex-encoded bytes required", startArg)
+		return nil, nil, common.Hash{}, fmt.Errorf("invalid start argument %q: Q-prefixed hex-encoded %d-byte address or hex-encoded %d-byte hash required", startArg, common.AddressLength, common.HashLength)
 	}
 	var conf = &state.DumpConfig{
 		SkipCode:          ctx.Bool(utils.ExcludeCodeFlag.Name),

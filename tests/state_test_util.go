@@ -93,6 +93,14 @@ type stEnv struct {
 	BaseFee   *big.Int       `json:"currentBaseFee"    gencodec:"optional"`
 }
 
+type stEnvMarshaling struct {
+	Random    *math.HexOrDecimal256
+	GasLimit  math.HexOrDecimal64
+	Number    math.HexOrDecimal64
+	Timestamp math.HexOrDecimal64
+	BaseFee   *math.HexOrDecimal256
+}
+
 //go:generate go run github.com/fjl/gencodec -type stTransaction -field-override stTransactionMarshaling -out gen_sttransaction.go
 
 type stTransaction struct {
@@ -107,6 +115,14 @@ type stTransaction struct {
 	Value                []string            `json:"value"`
 	Seed                 string              `json:"seed"`
 	Sender               *common.Address     `json:"sender"`
+}
+
+type stTransactionMarshaling struct {
+	GasPrice             *math.HexOrDecimal256
+	MaxFeePerGas         *math.HexOrDecimal256
+	MaxPriorityFeePerGas *math.HexOrDecimal256
+	Nonce                math.HexOrDecimal64
+	GasLimit             []math.HexOrDecimal64
 }
 
 // GetChainConfig takes a fork definition and returns a chain config.
@@ -238,7 +254,7 @@ func (t *StateTest) RunNoVerify(subtest StateSubtest, vmconfig vm.Config, snapsh
 			return nil, nil, nil, common.Hash{}, err
 		}
 
-		if _, err := types.Sender(types.LatestSigner(config), &ttx); err != nil {
+		if _, err := types.Sender(types.NewZondSigner(config.ChainID), &ttx); err != nil {
 			triedb.Close()
 			return nil, nil, nil, common.Hash{}, err
 		}

@@ -68,7 +68,7 @@ func (p *StateProcessor) Process(block *types.Block, statedb *state.StateDB, cfg
 	var (
 		context = NewQRVMBlockContext(header, p.bc, nil)
 		vmenv   = vm.NewQRVM(context, vm.TxContext{}, statedb, p.config, cfg)
-		signer  = types.MakeSigner(p.config)
+		signer  = types.NewZondSigner(p.config.ChainID)
 	)
 
 	// Iterate over and process the individual transactions
@@ -104,13 +104,12 @@ func applyTransaction(msg *Message, gp *GasPool, statedb *state.StateDB, blockNu
 	}
 
 	// Update the state with pending changes.
-	var root []byte
 	statedb.Finalise(true)
 	*usedGas += result.UsedGas
 
-	// Create a new receipt for the transaction, storing the intermediate root and gas used
+	// Create a new receipt for the transaction, storing the status and gas used
 	// by the tx.
-	receipt := &types.Receipt{Type: tx.Type(), PostState: root, CumulativeGasUsed: *usedGas}
+	receipt := &types.Receipt{Type: tx.Type(), CumulativeGasUsed: *usedGas}
 	if result.Failed() {
 		receipt.Status = types.ReceiptStatusFailed
 	} else {
@@ -138,7 +137,7 @@ func applyTransaction(msg *Message, gp *GasPool, statedb *state.StateDB, blockNu
 // for the transaction, gas used and an error if the transaction failed,
 // indicating the block was invalid.
 func ApplyTransaction(config *params.ChainConfig, bc ChainContext, author *common.Address, gp *GasPool, statedb *state.StateDB, header *types.Header, tx *types.Transaction, usedGas *uint64, cfg vm.Config) (*types.Receipt, error) {
-	msg, err := TransactionToMessage(tx, types.MakeSigner(config), header.BaseFee)
+	msg, err := TransactionToMessage(tx, types.NewZondSigner(config.ChainID), header.BaseFee)
 	if err != nil {
 		return nil, err
 	}

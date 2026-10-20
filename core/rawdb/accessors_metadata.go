@@ -93,6 +93,9 @@ func WriteGenesisStateSpec(db qrldb.KeyValueWriter, blockhash common.Hash, data 
 	if err := db.Put(genesisStateSpecKey(blockhash), data); err != nil {
 		log.Crit("Failed to store genesis state", "err", err)
 	}
+	if err := db.Delete(genesisJSONKey(blockhash)); err != nil {
+		log.Crit("Failed to replace streamed genesis state", "err", err)
+	}
 }
 
 // crashList is a list of unclean-shutdown-markers, for rlp-encoding to the

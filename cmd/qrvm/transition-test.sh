@@ -45,8 +45,7 @@ which can
   - Block context information,
   - Previous blockshashes (*optional)
 2. Apply a set of transactions,
-3. Apply a mining-reward (*optional),
-4. And generate a post-state, including
+3. And generate a post-state, including
   - State root, transaction root, receipt root,
   - Information about rejected transactions,
   - Optionally: a full or partial post-state dump
@@ -82,7 +81,7 @@ type Alloc map[common.Address]Account
 // Genesis account. Each field is optional.
 type Account struct {
     Code       []byte                           `json:"code"`
-    Storage    map[common.Hash]common.Hash      `json:"storage"`
+    Storage    map[common.Hash]common.StorageValue64 `json:"storage"`
     Balance    *big.Int                         `json:"balance"`
     Nonce      uint64                           `json:"nonce"`
     Seed       []byte                           `json:"seed"`
@@ -186,9 +185,9 @@ There are a few (not many) errors that can occur, those are defined below.
 
 ```
 # This should exit with 3
-./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Frontier+1346 2>/dev/null
+./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond+1346 2>/dev/null
 EOF
-./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Frontier+1346 2>/dev/null
+./qrvm t8n --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json --state.fork=Zond+1346 2>/dev/null
 exitcode=$?
 if [ $exitcode !=  3 ]; then
 	echo "Failed, exitcode should be 3,was $exitcode"
@@ -229,9 +228,9 @@ echo "$ticks"
 
 echo "#### Future QIPS"
 echo ""
-echo "It is also possible to experiment with future qips that are not yet defined in a hard fork."
-echo "Example, putting QIP-1344 into Frontier: "
-cmd="./qrvm t8n --state.fork=Frontier+1344 --input.pre=./testdata/1/pre.json --input.txs=./testdata/1/txs.json --input.env=/testdata/1/env.json"
+echo "When experimenting with changes before an extra QIP activator is registered, use"
+echo "the active fork directly:"
+cmd="./qrvm t8n --state.fork=Zond --input.alloc=./testdata/1/alloc.json --input.txs=./testdata/1/txs.json --input.env=./testdata/1/env.json"
 tick;echo "$cmd"; tick
 echo ""
 
@@ -315,7 +314,6 @@ The transaction tool is used to perform static validity checks on transactions s
 * intrinsic gas calculation
 * max values on integers
 * fee semantics, such as `maxFeePerGas < maxPriorityFeePerGas`
-* newer tx types on old forks
 
 ### Examples
 
@@ -329,7 +327,7 @@ tick
 cat << "EOF"
 ## Block builder tool (b11r)
 
-The `qrvm b11r` tool is used to assemble and seal full block rlps.
+The `qrvm b11r` tool is used to assemble full block rlps.
 
 ### Specification
 
@@ -356,20 +354,20 @@ The `header` object is a consensus header.
 
 ```go=
 type Header struct {
-        ParentHash  common.Hash       `json:"parentHash"`
-        Coinbase    *common.Address   `json:"miner"`
-        Root        common.Hash       `json:"stateRoot"         gencodec:"required"`
-        TxHash      *common.Hash      `json:"transactionsRoot"`
-        ReceiptHash *common.Hash      `json:"receiptsRoot"`
-        Bloom       types.Bloom       `json:"logsBloom"`
-        Number      *big.Int          `json:"number"            gencodec:"required"`
-        GasLimit    uint64            `json:"gasLimit"          gencodec:"required"`
-        GasUsed     uint64            `json:"gasUsed"`
-        Time        uint64            `json:"timestamp"         gencodec:"required"`
-        Extra       []byte            `json:"extraData"`
-        Random      common.Hash       `json:"prevRandao"`
-        Nonce       *types.BlockNonce `json:"nonce"`
-        BaseFee     *big.Int          `json:"baseFeePerGas"`
+        ParentHash      common.Hash     `json:"parentHash"`
+        Coinbase        *common.Address `json:"miner"`
+        Root            common.Hash     `json:"stateRoot"        gencodec:"required"`
+        TxHash          *common.Hash    `json:"transactionsRoot"`
+        ReceiptHash     *common.Hash    `json:"receiptsRoot"`
+        Bloom           types.Bloom     `json:"logsBloom"`
+        Number          *big.Int        `json:"number"           gencodec:"required"`
+        GasLimit        uint64          `json:"gasLimit"         gencodec:"required"`
+        GasUsed         uint64          `json:"gasUsed"`
+        Time            uint64          `json:"timestamp"        gencodec:"required"`
+        Extra           []byte          `json:"extraData"`
+        Random          common.Hash     `json:"prevRandao"`
+        BaseFee         *big.Int        `json:"baseFeePerGas"`
+        WithdrawalsHash *common.Hash    `json:"withdrawalsRoot"`
 }
 ```
 #### `txs`
@@ -395,9 +393,11 @@ type BlockInfo struct {
 
 The encoding of values for `qrvm` utility attempts to be relatively flexible. It
 generally supports hex-encoded or decimal-encoded numeric values, and
-hex-encoded byte values (like `common.Address`, `common.Hash`, etc). When in
-doubt, the [`execution-apis`](https://github.com/ethereum/execution-apis) way
-of encoding should always be accepted.
+hex-encoded byte values where applicable. Numeric and generic hex encodings may
+follow the [`execution-apis`](https://github.com/ethereum/execution-apis)
+conventions where they still apply, but VM64 fixed-width fields must use QRL
+widths: Q-prefixed 64-byte addresses, 64-byte topics/storage values, and
+32-byte hashes/storage keys.
 
 ## Testing
 

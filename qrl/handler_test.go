@@ -29,10 +29,10 @@ import (
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/core/vm"
 	"github.com/theQRL/go-qrl/event"
+	"github.com/theQRL/go-qrl/internal/testutil"
 	"github.com/theQRL/go-qrl/params"
 	"github.com/theQRL/go-qrl/qrl/downloader"
 	"github.com/theQRL/go-qrl/qrldb"
-	"github.com/theQRL/go-qrl/internal/testutil"
 )
 
 var (

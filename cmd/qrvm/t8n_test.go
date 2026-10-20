@@ -50,11 +50,10 @@ type testT8n struct {
 }
 
 type t8nInput struct {
-	inAlloc  string
-	inTxs    string
-	inEnv    string
-	stFork   string
-	stReward string
+	inAlloc string
+	inTxs   string
+	inEnv   string
+	stFork  string
 }
 
 func (args *t8nInput) get(base string) []string {
@@ -73,9 +72,6 @@ func (args *t8nInput) get(base string) []string {
 	}
 	if opt := args.stFork; opt != "" {
 		out = append(out, "--state.fork", opt)
-	}
-	if opt := args.stReward; opt != "" {
-		out = append(out, "--state.reward", opt)
 	}
 	return out
 }
@@ -119,7 +115,7 @@ func TestT8n(t *testing.T) {
 		{ // Exit 3 on bad config — bad fork name
 			base: "./testdata/1",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond+1346", "",
+				"alloc.json", "txs.json", "env.json", "Zond+1346",
 			},
 			output:      t8nOutput{alloc: true, result: true},
 			expExitCode: 3,
@@ -127,7 +123,7 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/1",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond", "",
+				"alloc.json", "txs.json", "env.json", "Zond",
 			},
 			output:               t8nOutput{alloc: true, result: true},
 			expOut:               "exp.json",
@@ -136,7 +132,7 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/3",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond", "",
+				"alloc.json", "txs.json", "env.json", "Zond",
 			},
 			output:               t8nOutput{alloc: true, result: true},
 			expOut:               "exp.json",
@@ -145,14 +141,14 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/13",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond", "",
+				"alloc.json", "txs.json", "env.json", "Zond",
 			},
 			output: t8nOutput{body: true},
 		},
 		{
 			base: "./testdata/13",
 			input: t8nInput{
-				"alloc.json", "signed_txs.rlp", "env.json", "Zond", "",
+				"alloc.json", "signed_txs.rlp", "env.json", "Zond",
 			},
 			output:               t8nOutput{result: true},
 			expOut:               "exp2.json",
@@ -161,7 +157,7 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/24",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond", "",
+				"alloc.json", "txs.json", "env.json", "Zond",
 			},
 			output:               t8nOutput{alloc: true, result: true},
 			expOut:               "exp.json",
@@ -170,7 +166,7 @@ func TestT8n(t *testing.T) {
 		{ // Post-merge/Zond env must include currentRandom
 			base: "./testdata/24",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env-missingrandom.json", "Zond", "",
+				"alloc.json", "txs.json", "env-missingrandom.json", "Zond",
 			},
 			output:      t8nOutput{alloc: false, result: false},
 			expExitCode: t8ntool.ErrorConfig,
@@ -178,7 +174,7 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/25",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond", "",
+				"alloc.json", "txs.json", "env.json", "Zond",
 			},
 			output:               t8nOutput{alloc: true, result: true},
 			expOut:               "exp.json",
@@ -187,7 +183,7 @@ func TestT8n(t *testing.T) {
 		{
 			base: "./testdata/26",
 			input: t8nInput{
-				"alloc.json", "txs.json", "env.json", "Zond", "",
+				"alloc.json", "txs.json", "env.json", "Zond",
 			},
 			output:               t8nOutput{alloc: true, result: true},
 			expOut:               "exp.json",

@@ -19,8 +19,8 @@ package vm
 import (
 	"math/big"
 
-	"github.com/theQRL/go-qrl/common/uint512"
 	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/common/uint512"
 )
 
 // ContractRef is a reference to the contract's backing object

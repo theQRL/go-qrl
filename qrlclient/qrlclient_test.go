@@ -55,7 +55,7 @@ var (
 
 func TestToFilterArg(t *testing.T) {
 	blockHashErr := errors.New("cannot specify both BlockHash and FromBlock/ToBlock")
-	address, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000D36722ADeC3EdCB29c8e7b5a47f352D701393462")
+	address := common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000D36722ADeC3EdCB29c8e7b5a47f352D701393462")
 	addresses := []common.Address{
 		address,
 	}
@@ -69,6 +69,18 @@ func TestToFilterArg(t *testing.T) {
 		output any
 		err    error
 	}{
+		{
+			"without addresses",
+			qrl.FilterQuery{
+				FromBlock: big.NewInt(1),
+				ToBlock:   big.NewInt(2),
+			},
+			map[string]any{
+				"fromBlock": "0x1",
+				"toBlock":   "0x2",
+			},
+			nil,
+		},
 		{
 			"without BlockHash",
 			qrl.FilterQuery{
@@ -194,7 +206,7 @@ var genesis = &core.Genesis{
 	BaseFee:   big.NewInt(params.InitialBaseFee),
 }
 
-var testTx1 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config), &types.DynamicFeeTx{
+var testTx1 = types.MustSignNewTx(testWallet, types.NewZondSigner(genesis.Config.ChainID), &types.DynamicFeeTx{
 	Nonce:     0,
 	Value:     big.NewInt(12),
 	Gas:       params.TxGas,
@@ -203,7 +215,7 @@ var testTx1 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config)
 	To:        &common.Address{2},
 })
 
-var testTx2 = types.MustSignNewTx(testWallet, types.LatestSigner(genesis.Config), &types.DynamicFeeTx{
+var testTx2 = types.MustSignNewTx(testWallet, types.NewZondSigner(genesis.Config.ChainID), &types.DynamicFeeTx{
 	Nonce:     1,
 	Value:     big.NewInt(8),
 	Gas:       params.TxGas,
@@ -711,7 +723,7 @@ func sendTransaction(zc *Client) error {
 		return err
 	}
 
-	signer := types.LatestSignerForChainID(chainID)
+	signer := types.NewZondSigner(chainID)
 	tx, err := types.SignNewTx(testWallet, signer, &types.DynamicFeeTx{
 		Nonce:     nonce,
 		To:        &common.Address{2},

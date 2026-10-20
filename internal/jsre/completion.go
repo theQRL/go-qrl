@@ -75,9 +75,8 @@ func getCompletions(vm *goja.Runtime, line string) (results []string) {
 	// if the line itself is the only completion.
 	if len(results) == 1 && results[0] == line {
 		// Accessing the property will cause it to be evaluated.
-		// This can cause an error, e.g. in case of web3.qrl.protocolVersion
-		// which has been dropped from gqrl. Ignore the error for autocompletion
-		// purposes.
+		// This can cause an error for properties backed by unavailable
+		// RPC methods. Ignore the error for autocompletion purposes.
 		obj := SafeGet(obj, parts[len(parts)-1])
 		if obj != nil {
 			if _, isfunc := goja.AssertFunction(obj); isfunc {

@@ -26,7 +26,6 @@ import (
 	"time"
 
 	natpmp "github.com/jackpal/go-nat-pmp"
-	"github.com/theQRL/go-qrl/log"
 )
 
 // Interface An implementation of nat.Interface can map local ports to ports
@@ -90,44 +89,6 @@ func Parse(spec string) (Interface, error) {
 	}
 }
 
-const (
-	DefaultMapTimeout = 10 * time.Minute
-)
-
-// Map adds a port mapping on m and keeps it alive until c is closed.
-// This function is typically invoked in its own goroutine.
-//
-// Note that Map does not handle the situation where the NAT interface assigns a different
-// external port than the requested one.
-func Map(m Interface, c <-chan struct{}, protocol string, extport, intport int, name string) {
-	log := log.New("proto", protocol, "extport", extport, "intport", intport, "interface", m)
-	refresh := time.NewTimer(DefaultMapTimeout)
-	defer func() {
-		refresh.Stop()
-		log.Debug("Deleting port mapping")
-		m.DeleteMapping(protocol, extport, intport)
-	}()
-	if _, err := m.AddMapping(protocol, extport, intport, name, DefaultMapTimeout); err != nil {
-		log.Debug("Couldn't add port mapping", "err", err)
-	} else {
-		log.Info("Mapped network port")
-	}
-	for {
-		select {
-		case _, ok := <-c:
-			if !ok {
-				return
-			}
-		case <-refresh.C:
-			log.Trace("Refreshing port mapping")
-			if _, err := m.AddMapping(protocol, extport, intport, name, DefaultMapTimeout); err != nil {
-				log.Debug("Couldn't add port mapping", "err", err)
-			}
-			refresh.Reset(DefaultMapTimeout)
-		}
-	}
-}
-
 // ExtIP assumes that the local machine is reachable on the given
 // external IP address, and that any required ports were mapped manually.
 // Mapping operations will not return an error but won't actually do anything.
@@ -138,8 +99,10 @@ func (n ExtIP) String() string              { return fmt.Sprintf("ExtIP(%v)", ne
 
 // These do nothing.
 
-func (ExtIP) AddMapping(string, int, int, string, time.Duration) (uint16, error) { return 0, nil }
-func (ExtIP) DeleteMapping(string, int, int) error                               { return nil }
+func (ExtIP) AddMapping(protocol string, extport, intport int, name string, lifetime time.Duration) (uint16, error) {
+	return uint16(extport), nil
+}
+func (ExtIP) DeleteMapping(string, int, int) error { return nil }
 
 // Any returns a port mapper that tries to discover any supported
 // mechanism on the local network.

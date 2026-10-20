@@ -22,7 +22,7 @@ const schema string = `
     # Bytes64 is a 64 byte binary string, represented as 0x-prefixed hexadecimal.
     # Used for storage slot values and log topics, which carry 512-bit VM words.
     scalar Bytes64
-    # Address is a 64 byte QRL address, represented as 0x-prefixed hexadecimal.
+    # Address is a 64 byte QRL address, represented as Q-prefixed hexadecimal.
     scalar Address
     # Bytes is an arbitrary length binary string, represented as 0x-prefixed hexadecimal.
     # An empty byte string is represented as '0x'. Byte strings must have an even number of hexadecimal nybbles.
@@ -212,7 +212,7 @@ const schema string = `
         # LogsBloom is a bloom filter that can be used to check if a block may
         # contain log entries matching a filter.
         logsBloom: Bytes!
-        # Random is the hash that was used as an input to the PoW process.
+        # Random is the randomness value provided by the consensus layer (prevRandao).
         random: Bytes32!
         # Transactions is a list of transactions associated with this block. If
         # transactions are unavailable for this block, this field will be null.

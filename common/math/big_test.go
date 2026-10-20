@@ -59,6 +59,38 @@ func TestHexOrDecimal256(t *testing.T) {
 	}
 }
 
+func TestHexOrDecimal512(t *testing.T) {
+	max := new(big.Int).Sub(new(big.Int).Lsh(big.NewInt(1), 512), big.NewInt(1))
+	tooLarge := new(big.Int).Lsh(big.NewInt(1), 512)
+	tests := []struct {
+		input string
+		num   *big.Int
+		ok    bool
+	}{
+		{"", big.NewInt(0), true},
+		{"0", big.NewInt(0), true},
+		{"0x0", big.NewInt(0), true},
+		{"12345678", big.NewInt(12345678), true},
+		{"0x12345678", big.NewInt(0x12345678), true},
+		{"0123456789", big.NewInt(123456789), true},
+		{max.String(), max, true},
+		{"abcdef", nil, false},
+		{"0xgg", nil, false},
+		{tooLarge.String(), nil, false},
+	}
+	for _, test := range tests {
+		var num HexOrDecimal512
+		err := num.UnmarshalText([]byte(test.input))
+		if (err == nil) != test.ok {
+			t.Errorf("ParseBig(%q) -> (err == nil) == %t, want %t", test.input, err == nil, test.ok)
+			continue
+		}
+		if test.num != nil && (*big.Int)(&num).Cmp(test.num) != 0 {
+			t.Errorf("ParseBig(%q) -> %d, want %d", test.input, (*big.Int)(&num), test.num)
+		}
+	}
+}
+
 func TestMustParseBig256(t *testing.T) {
 	defer func() {
 		if recover() == nil {
@@ -66,6 +98,15 @@ func TestMustParseBig256(t *testing.T) {
 		}
 	}()
 	MustParseBig256("ggg")
+}
+
+func TestMustParseBig512(t *testing.T) {
+	defer func() {
+		if recover() == nil {
+			t.Error("MustParseBig should've panicked")
+		}
+	}()
+	MustParseBig512("ggg")
 }
 
 func TestPaddedBigBytes(t *testing.T) {
@@ -127,33 +168,4 @@ func TestReadBits(t *testing.T) {
 	check("000000000000000000000000000000000000000000000000000000FEFCF3F8F0")
 	check("0000000000012345000000000000000000000000000000000000FEFCF3F8F0")
 	check("18F8F8F1000111000110011100222004330052300000000000000000FEFCF3F8F0")
-}
-
-func TestU256(t *testing.T) {
-	tests := []struct{ x, y *big.Int }{
-		{x: big.NewInt(0), y: big.NewInt(0)},
-		{x: big.NewInt(1), y: big.NewInt(1)},
-		{x: BigPow(2, 255), y: BigPow(2, 255)},
-		{x: BigPow(2, 256), y: big.NewInt(0)},
-		{x: new(big.Int).Add(BigPow(2, 256), big.NewInt(1)), y: big.NewInt(1)},
-		// negative values
-		{x: big.NewInt(-1), y: new(big.Int).Sub(BigPow(2, 256), big.NewInt(1))},
-		{x: big.NewInt(-2), y: new(big.Int).Sub(BigPow(2, 256), big.NewInt(2))},
-		{x: BigPow(2, -255), y: big.NewInt(1)},
-	}
-	for _, test := range tests {
-		if y := U256(new(big.Int).Set(test.x)); y.Cmp(test.y) != 0 {
-			t.Errorf("U256(%x) = %x, want %x", test.x, y, test.y)
-		}
-	}
-}
-
-func TestU256Bytes(t *testing.T) {
-	ubytes := make([]byte, 32)
-	ubytes[31] = 1
-
-	unsigned := U256Bytes(big.NewInt(1))
-	if !bytes.Equal(unsigned, ubytes) {
-		t.Errorf("expected %x got %x", ubytes, unsigned)
-	}
 }

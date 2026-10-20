@@ -82,9 +82,9 @@ type StorageResult struct {
 // The block number can be nil, in which case the value is taken from the latest known block.
 func (qc *Client) GetProof(ctx context.Context, account common.Address, keys []string, blockNumber *big.Int) (*AccountResult, error) {
 	type storageResult struct {
-		Key   string       `json:"key"`
-		Value *hexutil.Big `json:"value"`
-		Proof []string     `json:"proof"`
+		Key   string        `json:"key"`
+		Value *hexutil.U512 `json:"value"`
+		Proof []string      `json:"proof"`
 	}
 
 	type accountResult struct {
@@ -265,19 +265,19 @@ type OverrideAccount struct {
 	// State sets the complete storage. The override will be applied
 	// when the given map is non-nil. Using an empty map wipes the
 	// entire contract storage during the call.
-	State map[common.Hash]common.Hash
+	State map[common.Hash]common.StorageValue64
 
 	// StateDiff allows overriding individual storage slots.
-	StateDiff map[common.Hash]common.Hash
+	StateDiff map[common.Hash]common.StorageValue64
 }
 
 func (a OverrideAccount) MarshalJSON() ([]byte, error) {
 	type acc struct {
-		Nonce     hexutil.Uint64              `json:"nonce,omitempty"`
-		Code      string                      `json:"code,omitempty"`
-		Balance   *hexutil.Big                `json:"balance,omitempty"`
-		State     any                         `json:"state,omitempty"`
-		StateDiff map[common.Hash]common.Hash `json:"stateDiff,omitempty"`
+		Nonce     hexutil.Uint64                        `json:"nonce,omitempty"`
+		Code      string                                `json:"code,omitempty"`
+		Balance   *hexutil.Big                          `json:"balance,omitempty"`
+		State     any                                   `json:"state,omitempty"`
+		StateDiff map[common.Hash]common.StorageValue64 `json:"stateDiff,omitempty"`
 	}
 
 	output := acc{

@@ -52,7 +52,7 @@ func TestStateProcessorErrors(t *testing.T) {
 		config = &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		}
-		signer  = types.LatestSigner(config)
+		signer  = types.NewZondSigner(config.ChainID)
 		wallet1 = testutil.LoadAccount(t, "dave").Wallet(t)
 		wallet2 = testutil.LoadAccount(t, "eve").Wallet(t)
 	)
@@ -279,9 +279,9 @@ func TestStateProcessorErrors(t *testing.T) {
 	// ErrSenderNoEOA, for this we need the sender to have contract code
 	{
 		var (
-			address, _ = common.NewAddressFromString("Q8AC356c6E37760C7706ebA2Fa7e08b78D8b01FDfAF4a4B91d4a244b59C73eAB4657362f640E94EDa01Fd397D0c8774fD80d4d8B815A22200988D0A886c979A9A")
-			db         = rawdb.NewMemoryDatabase()
-			gspec      = &Genesis{
+			address = common.MustParseAddress("Q8AC356c6E37760C7706ebA2Fa7e08b78D8b01FDfAF4a4B91d4a244b59C73eAB4657362f640E94EDa01Fd397D0c8774fD80d4d8B815A22200988D0A886c979A9A")
+			db      = rawdb.NewMemoryDatabase()
+			gspec   = &Genesis{
 				Config: config,
 				Alloc: GenesisAlloc{
 					address: GenesisAccount{
@@ -322,7 +322,7 @@ func TestStateProcessorRejectsNonEmptyExtraParams(t *testing.T) {
 		config = &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		}
-		signer  = types.LatestSigner(config)
+		signer  = types.NewZondSigner(config.ChainID)
 		wallet1 = testutil.LoadAccount(t, "dave").Wallet(t)
 		from    = common.Address(wallet1.GetAddress())
 		db      = rawdb.NewMemoryDatabase()
@@ -390,7 +390,6 @@ func GenerateBadBlock(parent *types.Block, engine consensus.Engine, txs types.Tr
 		hasher.Write(txh[:])
 		receipt := &types.Receipt{
 			Type:              types.DynamicFeeTxType,
-			PostState:         common.CopyBytes(nil),
 			CumulativeGasUsed: cumulativeGas + tx.Gas(),
 			Status:            types.ReceiptStatusSuccessful,
 		}

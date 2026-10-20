@@ -42,7 +42,7 @@ func BenchmarkDecodeRLP(b *testing.B) {
 
 func benchRLP(b *testing.B, encode bool) {
 	wallet := testutil.LoadAccount(b, "alice").Wallet(b)
-	to, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef99aabbccddeeff001122334455667788")
+	to := common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef99aabbccddeeff001122334455667788")
 	signer := NewZondSigner(big.NewInt(1337))
 	for _, tc := range []struct {
 		name string

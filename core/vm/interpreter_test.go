@@ -31,9 +31,9 @@ import (
 
 var loopInterruptTests = []string{
 	// infinite loop using JUMP: push(2) jumpdest dup1 jump
-	"60025b8056",
+	"60025ba056",
 	// infinite loop using JUMPI: push(1) push(4) jumpdest dup2 dup2 jumpi
-	"600160045b818157",
+	"600160045ba1a157",
 }
 
 func TestLoopInterrupt(t *testing.T) {

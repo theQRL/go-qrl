@@ -97,10 +97,10 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Content-Type", "application/json")
 		if len(response.Errors) > 0 {
 			w.WriteHeader(http.StatusBadRequest)
 		}
-		w.Header().Set("Content-Type", "application/json")
 		w.Write(responseJSON)
 	})
 }

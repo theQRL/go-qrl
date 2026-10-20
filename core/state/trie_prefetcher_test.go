@@ -30,7 +30,7 @@ func filledStateDB() *StateDB {
 	state, _ := New(types.EmptyRootHash, NewDatabase(rawdb.NewMemoryDatabase()), nil)
 
 	// Create an account and check if the retrieved balance is correct
-	addr, _ := common.NewAddressFromString("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
+	addr := common.MustParseAddress("Q00000000000000000000000000000000000000000000000000000000affeaffeaffeaffeaffeaffeaffeaffeaffeaffe99aabbccddeeff001122334455667788")
 	skey := common.HexToHash("aaa")
 	sval := common.HexToStorageValue64("bbb")
 

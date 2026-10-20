@@ -36,22 +36,25 @@ func TestMakeTopics(t *testing.T) {
 	intTopic := func(v int64) common.LogTopic {
 		var t common.LogTopic
 		bi := new(big.Int).SetInt64(v)
-		data := math.U256Bytes(bi) // 32-byte big-endian two's complement
-		if v < 0 {
-			for i := 0; i < common.LogTopicLength-len(data); i++ {
-				t[i] = 0xff
-			}
-		}
-		copy(t[common.LogTopicLength-len(data):], data)
+		copy(t[:], math.U512Bytes(bi))
+		return t
+	}
+	bigTopic := func(v *big.Int) common.LogTopic {
+		var t common.LogTopic
+		copy(t[:], math.U512Bytes(new(big.Int).Set(v)))
 		return t
 	}
 	uintTopic := func(v uint64) common.LogTopic {
 		var t common.LogTopic
-		bi := new(big.Int).SetUint64(v)
-		blob := bi.Bytes()
-		copy(t[common.LogTopicLength-len(blob):], blob)
+		copy(t[:], math.U512Bytes(new(big.Int).SetUint64(v)))
 		return t
 	}
+	hashTopic := func(hash []byte) common.LogTopic {
+		var t common.LogTopic
+		copy(t[:common.HashLength], hash)
+		return t
+	}
+	function := functionValue(1, [4]byte{0xde, 0xad, 0xbe, 0xef})
 
 	type args struct {
 		query [][]any
@@ -71,13 +74,11 @@ func TestMakeTopics(t *testing.T) {
 		{
 			"support common hash types in topics",
 			args{[][]any{{common.Hash{1, 2, 3, 4, 5}}}},
-			// Hash right-aligned in the 64-byte slot: low 32 bytes hold the
-			// hash, upper 32 are zero.
+			// Hash topics are ABI bytes32 values: high 32 bytes hold the
+			// hash, low 32 bytes are zero padding.
 			[][]common.LogTopic{{func() common.LogTopic {
-				var t common.LogTopic
 				h := common.Hash{1, 2, 3, 4, 5}
-				copy(t[common.LogTopicLength-common.HashLength:], h[:])
-				return t
+				return hashTopic(h[:])
 			}()}},
 			false,
 		},
@@ -98,6 +99,7 @@ func TestMakeTopics(t *testing.T) {
 			args{[][]any{
 				{big.NewInt(1)},
 				{new(big.Int).Lsh(big.NewInt(2), 254)},
+				{new(big.Int).Lsh(big.NewInt(1), 511)},
 			}},
 			[][]common.LogTopic{
 				{uintTopic(1)},
@@ -106,6 +108,12 @@ func TestMakeTopics(t *testing.T) {
 				{func() common.LogTopic {
 					var t common.LogTopic
 					t[common.LogTopicLength-common.HashLength] = 0x80
+					return t
+				}()},
+				// 2^511 uses the high bit of the full 64-byte VM64 topic.
+				{func() common.LogTopic {
+					var t common.LogTopic
+					t[0] = 0x80
 					return t
 				}()},
 			},
@@ -118,20 +126,8 @@ func TestMakeTopics(t *testing.T) {
 				{big.NewInt(gomath.MinInt64)},
 			}},
 			[][]common.LogTopic{
-				// MakeTopics encodes via math.U256Bytes, which left-pads to
-				// 32 bytes; so -1 lands as 0xff*32 in the low half with the
-				// upper half zero.
-				{func() common.LogTopic {
-					var t common.LogTopic
-					for i := common.LogTopicLength - common.HashLength; i < common.LogTopicLength; i++ {
-						t[i] = 0xff
-					}
-					return t
-				}()},
-				{func() common.LogTopic {
-					t := common.HexToLogTopic("ffffffffffffffffffffffffffffffffffffffffffffffff8000000000000000")
-					return t
-				}()},
+				{bigTopic(big.NewInt(-1))},
+				{bigTopic(big.NewInt(gomath.MinInt64))},
 			},
 			false,
 		},
@@ -182,15 +178,33 @@ func TestMakeTopics(t *testing.T) {
 		{
 			"support string types in topics",
 			args{[][]any{{"hello world"}}},
-			// Keccak256 hash right-aligned in the slot (low 32 bytes).
-			[][]common.LogTopic{{common.BytesToLogTopic(crypto.Keccak256([]byte("hello world")))}},
+			// Indexed dynamic values store the Keccak256 hash as ABI bytes32.
+			[][]common.LogTopic{{hashTopic(crypto.Keccak256([]byte("hello world")))}},
 			false,
 		},
 		{
 			"support byte slice types in topics",
 			args{[][]any{{[]byte{1, 2, 3}}}},
-			[][]common.LogTopic{{common.BytesToLogTopic(crypto.Keccak256([]byte{1, 2, 3}))}},
+			[][]common.LogTopic{{hashTopic(crypto.Keccak256([]byte{1, 2, 3}))}},
 			false,
+		},
+		{
+			"hash function values wider than a topic",
+			args{[][]any{{function}}},
+			[][]common.LogTopic{{common.HashToLogTopic(crypto.Keccak256Hash(function[:]))}},
+			false,
+		},
+		{
+			"support static byte arrays up to the full topic width",
+			args{[][]any{{[64]byte{1, 2, 3}}}},
+			[][]common.LogTopic{{common.LogTopic{1, 2, 3}}},
+			false,
+		},
+		{
+			"error on static byte arrays wider than the topic",
+			args{[][]any{{[65]byte{1, 2, 3}}}},
+			nil,
+			true,
 		},
 	}
 	for _, tt := range tests {
@@ -209,13 +223,9 @@ func TestMakeTopics(t *testing.T) {
 
 	t.Run("does not mutate big.Int", func(t *testing.T) {
 		t.Parallel()
-		// -1 big.Int uses math.U256Bytes → 32-byte sign-extended form that
-		// lands in the low 32 bytes of the topic slot.
 		want := [][]common.LogTopic{{func() common.LogTopic {
 			var t common.LogTopic
-			for i := common.LogTopicLength - common.HashLength; i < common.LogTopicLength; i++ {
-				t[i] = 0xff
-			}
+			copy(t[:], math.U512Bytes(big.NewInt(-1)))
 			return t
 		}()}}
 
@@ -251,18 +261,14 @@ type int256Struct struct {
 	Int256Value *big.Int
 }
 
-// hashStruct receives the indexed keccak256 hash of a dynamic type. Topics
-// are 64 bytes; the reconstructed value uses the full LogTopic slot (hash
-// right-aligned in the low 32 bytes).
+// hashStruct receives the indexed Keccak-256 hash of a dynamic type.
 type hashStruct struct {
-	HashValue common.LogTopic
+	HashValue common.Hash
 }
 
-// funcStruct mirrors the Solidity `function` type, which is address followed
-// by a 4-byte selector. With 64-byte addresses it no longer fits in one
-// 64-byte ABI word and is rejected by encoder/decoder paths.
+// funcStruct receives the hash of an indexed function value.
 type funcStruct struct {
-	FuncValue [common.AddressLength + 4]byte
+	FuncValue common.Hash
 }
 
 type topicTest struct {
@@ -288,6 +294,7 @@ func setupTopicsTests() []topicTest {
 	tupleType, _ := NewType("tuple(int256,int8)", "", nil)
 	stringType, _ := NewType("string", "", nil)
 	funcType, _ := NewType("function", "", nil)
+	hashValue := crypto.Keccak256Hash([]byte("stringtopic"))
 
 	tests := []topicTest{
 		{
@@ -349,10 +356,10 @@ func setupTopicsTests() []topicTest {
 			args: args{
 				createObj: func() any { return &hashStruct{} },
 				resultObj: func() any {
-					return &hashStruct{common.BytesToLogTopic(crypto.Keccak256([]byte("stringtopic")))}
+					return &hashStruct{hashValue}
 				},
 				resultMap: func() map[string]any {
-					return map[string]any{"hashValue": common.BytesToLogTopic(crypto.Keccak256([]byte("stringtopic")))}
+					return map[string]any{"hashValue": hashValue}
 				},
 				fields: Arguments{Argument{
 					Name:    "hashValue",
@@ -360,7 +367,7 @@ func setupTopicsTests() []topicTest {
 					Indexed: true,
 				}},
 				topics: []common.LogTopic{
-					common.BytesToLogTopic(crypto.Keccak256([]byte("stringtopic"))),
+					common.HashToLogTopic(hashValue),
 				},
 			},
 			wantErr: false,
@@ -369,26 +376,18 @@ func setupTopicsTests() []topicTest {
 			name: "function type",
 			args: args{
 				createObj: func() any { return &funcStruct{} },
-				resultObj: func() any { return &funcStruct{} },
+				resultObj: func() any { return &funcStruct{FuncValue: hashValue} },
 				resultMap: func() map[string]any {
-					return map[string]any{}
+					return map[string]any{"funcValue": hashValue}
 				},
 				fields: Arguments{Argument{
 					Name:    "funcValue",
 					Type:    funcType,
 					Indexed: true,
 				}},
-				// 64-byte addresses leave no room for the extra 4-byte selector,
-				// so ABI function values are rejected.
-				topics: []common.LogTopic{func() common.LogTopic {
-					var t common.LogTopic
-					for i := range t {
-						t[i] = 0xff
-					}
-					return t
-				}()},
+				topics: []common.LogTopic{common.HashToLogTopic(hashValue)},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "error on topic/field count mismatch",
@@ -432,31 +431,6 @@ func setupTopicsTests() []topicTest {
 					Indexed: true,
 				}},
 				topics: []common.LogTopic{{0}},
-			},
-			wantErr: true,
-		},
-		{
-			name: "error on improper encoded function",
-			args: args{
-				createObj: func() any { return &funcStruct{} },
-				resultObj: func() any { return &funcStruct{} },
-				resultMap: func() map[string]any {
-					return make(map[string]any)
-				},
-				fields: Arguments{Argument{
-					Name:    "funcValue",
-					Type:    funcType,
-					Indexed: true,
-				}},
-				// 64-byte addresses leave no room for the extra 4-byte selector,
-				// so ABI function values are rejected.
-				topics: []common.LogTopic{func() common.LogTopic {
-					var t common.LogTopic
-					for i := range t {
-						t[i] = 0xff
-					}
-					return t
-				}()},
 			},
 			wantErr: true,
 		},

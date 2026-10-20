@@ -18,6 +18,7 @@ package accounts
 
 import (
 	"reflect"
+	"slices"
 	"sort"
 	"sync"
 
@@ -141,10 +142,6 @@ func (am *Manager) update() {
 			am.lock.Unlock()
 			close(event.processed)
 		case errc := <-am.quit:
-			// Close all owned wallets
-			for _, w := range am.wallets {
-				w.Close()
-			}
 			// Manager terminating, return
 			errc <- nil
 			// Signals event emitters the loop is not receiving values
@@ -249,13 +246,12 @@ func merge(slice []Wallet, wallets ...Wallet) []Wallet {
 // drop is the counterpart of merge, which looks up wallets from within the sorted
 // cache and removes the ones specified.
 func drop(slice []Wallet, wallets ...Wallet) []Wallet {
-	for _, wallet := range wallets {
-		n := sort.Search(len(slice), func(i int) bool { return slice[i].URL().Cmp(wallet.URL()) >= 0 })
-		if n == len(slice) {
-			// Wallet not found, may happen during startup
-			continue
-		}
-		slice = append(slice[:n], slice[n+1:]...)
+	remove := make(map[URL]struct{}, len(wallets))
+	for _, w := range wallets {
+		remove[w.URL()] = struct{}{}
 	}
-	return slice
+	return slices.DeleteFunc(slice, func(w Wallet) bool {
+		_, ok := remove[w.URL()]
+		return ok
+	})
 }

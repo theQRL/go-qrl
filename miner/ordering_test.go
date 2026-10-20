@@ -44,7 +44,7 @@ func testTransactionPriceNonceSort(t *testing.T, baseFee *big.Int) {
 	for i := range wallets {
 		wallets[i], _ = wallet.Generate(wallet.ML_DSA_87)
 	}
-	signer := types.LatestSignerForChainID(common.Big1)
+	signer := types.NewZondSigner(common.Big1)
 
 	// Generate a batch of transactions with overlapping values, but shifted nonces
 	groups := map[common.Address][]*txpool.LazyTransaction{}

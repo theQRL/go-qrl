@@ -636,7 +636,7 @@ func TestEstimateGasWithPrice(t *testing.T) {
 	sim := NewSimulatedBackend(core.GenesisAlloc{addr: {Balance: big.NewInt(params.Quanta*2 + 2e17)}}, 10000000)
 	defer sim.Close()
 
-	recipient, _ := common.NewAddressFromString("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef")
+	recipient := common.MustParseAddress("Q000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef")
 	var cases = []struct {
 		name        string
 		message     qrl.CallMsg
@@ -1377,15 +1377,17 @@ const callableAbi = "[{\"anonymous\":false,\"inputs\":[],\"name\":\"Called\",\"t
 
 // Hand-rolled replacement for the Solidity fixture above. The original
 // bytecode depended on LOG/DUP/SWAP opcodes that shifted when the VM
-// widened to 512-bit words. 12-byte init copies a 58-byte runtime that
+// widened to 512-bit words. 12-byte init copies a 62-byte runtime that
 //   - reads calldata[0:4] (shifted in from the 64-byte CALLDATALOAD word),
 //   - dispatches on selector 0x34e22921 (keccak256("Call()")[:4]),
-//   - and, on match, emits LOG1 with topic0 = keccak256("Called()"),
-//     so contract.WatchLogs(nil, "Called") still resolves the event.
-const callableBin = "603a600c600039603a6000f36000356101e01c63" +
+//   - and, on match, emits LOG1 with topic0 = keccak256("Called()") << 256,
+//     left-aligning the hash in the 64-byte topic like Hyperion's bytes32
+//     event-signature layout, so contract.WatchLogs(nil, "Called") resolves
+//     the event.
+const callableBin = "603e600c600039603e6000f36000356101e01c63" +
 	"34e22921146100125700" +
 	"5b7f81fab7a4a0aa961db47eefc81f143a5220e8c8495260dd65b1356f1d19d3c7b8" +
-	"60006000c100"
+	"6101001b60006000c100"
 
 // TestForkLogsReborn check that the simulated reorgs
 // correctly remove and reborn logs.

@@ -89,8 +89,15 @@ func TestUnpack(t *testing.T) {
 				t.Errorf("test %d (%v) failed: %v", i, test.def, err)
 				return
 			}
-			if !reflect.DeepEqual(test.unpacked, ConvertType(out[0], test.unpacked)) {
-				t.Errorf("test %d (%v) failed: expected %v, got %v", i, test.def, test.unpacked, out[0])
+			want := test.values()
+			if len(out) != len(want) {
+				t.Errorf("test %d (%v) failed: expected %d values, got %d", i, test.def, len(want), len(out))
+				return
+			}
+			for j := range want {
+				if !reflect.DeepEqual(want[j], ConvertType(out[j], want[j])) {
+					t.Errorf("test %d (%v) value %d failed: expected %v, got %v", i, test.def, j, want[j], out[j])
+				}
 			}
 		})
 	}
@@ -530,7 +537,7 @@ func TestMultiReturnWithStringArray(t *testing.T) {
 	}
 	temp, _ := new(big.Int).SetString("30000000000000000000", 10)
 	ret1Exp := [3]*big.Int{big.NewInt(1545304298), big.NewInt(6), temp}
-	ret2Exp, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ab1257528b3782fb40d7ed5f72e624b744dffb2f")
+	ret2Exp := common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000ab1257528b3782fb40d7ed5f72e624b744dffb2f")
 	ret3Exp := [2]string{"Ethereum", "Hello, Ethereum!"}
 	ret4Exp := false
 	packed, err := inAbi.Pack("multi", ret1Exp, ret2Exp, ret3Exp, ret4Exp)

@@ -41,14 +41,13 @@ You should treat 'masterseed.json' with utmost secrecy and make a backup of it!
 
 ## Remote interactions
 
-Clef is capable of managing both key-file based accounts as well as hardware wallets. To evaluate clef, we're going to point it to our Rinkeby testnet keystore and specify the Rinkeby chain ID for signing (Clef doesn't have a backing chain, so it doesn't know what network it runs on).
+Clef manages key-file based accounts. To evaluate clef, we're going to point it to our testnet keystore and specify the testnet chain ID for signing (Clef doesn't have a backing chain, so it doesn't know what network it runs on).
 
 ```text
-$ clef --keystore ~/.qrl/rinkeby/keystore --chainid 4
+$ clef --keystore ~/.qrl/testnet/keystore --chainid 1337
 
-INFO [07-01|11:00:46.385] Starting signer                          chainid=4 keystore=$HOME/.qrl/rinkeby/keystore light-kdf=false advanced=false
+INFO [07-01|11:00:46.385] Starting signer                          chainid=1337 keystore=$HOME/.qrl/testnet/keystore light-kdf=false advanced=false
 DEBUG[07-01|11:00:46.389] FS scan times                            list=3.521941ms set=9.017µs diff=4.112µs
-DEBUG[07-01|11:00:46.391] Ledger support enabled
 INFO [07-01|11:00:46.391] Audit logs configured                    file=audit.log
 DEBUG[07-01|11:00:46.392] IPC registered                           namespace=account
 INFO [07-01|11:00:46.392] IPC endpoint opened                      url=$HOME/.clef/clef.ipc
@@ -74,9 +73,9 @@ This will prompt the user within the Clef CLI to confirm or deny the request:
 A request has been made to list all accounts.
 You can select which accounts the caller can see
   [x] Q00000000000000000000000000000000000000000000000000000000D9C9Cd5f6779558b6e0eD4e6Acf6b1947E7fA1F3
-    URL: keystore://$HOME/.qrl/rinkeby/keystore/UTC--2017-04-14T15-15-00.327614556Z--Q00000000000000000000000000000000000000000000000000000000d9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3
+    URL: keystore://$HOME/.qrl/testnet/keystore/UTC--2017-04-14T15-15-00.327614556Z--Q00000000000000000000000000000000000000000000000000000000d9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3
   [x] Q00000000000000000000000000000000000000000000000000000000086278A6C067775F71d6B2BB1856Db6E28c30418
-    URL: keystore://$HOME/.qrl/rinkeby/keystore/UTC--2018-02-06T22-53-11.211657239Z--Q00000000000000000000000000000000000000000000000000000000086278a6c067775f71d6b2bb1856db6e28c30418
+    URL: keystore://$HOME/.qrl/testnet/keystore/UTC--2018-02-06T22-53-11.211657239Z--Q00000000000000000000000000000000000000000000000000000000086278a6c067775f71d6b2bb1856db6e28c30418
 -------------------------------------------
 Request context:
 	NA -> NA -> NA
@@ -104,7 +103,7 @@ Apart from listing accounts, you can also *request* creating a new account and s
 
 ## Automatic rules
 
-For most users, manually confirming every transaction is the way to go. However, there are cases when it makes sense to set up some rules which permit Clef to sign a transaction without prompting the user. One such example would be running a signer on Rinkeby or other PoA networks.
+For most users, manually confirming every transaction is the way to go. However, there are cases when it makes sense to set up some rules which permit Clef to sign a transaction without prompting the user. One such example would be running a signer on a testnet.
 
 For starters, we can create a rule file that automatically permits anyone to list our available accounts without user confirmation. The rule file is a tiny JavaScript snippet that you can program however you want:
 
@@ -129,12 +128,11 @@ INFO [07-01|13:25:03.290] Ruleset attestation updated              sha256=645b58
 At this point, we can start Clef with the rule file:
 
 ```text
-$ clef --keystore ~/.qrl/rinkeby/keystore --chainid 4 --rules rules.js
+$ clef --keystore ~/.qrl/testnet/keystore --chainid 1337 --rules rules.js
 
 INFO [07-01|13:39:49.726] Rule engine configured                   file=rules.js
-INFO [07-01|13:39:49.726] Starting signer                          chainid=4 keystore=$HOME/.qrl/rinkeby/keystore light-kdf=false advanced=false
+INFO [07-01|13:39:49.726] Starting signer                          chainid=1337 keystore=$HOME/.qrl/testnet/keystore light-kdf=false advanced=false
 DEBUG[07-01|13:39:49.726] FS scan times                            list=35.15µs set=4.251µs diff=2.766µs
-DEBUG[07-01|13:39:49.727] Ledger support enabled
 INFO [07-01|13:39:49.728] Audit logs configured                    file=audit.log
 DEBUG[07-01|13:39:49.728] IPC registered                           namespace=account
 INFO [07-01|13:39:49.728] IPC endpoint opened                      url=$HOME/.clef/clef.ipc
@@ -240,12 +238,11 @@ INFO [07-01|14:11:28.509] Ruleset attestation updated              sha256=f163a1
 Restart Clef with the new rules in place:
 
 ```
-$ clef --keystore ~/.qrl/rinkeby/keystore --chainid 4 --rules rules.js
+$ clef --keystore ~/.qrl/testnet/keystore --chainid 1337 --rules rules.js
 
 INFO [07-01|14:12:41.636] Rule engine configured                   file=rules.js
-INFO [07-01|14:12:41.636] Starting signer                          chainid=4 keystore=$HOME/.qrl/rinkeby/keystore light-kdf=false advanced=false
+INFO [07-01|14:12:41.636] Starting signer                          chainid=1337 keystore=$HOME/.qrl/testnet/keystore light-kdf=false advanced=false
 DEBUG[07-01|14:12:41.636] FS scan times                            list=46.722µs set=4.47µs diff=2.157µs
-DEBUG[07-01|14:12:41.637] Ledger support enabled
 INFO [07-01|14:12:41.638] Audit logs configured                    file=audit.log
 DEBUG[07-01|14:12:41.638] IPC registered                           namespace=account
 INFO [07-01|14:12:41.638] IPC endpoint opened                      url=$HOME/.clef/clef.ipc
@@ -290,16 +287,16 @@ Of course, as awesome as Clef is, it's not feasible to interact with it via JSON
 
 Until then however, we're trying to pave the way via Gqrl. Gqrl v1.9.0 has built in support via `--signer <API endpoint>` for using a local or remote Clef instance as an account backend!
 
-We can try this by running Clef with our previous rules on Rinkeby (for now it's a good idea to allow auto-listing accounts, since Gqrl likes to retrieve them once in a while).
+We can try this by running Clef with our previous rules on the testnet (for now it's a good idea to allow auto-listing accounts, since Gqrl likes to retrieve them once in a while).
 
 ```text
-$ clef --keystore ~/.qrl/rinkeby/keystore --chainid 4 --rules rules.js
+$ clef --keystore ~/.qrl/testnet/keystore --chainid 1337 --rules rules.js
 ```
 
 In a different window we can start Gqrl, list our accounts, even list our wallets to see where the accounts originate from:
 
 ```text
-$ gqrl --rinkeby --signer=~/.clef/clef.ipc console
+$ gqrl --testnet --signer=~/.clef/clef.ipc console
 
 > qrl.accounts
 ["Q00000000000000000000000000000000000000000000000000000000d9c9cd5f6779558b6e0ed4e6acf6b1947e7fa1f3", "Q00000000000000000000000000000000000000000000000000000000086278a6c067775f71d6b2bb1856db6e28c30418"]

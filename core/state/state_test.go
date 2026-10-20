@@ -134,7 +134,7 @@ func TestIterativeDump(t *testing.T) {
 
 func TestNull(t *testing.T) {
 	s := newStateEnv()
-	address, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000823140710bf13990e4500136726d8b5599aabbccddeeff001122334455667788")
+	address := common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000823140710bf13990e4500136726d8b5599aabbccddeeff001122334455667788")
 	s.state.CreateAccount(address)
 	//value := common.FromHex("0x823140710bf13990e4500136726d8b55")
 	var value common.StorageValue64

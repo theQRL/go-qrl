@@ -29,6 +29,7 @@ var (
 	bytesT  = reflect.TypeFor[Bytes]()
 	bytesqT = reflect.TypeFor[BytesQ]()
 	bigT    = reflect.TypeFor[*Big]()
+	u512T   = reflect.TypeFor[*U512]()
 	uintT   = reflect.TypeFor[Uint]()
 	uint64T = reflect.TypeFor[Uint64]()
 )
@@ -246,6 +247,89 @@ func (b *Big) UnmarshalGraphQL(input any) error {
 		err = fmt.Errorf("unexpected type %T for BigInt", input)
 	}
 	return err
+}
+
+const u512HexDigits = 128
+
+// U512 marshals/unmarshals as a JSON quantity with 0x prefix.
+// The zero value marshals as "0x0".
+//
+// U512 is intended for RPC fields that can legitimately carry full-width
+// storage values without relaxing the 256-bit validation enforced by Big for
+// regular protocol quantities.
+//
+// Negative integers are not supported. Values larger than 512 bits are rejected
+// by Unmarshal but will be marshaled without error.
+type U512 big.Int
+
+// MarshalText implements encoding.TextMarshaler.
+func (u U512) MarshalText() ([]byte, error) {
+	return []byte(EncodeBig((*big.Int)(&u))), nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (u *U512) UnmarshalJSON(input []byte) error {
+	if !isString(input) {
+		return errNonString(u512T)
+	}
+	return wrapTypeError(u.UnmarshalText(input[1:len(input)-1]), u512T)
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler.
+func (u *U512) UnmarshalText(input []byte) error {
+	raw, err := checkNumberText(input)
+	if err != nil {
+		return err
+	}
+	if len(raw) > u512HexDigits {
+		return ErrBig512Range
+	}
+	words := make([]big.Word, len(raw)/bigWordNibbles+1)
+	end := len(raw)
+	for i := range words {
+		start := max(end-bigWordNibbles, 0)
+		for ri := start; ri < end; ri++ {
+			nib := decodeNibble(raw[ri])
+			if nib == badNibble {
+				return ErrSyntax
+			}
+			words[i] *= 16
+			words[i] += big.Word(nib)
+		}
+		end = start
+	}
+	var dec big.Int
+	dec.SetBits(words)
+	*u = (U512)(dec)
+	return nil
+}
+
+// ToInt converts u to a big.Int.
+func (u *U512) ToInt() *big.Int {
+	return (*big.Int)(u)
+}
+
+// String returns the hex encoding of u.
+func (u *U512) String() string {
+	return EncodeBig(u.ToInt())
+}
+
+// ImplementsGraphQLType returns true if U512 implements the provided GraphQL type.
+func (u U512) ImplementsGraphQLType(name string) bool { return name == "BigInt" }
+
+// UnmarshalGraphQL unmarshals the provided GraphQL query data.
+func (u *U512) UnmarshalGraphQL(input any) error {
+	switch input := input.(type) {
+	case string:
+		return u.UnmarshalText([]byte(input))
+	case int32:
+		var num big.Int
+		num.SetInt64(int64(input))
+		*u = U512(num)
+		return nil
+	default:
+		return fmt.Errorf("unexpected type %T for U512", input)
+	}
 }
 
 // Uint64 marshals/unmarshals as a JSON string with 0x prefix.

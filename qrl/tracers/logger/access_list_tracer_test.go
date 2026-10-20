@@ -1,4 +1,4 @@
-// Copyright 2018 The go-ethereum Authors
+// Copyright 2026 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
 // The go-ethereum library is free software: you can redistribute it and/or modify
@@ -14,18 +14,26 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
-package accounts
+package logger
 
-// AccountsByURL implements sort.Interface for []Account based on the URL field.
-type AccountsByURL []Account
+import (
+	"bytes"
+	"testing"
 
-func (a AccountsByURL) Len() int           { return len(a) }
-func (a AccountsByURL) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a AccountsByURL) Less(i, j int) bool { return a[i].URL.Cmp(a[j].URL) < 0 }
+	"github.com/theQRL/go-qrl/common"
+	"github.com/theQRL/go-qrl/core/types"
+)
 
-// WalletsByURL implements sort.Interface for []Wallet based on the URL field.
-type WalletsByURL []Wallet
-
-func (w WalletsByURL) Len() int           { return len(w) }
-func (w WalletsByURL) Swap(i, j int)      { w[i], w[j] = w[j], w[i] }
-func (w WalletsByURL) Less(i, j int) bool { return w[i].URL().Cmp(w[j].URL()) < 0 }
+func TestNewAccessListTracerExcludedAddress(t *testing.T) {
+	excluded := common.BytesToAddress(bytes.Repeat([]byte{0x22}, common.AddressLength))
+	slot := common.HexToHash("0x01")
+	prelude := types.AccessList{{
+		Address:     excluded,
+		StorageKeys: []common.Hash{slot},
+	}}
+	tracer := NewAccessListTracer(prelude, excluded, common.Address{}, nil)
+	got := tracer.AccessList()
+	if len(got) != 0 {
+		t.Fatalf("excluded prelude address must not contribute tuples, got %+v", got)
+	}
+}

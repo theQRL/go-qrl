@@ -78,7 +78,9 @@ make sure to use this feature with great caution!`,
 		}
 		if showPrivate {
 			seed, err := key.Wallet.GetSeed()
-			utils.Fatalf("Error Wallet.GetSeed(): %v", err)
+			if err != nil {
+				utils.Fatalf("Error Wallet.GetSeed(): %v", err)
+			}
 			out.Seed = hex.EncodeToString(seed[:])
 		}
 

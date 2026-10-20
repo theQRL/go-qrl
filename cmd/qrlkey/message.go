@@ -87,6 +87,12 @@ To sign a message contained in a file, use the --msgfile flag.
 
 type outputVerify struct {
 	Success bool
+	Address string `json:",omitempty"`
+}
+
+var expectedAddressFlag = &cli.StringFlag{
+	Name:  "address",
+	Usage: "expected signer address; verification fails if the public key does not derive to it",
 }
 
 // TODO(now.youtrack.cloud/issue/TGZ-3)
@@ -95,11 +101,14 @@ var commandVerifyMessage = &cli.Command{
 	Usage:     "verify the signature of a signed message",
 	ArgsUsage: "<signature> <publickey> <message>",
 	Description: `
-Verify the signature of the message.
+Verify the signature of the message and print the address that the public key
+belongs to. With --address, verification also fails unless the public key
+derives to that address.
 It is possible to refer to a file containing the message.`,
 	Flags: []cli.Flag{
 		jsonFlag,
 		msgfileFlag,
+		expectedAddressFlag,
 	},
 	Action: func(ctx *cli.Context) error {
 		signature := common.FromHex(ctx.Args().First())
@@ -107,8 +116,9 @@ It is possible to refer to a file containing the message.`,
 		message := getMessage(ctx, 2)
 
 		var (
-			ok  bool
-			err error
+			ok      bool
+			err     error
+			address common.Address
 		)
 		switch len(signature) {
 		case pqcrypto.MLDSA87SignatureLength:
@@ -116,18 +126,34 @@ It is possible to refer to a file containing the message.`,
 			if err != nil {
 				utils.Fatalf("Can't verify ML-DSA-87 signature: %v", err)
 			}
+			address, err = pqcrypto.MLDSA87PublicKeyToAddress(publicKey)
+			if err != nil {
+				utils.Fatalf("Can't derive the address of the public key: %v", err)
+			}
 		default:
 			utils.Fatalf("verifymessage: %v", wallet.ErrBadWalletType)
 		}
 
-		out := outputVerify{
-			Success: ok,
+		if expected := ctx.String(expectedAddressFlag.Name); expected != "" {
+			want, err := common.NewAddressFromString(expected)
+			if err != nil {
+				utils.Fatalf("Invalid --address value %q: %v", expected, err)
+			}
+			if want != address {
+				ok = false
+			}
+		}
+
+		out := outputVerify{Success: ok}
+		if ok {
+			out.Address = address.Hex()
 		}
 		if ctx.Bool(jsonFlag.Name) {
 			mustPrintJSON(out)
 		} else {
 			if out.Success {
 				fmt.Println("Signature verification successful!")
+				fmt.Println("Address:", out.Address)
 			} else {
 				fmt.Println("Signature verification failed!")
 			}

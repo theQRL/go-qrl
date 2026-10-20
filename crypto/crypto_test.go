@@ -21,7 +21,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/hex"
-	"math/big"
 	"os"
 	"reflect"
 	"testing"
@@ -30,7 +29,7 @@ import (
 	"github.com/theQRL/go-qrl/common/hexutil"
 )
 
-var testAddr, _ = common.NewAddressFromString("Q43261cfab65ca3444b9a1001528c60d9a23d19bad2bc21051f24bf4bccd804dc63e35f36b63ee11ca7775ec832d6580929136989106db0231c6f04840cf8ee16")
+var testAddr = common.MustParseAddress("Q43261cfab65ca3444b9a1001528c60d9a23d19bad2bc21051f24bf4bccd804dc63e35f36b63ee11ca7775ec832d6580929136989106db0231c6f04840cf8ee16")
 var testPrivHex = "289c2857d4598e37fb9647507e47a309d6133539bf21a8b9cb6df88fd5232032"
 
 // These tests are sanity checks.
@@ -92,35 +91,6 @@ func TestUnmarshalPubkey(t *testing.T) {
 	}
 }
 
-func TestSign(t *testing.T) {
-	key, _ := HexToECDSA(testPrivHex)
-
-	msg := Keccak256([]byte("foo"))
-	sig, err := Sign(msg, key)
-	if err != nil {
-		t.Errorf("Sign error: %s", err)
-	}
-	recoveredPub, err := Ecrecover(msg, sig)
-	if err != nil {
-		t.Errorf("ECRecover error: %s", err)
-	}
-	pubKey, _ := UnmarshalPubkey(recoveredPub)
-	recoveredAddr := PubkeyToAddress(*pubKey)
-	if testAddr != recoveredAddr {
-		t.Errorf("Address mismatch: want: %x have: %x", testAddr, recoveredAddr)
-	}
-
-	// should be equal to SigToPub
-	recoveredPub2, err := SigToPub(msg, sig)
-	if err != nil {
-		t.Errorf("ECRecover error: %s", err)
-	}
-	recoveredAddr2 := PubkeyToAddress(*recoveredPub2)
-	if testAddr != recoveredAddr2 {
-		t.Errorf("Address mismatch: want: %x have: %x", testAddr, recoveredAddr2)
-	}
-}
-
 func TestInvalidSign(t *testing.T) {
 	if _, err := Sign(make([]byte, 1), nil); err == nil {
 		t.Errorf("expected sign with hash 1 byte to error")
@@ -131,17 +101,12 @@ func TestInvalidSign(t *testing.T) {
 }
 
 func TestNewContractAddress(t *testing.T) {
-	key, _ := HexToECDSA(testPrivHex)
-	genAddr := PubkeyToAddress(key.PublicKey)
-	// sanity check before using addr to create contract address
-	checkAddr(t, genAddr, testAddr)
-
 	caddr0 := CreateAddress(testAddr, 0)
 	caddr1 := CreateAddress(testAddr, 1)
 	caddr2 := CreateAddress(testAddr, 2)
-	addr0, _ := common.NewAddressFromString("Qf2a607fd56723c510a1bf4b000fd1e778aedc94e78fcc8cb18d531ec673212284520097bbed26e2df76ce4a5360c73add776771dcd5c0ce56751e30c2413c366")
-	addr1, _ := common.NewAddressFromString("Q5c2ef024f69257cab379fd37fe2dc6c9242320f8771b1a6d6c86b6cefadcfc449c473414b5647b4ee3361f28a7a4cd47b10b6c6fa3399d056f851d97998f7748")
-	addr2, _ := common.NewAddressFromString("Qb000412862016ae61f4003114cc4eaa6ba614ccbf8b096e5686a7df6305cb82743e72610275437d11f05758befb7ba44b17fb05f588615893d661e787cd0738e")
+	addr0 := common.MustParseAddress("Qf2a607fd56723c510a1bf4b000fd1e778aedc94e78fcc8cb18d531ec673212284520097bbed26e2df76ce4a5360c73add776771dcd5c0ce56751e30c2413c366")
+	addr1 := common.MustParseAddress("Q5c2ef024f69257cab379fd37fe2dc6c9242320f8771b1a6d6c86b6cefadcfc449c473414b5647b4ee3361f28a7a4cd47b10b6c6fa3399d056f851d97998f7748")
+	addr2 := common.MustParseAddress("Qb000412862016ae61f4003114cc4eaa6ba614ccbf8b096e5686a7df6305cb82743e72610275437d11f05758befb7ba44b17fb05f588615893d661e787cd0738e")
 	checkAddr(t, addr0, caddr0)
 	checkAddr(t, addr1, caddr1)
 	checkAddr(t, addr2, caddr2)
@@ -223,52 +188,6 @@ func TestSaveECDSA(t *testing.T) {
 	if !reflect.DeepEqual(key, loaded) {
 		t.Fatal("loaded key not equal to saved key")
 	}
-}
-
-func TestValidateSignatureValues(t *testing.T) {
-	check := func(expected bool, v byte, r, s *big.Int) {
-		if ValidateSignatureValues(v, r, s, false) != expected {
-			t.Errorf("mismatch for v: %d r: %d s: %d want: %v", v, r, s, expected)
-		}
-	}
-	minusOne := big.NewInt(-1)
-	one := common.Big1
-	zero := common.Big0
-	secp256k1nMinus1 := new(big.Int).Sub(secp256k1N, common.Big1)
-
-	// correct v,r,s
-	check(true, 0, one, one)
-	check(true, 1, one, one)
-	// incorrect v, correct r,s,
-	check(false, 2, one, one)
-	check(false, 3, one, one)
-
-	// incorrect v, combinations of incorrect/correct r,s at lower limit
-	check(false, 2, zero, zero)
-	check(false, 2, zero, one)
-	check(false, 2, one, zero)
-	check(false, 2, one, one)
-
-	// correct v for any combination of incorrect r,s
-	check(false, 0, zero, zero)
-	check(false, 0, zero, one)
-	check(false, 0, one, zero)
-
-	check(false, 1, zero, zero)
-	check(false, 1, zero, one)
-	check(false, 1, one, zero)
-
-	// correct sig with max r,s
-	check(true, 0, secp256k1nMinus1, secp256k1nMinus1)
-	// correct v, combinations of incorrect r,s at upper limit
-	check(false, 0, secp256k1N, secp256k1nMinus1)
-	check(false, 0, secp256k1nMinus1, secp256k1N)
-	check(false, 0, secp256k1N, secp256k1N)
-
-	// current callers ensures r,s cannot be negative, but let's test for that too
-	// as crypto package could be used stand-alone
-	check(false, 0, minusOne, one)
-	check(false, 0, one, minusOne)
 }
 
 func checkhash(t *testing.T, name string, f func([]byte) []byte, msg, exp []byte) {

@@ -32,8 +32,7 @@ import (
 // - basefee check
 func VerifyEIP1559Header(config *params.ChainConfig, parent, header *types.Header) error {
 	// Verify that the gas limit remains within allowed bounds
-	parentGasLimit := parent.GasLimit
-	if err := misc.VerifyGaslimit(parentGasLimit, header.GasLimit); err != nil {
+	if err := misc.VerifyGaslimit(header.GasLimit); err != nil {
 		return err
 	}
 	// Verify the header is not malformed

@@ -216,7 +216,6 @@ type BlockChain struct {
 	hc            *HeaderChain
 	rmLogsFeed    event.Feed
 	chainFeed     event.Feed
-	chainSideFeed event.Feed
 	chainHeadFeed event.Feed
 	logsFeed      event.Feed
 	blockProcFeed event.Feed
@@ -392,11 +391,6 @@ func NewBlockChain(db qrldb.Database, cacheConfig *CacheConfig, genesis *Genesis
 			}
 		}
 	}
-	// The first thing the node will do is reconstruct the verification data for
-	// the head block (ethash cache or clique voting snapshot). Might as well do
-	// it in advance.
-	bc.engine.VerifyHeader(bc, bc.CurrentHeader())
-
 	// Load any existing snapshot, regenerating it if loading failed
 	if bc.cacheConfig.SnapshotLimit > 0 {
 		// If the chain was rewound past the snapshot persistent layer (causing
@@ -1383,18 +1377,8 @@ func (bc *BlockChain) writeBlockWithState(block *types.Block, receipts []*types.
 	return nil
 }
 
-// WriteBlockAndSetHead writes the given block and all associated state to the database,
+// writeBlockAndSetHead writes the given block and all associated state to the database,
 // and applies the block as the new chain head.
-func (bc *BlockChain) WriteBlockAndSetHead(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) (status WriteStatus, err error) {
-	if !bc.chainmu.TryLock() {
-		return NonStatTy, errChainStopped
-	}
-	defer bc.chainmu.Unlock()
-
-	return bc.writeBlockAndSetHead(block, receipts, logs, state, emitHeadEvent)
-}
-
-// writeBlockAndSetHead is the internal implementation of WriteBlockAndSetHead.
 // This function expects the chain mutex to be held.
 func (bc *BlockChain) writeBlockAndSetHead(block *types.Block, receipts []*types.Receipt, logs []*types.Log, state *state.StateDB, emitHeadEvent bool) (status WriteStatus, err error) {
 	if err := bc.writeBlockWithState(block, receipts, state); err != nil {
@@ -1478,7 +1462,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 	}
 
 	// Start a parallel signature recovery (signer will fluke on fork transition, minimal perf loss)
-	SenderCacher.RecoverFromBlocks(types.MakeSigner(bc.chainConfig), chain)
+	SenderCacher.RecoverFromBlocks(types.NewZondSigner(bc.chainConfig.ChainID), chain)
 
 	var (
 		stats     = insertStats{startTime: mclock.Now()}
@@ -1545,7 +1529,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 	// First block is pruned
 	case errors.Is(err, consensus.ErrPrunedAncestor):
 		if !setHead {
-			// We're post-merge and the parent is pruned, try to recover the parent state
+			// The parent is pruned, try to recover the parent state
 			log.Debug("Pruned ancestor", "number", block.Number(), "hash", block.Hash())
 			_, err := bc.recoverAncestors(block)
 			return it.index, err
@@ -1718,7 +1702,7 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 		stats.report(chain, it.index, snapDiffItems, snapBufItems, trieDiffNodes, trieBufNodes, setHead)
 
 		if !setHead {
-			// After merge we expect few side chains. Simply count
+			// We expect few side chains. Simply count
 			// all blocks the CL gives us for GC processing time
 			bc.gcproc += proctime
 
@@ -1753,7 +1737,6 @@ func (bc *BlockChain) insertChain(chain types.Blocks, setHead bool) (int, error)
 
 // recoverAncestors finds the closest ancestor with available state and re-execute
 // all the ancestor blocks since that.
-// recoverAncestors is only used post-merge.
 // We return the hash of the latest block that we could correctly validate.
 func (bc *BlockChain) recoverAncestors(block *types.Block) (common.Hash, error) {
 	// Gather all the sidechain hashes (full blocks may be memory heavy)
@@ -1902,7 +1885,7 @@ func (bc *BlockChain) reorg(oldHead *types.Header, newHead *types.Block) error {
 		blockReorgDropMeter.Mark(int64(len(oldChain)))
 		blockReorgMeter.Mark(1)
 	} else if len(newChain) > 0 {
-		// Special case happens in the post merge stage that current head is
+		// Special case happens when the current head is
 		// the ancestor of new head while these two blocks are not consecutive
 		log.Info("Extend chain", "add", len(newChain), "number", newChain[0].Number(), "hash", newChain[0].Hash())
 		blockReorgAddMeter.Mark(int64(len(newChain)))
@@ -1952,12 +1935,9 @@ func (bc *BlockChain) reorg(oldHead *types.Header, newHead *types.Block) error {
 	// logs from the new canon chain. The number of logs can be very
 	// high, so the events are sent in batches of size around 512.
 
-	// Deleted logs + blocks:
+	// Deleted logs:
 	var deletedLogs []*types.Log
 	for i := len(oldChain) - 1; i >= 0; i-- {
-		// Also send event for blocks removed from the canon chain.
-		bc.chainSideFeed.Send(ChainSideEvent{Block: oldChain[i]})
-
 		// Collect deleted logs for notification
 		if logs := bc.collectLogs(oldChain[i], true); len(logs) > 0 {
 			deletedLogs = append(deletedLogs, logs...)
@@ -2194,9 +2174,9 @@ func (bc *BlockChain) reportBlock(block *types.Block, receipts types.Receipts, e
 func summarizeBadBlock(block *types.Block, receipts []*types.Receipt, config *params.ChainConfig, err error) string {
 	var receiptString strings.Builder
 	for i, receipt := range receipts {
-		receiptString.WriteString(fmt.Sprintf("\n  %d: cumulative: %v gas: %v contract: %v status: %v tx: %v logs: %v bloom: %x state: %x",
+		receiptString.WriteString(fmt.Sprintf("\n  %d: cumulative: %v gas: %v contract: %v status: %v tx: %v logs: %v bloom: %x",
 			i, receipt.CumulativeGasUsed, receipt.GasUsed, receipt.ContractAddress.Hex(),
-			receipt.Status, receipt.TxHash.Hex(), receipt.Logs, receipt.Bloom, receipt.PostState))
+			receipt.Status, receipt.TxHash.Hex(), receipt.Logs, receipt.Bloom))
 	}
 	version, vcs := version.Info()
 	platform := fmt.Sprintf("%s %s %s %s", version, runtime.Version(), runtime.GOARCH, runtime.GOOS)

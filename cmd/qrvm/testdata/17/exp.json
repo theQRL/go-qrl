@@ -6,7 +6,7 @@
     "intrinsicGas": "0x5208"
   },
   {
-    "error": "gasPrice exceeds 256 bits",
+    "error": "maxFeePerGas exceeds 256 bits",
     "address": "Q23b66a9c42ab8fF57b2A7216470F682d7A9a0d94aFB3B18C9bff309F48615502b124A2177BeEE50B0A3b3a0944C0D018707b4E361A92c0dE432F6758Ce6Fe843",
     "hash": "0x48e959cb70ab6366b212b3f4a37f5cd36c5c40e4afe35ed1dc861b6d284cffca",
     "intrinsicGas": "0x5208"

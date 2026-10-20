@@ -197,20 +197,17 @@ func TestRegenerateT8nFixtures(t *testing.T) {
 	// --- TestB11r fixture: header.json + txs.rlp + exp.json ---
 	header := map[string]any{
 		"parentHash":       "0x0000000000000000000000000000000000000000000000000000000000000000",
-		"sha3Uncles":       "0x1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347",
 		"miner":            qPrefixed(recipient),
 		"stateRoot":        "0x4e8c240fc34843c9b49d936ef9e03f2422ca4cfcfc8502a38cdf3ebb92eec6b2",
 		"transactionsRoot": "0x7fcad3606f4d5779972c5f4b2840da02006fb2a1cbb1a76517ec745e0a7f6123",
 		"receiptsRoot":     "0xf78dfb743fbd92ade140711c8bbc542b5e307f0ab7984eff35d751969fe57efa",
 		"logsBloom":        "0x" + hex.EncodeToString(make([]byte, 256)),
-		"difficulty":       "0x0",
 		"number":           "0x1",
 		"gasLimit":         "0x750a163df65e8a",
 		"gasUsed":          "0x5208",
 		"timestamp":        "0x3e8",
 		"extraData":        "0x",
-		"mixHash":          "0x0000000000000000000000000000000000000000000000000000000000000000",
-		"nonce":            "0x0000000000000000",
+		"prevRandao":       "0x0000000000000000000000000000000000000000000000000000000000000000",
 		"baseFeePerGas":    "0x1",
 	}
 	writeJSON("header.json", header)

@@ -41,8 +41,6 @@ import (
 )
 
 var (
-	// u: unlock, s: signXX, sendXX, n: newAccount, i: importXX
-	passwordRegexp = regexp.MustCompile(`personal.[nusi]`)
 	onlyWhitespace = regexp.MustCompile(`^\s*$`)
 	exit           = regexp.MustCompile(`^\s*exit\s*;*\s*$`)
 )
@@ -131,7 +129,7 @@ func (c *Console) init(preload []string) error {
 	c.initConsoleObject()
 
 	// Initialize the JavaScript <-> Go RPC bridge.
-	bridge := newBridge(c.client, c.prompter, c.printer)
+	bridge := newBridge(c.client)
 	if err := c.initWeb3(bridge); err != nil {
 		return err
 	}
@@ -282,7 +280,7 @@ func (c *Console) AutoCompleteInput(line string, pos int) (string, []string, str
 	for ; start > 0; start-- {
 		// Skip all methods and namespaces (i.e. including the dot)
 		c := line[start]
-		if c == '.' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '1' && c <= '9') {
+		if c == '.' || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') {
 			continue
 		}
 		// We've hit an unexpected character, autocomplete form here
@@ -449,7 +447,7 @@ func (c *Console) Interactive() {
 			}
 			// If all the needed lines are present, save the command and run it.
 			if indents <= 0 {
-				if len(input) > 0 && input[0] != ' ' && !passwordRegexp.MatchString(input) {
+				if len(input) > 0 && input[0] != ' ' {
 					if command := strings.TrimSpace(input); len(c.history) == 0 || command != c.history[len(c.history)-1] {
 						c.history = append(c.history, command)
 						if c.prompter != nil {

@@ -11,7 +11,7 @@ Official Golang execution layer implementation of the QRL protocol.
 
 For prerequisites and detailed build instructions please read the [Installation Instructions](https://test-zond.theqrl.org/install).
 
-Building `gqrl` requires both a Go (version 1.25 or later) and a C compiler. You can install
+Building `gqrl` requires both a Go (version 1.26.5 or later) and a C compiler. You can install
 them using your favourite package manager. Once the dependencies are installed, run
 
 ```shell
@@ -31,17 +31,16 @@ directory.
 
 |  Command    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | :--------:  | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **`gqrl`** | Our main QRL CLI client. It is the entry point into the QRL network (main-, test- or private net), capable of running as a full node (default), archive node (retaining all historical state) or a light node (retrieving data live). It can be used by other processes as a gateway into the QRL network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. Based on geth, `gqrl --help` and the [geth CLI page](https://geth.ethereum.org/docs/fundamentals/command-line-options) show command line options. |
+| **`gqrl`** | Our main QRL CLI client. It is the entry point into the QRL network (main-, test- or private net), capable of running as a full node (default) or archive node (retaining all historical state). It can be used by other processes as a gateway into the QRL network via JSON RPC endpoints exposed on top of HTTP, WebSocket and/or IPC transports. `gqrl --help` is the canonical reference for supported command line options. |
 |   `clef`    | Stand-alone signing tool, which can be used as a backend signer for `gqrl`.                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 |  `devp2p`   | Utilities to interact with nodes on the networking layer, without running a full blockchain.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-|  `abigen`   | Source code generator to convert QRL contract definitions into easy-to-use, compile-time type-safe Go packages. It operates on plain [QRL contract ABIs](https://docs.soliditylang.org/en/develop/abi-spec.html) with expanded functionality if the contract bytecode is also available. However, it also accepts Hyperion source files, making development much more streamlined. Please see the [Native DApps](https://geth.ethereum.org/docs/developers/dapp-developer/native-bindings) page for details.                                  |
+|  `abigen`   | Source code generator to convert QRL contract definitions into easy-to-use, compile-time type-safe Go packages. It operates on plain QRL contract ABIs with expanded functionality if the contract bytecode is also available. However, it also accepts Hyperion source files, making development much more streamlined. Please see `abigen --help` for details.                                            |
 |   `qrvm`     | Developer utility version of the QRVM (Quantum Resistant Virtual Machine) that is capable of running bytecode snippets within a configurable environment and execution mode. Its purpose is to allow isolated, fine-grained debugging of QRVM opcodes (e.g. `qrvm --code 60ff60ff --debug run`).                                                                                                                                                                                                                                               |
-| `rlpdump`   | Developer utility tool to convert binary RLP ([Recursive Length Prefix](https://ethereum.org/en/developers/docs/data-structures-and-encoding/rlp)) dumps (data encoding used by the QRL protocol both network as well as consensus wise) to user-friendlier hierarchical representation (e.g. `rlpdump --hex CE0183FFFFFFC4C304050583616263`).                                                                                                                                                                                |
+| `rlpdump`   | Developer utility tool to convert binary RLP (Recursive Length Prefix) dumps (data encoding used by the QRL protocol both network as well as consensus wise) to user-friendlier hierarchical representation (e.g. `rlpdump --hex CE0183FFFFFFC4C304050583616263`).                                                                                                                                                                                |
 
 ## Running `gqrl`
 
-Going through all the possible command line flags is out of scope here (please see our nascent [QRL Testnet docs](https://test-zond.theqrl.org) or consult the
-[geth CLI Wiki page](https://geth.ethereum.org/docs/fundamentals/command-line-options)),
+Going through all the possible command line flags is out of scope here (please see our nascent [QRL Testnet docs](https://test-zond.theqrl.org) or consult `gqrl --help`),
 but we've enumerated a few common parameter combos to get you up to speed quickly
 on how you can run your own `gqrl` instance.
 
@@ -76,10 +75,10 @@ This command will:
  * Start `gqrl` in snap sync mode (default, can be changed with the `--syncmode` flag),
    causing it to download more data in exchange for avoiding processing the entire history
    of the QRL network, which is very CPU intensive.
- * Start the built-in interactive [JavaScript console](https://geth.ethereum.org/docs/interacting-with-geth/javascript-console),
+ * Start the built-in interactive JavaScript console,
    (via the trailing `console` subcommand) through which you can interact using [`web3` methods](https://github.com/ChainSafe/web3.js/blob/0.20.7/DOCUMENTATION.md) 
    (note: the `web3` version bundled within `gqrl` is very old, and not up to date with official docs),
-   as well as `gqrl`'s own [management APIs](https://geth.ethereum.org/docs/interacting-with-geth/rpc).
+   as well as `gqrl`'s own management APIs.
    This tool is optional and if you leave it out you can always attach it to an already running
    `gqrl` instance with `gqrl attach`.
 
@@ -109,7 +108,7 @@ Docker:
 ```shell
 docker run -d --name qrl-node -v /Users/alice/qrl:/root \
            -p 8545:8545 -p 30303:30303 \
-           theqrl/gqrl
+           qrledger/go-qrl
 ```
 
 This will start `gqrl` in snap-sync mode with a DB memory allowance of 1GB, as the
@@ -125,8 +124,9 @@ accessible from the outside.
 
 As a developer, sooner rather than later you'll want to start interacting with `gqrl` and the
 QRL network via your own programs and not manually through the console. To aid
-this, `gqrl` has built-in support for Ethereum-compatible, JSON-RPC based APIs ([standard APIs](https://ethereum.github.io/execution-apis/api-documentation/)
-and [`gqrl` specific APIs](https://geth.ethereum.org/docs/interacting-with-geth/rpc)).
+this, `gqrl` has built-in JSON-RPC APIs for QRL. Some method names follow
+the execution-API shape, but payloads use QRL-native types such as 64-byte
+addresses and log topics where applicable.
 These can be exposed via HTTP, WebSockets and IPC (UNIX sockets on UNIX based
 platforms, and named pipes on Windows).
 
@@ -135,20 +135,19 @@ whereas the HTTP and WS interfaces need to manually be enabled and only expose a
 subset of APIs due to security reasons. These can be turned on/off and configured as
 you'd expect.
 
-HTTP based JSON-RPC API options:
+JSON-RPC API options:
 
   * `--http` Enable the HTTP-RPC server
   * `--http.addr` HTTP-RPC server listening interface (default: `localhost`)
   * `--http.port` HTTP-RPC server listening port (default: `8545`)
-  * `--http.api` API's offered over the HTTP-RPC interface (default: `net,qrl,web3`)
+  * `--http.api` APIs offered over the HTTP-RPC interface (default: `net,qrl,web3`)
   * `--http.corsdomain` Comma separated list of domains from which to accept cross origin requests (browser enforced)
   * `--ws` Enable the WS-RPC server
   * `--ws.addr` WS-RPC server listening interface (default: `localhost`)
   * `--ws.port` WS-RPC server listening port (default: `8546`)
-  * `--ws.api` API's offered over the WS-RPC interface (default: `net,qrl,web3`)
+  * `--ws.api` APIs offered over the WS-RPC interface (default: `net,qrl,web3`)
   * `--ws.origins` Origins from which to accept WebSocket requests
   * `--ipcdisable` Disable the IPC-RPC server
-  * `--ipcapi` API's offered over the IPC-RPC interface (default: `admin,debug,miner,net,personal,qrl,txpool,web3`)
   * `--ipcpath` Filename for IPC socket/pipe within the datadir (explicit paths escape it)
 
 You'll need to use your own programming environments' capabilities (libraries, tools, etc) to

@@ -183,8 +183,8 @@ var attrFormatters = map[string]func(rlp.RawValue) (string, bool){
 }
 
 func formatAttrRaw(v rlp.RawValue) (string, bool) {
-	s := hex.EncodeToString(v)
-	return s, true
+	content, _, err := rlp.SplitString(v)
+	return hex.EncodeToString(content), err == nil
 }
 
 func formatAttrString(v rlp.RawValue) (string, bool) {
@@ -194,7 +194,7 @@ func formatAttrString(v rlp.RawValue) (string, bool) {
 
 func formatAttrIP(v rlp.RawValue) (string, bool) {
 	content, _, err := rlp.SplitString(v)
-	if err != nil || len(content) != 4 && len(content) != 6 {
+	if err != nil || len(content) != 4 && len(content) != 16 {
 		return "", false
 	}
 	return net.IP(content).String(), true

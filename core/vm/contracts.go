@@ -19,6 +19,7 @@ package vm
 import (
 	"bytes"
 	"crypto/sha256"
+	"crypto/sha3"
 	"encoding/binary"
 	gomath "math"
 	"math/big"
@@ -27,7 +28,10 @@ import (
 	ssz "github.com/prysmaticlabs/fastssz"
 	"github.com/theQRL/go-qrl/common"
 	"github.com/theQRL/go-qrl/common/math"
+	"github.com/theQRL/go-qrl/crypto/pqcrypto"
 	"github.com/theQRL/go-qrl/params"
+	cryptomldsa87 "github.com/theQRL/go-qrllib/crypto/ml_dsa_87"
+	cryptoxmss "github.com/theQRL/go-qrllib/crypto/xmss"
 )
 
 // PrecompiledContract is the basic interface for native Go contracts. The implementation
@@ -38,13 +42,19 @@ type PrecompiledContract interface {
 	Run(input []byte) ([]byte, error) // Run runs the precompiled contract
 }
 
-// PrecompiledContractsZond contains the default set of pre-compiled QRL
+// trueWord is the template returned when a precompile verification succeeds.
+var trueWord = common.LeftPadBytes([]byte{1}, WordBytes)
+
+// PrecompiledContractsZond contains the single set of pre-compiled QRL
 // contracts used in the Zond release.
 var PrecompiledContractsZond = map[common.Address]PrecompiledContract{
 	common.BytesToAddress([]byte{1}): &depositroot{},
 	common.BytesToAddress([]byte{2}): &sha256hash{},
+	common.BytesToAddress([]byte{3}): &mldsa87Verify{},
 	common.BytesToAddress([]byte{4}): &dataCopy{},
 	common.BytesToAddress([]byte{5}): &bigModExp{},
+	common.BytesToAddress([]byte{6}): &shake256hash{},
+	common.BytesToAddress([]byte{7}): &xmssVerify{},
 }
 
 var (
@@ -57,8 +67,9 @@ func init() {
 	}
 }
 
-// ActivePrecompiles returns the precompiles enabled with the current configuration.
-func ActivePrecompiles(rules params.Rules) []common.Address {
+// ActivePrecompiles returns the precompiles enabled from Zond genesis. The
+// current protocol has no fork-dependent precompile sets.
+func ActivePrecompiles() []common.Address {
 	return PrecompiledAddressesZond
 }
 
@@ -79,20 +90,40 @@ func RunPrecompiledContract(p PrecompiledContract, input []byte, suppliedGas uin
 
 type depositroot struct{}
 
-// TODO(now.youtrack.cloud/issue/TGZ-5)
+// The depositroot precompile input is the DepositData fields concatenated
+// without padding, in SSZ field order:
+//
+//	pubkey(2592) || withdrawal_recipient(64) || amount(8, little-endian) ||
+//	randao_commitment(32) || signature(4627)
+//
+// randao_commitment is the top layer of the validator's RANDAO hash onion
+// (sha256 chain); the beacon chain stores it in the validator record and
+// checks each RANDAO reveal against it.
+const (
+	depositPublicKeyLength           = pqcrypto.MLDSA87PublicKeyLength
+	depositWithdrawalRecipientLength = common.AddressLength
+	depositAmountLength              = 8
+	depositRandaoCommitmentLength    = common.HashLength
+	depositSignatureLength           = pqcrypto.MLDSA87SignatureLength
+	depositPublicKeyOffset           = 0
+	depositWithdrawalRecipientOffset = depositPublicKeyOffset + depositPublicKeyLength
+	depositAmountOffset              = depositWithdrawalRecipientOffset + depositWithdrawalRecipientLength
+	depositRandaoCommitmentOffset    = depositAmountOffset + depositAmountLength
+	depositSignatureOffset           = depositRandaoCommitmentOffset + depositRandaoCommitmentLength
+	depositInputLength               = depositSignatureOffset + depositSignatureLength
+)
+
 func (c *depositroot) RequiredGas(input []byte) uint64 {
-	// NOTE(rgeraldes): number of sha256 ops below does not include the number of zero
-	// hashes done; these are calculated during the prysmaticlabs/fastssz lib init
-	// 238 sha256 ops + 64 bytes input per op
-	return (toWordSize(64)*params.Sha256PerWordGas + params.Sha256BaseGas) * 238
+	return params.DepositrootGas
 }
 
 func (c *depositroot) Run(input []byte) ([]byte, error) {
 	var (
-		pkBytes     = getData(input, 0, 2592)    // 2592 bytes
-		credsBytes  = getData(input, 2592, 64)   // 64 bytes
-		amountBytes = getData(input, 2656, 8)    // 8 bytes
-		sigBytes    = getData(input, 2664, 4627) // 4627 bytes
+		pkBytes                  = getData(input, depositPublicKeyOffset, depositPublicKeyLength)
+		withdrawalRecipientBytes = getData(input, depositWithdrawalRecipientOffset, depositWithdrawalRecipientLength)
+		amountBytes              = getData(input, depositAmountOffset, depositAmountLength)
+		randaoCommitmentBytes    = getData(input, depositRandaoCommitmentOffset, depositRandaoCommitmentLength)
+		sigBytes                 = getData(input, depositSignatureOffset, depositSignatureLength)
 	)
 
 	var amountUint uint64
@@ -103,10 +134,11 @@ func (c *depositroot) Run(input []byte) ([]byte, error) {
 	}
 
 	data := &depositdata{
-		PublicKey:             pkBytes,
-		WithdrawalCredentials: credsBytes,
-		Amount:                amountUint,
-		Signature:             sigBytes,
+		PublicKey:           pkBytes,
+		WithdrawalRecipient: withdrawalRecipientBytes,
+		Amount:              amountUint,
+		RandaoCommitment:    randaoCommitmentBytes,
+		Signature:           sigBytes,
 	}
 	h, err := data.HashTreeRoot()
 	if err != nil {
@@ -116,11 +148,205 @@ func (c *depositroot) Run(input []byte) ([]byte, error) {
 	return h[:], nil
 }
 
+const (
+	// mldsa87VerifyDigestLength is the width of the message representative:
+	// one 64-byte QRVM word, matching the SHAKE256 precompile output.
+	mldsa87VerifyDigestLength        = WordBytes
+	mldsa87VerifyDigestOffset        = 0
+	mldsa87VerifyPublicKeyOffset     = mldsa87VerifyDigestOffset + mldsa87VerifyDigestLength
+	mldsa87VerifySignatureOffset     = mldsa87VerifyPublicKeyOffset + cryptomldsa87.CRYPTO_PUBLIC_KEY_BYTES
+	mldsa87VerifyContextLengthOffset = mldsa87VerifySignatureOffset + cryptomldsa87.CRYPTO_BYTES
+	mldsa87VerifyContextOffset       = mldsa87VerifyContextLengthOffset + 1
+	mldsa87VerifyMinInputLength      = mldsa87VerifyContextOffset
+	mldsa87VerifyMaxContextLength    = 255
+)
+
+// mldsa87Verify verifies an ML-DSA-87 signature over a fixed 64-byte message
+// representative using the supplied public key and context.
+type mldsa87Verify struct{}
+
+func (*mldsa87Verify) RequiredGas([]byte) uint64 {
+	return params.MLDSA87VerifyGas
+}
+
+func (*mldsa87Verify) Run(input []byte) ([]byte, error) {
+	if len(input) < mldsa87VerifyMinInputLength {
+		return nil, nil
+	}
+
+	context := input[mldsa87VerifyContextOffset:]
+	if len(context) != int(input[mldsa87VerifyContextLengthOffset]) {
+		return nil, nil
+	}
+
+	digest := input[mldsa87VerifyDigestOffset:mldsa87VerifyPublicKeyOffset]
+	publicKeyBytes := input[mldsa87VerifyPublicKeyOffset:mldsa87VerifySignatureOffset]
+
+	// The key comes straight from calldata, so it never passes through the
+	// wallet-layer constructor. ParsePublicKey is the only way to obtain a
+	// key Verify accepts, and it rejects a weak key (one under which the
+	// FIPS 204 primitive, which by spec does not validate keys, would accept
+	// a signature anyone can compute), so the check holds by construction.
+	publicKey, err := cryptomldsa87.ParsePublicKey(publicKeyBytes)
+	if err != nil {
+		return nil, nil
+	}
+
+	signatureBytes := input[mldsa87VerifySignatureOffset:mldsa87VerifyContextLengthOffset]
+	signature := [cryptomldsa87.CRYPTO_BYTES]byte(signatureBytes)
+
+	if !cryptomldsa87.Verify(context, digest, signature, publicKey) {
+		return nil, nil
+	}
+
+	return common.CopyBytes(trueWord), nil
+}
+
+// xmssVerify verifies an XMSS signature produced by a legacy QRL wallet with
+// the semantics of qrllib's XmssBase::verify (theQRL/qrllib, WOTS+ w = 16), so
+// that signatures of keys generated by those wallets can be checked from a
+// contract (Hyperion's xmssverify builtin).
+//
+// The input is the packed encoding
+//
+//	message_length(4, big-endian) || message || signature || extended_pk(67)
+//
+// where extended_pk is the qrllib extended public key (3-byte QRL descriptor ||
+// 32-byte root || 32-byte public seed) and signature has 2180 + 32 * height
+// bytes (4-byte leaf index || 32-byte randomness R || 67 * 32-byte WOTS+
+// signature || height * 32-byte authentication path). The key is the trailing
+// 67 bytes and the message is delimited by its length prefix, so the signature
+// is whatever lies between them. The output is trueWord when the signature
+// verifies and empty otherwise; malformed input yields the empty output,
+// exactly where qrllib returns false or rejects an argument.
+type xmssVerify struct{}
+
+const (
+	xmssVerifyMessageLengthSize = 4
+	xmssVerifyDigestSize        = 32
+	xmssVerifyDescriptorSize    = 3
+	// xmssVerifyExtendedPKSize is qrllib's extended public key: descriptor || root || public seed.
+	xmssVerifyExtendedPKSize = xmssVerifyDescriptorSize + 2*xmssVerifyDigestSize
+	xmssVerifyMinInputLength = xmssVerifyMessageLengthSize + xmssVerifyExtendedPKSize
+	xmssVerifyIndexSize      = 4
+	xmssVerifyWOTSChains     = 67 // WOTS+ chains for n = 32, w = 16
+	xmssVerifyWOTSSteps      = 15 // at most w - 1 chaining steps per chain
+	xmssVerifyLTreeNodes     = 66 // nodes hashed while compressing the 67 chains into one leaf
+	// xmssVerifySignatureBaseSize is the signature without its authentication path:
+	// leaf index || R || WOTS+ signature.
+	xmssVerifySignatureBaseSize = xmssVerifyIndexSize + xmssVerifyDigestSize + xmssVerifyWOTSChains*xmssVerifyDigestSize
+	xmssVerifyMinHeight         = 4
+	xmssVerifyMaxHeight         = cryptoxmss.MaxHeight
+
+	// Hash invocations of one verification, charged by RequiredGas: the chaining
+	// function hash_f is three hashes (two PRFs and the keyed hash) and the tree
+	// node function hash_h is four (three PRFs and the keyed hash), plus one H_msg
+	// over the message, whose input starts with toByte(type) || R || root || index.
+	xmssVerifyFixedHashes          = xmssVerifyWOTSChains*xmssVerifyWOTSSteps*3 + xmssVerifyLTreeNodes*4
+	xmssVerifyHashesPerLevel       = 4
+	xmssVerifyMessageHashKeyLength = 4 * xmssVerifyDigestSize
+)
+
+// RequiredGas prices every hash the verification performs like a SHA256
+// precompile call over its at most 160-byte (three-word) input, for the worst
+// case number of WOTS+ chaining steps, plus the message hash. The tree height is
+// read from the key descriptor (the maximum height if it is malformed) and the
+// message length from the prefix, capped by the input actually supplied.
+func (*xmssVerify) RequiredGas(input []byte) uint64 {
+	height := uint64(xmssVerifyMaxHeight)
+	if len(input) >= xmssVerifyExtendedPKSize {
+		descriptorHeight := uint64(input[len(input)-xmssVerifyExtendedPKSize+1]&0x0f) << 1
+		if descriptorHeight >= xmssVerifyMinHeight && descriptorHeight <= xmssVerifyMaxHeight {
+			height = descriptorHeight
+		}
+	}
+	var messageLength uint64
+	if len(input) >= xmssVerifyMessageLengthSize {
+		messageLength = min(uint64(binary.BigEndian.Uint32(input)), uint64(len(input)-xmssVerifyMessageLengthSize))
+	}
+	hashes := uint64(xmssVerifyFixedHashes) + xmssVerifyHashesPerLevel*height
+	return params.XMSSVerifyHashGas*hashes +
+		params.Sha256BaseGas + params.Sha256PerWordGas*toWordSize(xmssVerifyMessageHashKeyLength+messageLength)
+}
+
+func (*xmssVerify) Run(input []byte) ([]byte, error) {
+	if len(input) < xmssVerifyMinInputLength {
+		return nil, nil
+	}
+	messageEnd := uint64(xmssVerifyMessageLengthSize) + uint64(binary.BigEndian.Uint32(input))
+	keyStart := uint64(len(input) - xmssVerifyExtendedPKSize)
+	if messageEnd > keyStart {
+		return nil, nil
+	}
+	if !verifyLegacyXMSS(input[xmssVerifyMessageLengthSize:messageEnd], input[messageEnd:keyStart], input[keyStart:]) {
+		return nil, nil
+	}
+	return trueWord, nil
+}
+
+// verifyLegacyXMSS mirrors qrllib's XmssBase::verify together with the argument
+// validation it performs (QRLDescriptor::fromExtendedPK, XmssValidation and
+// xmss_Verifysig): every input qrllib rejects, by throwing or by returning false,
+// is false here. The checks are spelled out instead of delegating to go-qrllib's
+// wallet layer, which accepts a non-zero reserved descriptor byte, any address
+// format, tree height 2 and a leaf index beyond the tree, all of which qrllib
+// refuses.
+func verifyLegacyXMSS(message, signature, extendedPK []byte) bool {
+	if len(extendedPK) != xmssVerifyExtendedPKSize {
+		return false
+	}
+	if len(signature) > xmssVerifySignatureBaseSize+xmssVerifyMaxHeight*xmssVerifyDigestSize {
+		return false
+	}
+
+	// QRL descriptor: hash function in the low and signature type in the high
+	// nibble of byte 0, height / 2 in the low and address format in the high
+	// nibble of byte 1, and a reserved zero byte 2.
+	if extendedPK[2] != 0 {
+		return false
+	}
+	hashFunction, err := cryptoxmss.ToHashFunction(extendedPK[0] & 0x0f)
+	if err != nil {
+		return false
+	}
+	if extendedPK[1]>>4 != 0 { // SHA256_2X is the only address format
+		return false
+	}
+	// Signature type 0 is XMSS; type 1 is a QRL multi-sig address, which has no
+	// tree behind it and nothing to verify. Everything else is unknown.
+	if extendedPK[0]>>4 != 0 {
+		return false
+	}
+	height := int(extendedPK[1]&0x0f) << 1
+	if height < xmssVerifyMinHeight || height > xmssVerifyMaxHeight {
+		return false
+	}
+
+	// The signature size determines the height, which has to agree with the descriptor.
+	if len(signature) < xmssVerifySignatureBaseSize || (len(signature)-xmssVerifyIndexSize)%xmssVerifyDigestSize != 0 {
+		return false
+	}
+	if (len(signature)-xmssVerifySignatureBaseSize)/xmssVerifyDigestSize != height {
+		return false
+	}
+
+	// The leaf index has to address a leaf of the tree.
+	if index := binary.BigEndian.Uint32(signature); index >= uint32(1)<<height {
+		return false
+	}
+
+	return cryptoxmss.Verify(hashFunction, message, signature, extendedPK[xmssVerifyDescriptorSize:])
+}
+
+// depositdata mirrors the beacon chain's DepositData SSZ container
+// (qrysm proto Deposit_Data): field order and sizes must match exactly, since
+// the root produced here is compared against the root the depositor signed.
 type depositdata struct {
-	PublicKey             []byte
-	WithdrawalCredentials []byte
-	Amount                uint64
-	Signature             []byte
+	PublicKey           []byte
+	WithdrawalRecipient []byte
+	Amount              uint64
+	RandaoCommitment    []byte
+	Signature           []byte
 }
 
 // HashTreeRoot ssz hashes the Deposit_Data object
@@ -133,34 +359,37 @@ func (d *depositdata) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Pubkey'
-	if size := len(d.PublicKey); size != 2592 {
-		err = ssz.ErrBytesLengthFn("--.Pubkey", size, 2592)
+	if size := len(d.PublicKey); size != depositPublicKeyLength {
+		err = ssz.ErrBytesLengthFn("--.Pubkey", size, depositPublicKeyLength)
 		return
 	}
 	hh.PutBytes(d.PublicKey)
 
-	// Field (1) 'WithdrawalCredentials'
-	if size := len(d.WithdrawalCredentials); size != 64 {
-		err = ssz.ErrBytesLengthFn("--.WithdrawalCredentials", size, 64)
+	// Field (1) 'WithdrawalRecipient'
+	if size := len(d.WithdrawalRecipient); size != depositWithdrawalRecipientLength {
+		err = ssz.ErrBytesLengthFn("--.WithdrawalRecipient", size, depositWithdrawalRecipientLength)
 		return
 	}
-	hh.PutBytes(d.WithdrawalCredentials)
+	hh.PutBytes(d.WithdrawalRecipient)
 
 	// Field (2) 'Amount'
 	hh.PutUint64(d.Amount)
 
-	// Field (3) 'Signature'
-	if size := len(d.Signature); size != 4627 {
-		err = ssz.ErrBytesLengthFn("--.Signature", size, 4627)
+	// Field (3) 'RandaoCommitment'
+	if size := len(d.RandaoCommitment); size != depositRandaoCommitmentLength {
+		err = ssz.ErrBytesLengthFn("--.RandaoCommitment", size, depositRandaoCommitmentLength)
+		return
+	}
+	hh.PutBytes(d.RandaoCommitment)
+
+	// Field (4) 'Signature'
+	if size := len(d.Signature); size != depositSignatureLength {
+		err = ssz.ErrBytesLengthFn("--.Signature", size, depositSignatureLength)
 		return
 	}
 	hh.PutBytes(d.Signature)
 
-	if ssz.EnableVectorizedHTR {
-		hh.MerkleizeVectorizedHTR(indx)
-	} else {
-		hh.Merkleize(indx)
-	}
+	hh.Merkleize(indx)
 	return
 }
 
@@ -177,6 +406,26 @@ func (c *sha256hash) RequiredGas(input []byte) uint64 {
 func (c *sha256hash) Run(input []byte) ([]byte, error) {
 	h := sha256.Sum256(input)
 	return h[:], nil
+}
+
+// shake256hash implements SHAKE256 with a fixed 512-bit output.
+type shake256hash struct{}
+
+// RequiredGas returns the gas required to execute the precompiled contract.
+func (*shake256hash) RequiredGas(input []byte) uint64 {
+	return shake256Gas(uint64(len(input)))
+}
+
+func shake256Gas(inputLength uint64) uint64 {
+	words := toWordSize(inputLength)
+	if words > (gomath.MaxUint64-params.Shake256BaseGas)/params.Shake256PerWordGas {
+		return gomath.MaxUint64
+	}
+	return words*params.Shake256PerWordGas + params.Shake256BaseGas
+}
+
+func (*shake256hash) Run(input []byte) ([]byte, error) {
+	return sha3.SumSHAKE256(input, 64), nil
 }
 
 // data copy implemented as a native contract.

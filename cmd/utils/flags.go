@@ -127,7 +127,7 @@ var (
 	}
 	BetaNetFlag = &cli.BoolFlag{
 		Name:     "betanet",
-		Usage:    "BetaNet network: pre-configured proof-of-work test network",
+		Usage:    "BetaNet network: pre-configured test network",
 		Category: flags.QRLCategory,
 	}
 	TestnetFlag = &cli.BoolFlag{
@@ -138,7 +138,7 @@ var (
 	// Dev mode
 	DeveloperFlag = &cli.BoolFlag{
 		Name:     "dev",
-		Usage:    "Ephemeral proof-of-authority network with a pre-funded developer account, mining enabled",
+		Usage:    "Ephemeral development network with a pre-funded developer account",
 		Category: flags.DevCategory,
 	}
 	DeveloperPeriodFlag = &cli.Uint64Flag{
@@ -313,7 +313,7 @@ var (
 	// Performance tuning settings
 	CacheFlag = &cli.IntFlag{
 		Name:     "cache",
-		Usage:    "Megabytes of memory allocated to internal caching (default = 4096 mainnet full node, 128 light mode)",
+		Usage:    "Megabytes of memory allocated to internal caching (default = 4096 mainnet full node)",
 		Value:    1024,
 		Category: flags.PerfCategory,
 	}
@@ -655,13 +655,14 @@ var (
 		Aliases:  []string{"discv4"},
 		Usage:    "Enables the V4 discovery mechanism",
 		Category: flags.NetworkingCategory,
-		Value:    true,
+		Value:    node.DefaultConfig.P2P.DiscoveryV4,
 	}
 	DiscoveryV5Flag = &cli.BoolFlag{
 		Name:     "discovery.v5",
 		Aliases:  []string{"discv5"},
 		Usage:    "Enables the experimental RLPx V5 (Topic Discovery) mechanism",
 		Category: flags.NetworkingCategory,
+		Value:    node.DefaultConfig.P2P.DiscoveryV5,
 	}
 	NetrestrictFlag = &cli.StringFlag{
 		Name:     "netrestrict",
@@ -891,33 +892,43 @@ func setNodeUserIdent(ctx *cli.Context, cfg *node.Config) {
 
 // setBootstrapNodes creates a list of bootstrap nodes from the command line
 // flags, reverting to pre-configured ones if none have been specified.
+// Priority order for bootnodes configuration:
+//
+// 1. --bootnodes flag
+// 2. Config file
+// 3. Network preset flags (e.g. --testnet)
+// 4. default to mainnet nodes
 func setBootstrapNodes(ctx *cli.Context, cfg *p2p.Config) {
 	urls := params.MainnetBootnodes
-	switch {
-	case ctx.IsSet(BootnodesFlag.Name):
+	if ctx.IsSet(BootnodesFlag.Name) {
 		urls = SplitAndTrim(ctx.String(BootnodesFlag.Name))
-	case ctx.Bool(BetaNetFlag.Name):
-		urls = params.BetaNetBootnodes
-	case ctx.Bool(TestnetFlag.Name):
-		urls = params.TestnetBootnodes
+	} else {
+		if cfg.BootstrapNodes != nil {
+			return // Already set by config file, don't apply defaults.
+		}
+		switch {
+		case ctx.Bool(BetaNetFlag.Name):
+			urls = params.BetaNetBootnodes
+		case ctx.Bool(TestnetFlag.Name):
+			urls = params.TestnetBootnodes
+		}
 	}
+	cfg.BootstrapNodes = mustParseBootnodes(urls)
+}
 
-	// don't apply defaults if BootstrapNodes is already set
-	if cfg.BootstrapNodes != nil {
-		return
-	}
-
-	cfg.BootstrapNodes = make([]*qnode.Node, 0, len(urls))
+func mustParseBootnodes(urls []string) []*qnode.Node {
+	nodes := make([]*qnode.Node, 0, len(urls))
 	for _, url := range urls {
 		if url != "" {
 			node, err := qnode.Parse(qnode.ValidSchemes, url)
 			if err != nil {
 				log.Crit("Bootstrap URL invalid", "qnode", url, "err", err)
-				continue
+				return nil
 			}
-			cfg.BootstrapNodes = append(cfg.BootstrapNodes, node)
+			nodes = append(nodes, node)
 		}
 	}
+	return nodes
 }
 
 // setBootstrapNodesV5 creates a list of bootstrap nodes from the command line
@@ -1109,31 +1120,6 @@ func MakeDatabaseHandles(max int) int {
 	return int(raised / 2) // Leave half for networking and other stuff
 }
 
-// MakeAddress converts an account specified directly as a hex encoded string or
-// a key index in the key store to an internal account representation.
-func MakeAddress(ks *keystore.KeyStore, account string) (accounts.Account, error) {
-	// If the specified account is a valid address, return it
-	if addr, err := common.NewAddressFromString(account); err == nil {
-		return accounts.Account{Address: addr}, nil
-	}
-	// Otherwise try to interpret the account as a keystore index
-	index, err := strconv.Atoi(account)
-	if err != nil || index < 0 {
-		return accounts.Account{}, fmt.Errorf("invalid account address or index %q", account)
-	}
-	log.Warn("-------------------------------------------------------------------")
-	log.Warn("Referring to accounts by order in the keystore folder is dangerous!")
-	log.Warn("This functionality is deprecated and will be removed in the future!")
-	log.Warn("Please use explicit addresses! (can search via `gqrl account list`)")
-	log.Warn("-------------------------------------------------------------------")
-
-	accs := ks.Accounts()
-	if len(accs) <= index {
-		return accounts.Account{}, fmt.Errorf("index %d higher than number of accounts %d", index, len(accs))
-	}
-	return accs[index], nil
-}
-
 // setEtherbase retrieves the etherbase from the directly specified command line flags.
 func setEtherbase(ctx *cli.Context, cfg *qrlconfig.Config) {
 	if !ctx.IsSet(MinerPendingFeeRecipientFlag.Name) {
@@ -1188,8 +1174,12 @@ func SetP2PConfig(ctx *cli.Context, cfg *p2p.Config) {
 
 	CheckExclusive(ctx, DiscoveryV4Flag, NoDiscoverFlag)
 	CheckExclusive(ctx, DiscoveryV5Flag, NoDiscoverFlag)
-	cfg.DiscoveryV4 = ctx.Bool(DiscoveryV4Flag.Name)
-	cfg.DiscoveryV5 = ctx.Bool(DiscoveryV5Flag.Name)
+	if ctx.IsSet(DiscoveryV4Flag.Name) {
+		cfg.DiscoveryV4 = ctx.Bool(DiscoveryV4Flag.Name)
+	}
+	if ctx.IsSet(DiscoveryV5Flag.Name) {
+		cfg.DiscoveryV5 = ctx.Bool(DiscoveryV5Flag.Name)
+	}
 
 	if netrestrict := ctx.String(NetrestrictFlag.Name); netrestrict != "" {
 		list, err := netutil.ParseNetlist(netrestrict)
@@ -1453,8 +1443,9 @@ func SetQRLConfig(ctx *cli.Context, stack *node.Node, cfg *qrlconfig.Config) {
 	if ctx.IsSet(CacheNoPrefetchFlag.Name) {
 		cfg.NoPrefetch = ctx.Bool(CacheNoPrefetchFlag.Name)
 	}
-	// Read the value from the flag no matter if it's set or not.
-	cfg.Preimages = ctx.Bool(CachePreimagesFlag.Name)
+	if ctx.IsSet(CachePreimagesFlag.Name) {
+		cfg.Preimages = ctx.Bool(CachePreimagesFlag.Name)
+	}
 	if cfg.NoPruning && !cfg.Preimages {
 		cfg.Preimages = true
 		log.Info("Enabling recording of key preimages since archive mode is used")

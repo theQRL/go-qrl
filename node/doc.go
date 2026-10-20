@@ -64,8 +64,7 @@ resource is otherwise unspecified, package node will create the resource in memo
 
 To access to the devp2p network, Node configures and starts p2p.Server. Each host on the
 devp2p network has a unique identifier, the node key. The Node instance persists this key
-across restarts. Node also loads static and trusted node lists and ensures that knowledge
-about other hosts is persisted.
+across restarts. Node also ensures that knowledge about other hosts is persisted.
 
 JSON-RPC servers which run HTTP, WebSocket or IPC can be started on a Node. RPC modules
 offered by registered services will be offered on those endpoints. Users can restrict any
@@ -85,10 +84,9 @@ Multiple node instances can share a single data directory if they have distinct 
 names (set through the Name config option). Sharing behaviour depends on the type of
 resource.
 
-devp2p-related resources (node key, static/trusted node lists, known hosts database) are
-stored in a directory with the same name as the instance. Thus, multiple node instances
-using the same data directory will store this information in different subdirectories of
-the data directory.
+devp2p-related resources (node key, known hosts database) are stored in a directory with
+the same name as the instance. Thus, multiple node instances using the same data directory
+will store this information in different subdirectories of the data directory.
 
 LevelDB databases are also stored within the instance subdirectory. If multiple node
 instances use the same data directory, opening the databases with identical names will
@@ -112,7 +110,6 @@ directory. Node instance A opens the database "db", node instance B opens the da
 		B/
 			nodekey            -- devp2p node key of node B
 			nodes/             -- devp2p discovery knowledge database of instance B
-			static-nodes.json  -- devp2p static node list of instance B
 			db/                -- LevelDB content for "db"
 			db-2/              -- LevelDB content for "db-2"
 		B.ipc                  -- JSON-RPC UNIX domain socket endpoint of instance B

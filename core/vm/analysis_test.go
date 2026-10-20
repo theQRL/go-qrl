@@ -50,6 +50,15 @@ func TestJumpDestAnalysis(t *testing.T) {
 		{[]byte{byte(PUSH32)}, 0b1111_1111, 2},
 		{[]byte{byte(PUSH32)}, 0b1111_1111, 3},
 		{[]byte{byte(PUSH32)}, 0b0000_0001, 4},
+		{[]byte{byte(PUSH64)}, 0b1111_1110, 0},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 1},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 2},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 3},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 4},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 5},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 6},
+		{[]byte{byte(PUSH64)}, 0b1111_1111, 7},
+		{[]byte{byte(PUSH64)}, 0b0000_0001, 8},
 	}
 	for i, test := range tests {
 		ret := codeBitmap(test.code)
@@ -88,13 +97,13 @@ func BenchmarkJumpdestOpAnalysis(bench *testing.B) {
 		for i := range code {
 			code[i] = byte(op)
 		}
-		bits := make(bitvec, len(code)/8+1+4)
+		bits := make(bitvec, len(code)/8+1+8)
 		for b.Loop() {
 			clear(bits)
 			codeBitmapInternal(code, bits)
 		}
 	}
-	for op = PUSH1; op <= PUSH32; op++ {
+	for op = PUSH1; op <= PUSH64; op++ {
 		bench.Run(op.String(), bencher)
 	}
 	op = JUMPDEST

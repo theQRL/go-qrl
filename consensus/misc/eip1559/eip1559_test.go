@@ -38,8 +38,7 @@ func config() *params.ChainConfig {
 	return config
 }
 
-// TestBlockGasLimits tests the gasLimit checks for blocks both across
-// the EIP-1559 boundary and post-1559 blocks
+// TestBlockGasLimits tests the gasLimit checks for blocks.
 func TestBlockGasLimits(t *testing.T) {
 	initial := new(big.Int).SetUint64(params.InitialBaseFee)
 
@@ -139,7 +138,7 @@ func TestGasCostUnderSpam(t *testing.T) {
 	}
 }
 
-// TestCalcBaseFee assumes all blocks are 1559-blocks
+// TestCalcBaseFee tests the base fee calculation.
 func TestCalcBaseFee(t *testing.T) {
 	tests := []struct {
 		parentBaseFee   int64

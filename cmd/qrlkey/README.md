@@ -9,15 +9,14 @@ qrlkey is a simple command-line tool for working with QRL keyfiles.
 ### `qrlkey generate`
 
 Generate a new keyfile.
-If you want to use an existing private key to use in the keyfile, it can be 
-specified by setting `--privatekey` with the location of the file containing the 
-private key.
+If you want to use an existing wallet seed in the keyfile, it can be specified
+by setting `--seed` with the location of the file containing the wallet seed.
 
 
 ### `qrlkey inspect <keyfile>`
 
 Print various information about the keyfile.
-Private key information can be printed by using the `--private` flag;
+Seed information can be printed by using the `--private` flag;
 make sure to use this feature with great caution!
 
 
@@ -28,11 +27,11 @@ It is possible to refer to a file containing the message.
 To sign a message contained in a file, use the `--msgfile` flag.
 
 
-### `qrlkey verifymessage <address> <signature> <message/file>`
+### `qrlkey verifymessage <signature> <publickey> <message/file>`
 
 Verify the signature of the message.
 It is possible to refer to a file containing the message.
-To sign a message contained in a file, use the --msgfile flag.
+To verify a message contained in a file, use the `--msgfile` flag.
 
 
 ### `qrlkey changepassword <keyfile>`

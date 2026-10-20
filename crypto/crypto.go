@@ -42,10 +42,7 @@ const RecoveryIDOffset = 64
 // DigestLength sets the signature digest exact length
 const DigestLength = 32
 
-var (
-	secp256k1N     = S256().Params().N
-	secp256k1halfN = new(big.Int).Div(secp256k1N, big.NewInt(2))
-)
+var secp256k1N = S256().Params().N
 
 var errInvalidPubkey = errors.New("invalid secp256k1 public key")
 
@@ -110,24 +107,9 @@ func keccakToAddress(data ...[]byte) common.Address {
 
 // ToECDSA creates a private key with the given D value.
 func ToECDSA(d []byte) (*ecdsa.PrivateKey, error) {
-	return toECDSA(d, true)
-}
-
-// ToECDSAUnsafe blindly converts a binary blob to a private key. It should almost
-// never be used unless you are sure the input is valid and want to avoid hitting
-// errors due to bad origin encoding (0 prefixes cut off).
-func ToECDSAUnsafe(d []byte) *ecdsa.PrivateKey {
-	priv, _ := toECDSA(d, false)
-	return priv
-}
-
-// toECDSA creates a private key with the given D value. The strict parameter
-// controls whether the key's length should be enforced at the curve size or
-// it can also accept legacy encodings (0 prefixes).
-func toECDSA(d []byte, strict bool) (*ecdsa.PrivateKey, error) {
 	priv := new(ecdsa.PrivateKey)
 	priv.PublicKey.Curve = S256()
-	if strict && 8*len(d) != priv.Params().BitSize {
+	if 8*len(d) != priv.Params().BitSize {
 		return nil, fmt.Errorf("invalid length, need %d bits", priv.Params().BitSize)
 	}
 	priv.D = new(big.Int).SetBytes(d)
@@ -222,26 +204,6 @@ func SaveECDSA(file string, key *ecdsa.PrivateKey) error {
 // GenerateKey generates a new private key.
 func GenerateKey() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(S256(), rand.Reader)
-}
-
-// ValidateSignatureValues verifies whether the signature values are valid with
-// the given chain rules. The v value is assumed to be either 0 or 1.
-func ValidateSignatureValues(v byte, r, s *big.Int, homestead bool) bool {
-	if r.Cmp(common.Big1) < 0 || s.Cmp(common.Big1) < 0 {
-		return false
-	}
-	// reject upper range of s values (ECDSA malleability)
-	// see discussion in secp256k1/libsecp256k1/include/secp256k1.h
-	if homestead && s.Cmp(secp256k1halfN) > 0 {
-		return false
-	}
-	// Frontier: allow s to be in full N range
-	return r.Cmp(secp256k1N) < 0 && s.Cmp(secp256k1N) < 0 && (v == 0 || v == 1)
-}
-
-func PubkeyToAddress(p ecdsa.PublicKey) common.Address {
-	pubBytes := FromECDSAPub(&p)
-	return keccakToAddress(pubBytes[1:])
 }
 
 func zeroBytes(bytes []byte) {

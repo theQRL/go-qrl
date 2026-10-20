@@ -153,10 +153,11 @@ func NewType(t string, internalType string, components []ArgumentMarshaling) (ty
 	case "string":
 		typ.T = StringTy
 	case "bytes":
-		if varSize == 0 {
+		if len(parsedType[3]) == 0 {
 			typ.T = BytesTy
 		} else {
-			if varSize > 32 {
+			// VM64 fixed bytes must fit in one 64-byte ABI word.
+			if varSize == 0 || varSize > 64 {
 				return Type{}, fmt.Errorf("unsupported arg type: %s", t)
 			}
 			typ.T = FixedBytesTy
@@ -382,17 +383,15 @@ func isDynamicType(t Type) bool {
 // to store the location reference for actual value storage.
 func getTypeSize(t Type) int {
 	if t.T == ArrayTy && !isDynamicType(*t.Elem) {
-		// Recursively calculate type size if it is a nested array
-		if t.Elem.T == ArrayTy || t.Elem.T == TupleTy {
-			return t.Size * getTypeSize(*t.Elem)
-		}
-		return t.Size * 64
+		return t.Size * getTypeSize(*t.Elem)
 	} else if t.T == TupleTy && !isDynamicType(t) {
 		total := 0
 		for _, elem := range t.TupleElems {
 			total += getTypeSize(*elem)
 		}
 		return total
+	} else if t.T == FunctionTy {
+		return 128
 	}
 	return 64
 }

@@ -85,9 +85,6 @@ type stateObject struct {
 	// Flag whether the account was marked as deleted. An account that is considered as empty will be marked as deleted at
 	// the end of transaction and no longer accessible anymore.
 	deleted bool
-
-	// Flag whether the object was created in the current transaction
-	created bool
 }
 
 // empty returns whether the account is considered empty.

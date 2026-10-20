@@ -372,14 +372,14 @@ func doDockerBuildx(cmdline []string) {
 		build.MustRun(auther)
 	}
 	// Retrieve the version infos to build and push to the following paths:
-	//  - theqrl/gqrl:latest                            - Pushes to the main branch, Gqrl only
-	//  - theqrl/gqrl:stable                            - Version tag publish on GitHub, Gqrl only
-	//  - theqrl/gqrl:alltools-latest                   - Pushes to the main branch, Gqrl & tools
-	//  - theqrl/gqrl:alltools-stable                   - Version tag publish on GitHub, Gqrl & tools
-	//  - theqrl/gqrl:release-<major>.<minor>           - Version tag publish on GitHub, Gqrl only
-	//  - theqrl/gqrl:alltools-release-<major>.<minor>  - Version tag publish on GitHub, Gqrl & tools
-	//  - theqrl/gqrl:v<major>.<minor>.<patch>          - Version tag publish on GitHub, Gqrl only
-	//  - theqrl/gqrl:alltools-v<major>.<minor>.<patch> - Version tag publish on GitHub, Gqrl & tools
+	//  - qrledger/go-qrl:latest                            - Pushes to the main branch, Gqrl only
+	//  - qrledger/go-qrl:stable                            - Version tag publish on GitHub, Gqrl only
+	//  - qrledger/go-qrl:alltools-latest                   - Pushes to the main branch, Gqrl & tools
+	//  - qrledger/go-qrl:alltools-stable                   - Version tag publish on GitHub, Gqrl & tools
+	//  - qrledger/go-qrl:release-<major>.<minor>           - Version tag publish on GitHub, Gqrl only
+	//  - qrledger/go-qrl:alltools-release-<major>.<minor>  - Version tag publish on GitHub, Gqrl & tools
+	//  - qrledger/go-qrl:v<major>.<minor>.<patch>          - Version tag publish on GitHub, Gqrl only
+	//  - qrledger/go-qrl:alltools-v<major>.<minor>.<patch> - Version tag publish on GitHub, Gqrl & tools
 	var tags []string
 
 	switch {

@@ -4,8 +4,8 @@ import "testing"
 
 // TestGoVMMatchesVectors runs every entry in Vectors through this package's
 // Go VM and asserts it matches the vector's own expectations. This is the
-// self-consistency check; the cross-implementation check lives outside this
-// package and compares Run() output with a matching qrvmone (C++) run.
+// self-consistency check; TestGoVMMatchesQrvmone (cross_test.go) compares
+// Run() output with a matching qrvmone (C++) run.
 func TestGoVMMatchesVectors(t *testing.T) {
 	for _, v := range Vectors {
 		t.Run(v.Name, func(t *testing.T) {

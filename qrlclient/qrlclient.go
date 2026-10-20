@@ -395,9 +395,12 @@ func (qc *Client) SubscribeFilterLogs(ctx context.Context, q qrl.FilterQuery, ch
 }
 
 func toFilterArg(q qrl.FilterQuery) (any, error) {
-	arg := map[string]any{
-		"address": q.Addresses,
-		"topics":  q.Topics,
+	arg := map[string]any{}
+	if q.Addresses != nil {
+		arg["address"] = q.Addresses
+	}
+	if q.Topics != nil {
+		arg["topics"] = q.Topics
 	}
 	if q.BlockHash != nil {
 		arg["blockHash"] = *q.BlockHash

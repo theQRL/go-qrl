@@ -201,7 +201,6 @@ func (b *backendMock) FeeHistory(ctx context.Context, blockCount uint64, lastBlo
 }
 func (b *backendMock) ChainDb() qrldb.Database           { return nil }
 func (b *backendMock) AccountManager() *accounts.Manager { return nil }
-func (b *backendMock) ExtRPCEnabled() bool               { return false }
 func (b *backendMock) RPCGasCap() uint64                 { return 0 }
 func (b *backendMock) RPCQRVMTimeout() time.Duration     { return time.Second }
 func (b *backendMock) RPCTxFeeCap() float64              { return 0 }
@@ -246,9 +245,6 @@ func (b *backendMock) GetQRVM(ctx context.Context, msg *core.Message, state *sta
 }
 func (b *backendMock) SubscribeChainEvent(ch chan<- core.ChainEvent) event.Subscription { return nil }
 func (b *backendMock) SubscribeChainHeadEvent(ch chan<- core.ChainHeadEvent) event.Subscription {
-	return nil
-}
-func (b *backendMock) SubscribeChainSideEvent(ch chan<- core.ChainSideEvent) event.Subscription {
 	return nil
 }
 func (b *backendMock) SendTx(ctx context.Context, signedTx *types.Transaction) error { return nil }

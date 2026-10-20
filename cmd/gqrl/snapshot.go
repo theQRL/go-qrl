@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/theQRL/go-qrl/cmd/utils"
@@ -31,7 +32,6 @@ import (
 	"github.com/theQRL/go-qrl/core/state/snapshot"
 	"github.com/theQRL/go-qrl/core/types"
 	"github.com/theQRL/go-qrl/crypto"
-	"github.com/theQRL/go-qrl/internal/flags"
 	"github.com/theQRL/go-qrl/log"
 	"github.com/theQRL/go-qrl/rlp"
 	"github.com/theQRL/go-qrl/trie"
@@ -49,7 +49,7 @@ var (
 				Usage:     "Prune stale qrl state data based on the snapshot",
 				ArgsUsage: "<root>",
 				Action:    pruneState,
-				Flags: flags.Merge([]cli.Flag{
+				Flags: slices.Concat([]cli.Flag{
 					utils.BloomFilterSizeFlag,
 				}, utils.NetworkFlags, utils.DatabasePathFlags),
 				Description: `
@@ -69,7 +69,7 @@ WARNING: it's only supported in hash mode(--state.scheme=hash)".
 				Usage:     "Recalculate state hash based on the snapshot for verification",
 				ArgsUsage: "<root>",
 				Action:    verifyState,
-				Flags: flags.Merge([]cli.Flag{
+				Flags: slices.Concat([]cli.Flag{
 					utils.StateSchemeFlag,
 				}, utils.NetworkFlags, utils.DatabasePathFlags),
 				Description: `
@@ -84,7 +84,7 @@ In other words, this command does the snapshot to trie conversion.
 				Usage:     "Check that there is no 'dangling' snap storage",
 				ArgsUsage: "<root>",
 				Action:    checkDanglingStorage,
-				Flags:     flags.Merge(utils.NetworkFlags, utils.DatabasePathFlags),
+				Flags:     slices.Concat(utils.NetworkFlags, utils.DatabasePathFlags),
 				Description: `
 gqrl snapshot check-dangling-storage <state-root> traverses the snap storage 
 data, and verifies that all snapshot storage data has a corresponding account. 
@@ -95,7 +95,7 @@ data, and verifies that all snapshot storage data has a corresponding account.
 				Usage:     "Check all snapshot layers for the a specific account",
 				ArgsUsage: "<address | hash>",
 				Action:    checkAccount,
-				Flags:     flags.Merge(utils.NetworkFlags, utils.DatabasePathFlags),
+				Flags:     slices.Concat(utils.NetworkFlags, utils.DatabasePathFlags),
 				Description: `
 gqrl snapshot inspect-account <address | hash> checks all snapshot layers and prints out
 information about the specified address. 
@@ -106,7 +106,7 @@ information about the specified address.
 				Usage:     "Traverse the state with given root hash and perform quick verification",
 				ArgsUsage: "<root>",
 				Action:    traverseState,
-				Flags: flags.Merge([]cli.Flag{
+				Flags: slices.Concat([]cli.Flag{
 					utils.StateSchemeFlag,
 				}, utils.NetworkFlags, utils.DatabasePathFlags),
 				Description: `
@@ -123,7 +123,7 @@ It's also usable without snapshot enabled.
 				Usage:     "Traverse the state with given root hash and perform detailed verification",
 				ArgsUsage: "<root>",
 				Action:    traverseRawState,
-				Flags: flags.Merge([]cli.Flag{
+				Flags: slices.Concat([]cli.Flag{
 					utils.StateSchemeFlag,
 				}, utils.NetworkFlags, utils.DatabasePathFlags),
 				Description: `
@@ -141,7 +141,7 @@ It's also usable without snapshot enabled.
 				Usage:     "Dump a specific block from storage (same as 'gqrl dump' but using snapshots)",
 				ArgsUsage: "[? <blockHash> | <blockNum>]",
 				Action:    dumpState,
-				Flags: flags.Merge([]cli.Flag{
+				Flags: slices.Concat([]cli.Flag{
 					utils.ExcludeCodeFlag,
 					utils.ExcludeStorageFlag,
 					utils.StartKeyFlag,
@@ -611,14 +611,14 @@ func checkAccount(ctx *cli.Context) error {
 		addr common.Address
 		err  error
 	)
-	switch arg := ctx.Args().First(); len(arg) {
-	case 41:
+	switch arg := ctx.Args().First(); {
+	case common.IsAddress(arg):
 		addr, err = common.NewAddressFromString(arg)
 		if err != nil {
 			return err
 		}
 		hash = crypto.Keccak256Hash(addr.Bytes())
-	case 64, 66:
+	case common.IsHexEncodedHash(arg):
 		hash = common.HexToHash(arg)
 	default:
 		return errors.New("malformed address or hash")

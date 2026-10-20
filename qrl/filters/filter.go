@@ -33,7 +33,7 @@ type Filter struct {
 	sys *FilterSystem
 
 	addresses []common.Address
-	topics [][]common.LogTopic
+	topics    [][]common.LogTopic
 
 	block      *common.Hash // Block hash if filtering a single block
 	begin, end int64        // Range interval if filtering multiple blocks

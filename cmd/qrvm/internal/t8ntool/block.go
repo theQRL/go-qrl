@@ -97,14 +97,6 @@ func (i *bbInput) ToBlock() *types.Block {
 	return types.NewBlockWithHeader(header).WithBody(types.Body{Transactions: i.Txs, Withdrawals: i.Withdrawals})
 }
 
-// SealBlock seals the given block using the configured engine.
-func (i *bbInput) SealBlock(block *types.Block) (*types.Block, error) {
-	switch {
-	default:
-		return block, nil
-	}
-}
-
 // BuildBlock constructs a block from the given inputs.
 func BuildBlock(ctx *cli.Context) error {
 	baseDir, err := createBasedir(ctx)
@@ -116,10 +108,6 @@ func BuildBlock(ctx *cli.Context) error {
 		return err
 	}
 	block := inputData.ToBlock()
-	block, err = inputData.SealBlock(block)
-	if err != nil {
-		return err
-	}
 	return dispatchBlock(ctx, baseDir, block)
 }
 

@@ -69,7 +69,7 @@ func (s *stEnv) UnmarshalJSON(input []byte) error {
 	if dec.Coinbase == nil {
 		return errors.New("missing required field 'currentCoinbase' for stEnv")
 	}
-	s.Coinbase = common.Address(*dec.Coinbase)
+	s.Coinbase = *dec.Coinbase
 	if dec.Random != nil {
 		s.Random = (*big.Int)(dec.Random)
 	}

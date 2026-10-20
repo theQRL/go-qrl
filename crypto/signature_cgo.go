@@ -32,15 +32,6 @@ func Ecrecover(hash, sig []byte) ([]byte, error) {
 	return secp256k1.RecoverPubkey(hash, sig)
 }
 
-// SigToPub returns the public key that created the given signature.
-func SigToPub(hash, sig []byte) (*ecdsa.PublicKey, error) {
-	s, err := Ecrecover(hash, sig)
-	if err != nil {
-		return nil, err
-	}
-	return UnmarshalPubkey(s)
-}
-
 // Sign calculates an ECDSA signature.
 //
 // This function is susceptible to chosen plaintext attacks that can leak

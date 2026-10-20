@@ -255,7 +255,7 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 			// Fetch and execute the block trace taskCh
 			for task := range taskCh {
 				var (
-					signer   = types.MakeSigner(api.backend.ChainConfig())
+					signer   = types.NewZondSigner(api.backend.ChainConfig().ChainID)
 					blockCtx = core.NewQRVMBlockContext(task.block.Header(), api.chainContext(ctx), nil)
 				)
 				// Trace all the transactions contained within
@@ -273,7 +273,6 @@ func (api *API) traceChain(start, end *types.Block, config *TraceConfig, closed 
 						log.Warn("Tracing failed", "hash", tx.Hash(), "block", task.block.NumberU64(), "err", err)
 						break
 					}
-					// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
 					task.statedb.Finalise(true)
 					task.results[i] = &txTraceResult{TxHash: tx.Hash(), Result: res}
 				}
@@ -511,7 +510,7 @@ func (api *API) IntermediateRoots(ctx context.Context, hash common.Hash, config 
 
 	var (
 		roots              []common.Hash
-		signer             = types.MakeSigner(api.backend.ChainConfig())
+		signer             = types.NewZondSigner(api.backend.ChainConfig().ChainID)
 		chainConfig        = api.backend.ChainConfig()
 		vmctx              = core.NewQRVMBlockContext(block.Header(), api.chainContext(ctx), nil)
 		deleteEmptyObjects = true
@@ -589,7 +588,7 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 		txs       = block.Transactions()
 		blockHash = block.Hash()
 		blockCtx  = core.NewQRVMBlockContext(block.Header(), api.chainContext(ctx), nil)
-		signer    = types.MakeSigner(api.backend.ChainConfig())
+		signer    = types.NewZondSigner(api.backend.ChainConfig().ChainID)
 		results   = make([]*txTraceResult, len(txs))
 	)
 	for i, tx := range txs {
@@ -607,7 +606,6 @@ func (api *API) traceBlock(ctx context.Context, block *types.Block, config *Trac
 		}
 		results[i] = &txTraceResult{TxHash: tx.Hash(), Result: res}
 		// Finalize the state so any modifications are written to the trie
-		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
 		statedb.Finalise(true)
 	}
 	return results, nil
@@ -622,7 +620,7 @@ func (api *API) traceBlockParallel(ctx context.Context, block *types.Block, stat
 		txs       = block.Transactions()
 		blockHash = block.Hash()
 		blockCtx  = core.NewQRVMBlockContext(block.Header(), api.chainContext(ctx), nil)
-		signer    = types.MakeSigner(api.backend.ChainConfig())
+		signer    = types.NewZondSigner(api.backend.ChainConfig().ChainID)
 		results   = make([]*txTraceResult, len(txs))
 		pend      sync.WaitGroup
 	)
@@ -671,7 +669,6 @@ txloop:
 			break txloop
 		}
 		// Finalize the state so any modifications are written to the trie
-		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
 		statedb.Finalise(true)
 	}
 
@@ -726,7 +723,7 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 	// Execute transaction, either tracing all or just the requested one
 	var (
 		dumps       []string
-		signer      = types.MakeSigner(api.backend.ChainConfig())
+		signer      = types.NewZondSigner(api.backend.ChainConfig().ChainID)
 		chainConfig = api.backend.ChainConfig()
 		vmctx       = core.NewQRVMBlockContext(block.Header(), api.chainContext(ctx), nil)
 		canon       = true
@@ -785,7 +782,6 @@ func (api *API) standardTraceBlockToFile(ctx context.Context, block *types.Block
 			return dumps, err
 		}
 		// Finalize the state so any modifications are written to the trie
-		// Only delete empty objects if EIP158/161 (a.k.a Spurious Dragon) is in effect
 		statedb.Finalise(true)
 
 		// If we've traced the transaction we were looking for, abort

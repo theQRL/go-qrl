@@ -9,13 +9,12 @@ import (
 
 // Baseline inputs for benchmarks. Full-width (all 512 bits) to exercise all limbs.
 var (
-	benchA512 = new(Int).SetAllOne()          // 2^512 - 1
+	benchA512 = new(Int).SetAllOne()           // 2^512 - 1
 	benchB512 = new(Int).SetBytes(benchBytesB) // large random-ish
 	benchM512 = new(Int).SetBytes(benchBytesM) // modulus for *Mod ops
 
 	benchA256 = new(uint256.Int).SetAllOne()
 	benchB256 = new(uint256.Int).SetBytes(benchBytesB[32:])
-	benchM256 = new(uint256.Int).SetBytes(benchBytesM[32:])
 
 	benchBytesB = []byte{
 		0xde, 0xad, 0xbe, 0xef, 0x12, 0x34, 0x56, 0x78,

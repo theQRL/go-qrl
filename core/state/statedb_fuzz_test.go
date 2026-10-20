@@ -129,7 +129,7 @@ func (*stateTest) Generate(r *rand.Rand, size int) reflect.Value {
 	}
 	actions := make([][]testAction, rand.Intn(5)+1)
 
-	addr, _ := common.NewAddressFromString("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef99aabbccddeeff001122334455667788")
+	addr := common.MustParseAddress("Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000deadbeef99aabbccddeeff001122334455667788")
 	for i := range actions {
 		actions[i] = make([]testAction, size)
 		for j := range actions[i] {
@@ -176,10 +176,10 @@ func (test *stateTest) run() bool {
 			accountList = append(accountList, copySet(states.Accounts))
 			storageList = append(storageList, copy2DSet(states.Storages))
 		}
-		disk      = rawdb.NewMemoryDatabase()
-		tdb       = trie.NewDatabase(disk, &trie.Config{PathDB: pathdb.Defaults})
-		sdb       = NewDatabaseWithNodeDB(disk, tdb)
-		byzantium = rand.Intn(2) == 0
+		disk     = rawdb.NewMemoryDatabase()
+		tdb      = trie.NewDatabase(disk, &trie.Config{PathDB: pathdb.Defaults})
+		sdb      = NewDatabaseWithNodeDB(disk, tdb)
+		finalise = rand.Intn(2) == 0
 	)
 	defer disk.Close()
 	defer tdb.Close()
@@ -206,7 +206,7 @@ func (test *stateTest) run() bool {
 
 		for i, action := range actions {
 			if i%test.chunk == 0 && i != 0 {
-				if byzantium {
+				if finalise {
 					state.Finalise(true) // call finalise at the transaction boundary
 				} else {
 					state.IntermediateRoot(true) // call intermediateRoot at the transaction boundary
@@ -214,7 +214,7 @@ func (test *stateTest) run() bool {
 			}
 			action.fn(action, state)
 		}
-		if byzantium {
+		if finalise {
 			state.Finalise(true) // call finalise at the transaction boundary
 		} else {
 			state.IntermediateRoot(true) // call intermediateRoot at the transaction boundary

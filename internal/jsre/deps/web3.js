@@ -254,265 +254,6 @@ module.exports=[
   }
 ]
 
-},{}],2:[function(require,module,exports){
-module.exports=[
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "bytes32"
-      }
-    ],
-    "name": "owner",
-    "outputs": [
-      {
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "bytes32"
-      },
-      {
-        "name": "_refund",
-        "type": "address"
-      }
-    ],
-    "name": "disown",
-    "outputs": [],
-    "type": "function"
-  },
-  {
-    "constant": true,
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "bytes32"
-      }
-    ],
-    "name": "addr",
-    "outputs": [
-      {
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "bytes32"
-      }
-    ],
-    "name": "reserve",
-    "outputs": [],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "bytes32"
-      },
-      {
-        "name": "_newOwner",
-        "type": "address"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "_name",
-        "type": "bytes32"
-      },
-      {
-        "name": "_a",
-        "type": "address"
-      }
-    ],
-    "name": "setAddr",
-    "outputs": [],
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "name": "name",
-        "type": "bytes32"
-      }
-    ],
-    "name": "Changed",
-    "type": "event"
-  }
-]
-
-},{}],3:[function(require,module,exports){
-module.exports=[
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "from",
-        "type": "bytes32"
-      },
-      {
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "transfer",
-    "outputs": [],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "from",
-        "type": "bytes32"
-      },
-      {
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "name": "indirectId",
-        "type": "bytes32"
-      },
-      {
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "icapTransfer",
-    "outputs": [],
-    "type": "function"
-  },
-  {
-    "constant": false,
-    "inputs": [
-      {
-        "name": "to",
-        "type": "bytes32"
-      }
-    ],
-    "name": "deposit",
-    "outputs": [],
-    "payable": true,
-    "type": "function"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "AnonymousDeposit",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "name": "to",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Deposit",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "name": "from",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "Transfer",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "name": "from",
-        "type": "bytes32"
-      },
-      {
-        "indexed": true,
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "name": "indirectId",
-        "type": "bytes32"
-      },
-      {
-        "indexed": false,
-        "name": "value",
-        "type": "uint256"
-      }
-    ],
-    "name": "IcapTransfer",
-    "type": "event"
-  }
-]
-
 },{}],4:[function(require,module,exports){
 var f = require('./formatters');
 var HyperionType = require('./type');
@@ -528,7 +269,7 @@ var HyperionType = require('./type');
  * address[][6][], ...
  */
 var HyperionTypeAddress = function () {
-    this._inputFormatter = f.formatInputInt;
+    this._inputFormatter = f.formatInputAddress;
     this._outputFormatter = f.formatOutputAddress;
 };
 
@@ -631,8 +372,6 @@ var HyperionTypeInt = require('./int');
 var HyperionTypeUInt = require('./uint');
 var HyperionTypeDynamicBytes = require('./dynamicbytes');
 var HyperionTypeString = require('./string');
-var HyperionTypeReal = require('./real');
-var HyperionTypeUReal = require('./ureal');
 var HyperionTypeBytes = require('./bytes');
 
 var isDynamic = function (hyperionType, type) {
@@ -696,10 +435,10 @@ HyperionCoder.prototype.encodeParams = function (types, params) {
 
     var dynamicOffset = hyperionTypes.reduce(function (acc, hyperionType, index) {
         var staticPartLength = hyperionType.staticPartLength(types[index]);
-        var roundedStaticPartLength = Math.floor((staticPartLength + 31) / 32) * 32;
+        var roundedStaticPartLength = Math.floor((staticPartLength + 63) / 64) * 64;
 
         return acc + (isDynamic(hyperionTypes[index], types[index]) ?
-            32 :
+            64 :
             roundedStaticPartLength);
     }, 0);
 
@@ -750,7 +489,7 @@ HyperionCoder.prototype.encodeWithOffset = function (type, hyperionType, encoded
                 if (hyperionType.isDynamicArray(nestedName)) {
                     for (var i = 1; i < encoded.length; i++) {
                         previousLength += +(encoded[i - 1])[0] || 0;
-                        result += f.formatInputInt(offset + i * nestedStaticPartLength + previousLength * 32).encode();
+                        result += f.formatInputInt(offset + i * nestedStaticPartLength + previousLength * 64).encode();
                     }
                 }
             })();
@@ -779,7 +518,7 @@ HyperionCoder.prototype.encodeWithOffset = function (type, hyperionType, encoded
                     for (var i = 0; i < encoded.length; i++) {
                         // calculate length of previous item
                         previousLength += +(encoded[i - 1] || [])[0] || 0;
-                        result += f.formatInputInt(offset + i * nestedStaticPartLength + previousLength * 32).encode();
+                        result += f.formatInputInt(offset + i * nestedStaticPartLength + previousLength * 64).encode();
                     }
                 })();
             }
@@ -858,14 +597,12 @@ var coder = new HyperionCoder([
     new HyperionTypeUInt(),
     new HyperionTypeDynamicBytes(),
     new HyperionTypeBytes(),
-    new HyperionTypeString(),
-    new HyperionTypeReal(),
-    new HyperionTypeUReal()
+    new HyperionTypeString()
 ]);
 
 module.exports = coder;
 
-},{"./address":4,"./bool":5,"./bytes":6,"./dynamicbytes":8,"./formatters":9,"./int":10,"./real":12,"./string":13,"./uint":15,"./ureal":16}],8:[function(require,module,exports){
+},{"./address":4,"./bool":5,"./bytes":6,"./dynamicbytes":8,"./formatters":9,"./int":10,"./string":13,"./uint":15}],8:[function(require,module,exports){
 var f = require('./formatters');
 var HyperionType = require('./type');
 
@@ -927,8 +664,15 @@ var HyperionParam = require('./param');
  */
 var formatInputInt = function (value) {
     BigNumber.config(c.QRL_BIGNUMBER_ROUNDING_MODE);
-    var result = utils.padLeft(utils.toTwosComplement(value).toString(16), 64);
+    var result = utils.padLeft(utils.toTwosComplement(value).toString(16), 128);
     return new HyperionParam(result);
+};
+
+var formatInputAddress = function (value) {
+    if (!utils.isAddress(value)) {
+        throw Error('invalid address');
+    }
+    return new HyperionParam(value.substr(1));
 };
 
 /**
@@ -940,8 +684,8 @@ var formatInputInt = function (value) {
  */
 var formatInputBytes = function (value) {
     var result = utils.toHex(value).substr(2);
-    var l = Math.floor((result.length + 63) / 64);
-    result = utils.padRight(result, l * 64);
+    var l = Math.max(1, Math.floor((result.length + 127) / 128));
+    result = utils.padRight(result, l * 128);
     return new HyperionParam(result);
 };
 
@@ -955,8 +699,8 @@ var formatInputBytes = function (value) {
 var formatInputDynamicBytes = function (value) {
     var result = utils.toHex(value).substr(2);
     var length = result.length / 2;
-    var l = Math.floor((result.length + 63) / 64);
-    result = utils.padRight(result, l * 64);
+    var l = Math.floor((result.length + 127) / 128);
+    result = utils.padRight(result, l * 128);
     return new HyperionParam(formatInputInt(length).value + result);
 };
 
@@ -970,8 +714,8 @@ var formatInputDynamicBytes = function (value) {
 var formatInputString = function (value) {
     var result = utils.fromUtf8(value).substr(2);
     var length = result.length / 2;
-    var l = Math.floor((result.length + 63) / 64);
-    result = utils.padRight(result, l * 64);
+    var l = Math.floor((result.length + 127) / 128);
+    result = utils.padRight(result, l * 128);
     return new HyperionParam(formatInputInt(length).value + result);
 };
 
@@ -983,20 +727,8 @@ var formatInputString = function (value) {
  * @returns {HyperionParam}
  */
 var formatInputBool = function (value) {
-    var result = '000000000000000000000000000000000000000000000000000000000000000' + (value ?  '1' : '0');
+    var result = utils.padLeft(value ? '1' : '0', 128);
     return new HyperionParam(result);
-};
-
-/**
- * Formats input value to byte representation of real
- * Values are multiplied by 2^m and encoded as integers
- *
- * @method formatInputReal
- * @param {String|Number|BigNumber}
- * @returns {HyperionParam}
- */
-var formatInputReal = function (value) {
-    return formatInputInt(new BigNumber(value).times(new BigNumber(2).pow(128)));
 };
 
 /**
@@ -1023,7 +755,7 @@ var formatOutputInt = function (param) {
     // check if it's negative number
     // it is, return two's complement
     if (signedIsNegative(value)) {
-        return new BigNumber(value, 16).minus(new BigNumber('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)).minus(1);
+        return new BigNumber(value, 16).minus(new BigNumber('ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff', 16)).minus(1);
     }
     return new BigNumber(value, 16);
 };
@@ -1041,28 +773,6 @@ var formatOutputUInt = function (param) {
 };
 
 /**
- * Formats right-aligned output bytes to real
- *
- * @method formatOutputReal
- * @param {HyperionParam}
- * @returns {BigNumber} input bytes formatted to real
- */
-var formatOutputReal = function (param) {
-    return formatOutputInt(param).dividedBy(new BigNumber(2).pow(128));
-};
-
-/**
- * Formats right-aligned output bytes to ureal
- *
- * @method formatOutputUReal
- * @param {HyperionParam}
- * @returns {BigNumber} input bytes formatted to ureal
- */
-var formatOutputUReal = function (param) {
-    return formatOutputUInt(param).dividedBy(new BigNumber(2).pow(128));
-};
-
-/**
  * Should be used to format output bool
  *
  * @method formatOutputBool
@@ -1070,7 +780,7 @@ var formatOutputUReal = function (param) {
  * @returns {Boolean} right-aligned input bytes formatted to bool
  */
 var formatOutputBool = function (param) {
-    return param.staticPart() === '0000000000000000000000000000000000000000000000000000000000000001' ? true : false;
+    return param.staticPart() === utils.padLeft('1', 128) ? true : false;
 };
 
 /**
@@ -1095,8 +805,8 @@ var formatOutputBytes = function (param, name) {
  * @returns {String} hex string
  */
 var formatOutputDynamicBytes = function (param) {
-    var length = (new BigNumber(param.dynamicPart().slice(0, 64), 16)).toNumber() * 2;
-    return '0x' + param.dynamicPart().substr(64, length);
+    var length = (new BigNumber(param.dynamicPart().slice(0, 128), 16)).toNumber() * 2;
+    return '0x' + param.dynamicPart().substr(128, length);
 };
 
 /**
@@ -1107,8 +817,8 @@ var formatOutputDynamicBytes = function (param) {
  * @returns {String} ascii string
  */
 var formatOutputString = function (param) {
-    var length = (new BigNumber(param.dynamicPart().slice(0, 64), 16)).toNumber() * 2;
-    return utils.toUtf8(param.dynamicPart().substr(64, length));
+    var length = (new BigNumber(param.dynamicPart().slice(0, 128), 16)).toNumber() * 2;
+    return utils.toUtf8(param.dynamicPart().substr(128, length));
 };
 
 /**
@@ -1120,20 +830,18 @@ var formatOutputString = function (param) {
  */
 var formatOutputAddress = function (param) {
     var value = param.staticPart();
-    return "Q" + value.slice(value.length - 40, value.length);
+    return utils.toChecksumAddress("Q" + value.slice(value.length - 128, value.length));
 };
 
 module.exports = {
     formatInputInt: formatInputInt,
+    formatInputAddress: formatInputAddress,
     formatInputBytes: formatInputBytes,
     formatInputDynamicBytes: formatInputDynamicBytes,
     formatInputString: formatInputString,
     formatInputBool: formatInputBool,
-    formatInputReal: formatInputReal,
     formatOutputInt: formatOutputInt,
     formatOutputUInt: formatOutputUInt,
-    formatOutputReal: formatOutputReal,
-    formatOutputUReal: formatOutputUReal,
     formatOutputBool: formatOutputBool,
     formatOutputBytes: formatOutputBytes,
     formatOutputDynamicBytes: formatOutputDynamicBytes,
@@ -1260,7 +968,7 @@ HyperionParam.prototype.isDynamic = function () {
  * @returns {String} bytes representation of offset
  */
 HyperionParam.prototype.offsetAsBytes = function () {
-    return !this.isDynamic() ? '' : utils.padLeft(utils.toTwosComplement(this.offset).toString(16), 64);
+    return !this.isDynamic() ? '' : utils.padLeft(utils.toTwosComplement(this.offset).toString(16), 128);
 };
 
 /**
@@ -1306,7 +1014,7 @@ HyperionParam.prototype.encode = function () {
 HyperionParam.encodeList = function (params) {
     
     // updating offsets
-    var totalOffset = params.length * 32;
+    var totalOffset = params.length * 64;
     var offsetParams = params.map(function (param) {
         if (!param.isDynamic()) {
             return param;
@@ -1329,41 +1037,7 @@ HyperionParam.encodeList = function (params) {
 module.exports = HyperionParam;
 
 
-},{"../utils/utils":20}],12:[function(require,module,exports){
-var f = require('./formatters');
-var HyperionType = require('./type');
-
-/**
- * HyperionTypeReal is a prototype that represents real type
- * It matches:
- * real
- * real[]
- * real[4]
- * real[][]
- * real[3][]
- * real[][6][], ...
- * real32
- * real64[]
- * real8[4]
- * real256[][]
- * real[3][]
- * real64[][6][], ...
- */
-var HyperionTypeReal = function () {
-    this._inputFormatter = f.formatInputReal;
-    this._outputFormatter = f.formatOutputReal;
-};
-
-HyperionTypeReal.prototype = new HyperionType({});
-HyperionTypeReal.prototype.constructor = HyperionTypeReal;
-
-HyperionTypeReal.prototype.isType = function (name) {
-    return !!name.match(/real([0-9]*)?(\[([0-9]*)\])?/);
-};
-
-module.exports = HyperionTypeReal;
-
-},{"./formatters":9,"./type":14}],13:[function(require,module,exports){
+},{"../utils/utils":20}],13:[function(require,module,exports){
 var f = require('./formatters');
 var HyperionType = require('./type');
 
@@ -1424,8 +1098,8 @@ HyperionType.prototype.staticPartLength = function (name) {
         })
         .reduce(function (previous, current) {
             return previous * current;
-        // all basic types are 32 bytes long
-        }, 32);
+        // all basic types are 64 bytes long
+        }, 64);
 };
 
 /**
@@ -1591,13 +1265,13 @@ HyperionType.prototype.decode = function (bytes, offset, name) {
     if (this.isDynamicArray(name)) {
 
         return (function () {
-            var arrayOffset = parseInt('0x' + bytes.substr(offset * 2, 64)); // in bytes
-            var length = parseInt('0x' + bytes.substr(arrayOffset * 2, 64)); // in int
-            var arrayStart = arrayOffset + 32; // array starts after length; // in bytes
+            var arrayOffset = parseInt('0x' + bytes.substr(offset * 2, 128)); // in bytes
+            var length = parseInt('0x' + bytes.substr(arrayOffset * 2, 128)); // in int
+            var arrayStart = arrayOffset + 64; // array starts after length; // in bytes
 
             var nestedName = self.nestedName(name);
             var nestedStaticPartLength = self.staticPartLength(nestedName);  // in bytes
-            var roundedNestedStaticPartLength = Math.floor((nestedStaticPartLength + 31) / 32) * 32;
+            var roundedNestedStaticPartLength = Math.floor((nestedStaticPartLength + 63) / 64) * 64;
             var result = [];
 
             for (var i = 0; i < length * roundedNestedStaticPartLength; i += roundedNestedStaticPartLength) {
@@ -1615,7 +1289,7 @@ HyperionType.prototype.decode = function (bytes, offset, name) {
 
             var nestedName = self.nestedName(name);
             var nestedStaticPartLength = self.staticPartLength(nestedName); // in bytes
-            var roundedNestedStaticPartLength = Math.floor((nestedStaticPartLength + 31) / 32) * 32;
+            var roundedNestedStaticPartLength = Math.floor((nestedStaticPartLength + 63) / 64) * 64;
             var result = [];
 
             for (var i = 0; i < length * roundedNestedStaticPartLength; i += roundedNestedStaticPartLength) {
@@ -1627,10 +1301,10 @@ HyperionType.prototype.decode = function (bytes, offset, name) {
     } else if (this.isDynamicType(name)) {
 
         return (function () {
-            var dynamicOffset = parseInt('0x' + bytes.substr(offset * 2, 64));      // in bytes
-            var length = parseInt('0x' + bytes.substr(dynamicOffset * 2, 64));      // in bytes
-            var roundedLength = Math.floor((length + 31) / 32);                     // in int
-            var param = new HyperionParam(bytes.substr(dynamicOffset * 2, ( 1 + roundedLength) * 64), 0);
+            var dynamicOffset = parseInt('0x' + bytes.substr(offset * 2, 128));      // in bytes
+            var length = parseInt('0x' + bytes.substr(dynamicOffset * 2, 128));      // in bytes
+            var roundedLength = Math.floor((length + 63) / 64);                     // in int
+            var param = new HyperionParam(bytes.substr(dynamicOffset * 2, (1 + roundedLength) * 128), 0);
             return self._outputFormatter(param, name);
         })();
     }
@@ -1675,40 +1349,6 @@ HyperionTypeUInt.prototype.isType = function (name) {
 };
 
 module.exports = HyperionTypeUInt;
-
-},{"./formatters":9,"./type":14}],16:[function(require,module,exports){
-var f = require('./formatters');
-var HyperionType = require('./type');
-
-/**
- * HyperionTypeUReal is a prototype that represents ureal type
- * It matches:
- * ureal
- * ureal[]
- * ureal[4]
- * ureal[][]
- * ureal[3][]
- * ureal[][6][], ...
- * ureal32
- * ureal64[]
- * ureal8[4]
- * ureal256[][]
- * ureal[3][]
- * ureal64[][6][], ...
- */
-var HyperionTypeUReal = function () {
-    this._inputFormatter = f.formatInputReal;
-    this._outputFormatter = f.formatOutputUReal;
-};
-
-HyperionTypeUReal.prototype = new HyperionType({});
-HyperionTypeUReal.prototype.constructor = HyperionTypeUReal;
-
-HyperionTypeUReal.prototype.isType = function (name) {
-    return !!name.match(/^ureal([0-9]*)?(\[([0-9]*)\])*$/);
-};
-
-module.exports = HyperionTypeUReal;
 
 },{"./formatters":9,"./type":14}],17:[function(require,module,exports){
 'use strict';
@@ -1787,7 +1427,7 @@ var QRL_UNITS = [
 ];
 
 module.exports = {
-    QRL_PADDING: 32,
+    QRL_PADDING: 64,
     QRL_SIGNATURE_LENGTH: 4,
     QRL_UNITS: QRL_UNITS,
     QRL_BIGNUMBER_ROUNDING_MODE: { ROUNDING_MODE: BigNumber.ROUND_DOWN },
@@ -2019,7 +1659,7 @@ var fromAscii = function(str) {
  *
  * @method transformToFullName
  * @param {Object} json-abi
- * @return {String} full fnction/event name
+ * @return {String} full function/event name
  */
 var transformToFullName = function (json) {
     if (json.name.indexOf('(') !== -1) {
@@ -2209,7 +1849,7 @@ var toBigNumber = function(number) {
 var toTwosComplement = function (number) {
     var bigNumber = toBigNumber(number).round();
     if (bigNumber.lessThan(0)) {
-        return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bigNumber).plus(1);
+        return new BigNumber("ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", 16).plus(bigNumber).plus(1);
     }
     return bigNumber;
 };
@@ -2222,7 +1862,7 @@ var toTwosComplement = function (number) {
  * @return {Boolean}
 */
 var isStrictAddress = function (address) {
-    return /^Q[0-9a-f]{128}$/i.test(address);
+    return /^Q[0-9a-fA-F]{128}$/.test(address);
 };
 
 /**
@@ -2233,7 +1873,16 @@ var isStrictAddress = function (address) {
  * @return {Boolean}
 */
 var isAddress = function (address) {
-    return /^Q[0-9a-f]{128}$/i.test(address);
+    if (!/^Q[0-9a-fA-F]{128}$/.test(address)) {
+        // check if it has the basic requirements of an address
+        return false;
+    } else if (/^Q[0-9a-f]{128}$/.test(address) || /^Q[0-9A-F]{128}$/.test(address)) {
+        // If it's all small caps or all caps, return true
+        return true;
+    } else {
+        // Otherwise check each case
+        return isChecksumAddress(address);
+    }
 };
 
 /**
@@ -2323,7 +1972,7 @@ var isFunction = function (object) {
 };
 
 /**
- * Returns true if object is Objet, otherwise false
+ * Returns true if object is Object, otherwise false
  *
  * @method isObject
  * @param {Object}
@@ -2394,9 +2043,9 @@ var isBloom = function (bloom) {
  * @return {Boolean}
  */
 var isTopic = function (topic) {
-    if (!/^(0x)?[0-9a-f]{64}$/i.test(topic)) {
+    if (!/^(0x)?[0-9a-f]{128}$/i.test(topic)) {
         return false;
-    } else if (/^(0x)?[0-9a-f]{64}$/.test(topic) || /^(0x)?[0-9A-F]{64}$/.test(topic)) {
+    } else if (/^(0x)?[0-9a-f]{128}$/.test(topic) || /^(0x)?[0-9A-F]{128}$/.test(topic)) {
         return true;
     }
     return false;
@@ -2469,9 +2118,7 @@ module.exports={
  */
 
 var RequestManager = require('./web3/requestmanager');
-var Iban = require('./web3/iban');
 var QRL = require('./web3/methods/qrl');
-var DB = require('./web3/methods/db');
 var Net = require('./web3/methods/net');
 var Settings = require('./web3/settings');
 var version = require('./version.json');
@@ -2490,7 +2137,6 @@ function Web3 (provider) {
     this._requestManager = new RequestManager(provider);
     this.currentProvider = provider;
     this.qrl = new QRL(this);
-    this.db = new DB(this);
     this.net = new Net(this);
     this.settings = new Settings();
     this.version = {
@@ -2536,21 +2182,12 @@ Web3.prototype.fromPlanck = utils.fromPlanck;
 Web3.prototype.isAddress = utils.isAddress;
 Web3.prototype.isChecksumAddress = utils.isChecksumAddress;
 Web3.prototype.toChecksumAddress = utils.toChecksumAddress;
-Web3.prototype.isIBAN = utils.isIBAN;
 Web3.prototype.padLeft = utils.padLeft;
 Web3.prototype.padRight = utils.padRight;
 
 
 Web3.prototype.sha3 = function(string, options) {
     return '0x' + sha3(string, options);
-};
-
-/**
- * Transforms direct icap to address
- */
-Web3.prototype.fromICAP = function (icap) {
-    var iban = new Iban(icap);
-    return iban.address();
 };
 
 var properties = function () {
@@ -2562,11 +2199,6 @@ var properties = function () {
         new Property({
             name: 'version.network',
             getter: 'net_version',
-            inputFormatter: utils.toDecimal
-        }),
-        new Property({
-            name: 'version.qrl',
-            getter: 'qrl_protocolVersion',
             inputFormatter: utils.toDecimal
         })
     ];
@@ -2583,7 +2215,7 @@ Web3.prototype.createBatch = function () {
 module.exports = Web3;
 
 
-},{"./utils/sha3":19,"./utils/utils":20,"./version.json":21,"./web3/batch":24,"./web3/extend":28,"./web3/httpprovider":32,"./web3/iban":33,"./web3/ipcprovider":34,"./web3/methods/db":37,"./web3/methods/qrl":38,"./web3/methods/net":39,"./web3/methods/personal":40,"./web3/methods/shh":41,"./web3/methods/swarm":42,"./web3/property":45,"./web3/requestmanager":46,"./web3/settings":47,"bignumber.js":"bignumber.js"}],23:[function(require,module,exports){
+},{"./utils/sha3":19,"./utils/utils":20,"./version.json":21,"./web3/batch":24,"./web3/extend":28,"./web3/httpprovider":32,"./web3/ipcprovider":34,"./web3/methods/db":37,"./web3/methods/qrl":38,"./web3/methods/net":39,"./web3/methods/personal":40,"./web3/property":45,"./web3/requestmanager":46,"./web3/settings":47,"bignumber.js":"bignumber.js"}],23:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -2640,7 +2272,7 @@ AllHyperionEvents.prototype.decode = function (data) {
 
     var eventTopic = data.topics[0].slice(2);
     var match = this._json.filter(function (j) {
-        return eventTopic === sha3(utils.transformToFullName(j));
+        return eventTopic === utils.padRight(sha3(utils.transformToFullName(j)), 128);
     })[0];
 
     if (!match) { // cannot find matching event?
@@ -2944,7 +2576,7 @@ var ContractFactory = function (qrl, abi) {
                 return json.type === 'constructor' && json.inputs.length === args.length;
             })[0] || {};
 
-            if (!constructorAbi.payable) {
+            if (constructorAbi.stateMutability !== 'payable') {
                 throw new Error('Cannot send value to non-payable constructor');
             }
         }
@@ -3207,7 +2839,7 @@ HyperionEvent.prototype.encode = function (indexed, options) {
 
     result.address = this._address;
     if (!this._anonymous) {
-        result.topics.push('0x' + this.signature());
+        result.topics.push('0x' + utils.padRight(this.signature(), 128));
     }
 
     var indexedTopics = this._params.filter(function (i) {
@@ -3218,12 +2850,20 @@ HyperionEvent.prototype.encode = function (indexed, options) {
             return null;
         }
 
+        var encodeTopic = function (v) {
+            if (i.type === 'string') {
+                return '0x' + utils.padRight(sha3(v), 128);
+            }
+            if (i.type === 'bytes') {
+                return '0x' + utils.padRight(sha3(v === '0x' ? '' : v, {encoding: 'hex'}), 128);
+            }
+            return '0x' + coder.encodeParam(i.type, v);
+        };
+
         if (utils.isArray(value)) {
-            return value.map(function (v) {
-                return '0x' + coder.encodeParam(i.type, v);
-            });
+            return value.map(encodeTopic);
         }
-        return '0x' + coder.encodeParam(i.type, value);
+        return encodeTopic(value);
     });
 
     result.topics = result.topics.concat(indexedTopics);
@@ -3243,9 +2883,15 @@ HyperionEvent.prototype.decode = function (data) {
     data.data = data.data || '';
     data.topics = data.topics || [];
 
+    var indexedTypes = this.types(true);
     var argTopics = this._anonymous ? data.topics : data.topics.slice(1);
-    var indexedData = argTopics.map(function (topics) { return topics.slice(2); }).join("");
-    var indexedParams = coder.decodeParams(this.types(true), indexedData);
+    var indexedParams = argTopics.map(function (topic, index) {
+        var type = indexedTypes[index];
+        if (type === 'string' || type === 'bytes') {
+            return topic;
+        }
+        return coder.decodeParam(type, topic.slice(2));
+    });
 
     var notIndexedData = data.data.slice(2);
     var notIndexedParams = coder.decodeParams(this.types(false), notIndexedData);
@@ -3437,8 +3083,6 @@ var getOptions = function (options, type) {
                 fromBlock: formatters.inputBlockNumberFormatter(options.fromBlock),
                 toBlock: formatters.inputBlockNumberFormatter(options.toBlock)
             };
-        case 'shh':
-            return options;
     }
 };
 
@@ -3633,7 +3277,6 @@ module.exports = Filter;
 
 var utils = require('../utils/utils');
 var config = require('../utils/config');
-var Iban = require('./iban');
 
 /**
  * Should the format output to a big number
@@ -3785,7 +3428,7 @@ var outputBlockFormatter = function(block) {
     block.gasUsed = utils.toDecimal(block.gasUsed);
     block.size = utils.toDecimal(block.size);
     block.timestamp = utils.toDecimal(block.timestamp);
-    if(block.number !== null)
+    if (block.number !== null)
         block.number = utils.toDecimal(block.number);
 
     if (utils.isArray(block.transactions)) {
@@ -3876,10 +3519,7 @@ var outputPostFormatter = function(post){
 };
 
 var inputAddressFormatter = function (address) {
-    var iban = new Iban(address);
-    if (iban.isValid() && iban.isDirect()) {
-        return 'Q' + iban.address();
-    } else if (utils.isStrictAddress(address)) {
+    if (utils.isStrictAddress(address)) {
         return address;
     } else if (utils.isAddress(address)) {
         return 'Q' + address;
@@ -3929,7 +3569,7 @@ module.exports = {
 };
 
 
-},{"../utils/config":18,"../utils/utils":20,"./iban":33}],31:[function(require,module,exports){
+},{"../utils/config":18,"../utils/utils":20}],31:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -3969,8 +3609,8 @@ var HyperionFunction = function (qrl, json, address) {
     this._outputTypes = json.outputs.map(function (i) {
         return i.type;
     });
-    this._constant = json.constant;
-    this._payable = json.payable;
+    this._constant = json.stateMutability === 'view' || json.stateMutability === 'pure';
+    this._payable = json.stateMutability === 'payable';
     this._name = utils.transformToFullName(json);
     this._address = address;
 };
@@ -4372,236 +4012,7 @@ HttpProvider.prototype.isConnected = function () {
 
 module.exports = HttpProvider;
 
-},{"./errors":26,"xhr2":86,"xmlhttprequest":17}],33:[function(require,module,exports){
-/*
-    This file is part of web3.js.
-
-    web3.js is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    web3.js is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/** 
- * @file iban.js
- * @author Marek Kotewicz <marek@ethdev.com>
- * @date 2015
- */
-
-var BigNumber = require('bignumber.js');
-
-var padLeft = function (string, bytes) {
-    var result = string;
-    while (result.length < bytes * 2) {
-        result = '0' + result;
-    }
-    return result;
-};
-
-/**
- * Prepare an IBAN for mod 97 computation by moving the first 4 chars to the end and transforming the letters to
- * numbers (A = 10, B = 11, ..., Z = 35), as specified in ISO13616.
- *
- * @method iso13616Prepare
- * @param {String} iban the IBAN
- * @returns {String} the prepared IBAN
- */
-var iso13616Prepare = function (iban) {
-    var A = 'A'.charCodeAt(0);
-    var Z = 'Z'.charCodeAt(0);
-
-    iban = iban.toUpperCase();
-    iban = iban.substr(4) + iban.substr(0,4);
-
-    return iban.split('').map(function(n){
-        var code = n.charCodeAt(0);
-        if (code >= A && code <= Z){
-            // A = 10, B = 11, ... Z = 35
-            return code - A + 10;
-        } else {
-            return n;
-        }
-    }).join('');
-};
-
-/**
- * Calculates the MOD 97 10 of the passed IBAN as specified in ISO7064.
- *
- * @method mod9710
- * @param {String} iban
- * @returns {Number}
- */
-var mod9710 = function (iban) {
-    var remainder = iban,
-        block;
-
-    while (remainder.length > 2){
-        block = remainder.slice(0, 9);
-        remainder = parseInt(block, 10) % 97 + remainder.slice(block.length);
-    }
-
-    return parseInt(remainder, 10) % 97;
-};
-
-/**
- * This prototype should be used to create iban object from iban correct string
- *
- * @param {String} iban
- */
-var Iban = function (iban) {
-    this._iban = iban;
-};
-
-/**
- * This method should be used to create iban object from qrl address
- *
- * @method fromAddress
- * @param {String} address
- * @return {Iban} the IBAN object
- */
-Iban.fromAddress = function (address) {
-    var asBn = new BigNumber(address, 16);
-    var base36 = asBn.toString(36);
-    var padded = padLeft(base36, 15);
-    return Iban.fromBban(padded.toUpperCase());
-};
-
-/**
- * Convert the passed BBAN to an IBAN for this country specification.
- * Please note that <i>"generation of the IBAN shall be the exclusive responsibility of the bank/branch servicing the account"</i>.
- * This method implements the preferred algorithm described in http://en.wikipedia.org/wiki/International_Bank_Account_Number#Generating_IBAN_check_digits
- *
- * @method fromBban
- * @param {String} bban the BBAN to convert to IBAN
- * @returns {Iban} the IBAN object
- */
-Iban.fromBban = function (bban) {
-    var countryCode = 'XE';
-
-    var remainder = mod9710(iso13616Prepare(countryCode + '00' + bban));
-    var checkDigit = ('0' + (98 - remainder)).slice(-2);
-
-    return new Iban(countryCode + checkDigit + bban);
-};
-
-/**
- * Should be used to create IBAN object for given institution and identifier
- *
- * @method createIndirect
- * @param {Object} options, required options are "institution" and "identifier"
- * @return {Iban} the IBAN object
- */
-Iban.createIndirect = function (options) {
-    return Iban.fromBban('QRL' + options.institution + options.identifier);
-};
-
-/**
- * Thos method should be used to check if given string is valid iban object
- *
- * @method isValid
- * @param {String} iban string
- * @return {Boolean} true if it is valid IBAN
- */
-Iban.isValid = function (iban) {
-    var i = new Iban(iban);
-    return i.isValid();
-};
-
-/**
- * Should be called to check if iban is correct
- *
- * @method isValid
- * @returns {Boolean} true if it is, otherwise false
- */
-Iban.prototype.isValid = function () {
-    return /^XE[0-9]{2}(QRL[0-9A-Z]{13}|[0-9A-Z]{30,31})$/.test(this._iban) &&
-        mod9710(iso13616Prepare(this._iban)) === 1;
-};
-
-/**
- * Should be called to check if iban number is direct
- *
- * @method isDirect
- * @returns {Boolean} true if it is, otherwise false
- */
-Iban.prototype.isDirect = function () {
-    return this._iban.length === 34 || this._iban.length === 35;
-};
-
-/**
- * Should be called to check if iban number if indirect
- *
- * @method isIndirect
- * @returns {Boolean} true if it is, otherwise false
- */
-Iban.prototype.isIndirect = function () {
-    return this._iban.length === 20;
-};
-
-/**
- * Should be called to get iban checksum
- * Uses the mod-97-10 checksumming protocol (ISO/IEC 7064:2003)
- *
- * @method checksum
- * @returns {String} checksum
- */
-Iban.prototype.checksum = function () {
-    return this._iban.substr(2, 2);
-};
-
-/**
- * Should be called to get institution identifier
- * eg. XREG
- *
- * @method institution
- * @returns {String} institution identifier
- */
-Iban.prototype.institution = function () {
-    return this.isIndirect() ? this._iban.substr(7, 4) : '';
-};
-
-/**
- * Should be called to get client identifier within institution
- * eg. GAVOFYORK
- *
- * @method client
- * @returns {String} client identifier
- */
-Iban.prototype.client = function () {
-    return this.isIndirect() ? this._iban.substr(11) : '';
-};
-
-/**
- * Should be called to get client direct address
- *
- * @method address
- * @returns {String} client direct address
- */
-Iban.prototype.address = function () {
-    if (this.isDirect()) {
-        var base36 = this._iban.substr(4);
-        var asBn = new BigNumber(base36, 36);
-        return padLeft(asBn.toString(16), 20);
-    } 
-
-    return '';
-};
-
-Iban.prototype.toString = function () {
-    return this._iban;
-};
-
-module.exports = Iban;
-
-
-},{"bignumber.js":"bignumber.js"}],34:[function(require,module,exports){
+},{"./errors":26,"xhr2":86,"xmlhttprequest":17}],34:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -5167,8 +4578,6 @@ var watches = require('./watches');
 var Filter = require('../filter');
 var IsSyncing = require('../syncing');
 var namereg = require('../namereg');
-var Iban = require('../iban');
-var transfer = require('../transfer');
 
 var blockCall = function (args) {
     return (utils.isString(args[0]) && args[0].indexOf('0x') === 0) ? "qrl_getBlockByHash" : "qrl_getBlockByNumber";
@@ -5197,9 +4606,6 @@ function QRL(web3) {
         p.setRequestManager(self._requestManager);
     });
 
-
-    this.iban = Iban;
-    this.sendIBANTransaction = transfer.bind(null, this);
 }
 
 Object.defineProperty(QRL.prototype, 'defaultBlock', {
@@ -5334,12 +4740,6 @@ var methods = function () {
         outputFormatter: utils.toDecimal
     });
 
-    var compileHyperion = new Method({
-        name: 'compile.hyperion',
-        call: 'qrl_compileHyperion',
-        params: 1
-    });
-
     return [
         getBalance,
         getStorageAt,
@@ -5355,8 +4755,7 @@ var methods = function () {
         sendRawTransaction,
         signTransaction,
         sendTransaction,
-        sign,
-        compileHyperion
+        sign
     ];
 };
 
@@ -5382,10 +4781,6 @@ var properties = function () {
             getter: 'qrl_blockNumber',
             outputFormatter: utils.toDecimal
         }),
-        new Property({
-            name: 'protocolVersion',
-            getter: 'qrl_protocolVersion'
-        })
     ];
 };
 
@@ -5398,21 +4793,13 @@ QRL.prototype.filter = function (options, callback, filterCreationErrorCallback)
     return new Filter(options, 'qrl', this._requestManager, watches.qrl(), formatters.outputLogFormatter, callback, filterCreationErrorCallback);
 };
 
-QRL.prototype.namereg = function () {
-    return this.contract(namereg.global.abi).at(namereg.global.address);
-};
-
-QRL.prototype.icapNamereg = function () {
-    return this.contract(namereg.icap.abi).at(namereg.icap.address);
-};
-
 QRL.prototype.isSyncing = function (callback) {
     return new IsSyncing(this._requestManager, callback);
 };
 
 module.exports = QRL;
 
-},{"../../utils/config":18,"../../utils/utils":20,"../contract":25,"../filter":29,"../formatters":30,"../iban":33,"../method":36,"../namereg":44,"../property":45,"../syncing":48,"../transfer":49,"./watches":43}],39:[function(require,module,exports){
+},{"../../utils/config":18,"../../utils/utils":20,"../contract":25,"../filter":29,"../formatters":30,"../method":36,"../namereg":44,"../property":45,"../syncing":48,"./watches":43}],39:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -5466,7 +4853,7 @@ var properties = function () {
 
 module.exports = Net;
 
-},{"../../utils/utils":20,"../property":45}],40:[function(require,module,exports){},{"../formatters":30,"../method":36,"../property":45}],41:[function(require,module,exports){},{"../filter":29,"../method":36,"./watches":43}],42:[function(require,module,exports){},{"../method":36,"../property":45}],43:[function(require,module,exports){
+},{"../../utils/utils":20,"../property":45}],40:[function(require,module,exports){},{"../formatters":30,"../method":36,"../property":45}],43:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -5542,36 +4929,8 @@ var qrl = function () {
     ];
 };
 
-/// @returns an array of objects describing web3.shh.watch api methods
-var shh = function () {
-
-    return [
-        new Method({
-            name: 'newFilter',
-            call: 'shh_newMessageFilter',
-            params: 1
-        }),
-        new Method({
-            name: 'uninstallFilter',
-            call: 'shh_deleteMessageFilter',
-            params: 1
-        }),
-        new Method({
-            name: 'getLogs',
-            call: 'shh_getFilterMessages',
-            params: 1
-        }),
-        new Method({
-            name: 'poll',
-            call: 'shh_getFilterMessages',
-            params: 1
-        })
-    ];
-};
-
 module.exports = {
-    qrl: qrl,
-    shh: shh
+    qrl: qrl
 };
 
 
@@ -5599,24 +4958,18 @@ module.exports = {
  */
 
 var globalRegistrarAbi = require('../contracts/GlobalRegistrar.json');
-var icapRegistrarAbi= require('../contracts/ICAPRegistrar.json');
 
-var globalNameregAddress = 'Qc6d9d2cd449a754c494264e1809c50e34d64562b';
-var icapNameregAddress = 'Qa1a111bc074c9cfa781f0c38e63bd51c91b8af00';
+var globalNameregAddress = 'Q0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c6d9d2cd449a754c494264e1809c50e34d64562b';
 
 module.exports = {
     global: {
         abi: globalRegistrarAbi,
         address: globalNameregAddress
-    },
-    icap: {
-        abi: icapRegistrarAbi,
-        address: icapNameregAddress
     }
 };
 
 
-},{"../contracts/GlobalRegistrar.json":1,"../contracts/ICAPRegistrar.json":2}],45:[function(require,module,exports){
+},{"../contracts/GlobalRegistrar.json":1}],45:[function(require,module,exports){
 /*
     This file is part of web3.js.
 
@@ -6135,101 +5488,7 @@ IsSyncing.prototype.stopWatching = function () {
 module.exports = IsSyncing;
 
 
-},{"../utils/utils":20,"./formatters":30}],49:[function(require,module,exports){
-/*
-    This file is part of web3.js.
-
-    web3.js is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    web3.js is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public License
-    along with web3.js.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/** 
- * @file transfer.js
- * @author Marek Kotewicz <marek@ethdev.com>
- * @date 2015
- */
-
-var Iban = require('./iban');
-var exchangeAbi = require('../contracts/SmartExchange.json');
-
-/**
- * Should be used to make Iban transfer
- *
- * @method transfer
- * @param {String} from
- * @param {String} to iban
- * @param {Value} value to be tranfered
- * @param {Function} callback, callback
- */
-var transfer = function (qrl, from, to, value, callback) {
-    var iban = new Iban(to); 
-    if (!iban.isValid()) {
-        throw new Error('invalid iban address');
-    }
-
-    if (iban.isDirect()) {
-        return transferToAddress(qrl, from, iban.address(), value, callback);
-    }
-
-    if (!callback) {
-        var address = qrl.icapNamereg().addr(iban.institution());
-        return deposit(qrl, from, address, value, iban.client());
-    }
-
-    qrl.icapNamereg().addr(iban.institution(), function (err, address) {
-        return deposit(qrl, from, address, value, iban.client(), callback);
-    });
-    
-};
-
-/**
- * Should be used to transfer funds to certain address
- *
- * @method transferToAddress
- * @param {String} from
- * @param {String} to
- * @param {Value} value to be tranfered
- * @param {Function} callback, callback
- */
-var transferToAddress = function (qrl, from, to, value, callback) {
-    return qrl.sendTransaction({
-        address: to,
-        from: from,
-        value: value
-    }, callback);
-};
-
-/**
- * Should be used to deposit funds to generic Exchange contract (must implement deposit(bytes32) method!)
- *
- * @method deposit
- * @param {String} from
- * @param {String} to
- * @param {Value} value to be transferred
- * @param {String} client unique identifier
- * @param {Function} callback, callback
- */
-var deposit = function (qrl, from, to, value, client, callback) {
-    var abi = exchangeAbi;
-    return qrl.contract(abi).at(to).deposit(client, {
-        from: from,
-        value: value
-    }, callback);
-};
-
-module.exports = transfer;
-
-
-},{"../contracts/SmartExchange.json":3,"./iban":33}],50:[function(require,module,exports){
+},{"../utils/utils":20,"./formatters":30}],50:[function(require,module,exports){
 
 },{}],51:[function(require,module,exports){
 ;(function (root, factory, undef) {
@@ -6551,7 +5810,7 @@ module.exports = transfer;
 	        /**
 	         * Initializes a newly created cipher.
 	         *
-	         * @param {number} xformMode Either the encryption or decryption transormation mode constant.
+	         * @param {number} xformMode Either the encryption or decryption transformation mode constant.
 	         * @param {WordArray} key The key.
 	         * @param {Object} cfg (Optional) The configuration options to use for this operation.
 	         *
@@ -8905,7 +8164,7 @@ module.exports = transfer;
 	            var M_offset_14 = M[offset + 14];
 	            var M_offset_15 = M[offset + 15];
 
-	            // Working varialbes
+	            // Working variables
 	            var a = H[0];
 	            var b = H[1];
 	            var c = H[2];
